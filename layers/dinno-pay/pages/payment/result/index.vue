@@ -1,0 +1,232 @@
+<script setup lang="ts">
+import { Org } from '~/types/org'
+
+definePageMeta({
+  title: 'Payment result',
+  layout: 'empty',
+  preview: {
+    title: 'Payment result',
+    description: 'For onboarding new users',
+    categories: ['payment-auth'],
+    src: '/img/screens/layouts-onboarding-1.png',
+    srcDark: '/img/screens/layouts-onboarding-1-dark.png',
+    order: 93,
+  },
+})
+
+const auth = useAuthStore()
+const app = useAppStore()
+const orgStore = useOrgStore()
+const toaster = useToaster()
+const loading = ref(false)
+const router = useRouter()
+const query = computed(() => {
+  return {
+    action: 'getUserOrgs',
+  }
+})
+
+const { activeTransaction } = useTransactionStore()
+const txn = activeTransaction
+
+const { data, pending, error, refresh } = await useFetch('/api/orgs', {
+  method: 'post',
+  headers: { 'Content-Type': 'application/json' },
+  query: query,
+  body: {
+    uid: auth.user.id,
+  },
+})
+
+if (data.value) {
+  console.log(data)
+}
+async function goToOrgNew() {
+  router.push('/bo/org/org-new')
+}
+async function goToOrgContribution() {
+  loading.value = true
+  const timer = setTimeout(async () => {
+    loading.value = false
+    router.push('/org/contribution/bandjoun')
+    clearTimeout(timer)
+  }, 500)
+}
+</script>
+
+<template>
+  <div class="bg-muted-100 dark:bg-muted-900 min-h-screen">
+    <div
+      class="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4"
+    >
+      <NuxtLink
+        to="/"
+        class="text-muted-400 hover:text-primary-500 dark:text-muted-700 dark:hover:text-primary-500 transition-colors duration-300"
+      >
+        <TairoLogo class="h-10 w-10" />
+      </NuxtLink>
+      <div class="flex items-center gap-4">
+        <BaseThemeToggle />
+        <BaseText
+          size="xs"
+          class="text-muted-400 hover:cursor-pointer"
+          @click="auth.logUserOut()"
+        >
+          {{ auth.user.firstName }} {{ auth.user.lastName }}
+        </BaseText>
+      </div>
+    </div>
+    <form
+      action=""
+      method="POST"
+      class="mx-auto max-w-7xl px-4"
+      @submit.prevent
+    >
+      <div>
+        <div v-if="txn.status == 'success'" class="pt-8 text-center">
+          <Icon
+            name="ph:check-circle-duotone"
+            class="text-success-500 mx-auto h-8 w-8"
+          />
+          <BaseHeading tag="h2" size="3xl" weight="medium" class="mb-2">
+            Transaction éffectué avec succes
+          </BaseHeading>
+          <BaseParagraph class="text-muted-500 dark:text-muted-400 mb-8">
+            Ci-dessous les détails de la transaction
+          </BaseParagraph>
+        </div>
+
+        <div v-else class="pt-8 text-center">
+          <Icon name="ph:x" class="text-danger-500 mx-auto h-8 w-8" />
+          <BaseHeading tag="h2" size="3xl" weight="medium" class="mb-2">
+            Transaction échoué
+          </BaseHeading>
+          <BaseParagraph class="text-muted-500 dark:text-muted-400 mb-8">
+            Ci-dessous les détails de la transaction
+          </BaseParagraph>
+        </div>
+
+        <div>
+          <div class="w-full">
+            <div class="mx-auto w-full">
+              <div class="w-full">
+                <div v-if="!pending" class="mx-auto mb-8">
+                  <div class="mx-auto mb-8 max-w-sm">
+                    <BaseCard class="w-full ptablet:p-8 p-6 lg:p-8">
+                      <BaseText
+                        size="xs"
+                        weight="medium"
+                        class="text-muted-400 mb-6 block uppercase tracking-wider"
+                      >
+                        ID transaction: {{ txn.id }}
+                      </BaseText>
+                      <div class="mb-2 flex">
+                        <div class="grow">
+                          <BaseHeading as="h3" weight="medium">
+                            {{ txn.donation?.donor?.firstName }}
+                            {{ txn.donation?.donor?.lastName }}
+                          </BaseHeading>
+                          <BaseText size="sm" class="text-muted-400">
+                            {{ txn.donation?.donor?.city }},
+                            {{ txn.donation?.donor.country.name }}
+                          </BaseText>
+                          <div
+                            class="text-muted-400 mb-4 mt-2 flex items-center gap-2"
+                          >
+                            <Icon name="lucide:mail" class="h-4 w-4" />
+                            <BaseText size="xs">
+                              {{ txn.donation?.donor?.email }}
+                            </BaseText>
+                          </div>
+                        </div>
+                        <div class="shrink-0">
+                          <BaseAvatar size="lg" src="/img/avatars/20.svg" />
+                        </div>
+                      </div>
+
+                      <div
+                        class="divide-muted-200 dark:divide-muted-700 flex w-full items-center divide-x py-4"
+                      >
+                        <div class="xxl:pe-6 flex flex-1 flex-col gap-1 pe-4">
+                          <BaseHeading
+                            as="h3"
+                            size="sm"
+                            weight="medium"
+                            lead="none"
+                          >
+                            {{ txn.amount }} XAF
+                          </BaseHeading>
+                          <BaseText size="xs" class="text-muted-400">
+                            Montant
+                          </BaseText>
+                        </div>
+                        <div class="xxl:px-6 flex flex-1 flex-col gap-1 px-4">
+                          <BaseHeading
+                            as="h3"
+                            size="sm"
+                            weight="medium"
+                            lead="none"
+                          >
+                            {{ txn.donation.type }}
+                          </BaseHeading>
+                          <BaseText size="xs" class="text-muted-400">
+                            Type
+                          </BaseText>
+                        </div>
+                        <div class="xxl:ps-6 flex flex-1 flex-col gap-1 ps-4">
+                          <BaseHeading
+                            as="h3"
+                            size="sm"
+                            weight="medium"
+                            lead="none"
+                          >
+                            Online
+                          </BaseHeading>
+                          <BaseText size="xs" class="text-muted-400">
+                            Method
+                          </BaseText>
+                        </div>
+                      </div>
+                      <BaseHeading as="h3" size="md" weight="medium">
+                        Organisation
+                      </BaseHeading>
+                      <BaseText size="sm" class="text-muted-400">
+                        <span class="">{{ orgStore.activeOrg.name }}</span>
+                      </BaseText>
+                      <div class="my-2">
+                        <BaseHeading as="h3" size="md" weight="medium">
+                          Observation
+                        </BaseHeading>
+                        <BaseText size="sm" class="text-muted-400">
+                          {{ txn.donation?.comments }}
+                        </BaseText>
+                      </div>
+                    </BaseCard>
+                  </div>
+                </div>
+                <div class="mx-auto flex flex-col items-center">
+                  <BaseButton
+                    type="button"
+                    shape="curved"
+                    class="!h-12 w-52"
+                    color="primary"
+                    :loading="loading"
+                    @click="goToOrgContribution()"
+                  >
+                    Faire un autre don
+                  </BaseButton>
+                  <NuxtLink
+                    to="/org/bandjoun"
+                    class="text-muted-400 hover:text-primary-500 mt-4 text-xs font-medium underline-offset-4 transition-colors duration-300 hover:underline"
+                  >
+                    Retourner à la page d'accueil
+                  </NuxtLink>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</template>
