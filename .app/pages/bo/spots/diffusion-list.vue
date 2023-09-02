@@ -5,9 +5,9 @@ import { DatePicker } from 'v-calendar'
 import { z } from 'zod'
 
 definePageMeta({
-  title: 'Operations - Fournisseur',
+  title: 'Opérations',
   preview: {
-    title: 'Operations - Fournisseur',
+    title: 'Opérations',
     description: 'Contribution and withdrawal',
     categories: ['bo', 'finances'],
     src: '/img/screens/layouts-table-list-1.png',
@@ -44,30 +44,25 @@ const query = computed(() => {
     perPage: perPage.value,
     page: page.value,
     action: 'get',
-    id: '0',
   }
 })
 
 const { data, pending, error, refresh } = await useFetch(
-  '/api/debts/supplier-operations',
+  '/api/debts/operations',
   {
     query,
   },
 )
 
-if (data.value) {
-  console.log(data.value)
-}
-
-const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
-  '/api/funds-raising',
+const { data: supplierData, pending: supplierPending } = await useFetch(
+  '/api/admin/suppliers',
   {
     query,
   },
 )
 
-if (fundsRaisingData?.value) {
-  console.log(fundsRaisingData.value.data)
+if (supplierData?.value) {
+  console.log(supplierData.value.data)
 }
 
 const selected = ref<number[]>([])
@@ -109,94 +104,57 @@ function selectOperation(id: string) {
   }, 150)
 }
 
-const people = [
-  {
-    id: 1,
-    name: 'Clarissa Perez',
-    text: 'Sales Manager',
-    media: '/img/avatars/19.svg',
-  },
-  {
-    id: 2,
-    name: 'Aaron Splatter',
-    text: 'Project Manager',
-    media: '/img/avatars/16.svg',
-  },
-  {
-    id: 3,
-    name: 'Mike Miller',
-    text: 'UI/UX Designer',
-    media: '/img/avatars/3.svg',
-  },
-  {
-    id: 4,
-    name: 'Benedict Kessler',
-    text: 'Mobile Developer',
-    media: '/img/avatars/22.svg',
-  },
-  {
-    id: 5,
-    name: 'Maya Rosselini',
-    text: 'Product Manager',
-    media: '/img/avatars/2.svg',
-  },
-]
-const paymentMethods = ref([
-  {
-    id: 1,
-    name: 'Mobile',
-    logo: '/img/payment/imgs/mobile_wallet_2.png',
-    description: 'Paiemens mobiles',
-    countries: [
-      {
-        id: 'CMR',
-        operators: [
-          {
-            abbr: 'om',
-            name: ' Orange Money | CMR',
-            logo: '/img/payment/imgs/orange_money_cmr.jpg',
-          },
-          {
-            abbr: 'momo',
-            name: ' Mobile Money | CMR',
-            logo: '/img/payment/imgs/mobile_money_cmr.jpg',
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Visa',
-    logo: '/img/payment/imgs/visa_mastercard.jpg',
-    description: 'Paiements par carte',
-  },
-  {
-    id: 3,
-    name: 'Paypal',
-    logo: '/img/payment/imgs/paypal.png',
-    description: 'Payments par paypal',
-  },
-])
-
-const countries = [
+const operationTypes = [
   {
     id: '1',
-    abbr: 'CMR',
-    name: 'Cameroun',
-    flag: '/img/icons/flags/cmr.svg',
+    name: 'VIREMENT',
   },
   {
     id: '2',
-    abbr: 'CIV',
-    name: "Côte d'ivoire",
-    flag: '/img/icons/flags/civ.svg',
+    name: 'DEPOT',
+  },
+]
+
+const mouvementTypes = [
+  {
+    id: '1',
+    name: 'DEBIT',
+  },
+  {
+    id: '2',
+    name: 'CREDIT',
+  },
+]
+
+const banks = [
+  {
+    id: '1',
+    name: 'CBC',
+    logo: '/img/avatars/company.svg',
+  },
+  {
+    id: '2',
+    name: 'AFB',
+    logo: '/img/avatars/company.svg',
+  },
+]
+
+const currencies = [
+  {
+    id: '1',
+    name: 'EURO',
+  },
+  {
+    id: '2',
+    name: 'DOLLAR USD',
   },
   {
     id: '3',
-    abbr: 'FR',
-    name: 'France',
-    flag: '/img/icons/flags/france.svg',
+    name: 'XAF',
+  },
+  {
+    id: '4',
+    name: 'LIVRE STERLING',
   },
 ]
 
@@ -375,62 +333,6 @@ const onSubmit = handleSubmit(
 
 <template>
   <div>
-    <div>
-      <div class="flex w-full flex-col mb-10">
-        <BaseAvatar
-          :src="data?.supplier.logo"
-          :badge-src="data?.supplier.logo"
-          size="2xl"
-          class="mx-auto"
-        />
-        <div class="mx-auto w-full max-w-4xl text-center">
-          <BaseHeading tag="h2" size="xl" weight="medium" class="mt-4">
-            {{ data?.supplier.name }}
-          </BaseHeading>
-          <div
-            class="divide-muted-200 dark:divide-muted-800 flex items-center justify-center divide-x"
-          >
-            <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
-              <Icon name="ph:globe" class="h-5 w-5" />
-              <BaseText size="sm">Email: {{ data?.supplier.email }}</BaseText>
-            </div>
-
-            <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
-              <Icon name="ph:globe" class="h-5 w-5" />
-              <BaseText size="sm">Pays: Allemagne</BaseText>
-            </div>
-
-             <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
-              <Icon name="ph:globe" class="h-5 w-5" />
-              <BaseText size="sm">Adresse: fd4fdfdfd445</BaseText>
-            </div>
-
-            <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
-              <Icon name="ph:phone" class="h-5 w-5" />
-              <BaseText size="sm">Tel: 694545 5454545 5</BaseText>
-            </div>
-          </div>
-          <div
-            class="divide-muted-200 dark:divide-muted-800 flex items-center justify-center divide-x"
-          >
-            <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
-              <Icon name="ph:money" class="h-5 w-5" />
-              <BaseText size="sm">Devise: EURO</BaseText>
-            </div>
-
-            <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
-              <Icon name="ph:money" class="h-5 w-5" />
-              <BaseText size="sm">IBAN: DE545 54545 5454 5455</BaseText>
-            </div>
-
-            <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
-              <Icon name="ph:money" class="h-5 w-5" />
-              <BaseText size="sm">BANK: SPARKASSDE ZEZEZEZEZEZ</BaseText>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
     <TairoContentWrapper>
       <template #left>
         <BaseInput
@@ -524,7 +426,7 @@ const onSubmit = handleSubmit(
           class="w-full sm:w-48"
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
-          <span>Nouvelle Operation</span>
+          <span>Nouveau spot</span>
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">
@@ -539,7 +441,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Debbit</span>
+                <span>Total Spots Diffusés</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -557,7 +459,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>70 000 000 XAF</span>
+                <span>70 000</span>
               </BaseHeading>
             </div>
             <div
@@ -580,7 +482,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Credit</span>
+                <span>Total Spots non diffusés</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -598,7 +500,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>40 500 000 XAF</span>
+                <span>400</span>
               </BaseHeading>
             </div>
             <div
@@ -621,48 +523,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Solde</span>
-              </BaseHeading>
-              <BaseIconBox
-                size="xs"
-                class="bg-yellow-100 text-yellow-500 dark:border-2 dark:border-yellow-500 dark:bg-yellow-500/20 dark:text-yellow-400"
-                shape="full"
-              >
-                <Icon name="ph:money" class="h-5 w-5" />
-              </BaseIconBox>
-            </div>
-            <div class="mb-2">
-              <BaseHeading
-                as="h4"
-                size="2xl"
-                weight="bold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>10 500 000 XAF</span>
-              </BaseHeading>
-            </div>
-            <div
-              class="text-danger-500 flex items-center gap-1 font-sans text-sm"
-            >
-              <span>2.7%</span>
-              <Icon name="lucide:trending-down" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">débiteur</span>
-            </div>
-          </BaseCard>
-        </div>
-        <!-- Stat tile -->
-        <div class="col-span-12 md:col-span-3">
-          <BaseCard class="p-4">
-            <div class="mb-1 flex items-center justify-between">
-              <BaseHeading
-                as="h5"
-                size="sm"
-                weight="medium"
-                lead="tight"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <span>Total Operations</span>
+                <span>Total Spots en attente</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -681,6 +542,47 @@ const onSubmit = handleSubmit(
                 class="text-muted-800 dark:text-white"
               >
                 <span>15</span>
+              </BaseHeading>
+            </div>
+            <div
+              class="text-success-500 flex items-center gap-1 font-sans text-sm"
+            >
+              <span>+4.5%</span>
+              <Icon name="lucide:trending-up" class="h-5 w-5" />
+              <span class="text-muted-400 text-xs">en hausse</span>
+            </div>
+          </BaseCard>
+        </div>
+        <!-- Stat tile -->
+        <div class="col-span-12 md:col-span-3">
+          <BaseCard class="p-4">
+            <div class="mb-1 flex items-center justify-between">
+              <BaseHeading
+                as="h5"
+                size="sm"
+                weight="medium"
+                lead="tight"
+                class="text-muted-500 dark:text-muted-400"
+              >
+                <span>Total Spots du jour</span>
+              </BaseHeading>
+              <BaseIconBox
+                size="xs"
+                class="bg-primary-100 text-primary-500 dark:bg-primary-500/20 dark:text-primary-400 dark:border-primary-500 dark:border-2"
+                shape="full"
+              >
+                <Icon name="ph:money" class="h-5 w-5" />
+              </BaseIconBox>
+            </div>
+            <div class="mb-2">
+              <BaseHeading
+                as="h4"
+                size="2xl"
+                weight="bold"
+                lead="tight"
+                class="text-muted-800 dark:text-white"
+              >
+                <span>8</span>
               </BaseHeading>
             </div>
             <div
@@ -732,15 +634,20 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Heure </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Pos </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>
-                  Libellé
+                  Annonceur
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Type Op.</TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Banque </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Devise</TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Debit</TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Credit</TairoTableHeading>
-                 <TairoTableHeading uppercase spaced>Solde XAF</TairoTableHeading>
+
+                <TairoTableHeading uppercase spaced>
+                  Produit
+                </TairoTableHeading>
+                <TairoTableHeading uppercase spaced
+                  >Titre du message.</TairoTableHeading
+                >
+                <TairoTableHeading uppercase spaced>Duréé</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
               </template>
 
@@ -771,7 +678,6 @@ const onSubmit = handleSubmit(
                     />
                   </div>
                 </TairoTableCell>
-
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
@@ -781,6 +687,42 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
+                    <span class="text-muted-400 font-sans text-xs"> 7H25 </span>
+                  </div>
+                </TairoTableCell>
+                <TairoTableCell spaced>
+                  <div class="flex items-center">
+                    <span class="text-muted-400 font-sans text-xs"> </span>
+                  </div>
+                </TairoTableCell>
+
+                <TairoTableCell spaced>
+                  <div class="flex items-center">
+                    <BaseAvatar
+                      :src="item.supplier?.logo"
+                      :text="item.initials"
+                      :class="getRandomColor()"
+                    />
+                    <div class="ms-3 leading-none">
+                      <h4 class="font-sans text-sm font-medium">
+                        {{ item.supplier?.name }}
+                      </h4>
+                      <p class="text-muted-400 font-sans text-xs">
+                        {{ item.supplier?.email }}
+                      </p>
+                    </div>
+                  </div>
+                </TairoTableCell>
+
+                <TairoTableCell spaced>
+                  <div class="flex items-center">
+                    <span class="text-muted-400 font-sans text-xs">
+                      {{ item.label }}
+                    </span>
+                  </div>
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
                       {{ item.label }}
                     </span>
@@ -788,26 +730,7 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
-                      {{ item.type }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <BaseAvatar
-                      :src="item.bank?.logo"
-                      :text="item.bank?.name"
-                      :class="getRandomColor()"
-                    />
-                    <div class="ms-3 leading-none">
-                      <h4 class="font-sans text-sm font-medium">
-                        {{ item.bank?.name }}
-                      </h4>
-                      <p class="text-muted-400 font-sans text-xs">
-                        {{ item.bank?.email }}
-                      </p>
-                    </div>
+                    <span class="text-muted-400 font-sans text-xs"> 53s </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced class="capitalize">
@@ -852,22 +775,12 @@ const onSubmit = handleSubmit(
                     {{ item.status }}
                   </BaseTag>
                 </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <span v-if="item.position == 'in'"> {{ item.amount }}</span>
-                  <span v-else> - </span>
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <span v-if="item.position == 'out'"> {{ item.amount }}</span>
-                  <span v-else> - </span>
-                </TairoTableCell>
-                 <TairoTableCell light spaced>
-                  {{ item.amount }}
-                </TairoTableCell>
+
                 <TairoTableCell spaced>
                   <BaseButtonAction
                     @click.prevent="selectOperation(item.id)"
                     muted
-                    >Détails</BaseButtonAction
+                    >Manage</BaseButtonAction
                   >
                 </TairoTableCell>
               </TairoTableRow>
@@ -920,7 +833,7 @@ const onSubmit = handleSubmit(
               <div>
                 <div>
                   <div class="grid grid-cols-12 gap-4">
-                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-12">
+                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
                       <Field
                         v-slot="{
                           field,
@@ -931,13 +844,13 @@ const onSubmit = handleSubmit(
                         name="payment.country"
                       >
                         <BaseListbox
-                          label="Source des fonds"
-                          :items="fundsRaisingData.data"
+                          label="Fournisseur"
+                          :items="supplierData.data"
                           :properties="{
                             value: 'id',
                             label: 'name',
-                            sublabel: 'category',
-                            media: 'image',
+                            sublabel: 'email',
+                            media: 'logo',
                           }"
                           v-model="activeFundRaising"
                           :error="errorMessage"
@@ -947,9 +860,71 @@ const onSubmit = handleSubmit(
                         />
                       </Field>
                     </div>
+                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
+                      <DatePicker
+                        v-model.range="dates"
+                        :masks="masks"
+                        :min-date="new Date()"
+                        mode="date"
+                        hide-time-header
+                        trim-weeks
+                      >
+                        <template #default="{ inputValue, inputEvents }">
+                          <div class="flex w-full flex-col gap-4 sm:flex-row">
+                            <div class="relative grow">
+                              <Field
+                                v-slot="{
+                                  field,
+                                  errorMessage,
+                                  handleChange,
+                                  handleBlur,
+                                }"
+                                name="event.startDateTime"
+                              >
+                                <BaseInput
+                                  shape="rounded"
+                                  label="Date de l'operation"
+                                  icon="ph:calendar-blank-duotone"
+                                  :value="inputValue.start"
+                                  v-on="inputEvents.start"
+                                  :classes="{
+                                    input: '!h-11 !ps-11',
+                                    icon: '!h-11 !w-11',
+                                  }"
+                                  :model-value="field.value"
+                                  :error="errorMessage"
+                                  :disabled="isSubmitting"
+                                  type="text"
+                                  @update:model-value="handleChange"
+                                  @blur="handleBlur"
+                                />
+                              </Field>
+                            </div>
+                          </div>
+                        </template>
+                      </DatePicker>
+                    </div>
                   </div>
-                  <div class="grid grid-cols-12 gap-4">
-                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-12">
+                  <div class="col-span-12 sm:col-span-6 mt-2">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="label"
+                    >
+                      <BaseInput
+                        label="Libéllé"
+                        icon="ph:note"
+                        placeholder="Ex: virement"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        type="text"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="grid grid-cols-12 gap-4 mt-2">
+                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
                       <Field
                         v-slot="{
                           field,
@@ -957,18 +932,45 @@ const onSubmit = handleSubmit(
                           handleChange,
                           handleBlur,
                         }"
-                        name="payment.country"
+                        name="operationType"
                       >
                         <BaseListbox
-                          label="Pays"
-                          :items="countries"
+                          label="Type d'opération"
+                          :items="operationTypes"
                           :properties="{
                             value: 'id',
-                            label: 'abbr',
-                            sublabel: 'name',
-                            media: 'flag',
+                            label: 'name',
+                            sublabel: '',
+                            media: '',
                           }"
-                          v-model="activeCountry"
+                          v-model="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
+                      <Field
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
+                        name="currency"
+                      >
+                        <BaseListbox
+                          label="Devise"
+                          :items="currencies"
+                          :properties="{
+                            value: 'id',
+                            label: 'name',
+                            sublabel: '',
+                            media: '',
+                          }"
+                          v-model="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"
                           @update:model-value="handleChange"
@@ -977,69 +979,26 @@ const onSubmit = handleSubmit(
                       </Field>
                     </div>
                   </div>
-
-                  <div class="mb-6 mt-4">
-                    <label class="nui-label pb-2 text-[0.825rem]"
-                      >Moyens de retrait disponible</label
+                  <div class="col-span-12 sm:col-span-6 mt-2">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="montant"
                     >
-                    <div
-                      class="ptablet:grid-cols-2 grid-cols-2 ltablet:grid-cols-2 grid gap-4 lg:grid-cols-3"
-                      v-if="activeCountry.id != ''"
-                    >
-                      <Field
-                        v-for="operator in paymentMethods[0].countries[0]
-                          .operators"
-                        :key="operator.abbr"
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
-                        name="payment.type"
-                      >
-                        <BaseRadioHeadless
-                          :value="operator"
-                          v-model="activeOperator"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        >
-                          <BaseCard
-                            shape="rounded"
-                            class="text-muted-400 peer-checked:!border-primary-500 peer-checked:[&_.child]:!text-primary-500 relative border-2 px-2 py-4 grayscale peer-checked:grayscale-0"
-                          >
-                            <div class="relative">
-                              <img
-                                :src="operator.logo"
-                                class="h-28 md:h-32 w-full rounded-lg object-cover"
-                              />
-                            </div>
-                            <div>
-                              <div class="mt-3">
-                                <BaseHeading
-                                  tag="h3"
-                                  size="md"
-                                  weight="medium"
-                                  lead="snug"
-                                  class="line-clamp-2 text-gray-800 text-sm !md:text:xl dark:text-gray-100"
-                                >
-                                  {{ operator.name }}
-                                </BaseHeading>
-                              </div>
-                            </div>
-                          </BaseCard>
-                        </BaseRadioHeadless>
-                      </Field>
-                    </div>
+                      <BaseInput
+                        label="Montant"
+                        icon="ph:money"
+                        placeholder="Ex: 500 000 000"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        type="text"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
                   </div>
-
-                  <div
-                    v-if="activeCountry.id != ''"
-                    class="grid grid-cols-12 gap-4 mt-4"
-                  >
-                    <div class="col-span-12 md:col-span-6">
+                  <div class="grid grid-cols-12 gap-4 mt-2">
+                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
                       <Field
                         v-slot="{
                           field,
@@ -1047,13 +1006,18 @@ const onSubmit = handleSubmit(
                           handleChange,
                           handleBlur,
                         }"
-                        name="doctor.address"
+                        name="bank"
                       >
-                        <BaseInput
-                          label="Montant du retrait"
-                          icon="ph:money"
-                          placeholder="50 000"
-                          v-model="phoneNumber"
+                        <BaseListbox
+                          label="Banque"
+                          :items="banks"
+                          :properties="{
+                            value: 'id',
+                            label: 'name',
+                            sublabel: '',
+                            media: 'logo',
+                          }"
+                          v-model="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"
                           @update:model-value="handleChange"
@@ -1061,7 +1025,7 @@ const onSubmit = handleSubmit(
                         />
                       </Field>
                     </div>
-                    <div class="col-span-12 md:col-span-6">
+                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
                       <Field
                         v-slot="{
                           field,
@@ -1069,13 +1033,18 @@ const onSubmit = handleSubmit(
                           handleChange,
                           handleBlur,
                         }"
-                        name="doctor.address"
+                        name="position"
                       >
-                        <BaseInput
-                          label="Numéro de téléphone"
-                          icon="ph:phone"
-                          placeholder="+237694682713"
-                          v-model="phoneNumber"
+                        <BaseListbox
+                          label="Type de mouvement"
+                          :items="mouvementTypes"
+                          :properties="{
+                            value: 'id',
+                            label: 'name',
+                            sublabel: '',
+                            media: '',
+                          }"
+                          v-model="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"
                           @update:model-value="handleChange"
@@ -1101,13 +1070,13 @@ const onSubmit = handleSubmit(
               flavor="solid"
               @click="isModalNewTxnOpen = false"
             >
-              Valider
+              Créer
             </BaseButton>
           </div>
         </div>
       </template>
     </TairoModal>
-    <!-- Current user -->
+    <!-- Current Operation -->
     <div
       class="ltablet:w-[310px] dark:bg-muted-800 fixed end-0 top-0 z-50 h-full w-[390px] bg-white transition-transform duration-300"
       :class="expanded ? 'translate-x-full' : 'translate-x-0'"

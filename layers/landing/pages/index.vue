@@ -1,9 +1,9 @@
 <script setup lang="ts">
 definePageMeta({
-  title: 'ERP SOFOMEUTEX',
-  description: 'Système de gestion des processus interne de SOFOMEUTEX',
+  title: '2SPOT',
+  description: 'Système de plannification des spots publicitaires',
   breadcrumb: {
-    label: 'ERP SOFO',
+    label: '2SPOT',
   },
   layout: 'empty',
 })

@@ -193,7 +193,9 @@ const auth = useAuthStore()
                   <span>Bon retour, {{ auth.user.firstName }}</span>
                 </BaseHeading>
                 <BaseParagraph>
-                  <span class="text-muted-400">C'est un plaisir de vous revoir</span>
+                  <span class="text-muted-400"
+                    >C'est un plaisir de vous revoir</span
+                  >
                 </BaseParagraph>
               </div>
             </div>
@@ -216,7 +218,7 @@ const auth = useAuthStore()
                 </BaseHeading>
                 <BaseParagraph>
                   <span class="text-muted-400 text-sm">
-                  consulter toute les notifications
+                    consulter toute les notifications
                   </span>
                 </BaseParagraph>
               </div>
@@ -225,9 +227,7 @@ const auth = useAuthStore()
               >
                 <div class="relative z-20 flex flex-col gap-3">
                   <BaseParagraph size="sm">
-                    <span class="text-white/80">
-                    Entreprise SOFOMEUTEX
-                    </span>
+                    <span class="text-white/80"> Groupe TV+ </span>
                   </BaseParagraph>
                   <NuxtLink
                     class="font-sans text-sm text-white underline-offset-4 hover:underline"
@@ -296,7 +296,6 @@ const auth = useAuthStore()
             <DemoProjectListCompact />
           </BaseCard>
           <!-- Chart -->
-        
         </div>
       </div>
       <!--Grid column-->
@@ -356,8 +355,8 @@ const auth = useAuthStore()
               </BaseHeading>
               <BaseParagraph size="sm">
                 <span class="text-muted-400">
-                  Débloquez davantage de fonctionnalités et d'outils professionnels en souscrivant à un
-                  plan premium
+                  Débloquez davantage de fonctionnalités et d'outils
+                  professionnels en souscrivant à un plan premium
                 </span>
               </BaseParagraph>
               <template #action>

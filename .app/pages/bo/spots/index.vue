@@ -110,10 +110,7 @@ function useLineRevenue() {
   const series = ref([
     {
       name: 'Revenue',
-      data: [
-        1000835, 4000214, 3620057, 5100411, 4569007, 6120021, 6529005, 9151200,
-        756048,
-      ],
+      data: [100, 400, 362, 510, 456, 612, 652, 915, 755],
     },
   ])
 
@@ -360,7 +357,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Debit</span>
+                <span>Total Spots diffusés</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -378,48 +375,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>45 000 000 XAF</span>
-              </BaseHeading>
-            </div>
-            <div
-              class="text-success-500 flex items-center gap-1 font-sans text-sm"
-            >
-              <span>+7.8%</span>
-              <Icon name="lucide:trending-up" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">depuis le mois dernier</span>
-            </div>
-          </BaseCard>
-        </div>
-          <!-- Stat tile -->
-          <div class="col-span-12 md:col-span-3">
-          <BaseCard class="p-4">
-            <div class="mb-1 flex items-center justify-between">
-              <BaseHeading
-                as="h5"
-                size="sm"
-                weight="medium"
-                lead="tight"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <span>Total Credit</span>
-              </BaseHeading>
-              <BaseIconBox
-                size="xs"
-                class="bg-success-100 text-success-500 dark:bg-success-500/20 dark:text-success-400 dark:border-success-500 dark:border-2"
-                shape="full"
-              >
-                <Icon name="ph:money" class="h-5 w-5" />
-              </BaseIconBox>
-            </div>
-            <div class="mb-2">
-              <BaseHeading
-                as="h4"
-                size="3xl"
-                weight="bold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>75 000 000 XAF</span>
+                <span>45 000</span>
               </BaseHeading>
             </div>
             <div
@@ -442,7 +398,48 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Operations</span>
+                <span>Total Packages</span>
+              </BaseHeading>
+              <BaseIconBox
+                size="xs"
+                class="bg-success-100 text-success-500 dark:bg-success-500/20 dark:text-success-400 dark:border-success-500 dark:border-2"
+                shape="full"
+              >
+                <Icon name="ph:money" class="h-5 w-5" />
+              </BaseIconBox>
+            </div>
+            <div class="mb-2">
+              <BaseHeading
+                as="h4"
+                size="3xl"
+                weight="bold"
+                lead="tight"
+                class="text-muted-800 dark:text-white"
+              >
+                <span>7000</span>
+              </BaseHeading>
+            </div>
+            <div
+              class="text-success-500 flex items-center gap-1 font-sans text-sm"
+            >
+              <span>+7.8%</span>
+              <Icon name="lucide:trending-up" class="h-5 w-5" />
+              <span class="text-muted-400 text-xs">depuis le mois dernier</span>
+            </div>
+          </BaseCard>
+        </div>
+        <!-- Stat tile -->
+        <div class="col-span-12 md:col-span-3">
+          <BaseCard class="p-4">
+            <div class="mb-1 flex items-center justify-between">
+              <BaseHeading
+                as="h5"
+                size="sm"
+                weight="medium"
+                lead="tight"
+                class="text-muted-500 dark:text-muted-400"
+              >
+                <span>Total Annonceurs</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -483,7 +480,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Fournisseurs</span>
+                <span>Plages de diffusion</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -501,7 +498,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>55</span>
+                <span>12</span>
               </BaseHeading>
             </div>
             <div
@@ -524,7 +521,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>Operations</span>
+                <span>Spots</span>
               </BaseHeading>
               <Field
                 v-slot="{ field, errorMessage, handleChange, handleBlur }"
@@ -558,7 +555,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
               <div>
                 <span class="text-muted-400 font-sans text-xs">Ce mois</span>
                 <p class="text-primary-500 font-sans text-lg font-medium">
-                  650 000 XAF
+                  450
                 </p>
               </div>
               <div>
@@ -568,7 +565,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 <p
                   class="text-muted-800 dark:text-muted-100 font-sans text-lg font-medium"
                 >
-                  350 000 XAF
+                  410
                 </p>
               </div>
             </div>

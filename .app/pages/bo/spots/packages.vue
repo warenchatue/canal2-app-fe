@@ -4,9 +4,9 @@ import { Field, useFieldError, useForm } from 'vee-validate'
 import { z } from 'zod'
 
 definePageMeta({
-  title: 'Emprunts',
+  title: 'Packages',
   preview: {
-    title: 'Emprunts',
+    title: 'Packages',
     description: 'Contribution and withdrawal',
     categories: ['bo', 'finances'],
     src: '/img/screens/layouts-table-list-1.png',
@@ -18,10 +18,15 @@ definePageMeta({
 const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
+
 const filter = ref('')
 const perPage = ref(10)
 const isModalNewTxnOpen = ref(false)
-const activeType = ref({ id: '', text: '', media: '', image: '' })
+const activePaymentMethod = ref(0)
+const activeFundRaising = ref({ id: '', name: '', category: '', image: '' })
+const activeCountry = ref({ id: '', abbr: '', name: '', flag: '' })
+const activeOperator = ref({ abbr: '', name: '', logo: '' })
+const phoneNumber = ref('')
 
 watch([filter, perPage], () => {
   router.push({
@@ -43,24 +48,12 @@ const query = computed(() => {
   }
 })
 
-const { data, pending, error, refresh } = await useFetch('/api/njangi/loans', {
-  query,
-})
-
-const entities = [
+const { data, pending, error, refresh } = await useFetch(
+  '/api/spots/packages',
   {
-    id: 1,
-    name: 'Emprunts Tontine',
-    text: 'ET',
-    media: '/img/avatars/company.svg',
+    query,
   },
-  {
-    id: 2,
-    name: 'Autres emprunts',
-    text: 'AE',
-    media: '/img/avatars/company.svg',
-  },
-]
+)
 
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
@@ -74,6 +67,97 @@ function toggleAllVisibleSelection() {
     selected.value = data.value?.data.map((item) => item.id) ?? []
   }
 }
+
+const people = [
+  {
+    id: 1,
+    name: 'Clarissa Perez',
+    text: 'Sales Manager',
+    media: '/img/avatars/19.svg',
+  },
+  {
+    id: 2,
+    name: 'Aaron Splatter',
+    text: 'Project Manager',
+    media: '/img/avatars/16.svg',
+  },
+  {
+    id: 3,
+    name: 'Mike Miller',
+    text: 'UI/UX Designer',
+    media: '/img/avatars/3.svg',
+  },
+  {
+    id: 4,
+    name: 'Benedict Kessler',
+    text: 'Mobile Developer',
+    media: '/img/avatars/22.svg',
+  },
+  {
+    id: 5,
+    name: 'Maya Rosselini',
+    text: 'Product Manager',
+    media: '/img/avatars/2.svg',
+  },
+]
+const paymentMethods = ref([
+  {
+    id: 1,
+    name: 'Mobile',
+    logo: '/img/payment/imgs/mobile_wallet_2.png',
+    description: 'Paiemens mobiles',
+    countries: [
+      {
+        id: 'CMR',
+        operators: [
+          {
+            abbr: 'om',
+            name: ' Orange Money | CMR',
+            logo: '/img/payment/imgs/orange_money_cmr.jpg',
+          },
+          {
+            abbr: 'momo',
+            name: ' Mobile Money | CMR',
+            logo: '/img/payment/imgs/mobile_money_cmr.jpg',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 2,
+    name: 'Visa',
+    logo: '/img/payment/imgs/visa_mastercard.jpg',
+    description: 'Paiements par carte',
+  },
+  {
+    id: 3,
+    name: 'Paypal',
+    logo: '/img/payment/imgs/paypal.png',
+    description: 'Payments par paypal',
+  },
+])
+
+const countries = [
+  {
+    id: '1',
+    abbr: 'CMR',
+    name: 'Cameroun',
+    flag: '/img/icons/flags/cmr.svg',
+  },
+  {
+    id: '2',
+    abbr: 'CIV',
+    name: "Côte d'ivoire",
+    flag: '/img/icons/flags/civ.svg',
+  },
+  {
+    id: '3',
+    abbr: 'FR',
+    name: 'France',
+    flag: '/img/icons/flags/france.svg',
+  },
+]
 
 // Ask the user for confirmation before leaving the page if the form has unsaved changes
 // onBeforeRouteLeave(() => {
@@ -255,31 +339,11 @@ const onSubmit = handleSubmit(
         <BaseInput
           v-model="filter"
           icon="lucide:search"
-          placeholder="Filtrer emprunt..."
+          placeholder="Filter users..."
           :classes="{
             wrapper: 'w-full sm:w-auto',
           }"
         />
-        <Field
-          v-slot="{ field, errorMessage, handleChange, handleBlur }"
-          name="payment.country"
-        >
-          <BaseListbox
-            label=""
-            :items="entities"
-            :properties="{
-              value: 'id',
-              label: 'name',
-              sublabel: 'text',
-              media: 'media',
-            }"
-            v-model="activeType"
-            :error="errorMessage"
-            :disabled="isSubmitting"
-            @update:model-value="handleChange"
-            @blur="handleBlur"
-          />
-        </Field>
       </template>
       <template #right>
         <BaseSelect
@@ -294,18 +358,15 @@ const onSubmit = handleSubmit(
           <option :value="50">50 per page</option>
           <option :value="100">100 per page</option>
         </BaseSelect>
-        <BaseButton
-          @click="isModalNewTxnOpen = true"
-          color="primary"
-          class="w-full sm:w-48"
-        >
-          <Icon name="lucide:plus" class="h-4 w-4" />
-          <span>Nouvel emprunt</span>
+        <!--  @click="isModalNewTxnOpen = true" -->
+        <BaseButton color="primary" class="w-full sm:w-48">
+          <Icon name="ph:plus" class="h-4 w-4" />
+          <span>Nouveau Package</span>
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">
         <!-- Stat tile -->
-        <div class="col-span-12 md:col-span-4">
+        <div class="col-span-12 md:col-span-3">
           <BaseCard class="p-4">
             <div class="mb-1 flex items-center justify-between">
               <BaseHeading
@@ -315,7 +376,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total</span>
+                <span>Total Commandes</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -333,19 +394,20 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>70 000 000 XAF</span>
+                <span>705</span>
               </BaseHeading>
             </div>
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>20</span>
-              <span class="text-muted-400 text-sm">emprunts</span>
+              <span>+7.8%</span>
+              <Icon name="lucide:trending-up" class="h-5 w-5" />
+              <span class="text-muted-400 text-xs">depuis le mois dernier</span>
             </div>
           </BaseCard>
         </div>
         <!-- Stat tile -->
-        <div class="col-span-12 md:col-span-4">
+        <div class="col-span-12 md:col-span-3">
           <BaseCard class="p-4">
             <div class="mb-1 flex items-center justify-between">
               <BaseHeading
@@ -355,7 +417,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Remboursés</span>
+                <span>Total Annonceurs</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -373,19 +435,20 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>20 000 000 XAF</span>
+                <span>75</span>
               </BaseHeading>
             </div>
             <div
               class="text-danger-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>2</span>
-              <span class="text-muted-400 text-sm">emprunts</span>
+              <span>-2.7%</span>
+              <Icon name="lucide:trending-down" class="h-5 w-5" />
+              <span class="text-muted-400 text-xs">en baisse</span>
             </div>
           </BaseCard>
         </div>
         <!-- Stat tile -->
-        <div class="col-span-12 md:col-span-4">
+        <div class="col-span-12 md:col-span-3">
           <BaseCard class="p-4">
             <div class="mb-1 flex items-center justify-between">
               <BaseHeading
@@ -395,7 +458,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Non Remboursés</span>
+                <span>Total Spots</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -413,14 +476,56 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>50 000 000 XAF</span>
+                <span>1500</span>
               </BaseHeading>
             </div>
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>18</span>
-              <span class="text-muted-400 text-sm">emprunts</span>
+              <span>+4.5%</span>
+              <Icon name="lucide:trending-up" class="h-5 w-5" />
+              <span class="text-muted-400 text-xs">en hausse</span>
+            </div>
+          </BaseCard>
+        </div>
+        <!-- Stat tile -->
+        <div class="col-span-12 md:col-span-3">
+          <BaseCard class="p-4">
+            <div class="mb-1 flex items-center justify-between">
+              <BaseHeading
+                as="h5"
+                size="sm"
+                weight="medium"
+                lead="tight"
+                class="text-muted-500 dark:text-muted-400"
+              >
+                <span>Total Fichiers</span>
+              </BaseHeading>
+              <BaseIconBox
+                size="xs"
+                class="bg-primary-100 text-primary-500 dark:bg-primary-500/20 dark:text-primary-400 dark:border-primary-500 dark:border-2"
+                shape="full"
+              >
+                <Icon name="ph:money" class="h-5 w-5" />
+              </BaseIconBox>
+            </div>
+            <div class="mb-2">
+              <BaseHeading
+                as="h4"
+                size="2xl"
+                weight="bold"
+                lead="tight"
+                class="text-muted-800 dark:text-white"
+              >
+                <span>170</span>
+              </BaseHeading>
+            </div>
+            <div
+              class="text-success-500 flex items-center gap-1 font-sans text-sm"
+            >
+              <span>+4.5%</span>
+              <Icon name="lucide:trending-up" class="h-5 w-5" />
+              <span class="text-muted-400 text-xs">en hausse</span>
             </div>
           </BaseCard>
         </div>
@@ -463,14 +568,23 @@ const onSubmit = handleSubmit(
                     />
                   </div>
                 </TairoTableHeading>
-                <TairoTableHeading
-                  v-for="item in data?.header"
-                  :key="item"
-                  uppercase
-                  spaced
-                >
-                  {{ item }}
+                <TairoTableHeading uppercase spaced>
+                  Annonceur
                 </TairoTableHeading>
+
+                <TairoTableHeading uppercase spaced>Libellé</TairoTableHeading>
+
+                <TairoTableHeading uppercase spaced
+                  >Commandés</TairoTableHeading
+                >
+
+                <TairoTableHeading uppercase spaced>Diffusés</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Fichiers</TairoTableHeading>
+
+                <TairoTableHeading uppercase spaced
+                  >Période de diffusion</TairoTableHeading
+                >
+                <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
               </template>
 
@@ -489,67 +603,76 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
               </TairoTableRow>
 
-              <TairoTableRow v-for="(item, index) in data?.data" :key="item.id">
+              <TairoTableRow v-for="item in data?.data" :key="item.id">
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseCheckbox
                       v-model="selected"
-                      :value="index"
-                      :name="`item-checkbox-${item}`"
+                      :value="item.id"
+                      :name="`item-checkbox-${item.id}`"
                       shape="rounded"
                       class="text-primary-500"
                     />
                   </div>
                 </TairoTableCell>
-                <TairoTableCell
-                  v-for="(cell, index) in item"
-                  :key="index"
-                  light
-                  spaced
-                >
-                  <div v-if="index == 0">
-                    <div class="flex items-center">
-                      <BaseAvatar
-                        src=""
-                        :text="cell"
-                        :class="getRandomColor()"
-                      />
-                      <div class="ms-3 leading-none">
-                        <h4 class="font-sans text-sm font-medium">
-                          {{ cell }}
-                        </h4>
-                        <p class="text-muted-400 font-sans text-xs"></p>
-                      </div>
+                <TairoTableCell spaced>
+                  <div class="flex items-center">
+                    <BaseAvatar
+                      :src="item.announcer?.logo"
+                      :text="item.announcer?.initials"
+                      :class="getRandomColor()"
+                    />
+                    <div class="ms-3 leading-none">
+                      <h4 class="font-sans text-sm font-medium">
+                        {{ item.announcer?.name }}
+                      </h4>
+                      <p class="text-muted-400 font-sans text-xs">
+                        {{ item.announcer?.email }}
+                      </p>
                     </div>
                   </div>
-                  <div v-else-if="index == 17">
-                    <BaseTag
-                      v-if="cell === 'A'"
-                      color="success"
-                      flavor="pastel"
-                      shape="full"
-                      condensed
-                      class="font-medium"
-                    >
-                      {{ cell }}
-                    </BaseTag>
-                    <BaseTag
-                      v-else-if="cell === 'NA'"
-                      color="warning"
-                      flavor="pastel"
-                      shape="full"
-                      condensed
-                      class="font-medium"
-                    >
-                      {{ cell }}
-                    </BaseTag>
-                  </div>
-                  <div v-else>
-                    {{ cell }}
-                  </div>
+                </TairoTableCell>
+                <TairoTableCell light spaced> {{ item.label }} </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ item.numberSpots }} spots
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ item.numberPlay }} spots
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ item.numberFiles }}
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ item.period }}
+                </TairoTableCell>
+                <TairoTableCell spaced class="capitalize">
+                  <BaseTag
+                    v-if="item.status === 'closed'"
+                    color="muted"
+                    flavor="pastel"
+                    shape="full"
+                    condensed
+                    class="font-medium"
+                  >
+                    {{ item.status }}
+                  </BaseTag>
+                  <BaseTag
+                    v-else-if="item.status === 'active'"
+                    color="warning"
+                    flavor="pastel"
+                    shape="full"
+                    condensed
+                    class="font-medium"
+                  >
+                    {{ item.status }}
+                  </BaseTag>
                 </TairoTableCell>
                 <TairoTableCell spaced>
-                  <BaseButtonAction muted>Manage</BaseButtonAction>
+                  <BaseButtonAction
+                    :to="'/bo/spots/package-details/' + item.id"
+                    muted
+                    >Details</BaseButtonAction
+                  >
                 </TairoTableCell>
               </TairoTableRow>
             </TairoTable>
@@ -565,51 +688,5 @@ const onSubmit = handleSubmit(
         </div>
       </div>
     </TairoContentWrapper>
-
-    <!-- Modal component -->
-    <TairoModal
-      :open="isModalNewTxnOpen"
-      size="xl"
-      @close="isModalNewTxnOpen = false"
-    >
-      <template #header>
-        <!-- Header -->
-        <div class="flex w-full items-center justify-between p-4 md:p-6">
-          <h3
-            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
-          >
-            Nouvel emprunt
-          </h3>
-
-          <BaseButtonClose @click="isModalNewTxnOpen = false" />
-        </div>
-      </template>
-
-      <!-- Body -->
-      <BaseCard class="w-full">
-        <form
-          method="POST"
-          action=""
-          class="divide-muted-200 dark:divide-muted-700"
-          @submit.prevent="onSubmit"
-        ></form>
-      </BaseCard>
-      <template #footer>
-        <!-- Footer -->
-        <div class="p-4 md:p-6">
-          <div class="flex gap-x-2">
-            <BaseButton @click="isModalNewTxnOpen = false">Annuler</BaseButton>
-
-            <BaseButton
-              color="primary"
-              flavor="solid"
-              @click="isModalNewTxnOpen = false"
-            >
-              Valider
-            </BaseButton>
-          </div>
-        </div>
-      </template>
-    </TairoModal>
   </div>
 </template>

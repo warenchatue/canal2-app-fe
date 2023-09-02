@@ -14,7 +14,7 @@ export default defineAppConfig({
     defaultShapes: {},
   },
   tairo: {
-    title: 'ERP SOFO',
+    title: '2SPOT',
     sidebar: {},
     collapse: {
       toolbar: {
@@ -87,75 +87,41 @@ export default defineAppConfig({
               },
             ],
           },
-          {
-            name: 'Tontine',
-            icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
-            activePath: '/bo/njangi',
-            children: [
-              {
-                name: 'Tableau de bord',
-                to: '/bo/njangi',
-                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Tontines',
-                to: '/bo/njangi/tontines',
-                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Emprunts',
-                to: '/bo/njangi/loans',
-                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
-              },
-            ],
-          },
-          {
-            name: 'Déclaration DI',
-            icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
-            activePath: '/bo/di',
-            children: [
-              {
-                name: 'Tableau de bord',
-                to: '/bo/di',
-                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'DI',
-                to: '/bo/di/operations',
-                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Entités',
-                to: '/bo/di/entities',
-                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
-              },
-            ],
-          },
 
           {
-            name: 'Dêtte',
+            name: 'Spots',
             icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
-            activePath: '/bo/debts',
+            activePath: '/bo/spots',
             children: [
               {
                 name: 'Tableau de bord',
-                to: '/bo/debts',
+                to: '/bo/spots',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Operations',
-                to: '/bo/debts/operations',
+                name: 'Liste de diffusion',
+                to: '/bo/spots/diffusion-list',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Comptes Fournisseurs',
-                to: '/bo/debts/supplier-accounts',
+                name: 'Packages',
+                to: '/bo/spots/packages',
+                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Annonceurs',
+                to: '/bo/spots/announcers',
+                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Horaires',
+                to: '/bo/spots/timetable',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
             ],
           },
           {
-            name: 'Estimation',
+            name: 'Emissions',
             icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
             activePath: '/bo/estimations',
             children: [
@@ -165,50 +131,29 @@ export default defineAppConfig({
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Operations',
+                name: 'Liste de diffusion',
+                to: '/bo/estimations/operations',
+                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Planing de diffusion',
+                to: '/bo/estimations/operations',
+                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Horaires',
                 to: '/bo/estimations/operations',
                 icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
               },
             ],
           },
-          {
-            name: 'Stock',
-            icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
-            activePath: '/bo/layouts/org',
-            children: [
-              {
-                name: 'Tableau de bord',
-                to: '/bo/stocks',
-                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Produits',
-                to: '/bo/stocks/products',
-                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
-              },
-            ],
-          },
+
           {
             name: 'Admin',
             icon: { name: 'ph:nut-duotone', class: 'w-5 h-5' },
             isAdmin: true,
             activePath: '/bo/admin',
             children: [
-              {
-                name: 'Entités',
-                to: '/bo/admin/entities',
-                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Banques',
-                to: '/bo/admin/banks',
-                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Fournisseurs',
-                to: '/bo/admin/suppliers',
-                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
-              },
               {
                 name: 'Utilisateurs',
                 to: '/bo/admin/users',

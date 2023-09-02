@@ -3,7 +3,7 @@ import { isProduction } from 'std-env'
 import {
   demoRules,
   documentationRules,
-  landingRules
+  landingRules,
 } from './config/routes-rules'
 
 export default defineNuxtConfig({
@@ -15,7 +15,6 @@ export default defineNuxtConfig({
      */
     '../layers/landing',
     process.env.ENABLE_DOCUMENTATION && '../layers/documentation',
-
 
     /**
      * This extends the base Tairo layer.
@@ -55,7 +54,7 @@ export default defineNuxtConfig({
   imports: {
     dirs: ['./stores'],
   },
-  
+
   pinia: {
     autoImports: ['defineStore', 'acceptHMRUpdate'],
   },
@@ -78,9 +77,8 @@ export default defineNuxtConfig({
       mapboxToken: process.env.NUXT_PUBLIC_MAPBOX_TOKEN,
       // nuxt-seo-kit config
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL,
-      siteName: 'ERP SOFO by Digital Innova',
-      siteDescription:
-        'Crowd funding platform',
+      siteName: '2SPOT by Digital Innova',
+      siteDescription: 'Plannification platform',
       language: 'fr',
     },
   },
@@ -107,7 +105,14 @@ export default defineNuxtConfig({
   nitro: {
     prerender: {
       crawlLinks: true,
-      routes: ['/', '/dashboards', '/admin', '/donations','/funds-raising','/layouts'],
+      routes: [
+        '/',
+        '/dashboards',
+        '/admin',
+        '/donations',
+        '/funds-raising',
+        '/layouts',
+      ],
     },
     esbuild: {
       options: {

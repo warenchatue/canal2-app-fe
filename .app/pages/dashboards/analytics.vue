@@ -110,10 +110,7 @@ function useLineRevenue() {
   const series = ref([
     {
       name: 'Revenue',
-      data: [
-        1000835, 4000214, 3620057, 5100411, 4569007, 6120021, 6529005, 9151200,
-        756048,
-      ],
+      data: [100, 400, 362, 510, 457, 601, 652, 915, 756],
     },
   ])
 
@@ -360,7 +357,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Tontines</span>
+                <span>Spots</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -378,7 +375,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>59</span>
+                <span>509</span>
               </BaseHeading>
             </div>
             <div
@@ -401,7 +398,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>DI</span>
+                <span>Emissions</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -419,7 +416,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>25</span>
+                <span>15</span>
               </BaseHeading>
             </div>
             <div
@@ -442,7 +439,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Fournisseurs</span>
+                <span>Annonceurs</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -460,7 +457,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>12</span>
+                <span>42</span>
               </BaseHeading>
             </div>
             <div
@@ -517,7 +514,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
               <div>
                 <span class="text-muted-400 font-sans text-xs">Ce mois</span>
                 <p class="text-primary-500 font-sans text-lg font-medium">
-                  650 000 XAF
+                  120
                 </p>
               </div>
               <div>
@@ -527,7 +524,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 <p
                   class="text-muted-800 dark:text-muted-100 font-sans text-lg font-medium"
                 >
-                  350 000 XAF
+                  115
                 </p>
               </div>
             </div>

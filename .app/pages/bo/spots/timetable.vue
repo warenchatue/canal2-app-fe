@@ -5,9 +5,9 @@ import { DatePicker } from 'v-calendar'
 import { z } from 'zod'
 
 definePageMeta({
-  title: 'Opérations',
+  title: 'Horaires',
   preview: {
-    title: 'Opérations',
+    title: 'Horaires',
     description: 'Contribution and withdrawal',
     categories: ['bo', 'finances'],
     src: '/img/screens/layouts-table-list-1.png',
@@ -343,69 +343,6 @@ const onSubmit = handleSubmit(
             wrapper: 'w-full sm:w-auto',
           }"
         />
-        <div class="col-span-12 mx-2 -mt-6">
-          <DatePicker
-            v-model.range="dates"
-            :masks="masks"
-            :min-date="new Date()"
-            mode="date"
-            hide-time-header
-            trim-weeks
-          >
-            <template #default="{ inputValue, inputEvents }">
-              <div class="flex w-full flex-col gap-4 sm:flex-row">
-                <div class="relative grow">
-                  <Field
-                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                    name="event.startDateTime"
-                  >
-                    <BaseInput
-                      shape="curved"
-                      label="Date debut"
-                      icon="ph:calendar-blank-duotone"
-                      :value="inputValue.start"
-                      v-on="inputEvents.start"
-                      :classes="{
-                        input: '!h-11 !ps-11',
-                        icon: '!h-11 !w-11',
-                      }"
-                      :model-value="field.value"
-                      :error="errorMessage"
-                      :disabled="isSubmitting"
-                      type="text"
-                      @update:model-value="handleChange"
-                      @blur="handleBlur"
-                    />
-                  </Field>
-                </div>
-                <div class="relative grow">
-                  <Field
-                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                    name="event.endDateTime"
-                  >
-                    <BaseInput
-                      shape="curved"
-                      label="Date fin"
-                      icon="ph:calendar-blank-duotone"
-                      :value="inputValue.end"
-                      v-on="inputEvents.end"
-                      :classes="{
-                        input: '!h-11 !ps-11',
-                        icon: '!h-11 !w-11',
-                      }"
-                      :model-value="field.value"
-                      :error="errorMessage"
-                      :disabled="isSubmitting"
-                      type="text"
-                      @update:model-value="handleChange"
-                      @blur="handleBlur"
-                    />
-                  </Field>
-                </div>
-              </div>
-            </template>
-          </DatePicker>
-        </div>
       </template>
       <template #right>
         <BaseSelect
@@ -426,175 +363,10 @@ const onSubmit = handleSubmit(
           class="w-full sm:w-48"
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
-          <span>Nouvelle Operation</span>
+          <span>Nouvelle Horaire</span>
         </BaseButton>
       </template>
-      <div class="grid grid-cols-12 gap-4 pb-5">
-        <!-- Stat tile -->
-        <div class="col-span-12 md:col-span-3">
-          <BaseCard class="p-4">
-            <div class="mb-1 flex items-center justify-between">
-              <BaseHeading
-                as="h5"
-                size="sm"
-                weight="medium"
-                lead="tight"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <span>Total Depots</span>
-              </BaseHeading>
-              <BaseIconBox
-                size="xs"
-                class="bg-success-100 text-success-500 dark:bg-success-500/20 dark:text-success-400 dark:border-success-500 dark:border-2"
-                shape="full"
-              >
-                <Icon name="ph:money" class="h-5 w-5" />
-              </BaseIconBox>
-            </div>
-            <div class="mb-2">
-              <BaseHeading
-                as="h4"
-                size="2xl"
-                weight="bold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>70 000 000 XAF</span>
-              </BaseHeading>
-            </div>
-            <div
-              class="text-success-500 flex items-center gap-1 font-sans text-sm"
-            >
-              <span>+7.8%</span>
-              <Icon name="lucide:trending-up" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">depuis le mois dernier</span>
-            </div>
-          </BaseCard>
-        </div>
-        <!-- Stat tile -->
-        <div class="col-span-12 md:col-span-3">
-          <BaseCard class="p-4">
-            <div class="mb-1 flex items-center justify-between">
-              <BaseHeading
-                as="h5"
-                size="sm"
-                weight="medium"
-                lead="tight"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <span>Total Dêttes</span>
-              </BaseHeading>
-              <BaseIconBox
-                size="xs"
-                class="bg-yellow-100 text-yellow-500 dark:border-2 dark:border-yellow-500 dark:bg-yellow-500/20 dark:text-yellow-400"
-                shape="full"
-              >
-                <Icon name="ph:money" class="h-5 w-5" />
-              </BaseIconBox>
-            </div>
-            <div class="mb-2">
-              <BaseHeading
-                as="h4"
-                size="2xl"
-                weight="bold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>40 500 000 XAF</span>
-              </BaseHeading>
-            </div>
-            <div
-              class="text-danger-500 flex items-center gap-1 font-sans text-sm"
-            >
-              <span>-2.7%</span>
-              <Icon name="lucide:trending-down" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">en baisse</span>
-            </div>
-          </BaseCard>
-        </div>
-        <!-- Stat tile -->
-        <div class="col-span-12 md:col-span-3">
-          <BaseCard class="p-4">
-            <div class="mb-1 flex items-center justify-between">
-              <BaseHeading
-                as="h5"
-                size="sm"
-                weight="medium"
-                lead="tight"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <span>Total Operations</span>
-              </BaseHeading>
-              <BaseIconBox
-                size="xs"
-                class="bg-primary-100 text-primary-500 dark:bg-primary-500/20 dark:text-primary-400 dark:border-primary-500 dark:border-2"
-                shape="full"
-              >
-                <Icon name="ph:money" class="h-5 w-5" />
-              </BaseIconBox>
-            </div>
-            <div class="mb-2">
-              <BaseHeading
-                as="h4"
-                size="2xl"
-                weight="bold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>15</span>
-              </BaseHeading>
-            </div>
-            <div
-              class="text-success-500 flex items-center gap-1 font-sans text-sm"
-            >
-              <span>+4.5%</span>
-              <Icon name="lucide:trending-up" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">en hausse</span>
-            </div>
-          </BaseCard>
-        </div>
-        <!-- Stat tile -->
-        <div class="col-span-12 md:col-span-3">
-          <BaseCard class="p-4">
-            <div class="mb-1 flex items-center justify-between">
-              <BaseHeading
-                as="h5"
-                size="sm"
-                weight="medium"
-                lead="tight"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <span>Fournisseurs</span>
-              </BaseHeading>
-              <BaseIconBox
-                size="xs"
-                class="bg-primary-100 text-primary-500 dark:bg-primary-500/20 dark:text-primary-400 dark:border-primary-500 dark:border-2"
-                shape="full"
-              >
-                <Icon name="ph:money" class="h-5 w-5" />
-              </BaseIconBox>
-            </div>
-            <div class="mb-2">
-              <BaseHeading
-                as="h4"
-                size="2xl"
-                weight="bold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>8</span>
-              </BaseHeading>
-            </div>
-            <div
-              class="text-success-500 flex items-center gap-1 font-sans text-sm"
-            >
-              <span>+4.5%</span>
-              <Icon name="lucide:trending-up" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">en hausse</span>
-            </div>
-          </BaseCard>
-        </div>
-      </div>
+
       <div>
         <div v-if="!pending && data?.data.length === 0">
           <BasePlaceholderPage
@@ -633,17 +405,10 @@ const onSubmit = handleSubmit(
                     />
                   </div>
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Fournisseur
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Libellé
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Type Op.</TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Devise</TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Depot</TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Dêtte</TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Heure </TairoTableHeading>
+
+                <TairoTableHeading uppercase spaced> Type </TairoTableHeading>
+
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
               </template>
 
@@ -674,94 +439,14 @@ const onSubmit = handleSubmit(
                     />
                   </div>
                 </TairoTableCell>
+                <TairoTableCell spaced>
+                  <div class="flex items-center">7H25</div>
+                </TairoTableCell>
 
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <BaseAvatar
-                      :src="item.supplier?.logo"
-                      :text="item.initials"
-                      :class="getRandomColor()"
-                    />
-                    <div class="ms-3 leading-none">
-                      <h4 class="font-sans text-sm font-medium">
-                        {{ item.supplier?.name }}
-                      </h4>
-                      <p class="text-muted-400 font-sans text-xs">
-                        {{ item.supplier?.email }}
-                      </p>
-                    </div>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
-                      {{ item.date }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
-                      {{ item.label }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
-                      {{ item.type }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell spaced class="capitalize">
-                  <BaseTag
-                    v-if="item.status === 'available'"
-                    color="success"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    {{ item.status }}
-                  </BaseTag>
-                  <BaseTag
-                    v-else-if="item.currency.name"
-                    color="success"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    {{ item.currency.name }}
-                  </BaseTag>
-                  <BaseTag
-                    v-else-if="item.status === 'pending'"
-                    color="warning"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    {{ item.status }}
-                  </BaseTag>
-                  <BaseTag
-                    v-else-if="item.status === 'offline'"
-                    color="muted"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    {{ item.status }}
-                  </BaseTag>
-                </TairoTableCell>
                 <TairoTableCell light spaced>
-                  <span v-if="item.position == 'in'"> {{ item.amount }}</span>
-                  <span v-else> - </span>
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <span v-if="item.position == 'out'"> {{ item.amount }}</span>
-                  <span v-else> - </span>
+                  <div class="flex items-center">
+                    <span class="text-muted-400 font-sans text-xs"> Spot </span>
+                  </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <BaseButtonAction

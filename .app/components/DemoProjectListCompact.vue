@@ -2,7 +2,7 @@
 const projects = [
   {
     id: 0,
-    name: "Création d'une DI par Floriane",
+    name: "Création d'un package",
     image: '/img/icons/logos/flashlite.svg',
     badge: '/img/stacks/pricing/free.svg',
     updated: '30m ago',
@@ -15,7 +15,7 @@ const projects = [
   },
   {
     id: 1,
-    name: "Creation d'un nouveau fournisseur par Floriane",
+    name: "Creation d'un nouvel annonceur",
     image: '/img/icons/logos/flashlite.svg',
     badge: '/img/stacks/pricing/free.svg',
     updated: '30m ago',
@@ -32,7 +32,7 @@ const projects = [
   },
   {
     id: 2,
-    name: "Ajout d'un nouveau produit par Nadege et solange",
+    name: "Validation d'un packqge par Alvine",
     image: '/img/icons/logos/flashlite.svg',
     badge: '/img/stacks/pricing/free.svg',
     updated: '30m ago',
@@ -49,7 +49,7 @@ const projects = [
   },
   {
     id: 3,
-    name: 'Génération rapport tontine par Aime',
+    name: 'Génération rapport par Dada',
     image: '/img/icons/logos/flashlite.svg',
     badge: '/img/stacks/pricing/free.svg',
     updated: '30m ago',
