@@ -2,7 +2,7 @@ import { isProduction } from 'std-env'
 
 import {
   demoRules,
-  documentationRules,
+  // documentationRules,
   landingRules,
 } from './config/routes-rules'
 
@@ -14,7 +14,7 @@ export default defineNuxtConfig({
      * - documentation: contains all /documentation pages
      */
     '../layers/landing',
-    process.env.ENABLE_DOCUMENTATION && '../layers/documentation',
+    // process.env.ENABLE_DOCUMENTATION && '../layers/documentation',
 
     /**
      * This extends the base Tairo layer.
@@ -85,7 +85,7 @@ export default defineNuxtConfig({
   routeRules: {
     ...demoRules,
     ...landingRules,
-    ...(process.env.ENABLE_DOCUMENTATION ? documentationRules : {}),
+    // ...(process.env.ENABLE_DOCUMENTATION ? documentationRules : {}),
   },
 
   // build configuration

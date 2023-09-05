@@ -632,7 +632,9 @@ const onSubmit = handleSubmit(
                     </div>
                   </div>
                 </TairoTableCell>
-                <TairoTableCell light spaced> {{ item.label }} </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ item.message }}
+                </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{ item.numberSpots }} spots
                 </TairoTableCell>

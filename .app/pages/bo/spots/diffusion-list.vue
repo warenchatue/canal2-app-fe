@@ -5,9 +5,9 @@ import { DatePicker } from 'v-calendar'
 import { z } from 'zod'
 
 definePageMeta({
-  title: 'Opérations',
+  title: 'Planning de diffusion',
   preview: {
-    title: 'Opérations',
+    title: 'Planning de diffusion',
     description: 'Contribution and withdrawal',
     categories: ['bo', 'finances'],
     src: '/img/screens/layouts-table-list-1.png',
@@ -19,14 +19,10 @@ definePageMeta({
 const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
-
 const filter = ref('')
 const perPage = ref(10)
 const isModalNewTxnOpen = ref(false)
 const activeFundRaising = ref({ id: '', name: '', category: '', image: '' })
-const activeCountry = ref({ id: '', abbr: '', name: '', flag: '' })
-const activeOperator = ref({ abbr: '', name: '', logo: '' })
-const phoneNumber = ref('')
 
 watch([filter, perPage], () => {
   router.push({
@@ -43,27 +39,16 @@ const query = computed(() => {
     filter: filter.value,
     perPage: perPage.value,
     page: page.value,
-    action: 'get',
+    action: 'getPlanning',
   }
 })
 
 const { data, pending, error, refresh } = await useFetch(
-  '/api/debts/operations',
+  '/api/spots/packages',
   {
     query,
   },
 )
-
-const { data: supplierData, pending: supplierPending } = await useFetch(
-  '/api/admin/suppliers',
-  {
-    query,
-  },
-)
-
-if (supplierData?.value) {
-  console.log(supplierData.value.data)
-}
 
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
@@ -425,8 +410,8 @@ const onSubmit = handleSubmit(
           color="primary"
           class="w-full sm:w-48"
         >
-          <Icon name="lucide:plus" class="h-4 w-4" />
-          <span>Nouveau spot</span>
+          <Icon name="lucide:import" class="h-4 w-4" />
+          <span>Importer diffusions</span>
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">
@@ -681,13 +666,15 @@ const onSubmit = handleSubmit(
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
-                      {{ item.date }}
+                      {{ new Date(item.date).toLocaleDateString('fr-FR') }}
                     </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs"> 7H25 </span>
+                    <span class="text-muted-400 font-sans text-xs">
+                      {{ new Date(item.date).toLocaleTimeString('fr-FR') }}
+                    </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
@@ -699,16 +686,16 @@ const onSubmit = handleSubmit(
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseAvatar
-                      :src="item.supplier?.logo"
+                      :src="item.announcer?.logo"
                       :text="item.initials"
                       :class="getRandomColor()"
                     />
                     <div class="ms-3 leading-none">
                       <h4 class="font-sans text-sm font-medium">
-                        {{ item.supplier?.name }}
+                        {{ item.announcer?.name }}
                       </h4>
                       <p class="text-muted-400 font-sans text-xs">
-                        {{ item.supplier?.email }}
+                        {{ item.announcer?.email }}
                       </p>
                     </div>
                   </div>
@@ -717,54 +704,46 @@ const onSubmit = handleSubmit(
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
-                      {{ item.label }}
+                      {{ item.spot.product }}
                     </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
-                      {{ item.label }}
+                      {{ item.spot.message }}
                     </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs"> 53s </span>
+                    <span class="text-muted-400 font-sans text-xs">
+                      {{ item.spot.duration }}
+                    </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag
-                    v-if="item.status === 'available'"
+                    v-if="item.spot.isPlay == true"
                     color="success"
                     flavor="pastel"
                     shape="full"
                     condensed
                     class="font-medium"
                   >
-                    {{ item.status }}
+                    Diffusé
                   </BaseTag>
                   <BaseTag
-                    v-else-if="item.currency.name"
-                    color="success"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    {{ item.currency.name }}
-                  </BaseTag>
-                  <BaseTag
-                    v-else-if="item.status === 'pending'"
+                    v-else-if="item.spot.isPlay == false"
                     color="warning"
                     flavor="pastel"
                     shape="full"
                     condensed
                     class="font-medium"
                   >
-                    {{ item.status }}
+                    Non Diffusé
                   </BaseTag>
-                  <BaseTag
+                  <!-- <BaseTag
                     v-else-if="item.status === 'offline'"
                     color="muted"
                     flavor="pastel"
@@ -773,7 +752,7 @@ const onSubmit = handleSubmit(
                     class="font-medium"
                   >
                     {{ item.status }}
-                  </BaseTag>
+                  </BaseTag> -->
                 </TairoTableCell>
 
                 <TairoTableCell spaced>
@@ -833,33 +812,6 @@ const onSubmit = handleSubmit(
               <div>
                 <div>
                   <div class="grid grid-cols-12 gap-4">
-                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
-                      <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
-                        name="payment.country"
-                      >
-                        <BaseListbox
-                          label="Fournisseur"
-                          :items="supplierData.data"
-                          :properties="{
-                            value: 'id',
-                            label: 'name',
-                            sublabel: 'email',
-                            media: 'logo',
-                          }"
-                          v-model="activeFundRaising"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        />
-                      </Field>
-                    </div>
                     <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
                       <DatePicker
                         v-model.range="dates"
@@ -1123,14 +1075,14 @@ const onSubmit = handleSubmit(
         <!-- Operation details -->
         <div v-else class="mt-8" @click.>
           <div class="flex items-center justify-center">
-            <BaseAvatar :src="selectedOperation?.supplier.logo" size="2xl" />
+            <BaseAvatar :src="selectedOperation?.supplier?.logo" size="2xl" />
           </div>
           <div class="text-center">
             <BaseHeading tag="h3" size="lg" class="mt-4">
-              <span>{{ selectedOperation?.supplier.name }}</span>
+              <span>{{ selectedOperation?.supplier?.name }}</span>
             </BaseHeading>
             <BaseParagraph size="sm" class="text-muted-400">
-              <span>{{ selectedOperation?.supplier.email }}</span>
+              <span>{{ selectedOperation?.supplier?.email }}</span>
             </BaseParagraph>
             <div class="my-4">
               <BaseParagraph
@@ -1143,10 +1095,8 @@ const onSubmit = handleSubmit(
                 size="sm"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span
-                  >{{ selectedOperation?.amount }}
-                  {{ selectedOperation?.currency.name }}</span
-                >
+                <BaseParagraph>{{ selectedOperation?.amount }} </BaseParagraph
+                >span >
               </BaseParagraph>
             </div>
             <div

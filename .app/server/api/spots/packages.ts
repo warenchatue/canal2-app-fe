@@ -20,13 +20,29 @@ export default defineEventHandler(async (event) => {
       data: filterData(data, filter, page, perPage),
       package: id ? data.find((item) => item.id === id) : undefined,
     }
+  } else if (action == 'getPlanning') {
+    var planningData = []
+    const data = await getPackages()
+
+    data.forEach((p) => {
+      p.planning.forEach((pl) => {
+        planningData.push({ ...pl, announcer: p.announcer })
+      })
+    })
+
+    console.log(planningData)
+
+    return {
+      total: planningData.length,
+      data: filterData(planningData, filter, page, perPage),
+    }
   } else if (action == 'post') {
     const body = await readBody(event)
     console.log(body)
     const data = await getPackages()
 
     const Packages = data.filter(
-      (d) => d.label == body.username && d.amount == body.password,
+      (d) => d.message == body.username && d.amount == body.password,
     )
     if (Packages?.length == 1) {
       console.log('user found')
@@ -55,7 +71,7 @@ function filterData(
   const filterRe = new RegExp(filter, 'i')
   return data
     .filter((item) => {
-      return [item.announcer.name, item.date, item.label].some((item) =>
+      return [item.announcer.name, item.date, item.message].some((item) =>
         item.match(filterRe),
       )
     })
@@ -68,7 +84,7 @@ async function getPackages() {
     {
       id: '0',
       date: '12/04/2022',
-      label: 'FACT N°X07012',
+      message: 'FACT N°X07012',
       amount: '500 000',
       numberSpots: 8,
       numberPlay: 7,
@@ -166,7 +182,7 @@ async function getPackages() {
     {
       id: '1',
       date: '12/05/2022',
-      label: 'FACT N°X07412',
+      message: 'FACT N°X07412',
       amount: '700 000',
       numberSpots: 12,
       numberPlay: 12,
@@ -230,7 +246,7 @@ async function getPackages() {
     {
       id: '2',
       date: '20/06/2023',
-      label: 'FACT N°X07112',
+      message: 'FACT N°X07112',
       amount: '900 000',
       numberSpots: 6,
       numberPlay: 5,
@@ -265,7 +281,7 @@ async function getPackages() {
     {
       id: '3',
       date: '20/08/2023',
-      label: 'FACT N°X07112',
+      message: 'FACT N°X07112',
       amount: '1 200 000',
       numberSpots: 18,
       numberPlay: 18,

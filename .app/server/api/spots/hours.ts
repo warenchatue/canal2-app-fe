@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
   console.log(action)
 
   if (action == 'get') {
-    const data = await getEntities()
+    const data = await getHours()
     return {
       total: data.length,
       data: filterData(data, filter, page, perPage),
@@ -21,18 +21,18 @@ export default defineEventHandler(async (event) => {
   } else if (action == 'post') {
     const body = await readBody(event)
     console.log(body)
-    const data = await getEntities()
+    const data = await getHours()
 
-    const suppliers = data.filter(
-      (d) => d.email == body.name && d.email == body.password,
+    const hours = data.filter(
+      (d) => d.code == body.name && d.code == body.password,
     )
-    if (suppliers?.length == 1) {
-      console.log('user found')
+    if (hours?.length == 1) {
+      console.log('Hours found')
       return {
-        data: suppliers[0],
+        data: hours[0],
       }
     } else {
-      console.log('user not found')
+      console.log('Hours not found')
       return {
         data: null,
       }
@@ -53,64 +53,51 @@ function filterData(
   const filterRe = new RegExp(filter, 'i')
   return data
     .filter((item) => {
-      return [item.name, item.email, item.status].some((item) =>
+      return [item.name, item.code, item.type].some((item) =>
         item.match(filterRe),
       )
     })
     .slice(offset, offset + perPage)
 }
 
-async function createEntity() {}
-async function getEntities() {
+async function createHour() {}
+async function getHours() {
   return Promise.resolve([
     {
       id: '0',
-      name: 'ALTROX',
-      email: '',
-      logo: '',
+      code: '7:25',
+      name: '7H25',
+      type: 'SPOT',
       status: 'active',
     },
     {
-      id: '1',
-      name: 'FIGEX',
-      email: '',
-      logo: '',
+      id: '0',
+      code: '8:25',
+      name: '8H25',
+      type: 'SPOT',
       status: 'active',
     },
     {
-      id: '2',
-      name: 'KMS',
-      email: '',
-      logo: '',
+      id: '0',
+      code: '9:25',
+      name: '9H25',
+      type: 'BA',
       status: 'active',
     },
     {
-      id: '3',
-      name: 'CLARTU',
-      email: '',
-      logo: '',
+      id: '0',
+      code: '10:25',
+      name: '10H25',
+      type: 'BA',
       status: 'active',
     },
     {
-      id: '4',
-      name: 'NTB',
-      email: '',
-      logo: '',
-      status: 'active',
-    },
-    {
-      id: '5',
-      name: 'SOFOMEUTEX',
-      email: '',
-      logo: '',
-      status: 'active',
-    },
-    {
-      id: '6',
-      name: 'KBA',
-      email: '',
-      logo: '',
+      id: '0',
+      code: '11:25',
+      name: '11H25',
+      type: 'SPOT',
       status: 'active',
     },
   ])
 }
+async function updateHour() {}

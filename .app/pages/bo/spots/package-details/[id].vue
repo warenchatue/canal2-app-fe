@@ -549,7 +549,7 @@ const onSubmit = handleSubmit(
           color="primary"
           class="w-full sm:w-40"
         >
-          <Icon name="lucide:plus" class="h-4 w-4" />
+          <Icon name="lucide:calendar" class="h-4 w-4" />
           <span>Planning</span>
         </BaseButton>
         <BaseButton

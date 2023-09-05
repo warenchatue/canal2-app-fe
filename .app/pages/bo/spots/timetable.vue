@@ -47,12 +47,9 @@ const query = computed(() => {
   }
 })
 
-const { data, pending, error, refresh } = await useFetch(
-  '/api/debts/operations',
-  {
-    query,
-  },
-)
+const { data, pending, error, refresh } = await useFetch('/api/spots/hours', {
+  query,
+})
 
 const { data: supplierData, pending: supplierPending } = await useFetch(
   '/api/admin/suppliers',
@@ -440,12 +437,12 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
-                  <div class="flex items-center">7H25</div>
+                  <div class="flex items-center">{{ item.name }}</div>
                 </TairoTableCell>
 
                 <TairoTableCell light spaced>
                   <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs"> Spot </span>
+                    <span class="text-muted-400 font-sans text-xs"> {{ item.type }} </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>

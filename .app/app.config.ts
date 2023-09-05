@@ -99,7 +99,7 @@ export default defineAppConfig({
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Liste de diffusion',
+                name: 'Planning de diffusion',
                 to: '/bo/spots/diffusion-list',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },

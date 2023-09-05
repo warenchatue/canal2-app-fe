@@ -23,13 +23,13 @@ export default defineEventHandler(async (event) => {
     console.log(body)
     const data = await getAnnouncers()
 
-    const Announcers = data.filter(
+    const announcers = data.filter(
       (d) => d.email == body.name && d.email == body.password,
     )
-    if (Announcers?.length == 1) {
+    if (announcers?.length == 1) {
       console.log('Announcer found')
       return {
-        data: Announcers[0],
+        data: announcers[0],
       }
     } else {
       console.log('Announcer not found')
