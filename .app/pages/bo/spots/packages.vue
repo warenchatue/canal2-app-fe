@@ -21,12 +21,9 @@ const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 
 const filter = ref('')
 const perPage = ref(10)
-const isModalNewTxnOpen = ref(false)
-const activePaymentMethod = ref(0)
-const activeFundRaising = ref({ id: '', name: '', category: '', image: '' })
-const activeCountry = ref({ id: '', abbr: '', name: '', flag: '' })
-const activeOperator = ref({ abbr: '', name: '', logo: '' })
-const phoneNumber = ref('')
+const isModalNewPackageOpen = ref(false)
+const isModalDeletePackageOpen = ref(false)
+const isEdit = ref(false)
 
 watch([filter, perPage], () => {
   router.push({
@@ -36,15 +33,14 @@ watch([filter, perPage], () => {
   })
 })
 
-const app = useAppStore()
-const orgStore = useOrgStore()
+const token = useCookie('token')
 const query = computed(() => {
   return {
     filter: filter.value,
     perPage: perPage.value,
     page: page.value,
-    slug: app.activeOrg.slug,
-    action: 'get',
+    action: 'findAll',
+    token: token.value,
   }
 })
 
@@ -54,6 +50,67 @@ const { data, pending, error, refresh } = await useFetch(
     query,
   },
 )
+
+const { data: announcers } = await useFetch('/api/spots/announcers', {
+  query,
+})
+function editPackage(spotPackage: any) {
+  isModalNewPackageOpen.value = true
+  isEdit.value = true
+  setFieldValue('spotPackage._id', spotPackage._id)
+  setFieldValue('spotPackage.label', spotPackage.label)
+  setFieldValue('spotPackage.numberSpots', spotPackage.numberSpots)
+  setFieldValue('spotPackage.numberFiles', spotPackage.numberFiles)
+  setFieldValue('spotPackage.period', spotPackage.period)
+  setFieldValue('spotPackage.announcer', spotPackage.announcer)
+  setFieldValue('spotPackage.status', spotPackage.status)
+}
+
+function confirmDeletePackage(spotPackage: any) {
+  isModalDeletePackageOpen.value = true
+  isEdit.value = false
+  currentPackage.value = spotPackage
+}
+
+async function deletePackage(spotPackage: any) {
+  const query2 = computed(() => {
+    return {
+      action: 'delete',
+      token: token.value,
+      id: spotPackage._id,
+    }
+  })
+
+  const response = await useFetch('/api/spots/packages', {
+    method: 'delete',
+    headers: { 'Content-Type': 'application/json' },
+    query: query2,
+  })
+
+  if (response.data?.value?.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Package supprimé !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalDeletePackageOpen.value = false
+    filter.value = 'spotPackage'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Oops',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+}
 
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
@@ -68,108 +125,12 @@ function toggleAllVisibleSelection() {
   }
 }
 
-const people = [
-  {
-    id: 1,
-    name: 'Clarissa Perez',
-    text: 'Sales Manager',
-    media: '/img/avatars/19.svg',
-  },
-  {
-    id: 2,
-    name: 'Aaron Splatter',
-    text: 'Project Manager',
-    media: '/img/avatars/16.svg',
-  },
-  {
-    id: 3,
-    name: 'Mike Miller',
-    text: 'UI/UX Designer',
-    media: '/img/avatars/3.svg',
-  },
-  {
-    id: 4,
-    name: 'Benedict Kessler',
-    text: 'Mobile Developer',
-    media: '/img/avatars/22.svg',
-  },
-  {
-    id: 5,
-    name: 'Maya Rosselini',
-    text: 'Product Manager',
-    media: '/img/avatars/2.svg',
-  },
-]
-const paymentMethods = ref([
-  {
-    id: 1,
-    name: 'Mobile',
-    logo: '/img/payment/imgs/mobile_wallet_2.png',
-    description: 'Paiemens mobiles',
-    countries: [
-      {
-        id: 'CMR',
-        operators: [
-          {
-            abbr: 'om',
-            name: ' Orange Money | CMR',
-            logo: '/img/payment/imgs/orange_money_cmr.jpg',
-          },
-          {
-            abbr: 'momo',
-            name: ' Mobile Money | CMR',
-            logo: '/img/payment/imgs/mobile_money_cmr.jpg',
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Visa',
-    logo: '/img/payment/imgs/visa_mastercard.jpg',
-    description: 'Paiements par carte',
-  },
-  {
-    id: 3,
-    name: 'Paypal',
-    logo: '/img/payment/imgs/paypal.png',
-    description: 'Payments par paypal',
-  },
-])
-
-const countries = [
-  {
-    id: '1',
-    abbr: 'CMR',
-    name: 'Cameroun',
-    flag: '/img/icons/flags/cmr.svg',
-  },
-  {
-    id: '2',
-    abbr: 'CIV',
-    name: "Côte d'ivoire",
-    flag: '/img/icons/flags/civ.svg',
-  },
-  {
-    id: '3',
-    abbr: 'FR',
-    name: 'France',
-    flag: '/img/icons/flags/france.svg',
-  },
-]
-
-// Ask the user for confirmation before leaving the page if the form has unsaved changes
-// onBeforeRouteLeave(() => {
-//   if (meta.value.dirty) {
-//     return confirm('You have unsaved changes. Are you sure you want to leave?')
-//   }
-// })
+const currentPackage = ref({})
 
 // This is the object that will contain the validation messages
 const ONE_MB = 1000000
 const VALIDATION_TEXT = {
-  OPERATOR_REQUIRED: "Operator can't be empty",
+  LABEL_REQUIRED: "Label can't be empty",
   PHONE_REQUIRED: "Phone number can't be empty",
   EMAIL_REQUIRED: "Email address can't be empty",
   COUNTRY_REQUIRED: 'Please select a country',
@@ -179,35 +140,30 @@ const VALIDATION_TEXT = {
 // It's used to define the shape that the form data will have
 const zodSchema = z
   .object({
-    payment: z.object({
-      operator: z.string().min(1, VALIDATION_TEXT.OPERATOR_REQUIRED),
-      name: z.string(),
-      email: z.string(),
-      phone: z.string().min(1, VALIDATION_TEXT.PHONE_REQUIRED),
-      country: z
+    spotPackage: z.object({
+      _id: z.string().optional(),
+      label: z.string().min(1, VALIDATION_TEXT.LABEL_REQUIRED),
+      numberSpots: z.number(),
+      numberFiles: z.number(),
+      status: z.union([z.literal('active'), z.literal('trashed')]).optional(),
+      period: z.string(),
+      announcer: z
         .object({
-          id: z.string(),
-          abbr: z.string(),
+          _id: z.string(),
+          email: z.string(),
           name: z.string(),
-          flag: z.string(),
+          flag: z.string().optional(),
         })
+        .optional()
         .nullable(),
     }),
   })
   .superRefine((data, ctx) => {
-    if (!data.payment.country) {
+    if (!data.spotPackage.label) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: VALIDATION_TEXT.PHONE_REQUIRED,
-        path: ['payment.country'],
-      })
-    }
-
-    if (!data.payment.country) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: VALIDATION_TEXT.COUNTRY_REQUIRED,
-        path: ['payment.phone'],
+        message: VALIDATION_TEXT.LABEL_REQUIRED,
+        path: ['spotPackage.label'],
       })
     }
   })
@@ -219,15 +175,15 @@ type FormInput = z.infer<typeof zodSchema>
 const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
   avatar: null,
-  payment: {
-    name: '',
-    email: '',
-    phone: '',
-    operator: '',
-    type: '',
-    country: {
-      id: '',
-      abbr: '',
+  spotPackage: {
+    label: '',
+    numberSpots: 0,
+    numberFiles: 0,
+    period: '',
+    status: 'active',
+    announcer: {
+      _id: '',
+      email: '',
       name: '',
       flag: '',
     },
@@ -250,6 +206,7 @@ const {
 })
 
 const toaster = useToaster()
+const success = ref(false)
 
 // This is where you would send the form data to the server
 const onSubmit = handleSubmit(
@@ -257,64 +214,92 @@ const onSubmit = handleSubmit(
     success.value = false
 
     // here you have access to the validated form values
-    console.log('payment-create-success', values)
+    console.log('package-create-success', values)
 
     try {
-      // fake delay, this will make isSubmitting value to be true
-      await new Promise((resolve, reject) => {
-        if (values.payment.name === 'Airbnb') {
-          // simulate a backend error
-          setTimeout(
-            () => reject(new Error('Fake backend validation error')),
-            2000,
-          )
-        }
-        setTimeout(resolve, 4000)
-      })
-
-      toaster.clearAll()
-      toaster.show({
-        title: 'Success',
-        message: `Record has been created!`,
-        color: 'success',
-        icon: 'ph:check',
-        closable: true,
-      })
-      router.push('/select-org')
-    } catch (error: any) {
-      // this will set the error on the form
-      if (error.message === 'Fake backend validation error') {
-        // @ts-expect-error - vee validate typing bug with nested keys
-        setFieldError('payment.name', 'This name is not allowed')
-
-        document.documentElement.scrollTo({
-          top: 0,
-          behavior: 'smooth',
+      const isSuccess = ref(false)
+      if (isEdit.value == true) {
+        const query2 = computed(() => {
+          return {
+            action: 'updatePackage',
+            token: token.value,
+            id: values.spotPackage._id,
+          }
         })
 
+        const response = await useFetch('/api/spots/packages', {
+          method: 'put',
+          headers: { 'Content-Type': 'application/json' },
+          query: query2,
+          body: {
+            ...values.spotPackage,
+            announcer: values.spotPackage?.announcer?._id,
+          },
+        })
+        isSuccess.value = response.data.value?.success
+      } else {
+        const query2 = computed(() => {
+          return {
+            action: 'createPackage',
+            token: token.value,
+          }
+        })
+
+        const response = await useFetch('/api/spots/packages', {
+          method: 'post',
+          headers: { 'Content-Type': 'application/json' },
+          query: query2,
+          body: {
+            ...values.spotPackage,
+            announcer: values.spotPackage?.announcer?._id,
+            _id: undefined,
+          },
+        })
+        isSuccess.value = response.data.value?.success
+      }
+      if (isSuccess) {
+        success.value = true
         toaster.clearAll()
         toaster.show({
-          title: 'Oops!',
-          message: 'Please review the errors in the form',
+          title: 'Success',
+          message:
+            isEdit.value == false ? `Package créé !` : `Package mis à jour`,
+          color: 'success',
+          icon: 'ph:check',
+          closable: true,
+        })
+        isModalNewPackageOpen.value = false
+        resetForm()
+        filter.value = 'spotPackage'
+        filter.value = ''
+      } else {
+        toaster.clearAll()
+        toaster.show({
+          title: 'Oops',
+          message: `Une erreur est survenue !`,
           color: 'danger',
-          icon: 'lucide:alert-triangle',
+          icon: 'ph:check',
           closable: true,
         })
       }
-      return
+    } catch (error: any) {
+      console.log(error)
+      document.documentElement.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      })
+      toaster.clearAll()
+      toaster.show({
+        title: 'Oops!',
+        message: 'Veuillez examiner les erreurs dans le formulaire',
+        color: 'danger',
+        icon: 'lucide:alert-triangle',
+        closable: true,
+      })
+      // return
     }
 
-    resetForm()
-
-    document.documentElement.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    })
-
     success.value = true
-    setTimeout(() => {
-      success.value = false
-    }, 3000)
   },
   (error) => {
     // this callback is optional and called only if the form has errors
@@ -339,7 +324,7 @@ const onSubmit = handleSubmit(
         <BaseInput
           v-model="filter"
           icon="lucide:search"
-          placeholder="Filter users..."
+          placeholder="Filtrer package..."
           :classes="{
             wrapper: 'w-full sm:w-auto',
           }"
@@ -358,8 +343,11 @@ const onSubmit = handleSubmit(
           <option :value="50">50 per page</option>
           <option :value="100">100 per page</option>
         </BaseSelect>
-        <!--  @click="isModalNewTxnOpen = true" -->
-        <BaseButton color="primary" class="w-full sm:w-48">
+        <BaseButton
+          color="primary"
+          class="w-full sm:w-48"
+          @click=";(isModalNewPackageOpen = true), (isEdit = false)"
+        >
           <Icon name="ph:plus" class="h-4 w-4" />
           <span>Nouveau Package</span>
         </BaseButton>
@@ -376,14 +364,14 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Commandes</span>
+                <span>Commandes</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
                 class="bg-success-100 text-success-500 dark:bg-success-500/20 dark:text-success-400 dark:border-success-500 dark:border-2"
                 shape="full"
               >
-                <Icon name="ph:money" class="h-5 w-5" />
+                <Icon name="ph:basket" class="h-5 w-5" />
               </BaseIconBox>
             </div>
             <div class="mb-2">
@@ -402,7 +390,7 @@ const onSubmit = handleSubmit(
             >
               <span>+7.8%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">depuis le mois dernier</span>
+              <span class="text-muted-400 text-xs">en hause</span>
             </div>
           </BaseCard>
         </div>
@@ -417,7 +405,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Annonceurs</span>
+                <span>Annonceurs</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -458,7 +446,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Spots</span>
+                <span>Spots</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -499,14 +487,14 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Fichiers</span>
+                <span>Fichiers</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
                 class="bg-primary-100 text-primary-500 dark:bg-primary-500/20 dark:text-primary-400 dark:border-primary-500 dark:border-2"
                 shape="full"
               >
-                <Icon name="ph:money" class="h-5 w-5" />
+                <Icon name="ph:file" class="h-5 w-5" />
               </BaseIconBox>
             </div>
             <div class="mb-2">
@@ -581,9 +569,7 @@ const onSubmit = handleSubmit(
                 <TairoTableHeading uppercase spaced>Diffusés</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Fichiers</TairoTableHeading>
 
-                <TairoTableHeading uppercase spaced
-                  >Période de diffusion</TairoTableHeading
-                >
+                <TairoTableHeading uppercase spaced>Période</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
               </template>
@@ -619,7 +605,7 @@ const onSubmit = handleSubmit(
                   <div class="flex items-center">
                     <BaseAvatar
                       :src="item.announcer?.logo"
-                      :text="item.announcer?.initials"
+                      :text="item.initials"
                       :class="getRandomColor()"
                     />
                     <div class="ms-3 leading-none">
@@ -633,13 +619,13 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.message }}
+                  {{ item.label }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{ item.numberSpots }} spots
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.numberPlay }} spots
+                  {{ item.numberPlay ?? 0 }} spots
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{ item.numberFiles }}
@@ -649,32 +635,45 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag
-                    v-if="item.status === 'closed'"
+                    v-if="item.state === 'trashed'"
                     color="muted"
                     flavor="pastel"
                     shape="full"
                     condensed
                     class="font-medium"
                   >
-                    {{ item.status }}
+                    {{ item.state }}
                   </BaseTag>
                   <BaseTag
-                    v-else-if="item.status === 'active'"
+                    v-else-if="item.state === 'active'"
                     color="warning"
                     flavor="pastel"
                     shape="full"
                     condensed
                     class="font-medium"
                   >
-                    {{ item.status }}
+                    {{ item.state }}
                   </BaseTag>
                 </TairoTableCell>
                 <TairoTableCell spaced>
-                  <BaseButtonAction
-                    :to="'/bo/spots/package-details/' + item.id"
-                    muted
-                    >Details</BaseButtonAction
-                  >
+                  <div class="flex">
+                    <BaseButtonAction
+                      class="mx-2"
+                      :to="'/bo/spots/package-details/' + item._id"
+                      muted
+                    >
+                      <Icon name="lucide:eye" class="h-4 w-4"
+                    /></BaseButtonAction>
+                    <BaseButtonAction @click="editPackage(item)">
+                      <Icon name="lucide:edit" class="h-4 w-4"
+                    /></BaseButtonAction>
+                    <BaseButtonAction
+                      @click="confirmDeletePackage(item)"
+                      class="mx-2"
+                    >
+                      <Icon name="lucide:trash" class="h-4 w-4 text-red-500"
+                    /></BaseButtonAction>
+                  </div>
                 </TairoTableCell>
               </TairoTableRow>
             </TairoTable>
@@ -690,5 +689,230 @@ const onSubmit = handleSubmit(
         </div>
       </div>
     </TairoContentWrapper>
+
+    <!-- Modal new Package -->
+    <TairoModal
+      :open="isModalNewPackageOpen"
+      size="xl"
+      @close="isModalNewPackageOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            {{ isEdit == true ? 'Editer' : 'Nouveau'}} Package
+          </h3>
+
+          <BaseButtonClose @click="isModalNewPackageOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <BaseCard class="w-full">
+        <form
+          method="POST"
+          action=""
+          class="divide-muted-200 dark:divide-muted-700"
+          @submit.prevent="onSubmit"
+        >
+          <div
+            shape="curved"
+            class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
+          >
+            <div class="mx-auto flex w-full flex-col">
+              <div>
+                <div class="grid grid-cols-12 gap-4">
+                  <div class="col-span-12 md:col-span-12">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="spotPackage.label"
+                    >
+                      <BaseInput
+                        label="Libéllé"
+                        icon="ph:user-duotone"
+                        placeholder="ref facture : FACT N_ XXXXXX"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-3">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="spotPackage.numberSpots"
+                    >
+                      <BaseInput
+                        label="Nombre de spots"
+                        icon="ph:file-duotone"
+                        type="number"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-3">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="spotPackage.numberFiles"
+                    >
+                      <BaseInput
+                        label="Nombre de fichiers"
+                        icon="ph:file-duotone"
+                        type="number"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="spotPackage.period"
+                    >
+                      <BaseInput
+                        label="Periode"
+                        icon="ph:file-duotone"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                </div>
+                <div class="grid grid-cols-12 gap-4 mt-4">
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="spotPackage.announcer"
+                    >
+                      <BaseListbox
+                        label="Annonceur"
+                        :items="announcers?.data"
+                        :properties="{
+                          value: '_id',
+                          label: 'name',
+                          sublabel: 'email',
+                          media: 'flag',
+                        }"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="spotPackage.status"
+                    >
+                      <BaseSelect
+                        label="Statut *"
+                        icon="ph:funnel"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      >
+                        <option value="active">Actif</option>
+                        <option value="trashed">Inactif</option>
+                      </BaseSelect>
+                    </Field>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </BaseCard>
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalNewPackageOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton color="primary" flavor="solid" @click="onSubmit">
+              {{ isEdit == true ? 'Modifier' : 'Créer' }}
+            </BaseButton>
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal delete -->
+    <TairoModal
+      :open="isModalDeletePackageOpen"
+      size="sm"
+      @close="isModalDeletePackageOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Suppression d'un package
+          </h3>
+
+          <BaseButtonClose @click="isModalDeletePackageOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <h3
+            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
+          >
+            Supprimer
+            <span class="text-red-500">{{ currentPackage?.label }}</span> ?
+          </h3>
+
+          <p
+            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est irreversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalDeletePackageOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="deletePackage(currentPackage)"
+              >Suppimer</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
   </div>
 </template>

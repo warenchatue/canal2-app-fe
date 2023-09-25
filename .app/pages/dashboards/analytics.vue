@@ -17,7 +17,6 @@ definePageMeta({
   },
 })
 
-const orgStore = useOrgStore()
 const app = useAppStore()
 const lineRevenue = reactive(useLineRevenue())
 const radialGoal = reactive(useRadialGoal())
@@ -327,7 +326,6 @@ const query = computed(() => {
     filter: filter.value,
     perPage: perPage.value,
     page: page.value,
-    slug: app.activeOrg.slug,
     action: 'getForOrg',
   }
 })
@@ -606,8 +604,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                     lead="tight"
                     class="text-muted-800 dark:text-white"
                   >
-                    <span>{{ orgStore?.activeOrg?.name }}</span>
-                  </BaseHeading>
+                 </BaseHeading>
                   <BaseParagraph size="xs">
                     <span class="text-muted-400">Indicateur global</span>
                   </BaseParagraph>

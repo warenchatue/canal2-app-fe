@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useFieldError, useForm } from 'vee-validate'
-import { DatePicker } from 'v-calendar'
 import { z } from 'zod'
 
 definePageMeta({
-  title: 'Package - Annonceur',
+  title: 'Spot - Annonceur',
   preview: {
-    title: 'Package - Annonceur',
+    title: 'Spot - Annonceur',
     description: 'Contribution and withdrawal',
     categories: ['bo', 'finances'],
     src: '/img/screens/layouts-table-list-1.png',
@@ -20,25 +19,32 @@ const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 
-const hours = [
-  { code: '06:25', name: '6H25' },
-  { code: '07:25', name: '7H25' },
-  { code: '08:25', name: '8H25' },
-  { code: '09:25', name: '9H25' },
-  { code: '10:25', name: '10H25' },
-  { code: '11:25', name: '11H25' },
-]
+const token = useCookie('token')
+const queryHours = computed(() => {
+  return {
+    action: 'findAll',
+    token: token.value,
+  }
+})
+
+const { data: hoursData } = await useFetch('/api/spots/hours', {
+  query: queryHours,
+})
+
 const filter = ref('')
 const perPage = ref(10)
-const isModalNewTxnOpen = ref(false)
+const isModalNewSpotOpen = ref(false)
+const isModalDeleteSpotOpen = ref(false)
 const isModalPlanningOpen = ref(false)
 const isModalNewSpotPlanningOpen = ref(false)
-const activeSpot = ref({ id: '', product: '', tag: '', flag: '' })
+const isEdit = ref(false)
+const activeSpot = ref({ _id: '', product: '', tag: '', flag: '' })
+const currentSpot = ref({})
 const phoneNumber = ref('')
 const formatter = new Intl.DateTimeFormat('fr', { month: 'long' })
 const activeDate = ref(new Date())
 const activeDay = ref('')
-const activeHour = ref('')
+const activeHour = ref({})
 var activeDays = ref(
   new Date(
     activeDate.value.getFullYear(),
@@ -94,14 +100,14 @@ function dayOfWeek(d: number) {
     .toLocaleUpperCase()
 }
 
-function openSpotPlanningModal(day: string, hour: string) {
+function openSpotPlanningModal(day: string, hour: any) {
   activeDay.value = day
   activeHour.value = hour
   isModalNewSpotPlanningOpen.value = true
 }
-function addSpotToPlanning() {
+async function addSpotToPlanning() {
   console.log('Adding spot to the planning')
-  const hourArray = activeHour.value.split(':')
+  const hourArray = activeHour.value?.code.split(':')
   var date = new Date(
     activeDate.value.getFullYear(),
     activeDate.value.getMonth(),
@@ -112,14 +118,72 @@ function addSpotToPlanning() {
 
   console.log(date.toISOString())
 
-  data.value?.package?.planning.push({
-    spot: { ...activeSpot.value },
+  const spotPlanning = {
+    spot: activeSpot.value._id,
+    hour: activeHour.value._id,
     date: date.toISOString(),
     isManualPlay: false,
     isAutoPlay: false,
-  })
+  }
 
-  console.log(data.value?.package?.planning)
+  try {
+    const isSuccess = ref(false)
+    const query2 = computed(() => {
+      return {
+        action: 'createPlanning',
+        token: token.value,
+        packageId : data.value?.data?._id
+      }
+    })
+
+    const response = await useFetch('/api/spots/plannings', {
+      method: 'post',
+      headers: { 'Content-Type': 'application/json' },
+      query: query2,
+      body: {
+        ...spotPlanning,
+        _id: undefined,
+      },
+    })
+
+    isSuccess.value = response.data.value?.success
+    if (isSuccess) {
+      success.value = true
+      data.value?.data?.plannings.push(response.data.value?.data)
+      toaster.clearAll()
+      toaster.show({
+        title: 'Success',
+        message:
+          isEdit.value == false
+            ? `Spot Ajouté au planning !`
+            : `Spot mis à jour`,
+        color: 'success',
+        icon: 'ph:check',
+        closable: true,
+      })
+    } else {
+      toaster.clearAll()
+      toaster.show({
+        title: 'Oops',
+        message: `Une erreur est survenue !`,
+        color: 'danger',
+        icon: 'ph:check',
+        closable: true,
+      })
+    }
+  } catch (error: any) {
+    console.log(error)
+    toaster.clearAll()
+    toaster.show({
+      title: 'Oops!',
+      message: 'Veuillez examiner les erreurs dans le formulaire',
+      color: 'danger',
+      icon: 'lucide:alert-triangle',
+      closable: true,
+    })
+    // return
+  }
+  console.log(data.value?.data?.plannings)
 
   isModalNewSpotPlanningOpen.value = false
 }
@@ -133,7 +197,7 @@ function checkSpot(d: number, hour: string) {
     parseInt(hourArray[0]),
     parseInt(hourArray[1]),
   )
-  const plannedSpots = data.value?.package?.planning?.filter(
+  const plannedSpots = data.value?.data?.plannings?.filter(
     (p) => p.date == date.toISOString(),
   )
   if (plannedSpots.length == 0) {
@@ -152,13 +216,12 @@ watch([filter, perPage], () => {
 })
 
 const app = useAppStore()
-const orgStore = useOrgStore()
-
 const packageId = computed(() => route.params.id)
 const query = computed(() => {
   return {
+    action: 'findOne',
     id: packageId.value,
-    action: 'get',
+    token: token.value,
   }
 })
 
@@ -173,22 +236,77 @@ if (data.value) {
   console.log(data.value)
 }
 
+function editSpot(spot: any) {
+  isModalNewSpotOpen.value = true
+  isEdit.value = true
+  setFieldValue('spot._id', spot._id)
+  setFieldValue('spot.product', spot.product)
+  setFieldValue('spot.message', spot.message)
+  setFieldValue('spot.package', spot.package)
+}
+
+function confirmDeleteSpot(spot: any) {
+  isModalDeleteSpotOpen.value = true
+  isEdit.value = false
+  currentSpot.value = spot
+}
+
+async function deleteSpot(spot: any) {
+  const query2 = computed(() => {
+    return {
+      action: 'delete',
+      token: token.value,
+      id: spot._id,
+    }
+  })
+
+  const response = await useFetch('/api/spots', {
+    method: 'delete',
+    headers: { 'Content-Type': 'application/json' },
+    query: query2,
+  })
+
+  if (response.data?.value?.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Spot supprimé !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalDeleteSpotOpen.value = false
+    filter.value = 'spot'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Oops',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+}
+
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
-  return selected.value.length === data.value?.package?.spots?.length
+  return selected.value.length === data.value?.data?.spots?.length
 })
 
 function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
     selected.value = []
   } else {
-    selected.value = data.value?.package?.spots?.map((item) => item.id) ?? []
+    selected.value = data.value?.data?.spots?.map((item) => item.id) ?? []
   }
 }
 
 const activeOperation = ref('1')
 const selectedSpot = computed(() => {
-  return data.value.package?.spots.find(
+  return data.value?.data?.spots.find(
     (item) => item.id === activeOperation.value,
   )
 })
@@ -197,125 +315,10 @@ const chatEl = ref<HTMLElement>()
 const expanded = ref(true)
 const loading = ref(false)
 
-function selectOperation(id: string) {
-  loading.value = true
-  setTimeout(() => {
-    activeOperation.value = id
-    loading.value = false
-    setTimeout(() => {
-      expanded.value = false
-      if (chatEl.value) {
-        chatEl.value.scrollTo({
-          top: chatEl.value.scrollHeight,
-          behavior: 'smooth',
-        })
-      }
-    }, 100)
-  }, 150)
-}
-
-const people = [
-  {
-    id: 1,
-    name: 'Clarissa Perez',
-    text: 'Sales Manager',
-    media: '/img/avatars/19.svg',
-  },
-  {
-    id: 2,
-    name: 'Aaron Splatter',
-    text: 'Project Manager',
-    media: '/img/avatars/16.svg',
-  },
-  {
-    id: 3,
-    name: 'Mike Miller',
-    text: 'UI/UX Designer',
-    media: '/img/avatars/3.svg',
-  },
-  {
-    id: 4,
-    name: 'Benedict Kessler',
-    text: 'Mobile Developer',
-    media: '/img/avatars/22.svg',
-  },
-  {
-    id: 5,
-    name: 'Maya Rosselini',
-    text: 'Product Manager',
-    media: '/img/avatars/2.svg',
-  },
-]
-const paymentMethods = ref([
-  {
-    id: 1,
-    name: 'Mobile',
-    logo: '/img/payment/imgs/mobile_wallet_2.png',
-    description: 'Paiemens mobiles',
-    countries: [
-      {
-        id: 'CMR',
-        operators: [
-          {
-            abbr: 'om',
-            name: ' Orange Money | CMR',
-            logo: '/img/payment/imgs/orange_money_cmr.jpg',
-          },
-          {
-            abbr: 'momo',
-            name: ' Mobile Money | CMR',
-            logo: '/img/payment/imgs/mobile_money_cmr.jpg',
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Visa',
-    logo: '/img/payment/imgs/visa_mastercard.jpg',
-    description: 'Paiements par carte',
-  },
-  {
-    id: 3,
-    name: 'Paypal',
-    logo: '/img/payment/imgs/paypal.png',
-    description: 'Payments par paypal',
-  },
-])
-
-const countries = [
-  {
-    id: '1',
-    abbr: 'CMR',
-    name: 'Cameroun',
-    flag: '/img/icons/flags/cmr.svg',
-  },
-  {
-    id: '2',
-    abbr: 'CIV',
-    name: "Côte d'ivoire",
-    flag: '/img/icons/flags/civ.svg',
-  },
-  {
-    id: '3',
-    abbr: 'FR',
-    name: 'France',
-    flag: '/img/icons/flags/france.svg',
-  },
-]
-
-// Ask the user for confirmation before leaving the page if the form has unsaved changes
-// onBeforeRouteLeave(() => {
-//   if (meta.value.dirty) {
-//     return confirm('You have unsaved changes. Are you sure you want to leave?')
-//   }
-// })
-
 // This is the object that will contain the validation messages
 const ONE_MB = 1000000
 const VALIDATION_TEXT = {
-  OPERATOR_REQUIRED: "Operator can't be empty",
+  LABEL_REQUIRED: "Product can't be empty",
   PHONE_REQUIRED: "Phone number can't be empty",
   EMAIL_REQUIRED: "Email address can't be empty",
   COUNTRY_REQUIRED: 'Please select a country',
@@ -325,35 +328,21 @@ const VALIDATION_TEXT = {
 // It's used to define the shape that the form data will have
 const zodSchema = z
   .object({
-    payment: z.object({
-      operator: z.string().min(1, VALIDATION_TEXT.OPERATOR_REQUIRED),
-      name: z.string(),
-      email: z.string(),
-      phone: z.string().min(1, VALIDATION_TEXT.PHONE_REQUIRED),
-      country: z
-        .object({
-          id: z.string(),
-          abbr: z.string(),
-          name: z.string(),
-          flag: z.string(),
-        })
-        .nullable(),
+    spot: z.object({
+      _id: z.string().optional(),
+      product: z.string().min(1, VALIDATION_TEXT.LABEL_REQUIRED),
+      message: z.string().optional(),
+      tag: z.string().optional(),
+      type: z.union([z.literal('SPOT'), z.literal('BA')]).optional(),
+      package: z.string().optional(),
     }),
   })
   .superRefine((data, ctx) => {
-    if (!data.payment.country) {
+    if (!data.spot.product) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: VALIDATION_TEXT.PHONE_REQUIRED,
-        path: ['payment.country'],
-      })
-    }
-
-    if (!data.payment.country) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: VALIDATION_TEXT.COUNTRY_REQUIRED,
-        path: ['payment.phone'],
+        message: VALIDATION_TEXT.LABEL_REQUIRED,
+        path: ['spot.product'],
       })
     }
   })
@@ -364,19 +353,13 @@ type FormInput = z.infer<typeof zodSchema>
 
 const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
-  avatar: null,
-  payment: {
-    name: '',
-    email: '',
-    phone: '',
-    operator: '',
-    type: '',
-    country: {
-      id: '',
-      abbr: '',
-      name: '',
-      flag: '',
-    },
+  logo: null,
+  spot: {
+    product: '',
+    message: '',
+    type: 'SPOT',
+    tag: '',
+    package: '',
   },
 }))
 
@@ -396,6 +379,7 @@ const {
 })
 
 const toaster = useToaster()
+const success = ref(false)
 
 // This is where you would send the form data to the server
 const onSubmit = handleSubmit(
@@ -403,71 +387,96 @@ const onSubmit = handleSubmit(
     success.value = false
 
     // here you have access to the validated form values
-    console.log('payment-create-success', values)
+    console.log('spot-create-success', values)
 
     try {
-      // fake delay, this will make isSubmitting value to be true
-      await new Promise((resolve, reject) => {
-        if (values.payment.name === 'Airbnb') {
-          // simulate a backend error
-          setTimeout(
-            () => reject(new Error('Fake backend validation error')),
-            2000,
-          )
-        }
-        setTimeout(resolve, 4000)
-      })
-
-      toaster.clearAll()
-      toaster.show({
-        title: 'Success',
-        message: `Record has been created!`,
-        color: 'success',
-        icon: 'ph:check',
-        closable: true,
-      })
-      router.push('/select-org')
-    } catch (error: any) {
-      // this will set the error on the form
-      if (error.message === 'Fake backend validation error') {
-        // @ts-expect-error - vee validate typing bug with nested keys
-        setFieldError('payment.name', 'This name is not allowed')
-
-        document.documentElement.scrollTo({
-          top: 0,
-          behavior: 'smooth',
+      const isSuccess = ref(false)
+      if (isEdit.value == true) {
+        const query2 = computed(() => {
+          return {
+            action: 'updateSpot',
+            token: token.value,
+            id: values.spot._id,
+          }
         })
 
+        const response = await useFetch('/api/spots', {
+          method: 'put',
+          headers: { 'Content-Type': 'application/json' },
+          query: query2,
+          body: {
+            ...values.spot,
+          },
+        })
+        isSuccess.value = response.data.value?.success
+      } else {
+        const query2 = computed(() => {
+          return {
+            action: 'createSpot',
+            token: token.value,
+          }
+        })
+
+        const response = await useFetch('/api/spots', {
+          method: 'post',
+          headers: { 'Content-Type': 'application/json' },
+          query: query2,
+          body: {
+            ...values.spot,
+            package: data.value?.data?._id,
+            _id: undefined,
+          },
+        })
+        isSuccess.value = response.data.value?.success
+      }
+      if (isSuccess) {
+        success.value = true
         toaster.clearAll()
         toaster.show({
-          title: 'Oops!',
-          message: 'Please review the errors in the form',
+          title: 'Success',
+          message: isEdit.value == false ? `Spot créé !` : `Spot mis à jour`,
+          color: 'success',
+          icon: 'ph:check',
+          closable: true,
+        })
+        isModalNewSpotOpen.value = false
+        resetForm()
+        filter.value = 'spot'
+        filter.value = ''
+      } else {
+        toaster.clearAll()
+        toaster.show({
+          title: 'Oops',
+          message: `Une erreur est survenue !`,
           color: 'danger',
-          icon: 'lucide:alert-triangle',
+          icon: 'ph:check',
           closable: true,
         })
       }
-      return
+    } catch (error: any) {
+      console.log(error)
+      document.documentElement.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      })
+      toaster.clearAll()
+      toaster.show({
+        title: 'Oops!',
+        message: 'Veuillez examiner les erreurs dans le formulaire',
+        color: 'danger',
+        icon: 'lucide:alert-triangle',
+        closable: true,
+      })
+      // return
     }
-
-    resetForm()
-
-    document.documentElement.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    })
-
     success.value = true
-    setTimeout(() => {
-      success.value = false
-    }, 3000)
   },
   (error) => {
     // this callback is optional and called only if the form has errors
     success.value = false
 
     // here you have access to the error
-    console.log('payment-create-error', error)
+    console.log('spot-create-error', error)
 
     // you can use it to scroll to the first error
     document.documentElement.scrollTo({
@@ -483,14 +492,14 @@ const onSubmit = handleSubmit(
     <div>
       <div class="flex w-full flex-col mb-10">
         <BaseAvatar
-          :src="data?.package?.announcer?.logo"
-          :badge-src="data?.package?.announcer?.logo"
+          :src="data?.data?.announcer?.logo"
+          :badge-src="data?.data?.announcer?.logo"
           size="2xl"
           class="mx-auto"
         />
         <div class="mx-auto w-full max-w-4xl text-center">
           <BaseHeading tag="h2" size="xl" weight="medium" class="mt-4">
-            {{ data?.package?.announcer.name }}
+            {{ data?.data?.announcer?.name }}
           </BaseHeading>
           <div
             class="divide-muted-200 dark:divide-muted-800 flex items-center justify-center divide-x"
@@ -498,7 +507,7 @@ const onSubmit = handleSubmit(
             <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
               <Icon name="ph:globe" class="h-5 w-5" />
               <BaseText size="sm"
-                >Email: {{ data?.package?.announcer.email }}</BaseText
+                >Email: {{ data?.data?.announcer.email }}</BaseText
               >
             </div>
 
@@ -514,7 +523,7 @@ const onSubmit = handleSubmit(
 
             <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
               <Icon name="ph:phone" class="h-5 w-5" />
-              <BaseText size="sm">Tel: +237 694 685 781</BaseText>
+              <BaseText size="sm">{{ data?.data?.announcer.phone }}</BaseText>
             </div>
           </div>
         </div>
@@ -525,7 +534,7 @@ const onSubmit = handleSubmit(
         <BaseInput
           v-model="filter"
           icon="lucide:search"
-          placeholder="Filtrer opera..."
+          placeholder="Filtre spot..."
           :classes="{
             wrapper: 'w-full sm:w-auto',
           }"
@@ -553,12 +562,19 @@ const onSubmit = handleSubmit(
           <span>Planning</span>
         </BaseButton>
         <BaseButton
-          @click="isModalNewTxnOpen = true"
+          @click=";(isModalNewSpotOpen = true), (isEdit = false)"
           color="primary"
           class="w-full sm:w-48"
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
-          <span>Nouveau Fichier</span>
+          <span>Nouveau Spot</span>
+        </BaseButton>
+        <BaseButton
+          @click="router.push('/bo/spots/package-details/' + data.data?._id)"
+          color="primary"
+          class="w-full sm:w-8"
+        >
+          <Icon name="carbon:tropical-storm-tracks" class="h-4 w-4" />
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">
@@ -591,7 +607,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.package?.numberSpots }}</span>
+                <span>{{ data?.data?.numberSpots }}</span>
               </BaseHeading>
             </div>
             <div
@@ -632,7 +648,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.package?.numberPlay }}</span>
+                <span>{{ data?.data?.numberPlay ?? 0 }}</span>
               </BaseHeading>
             </div>
             <div
@@ -728,7 +744,7 @@ const onSubmit = handleSubmit(
         </div>
       </div>
       <div>
-        <div v-if="!pending && data?.package?.spots?.length === 0">
+        <div v-if="!pending && data?.data?.spots?.length === 0">
           <BasePlaceholderPage
             title="No matching results"
             subtitle="Looks like we couldn't find any matching results for your search terms. Try other search terms."
@@ -799,10 +815,7 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
               </TairoTableRow>
 
-              <TairoTableRow
-                v-for="item in data?.package?.spots"
-                :key="item.id"
-              >
+              <TairoTableRow v-for="item in data?.data?.spots" :key="item.id">
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseCheckbox
@@ -894,14 +907,27 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
 
                 <TairoTableCell spaced>
-                  <BaseButtonAction muted>Upload fichier</BaseButtonAction>
+                  <div class="flex">
+                    <BaseButtonAction class="mx-2" to="" muted>
+                      <Icon name="lucide:upload" class="h-4 w-4"
+                    /></BaseButtonAction>
+                    <BaseButtonAction @click="editSpot(item)">
+                      <Icon name="lucide:edit" class="h-4 w-4"
+                    /></BaseButtonAction>
+                    <BaseButtonAction
+                      @click="confirmDeleteSpot(item)"
+                      class="mx-2"
+                    >
+                      <Icon name="lucide:trash" class="h-4 w-4 text-red-500"
+                    /></BaseButtonAction>
+                  </div>
                 </TairoTableCell>
               </TairoTableRow>
             </TairoTable>
           </div>
           <div class="mt-6">
             <BasePagination
-              :total-items="data?.package?.spots?.length ?? 0"
+              :total-items="data?.spots?.length ?? 0"
               :item-per-page="perPage"
               :current-page="page"
               shape="curved"
@@ -911,11 +937,11 @@ const onSubmit = handleSubmit(
       </div>
     </TairoContentWrapper>
 
-    <!-- Modal File -->
+    <!-- Modal new Spot -->
     <TairoModal
-      :open="isModalNewTxnOpen"
+      :open="isModalNewSpotOpen"
       size="xl"
-      @close="isModalNewTxnOpen = false"
+      @close="isModalNewSpotOpen = false"
     >
       <template #header>
         <!-- Header -->
@@ -923,10 +949,10 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Nouvelle Opération
+            {{ isEdit == true ? 'Editer' : 'Nouveau' }} Spot
           </h3>
 
-          <BaseButtonClose @click="isModalNewTxnOpen = false" />
+          <BaseButtonClose @click="isModalNewSpotOpen = false" />
         </div>
       </template>
 
@@ -944,36 +970,100 @@ const onSubmit = handleSubmit(
           >
             <div class="mx-auto flex w-full flex-col">
               <div>
-                <div>
-                  <div class="grid grid-cols-12 gap-4"></div>
-                  <div class="grid grid-cols-12 gap-4">
-                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-12">
-                      <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
+                <div class="grid grid-cols-12 gap-4">
+                  <div class="col-span-12 md:col-span-12">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="spot.product"
+                    >
+                      <BaseInput
+                        label="Produit *"
+                        icon="ph:user-duotone"
+                        placeholder="spot xxxx"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-12">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="spot.message"
+                    >
+                      <BaseInput
+                        label="Message"
+                        icon="ph:chat-duotone"
+                        placeholder="spot xxxx"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                </div>
+                <div class="grid grid-cols-12 gap-4 mt-4">
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="spot.tag"
+                    >
+                      <BaseInput
+                        label="Tag"
+                        icon="ph:chat-duotone"
+                        placeholder="spot A"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <!-- <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="spot.announcer"
+                    >
+                      <BaseListbox
+                        label="Annonceur"
+                        :items="announcers?.data"
+                        :properties="{
+                          value: '_id',
+                          label: 'name',
+                          sublabel: 'email',
+                          media: 'flag',
                         }"
-                        name="payment.country"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div> -->
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="spot.type"
+                    >
+                      <BaseSelect
+                        label="Type *"
+                        icon="ph:funnel"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
                       >
-                        <BaseListbox
-                          label="Pays"
-                          :items="countries"
-                          :properties="{
-                            value: 'id',
-                            label: 'abbr',
-                            sublabel: 'name',
-                            media: 'flag',
-                          }"
-                          v-model="activeSpot"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        />
-                      </Field>
-                    </div>
+                        <option value="SPOT">SPOT</option>
+                        <option value="BA">Bande d'annonce</option>
+                      </BaseSelect>
+                    </Field>
                   </div>
                 </div>
               </div>
@@ -985,15 +1075,67 @@ const onSubmit = handleSubmit(
         <!-- Footer -->
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
-            <BaseButton @click="isModalNewTxnOpen = false">Annuler</BaseButton>
+            <BaseButton @click="isModalNewSpotOpen = false">Annuler</BaseButton>
+
+            <BaseButton color="primary" flavor="solid" @click="onSubmit">
+              {{ isEdit == true ? 'Modifier' : 'Créer' }}
+            </BaseButton>
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal delete -->
+    <TairoModal
+      :open="isModalDeleteSpotOpen"
+      size="sm"
+      @close="isModalDeleteSpotOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Suppression d'un spot
+          </h3>
+
+          <BaseButtonClose @click="isModalDeleteSpotOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <h3
+            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
+          >
+            Supprimer
+            <span class="text-red-500">{{ currentSpot?.product }}</span> ?
+          </h3>
+
+          <p
+            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est irreversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalDeleteSpotOpen = false"
+              >Annuler</BaseButton
+            >
 
             <BaseButton
               color="primary"
               flavor="solid"
-              @click="isModalNewTxnOpen = false"
+              @click="deleteSpot(currentSpot)"
+              >Suppimer</BaseButton
             >
-              Valider
-            </BaseButton>
           </div>
         </div>
       </template>
@@ -1038,7 +1180,8 @@ const onSubmit = handleSubmit(
                     <span class="text-primary-500">
                       {{ dayOfWeek(parseInt(activeDay)) }} le {{ activeDay }}
                       {{ formatter.format(activeDate) }}
-                      {{ activeDate.getFullYear() }} à {{ activeHour }}</span
+                      {{ activeDate.getFullYear() }} à
+                      {{ activeHour.code }}</span
                     ></BaseText
                   >
                   <div class="grid grid-cols-12 gap-4">
@@ -1054,9 +1197,9 @@ const onSubmit = handleSubmit(
                       >
                         <BaseListbox
                           label="Spot"
-                          :items="data?.package?.spots"
+                          :items="data?.data?.spots"
                           :properties="{
-                            value: 'id',
+                            value: '_id',
                             label: 'product',
                             sublabel: 'tag',
                             media: 'flag',
@@ -1072,7 +1215,7 @@ const onSubmit = handleSubmit(
                   </div>
 
                   <div
-                    v-if="activeSpot.id != ''"
+                    v-if="activeSpot._id != ''"
                     class="grid grid-cols-12 gap-4 mt-4"
                   >
                     <div class="col-span-12 md:col-span-12">
@@ -1184,7 +1327,7 @@ const onSubmit = handleSubmit(
           </BaseButton>
         </div>
       </div>
-      <div class="grid grid-cols-12 gap-4 pb-5 px-2">
+      <div class="grid grid-cols-12 gap-4 pb-5 px-2 overflow-y-auto">
         <!-- Stat tile -->
         <div class="col-span-6 md:col-span-1">
           <BaseCard class="space-y-4 items-center">
@@ -1223,7 +1366,7 @@ const onSubmit = handleSubmit(
                 <span>Horaires</span>
               </BaseHeading>
             </div>
-            <div v-for="h in hours" :key="h.code" class="border-b-2">
+            <div v-for="h in hoursData.data" :key="h._id" class="border-b-2">
               <BaseHeading
                 as="h4"
                 size="sm"
@@ -1281,7 +1424,7 @@ const onSubmit = handleSubmit(
               </BaseHeading>
             </div>
 
-            <div v-for="h in hours" :key="h.code" class="">
+            <div v-for="h in hoursData.data" :key="h._id" class="">
               <div class="border-b-2 flex justify-start">
                 <div
                   v-for="d in activeDays"
@@ -1289,7 +1432,7 @@ const onSubmit = handleSubmit(
                   class="text-muted-800 dark:text-white -mt-1 !w-10 flex justify-center items-center border-r"
                 >
                   <BaseButton
-                    @click="openSpotPlanningModal(d.toString(), h.code)"
+                    @click="openSpotPlanningModal(d.toString(), h)"
                     :color="checkSpot(d, h.code)[1]"
                     flavor="solid"
                     class="!w-8 !h-[38px] rounded-full !p-1 dark:bg-muted-700 bg-gray-200"
@@ -1313,14 +1456,14 @@ const onSubmit = handleSubmit(
         <!-- Footer -->
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
-            <BaseButton @click="isModalNewTxnOpen = false">Annuler</BaseButton>
-            <BaseButton
+            <BaseButton @click="isModalPlanningOpen = false">Fermer</BaseButton>
+            <!-- <BaseButton
               color="primary"
               flavor="solid"
-              @click="isModalNewTxnOpen = false"
+              @click="isModalPlanningOpen = false"
             >
-              Valider
-            </BaseButton>
+              Fermer
+            </BaseButton> -->
           </div>
         </div>
       </template>

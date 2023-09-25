@@ -16,17 +16,17 @@ export default defineEventHandler(async (event) => {
       total: data.length,
       data: filterData(data, filter, page, perPage),
     }
-  } else if (action == 'createAnnouncer') {
+  } else if (action == 'createSpot') {
     const body = await readBody(event)
     console.log(body)
-    const data = await createAnnouncer(body, token)
+    const data = await createSpot(body, token)
     return { data: data, success: true }
-  } else if (action == 'updateAnnouncer') {
+  } else if (action == 'updateSpot') {
     const body = await readBody(event)
-    const data = await updateAnnouncer(id, body, token)
+    const data = await updateSpot(id, body, token)
     return { data: data, success: true }
   } else if (action == 'delete') {
-    const data = await deleteAnnouncer(id, token)
+    const data = await deleteSpot(id, token)
     return { data: data, success: true }
   }
 })
@@ -44,7 +44,7 @@ function filterData(
   const filterRe = new RegExp(filter, 'i')
   return data
     .filter((item) => {
-      return [item.name, item.email, item.status].some((item) =>
+      return [item.product, item.type, item.message].some((item) =>
         item.match(filterRe),
       )
     })
@@ -54,24 +54,7 @@ function filterData(
 async function findOne(id: string, token: string) {
   console.log('findOne ' + token)
   const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/announcers/' + id,
-    {
-      method: 'get',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-type': 'application/json',
-      },
-    },
-  ).catch((error) => console.log(error))
-  console.log(data)
-  return Promise.resolve(data)
-}
-
-async function findAll(token: string) {
-  console.log('findAll ' + token)
-  const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/announcers', {
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/spots/' + id, {
     method: 'get',
     headers: {
       Authorization: 'Bearer ' + token,
@@ -82,10 +65,24 @@ async function findAll(token: string) {
   return Promise.resolve(data)
 }
 
-async function createAnnouncer(body: any, token: string) {
-  console.log('createAnnouncer ' + token)
+async function findAll(token: string) {
+  console.log('findAll ' + token)
   const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/announcers', {
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/spots', {
+    method: 'get',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-type': 'application/json',
+    },
+  }).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
+}
+
+async function createSpot(body: any, token: string) {
+  console.log('createSpot ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/spots', {
     method: 'post',
     headers: {
       Authorization: 'Bearer ' + token,
@@ -97,37 +94,31 @@ async function createAnnouncer(body: any, token: string) {
   return Promise.resolve(data)
 }
 
-async function updateAnnouncer(id: string, body: any, token: string) {
-  console.log('updateAnnouncer ' + token)
+async function updateSpot(id: string, body: any, token: string) {
+  console.log('updateSpot ' + token)
   const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/announcers/' + id,
-    {
-      method: 'PUT',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-type': 'application/json',
-      },
-      body: body,
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/spots/' + id, {
+    method: 'PUT',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-type': 'application/json',
     },
-  ).catch((error) => console.log(error))
+    body: body,
+  }).catch((error) => console.log(error))
   console.log(data)
   return Promise.resolve(data)
 }
 
-async function deleteAnnouncer(id: string, token: string) {
-  console.log('deleteAnnouncer ' + token)
+async function deleteSpot(id: string, token: string) {
+  console.log('deleteSpot ' + token)
   const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/announcers/' + id,
-    {
-      method: 'DELETE',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-type': 'application/json',
-      },
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/spots/' + id, {
+    method: 'DELETE',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-type': 'application/json',
     },
-  ).catch((error) => console.log(error))
+  }).catch((error) => console.log(error))
   console.log(data)
   return Promise.resolve(data)
 }

@@ -1,36 +1,55 @@
-import { Org } from '~/types/org'
-
 const delay = (t: number) => new Promise((r) => setTimeout(r, t))
 
-var baseOrg: Org
-var arrOrgs: Org[]
+var appRoles: any[]
+var appCountries: any[]
 export const useAppStore = defineStore('app', {
   state: () => ({
-    activeOrg: baseOrg,
-    myOrgs: arrOrgs,
+    roles: appRoles,
+    countries: appCountries,
   }),
 
   persist: true,
 
   getters: {
     fullName(): String {
-      return `${this.activeOrg.name} ${this.activeOrg.name}`
+      return ``
     },
   },
 
   actions: {
-    me() {
-      console.log(this.activeOrg.name)
+    me() {},
+    async setRoles() {
+      const token = useCookie('token')
+      const { data }: any = await useFetch('/api/users/roles', {
+        method: 'get',
+        headers: { 'Content-Type': 'application/json' },
+        query: {
+          action: 'findAll',
+          token: token.value,
+        },
+      })
+      var response = data._value.data
+      this.roles = response
+    },
+    async setCountries() {
+      const token = useCookie('token')
+      const { data }: any = await useFetch('/api/countries', {
+        method: 'get',
+        headers: { 'Content-Type': 'application/json' },
+        query: {
+          action: 'findAll',
+          token: token.value,
+        },
+      })
+      var response = data._value.data
+      this.countries = response
     },
 
-    async setActiveOrg(org: Org) {
-      this.activeOrg = org
+    async updateRoles(role: any) {
+      this.roles.push(role)
     },
-    async addOrg(org: Org) {
-      this.myOrgs.push(org)
-    },
-    async reset() {
-      this.activeOrg = baseOrg
+    async updateCountry(country: any) {
+      this.countries.push(country)
     },
   },
 })

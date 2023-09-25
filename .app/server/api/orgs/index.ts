@@ -64,10 +64,10 @@ async function getOrgs() {
   return Promise.resolve([
     {
       id: '1',
-      name: 'Communauté Bandjoun',
+      name: 'Canal2 International',
       slug: 'bandjoun',
-      description: 'La communauté bandjoun',
-      email: 'bj@gmail.com',
+      description: 'Toujour plus près de vous',
+      email: 'c2@gmail.com',
       status: 'active',
       owner: {
         id: '1',
@@ -216,10 +216,10 @@ async function getOrgs() {
     },
     {
       id: '2',
-      name: 'Communauté Baham',
+      name: 'Sweet FM',
       slug: 'baham',
-      description: 'La communauté Baham',
-      email: 'bh@gmail.com',
+      description: 'Le bonheur c`est ici',
+      email: 'sweet@gmail.com',
       status: 'active',
       owner: {
         id: '2',

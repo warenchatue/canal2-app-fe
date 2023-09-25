@@ -1,1 +1,6 @@
-export type Status = 'success' | 'pending' | 'failed'
+export type Status =
+  | 'onHold'
+  | 'inProgress'
+  | 'completed'
+  | 'canceled'
+  | 'failed'

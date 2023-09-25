@@ -1,42 +1,32 @@
+import { User } from '~/types/user'
+
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const perPage = parseInt((query.perPage as string) || '5', 10)
   const page = parseInt((query.page as string) || '1', 10)
   const filter = (query.filter as string) || ''
+  const id = (query.id as string) || ''
+  const token = (query.token as string) || ''
   const action = (query.action as string) || 'get'
 
-  if (perPage >= 50) {
-    // Create an artificial delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-  }
-
-  console.log(action)
-
-  if (action == 'get') {
-    const data = await getUsers()
+  if (action == 'finOne') {
+    //
+  } else if (action == 'findAll') {
+    const data = await findAll(token)
     return {
       total: data.length,
       data: filterData(data, filter, page, perPage),
     }
-  } else if (action == 'post') {
+  } else if (action == 'updateOne') {
     const body = await readBody(event)
-    console.log(body)
-    const data = await getUsers()
-
-    const users = data.filter(
-      (d) => d.email == body.username && d.password == body.password,
-    )
-    if (users?.length == 1) {
-      console.log('user found')
-      return {
-        data: users[0],
-      }
-    } else {
-      console.log('user not found')
-      return {
-        data: null,
-      }
+    const finalBody = {
+      ...body,
+      appRole: body.appRole?._id,
+      country: body.country?._id,
     }
+    console.log(finalBody)
+    const data = await updateOne(id, finalBody, token)
+    return { data: data, success: true }
   }
 })
 
@@ -60,53 +50,31 @@ function filterData(
     .slice(offset, offset + perPage)
 }
 
-async function createUser() {}
-async function getUsers() {
-  return Promise.resolve([
-    {
-      id: '0',
-      firstName: 'Paul',
-      lastName: 'Micheal',
-      email: 'ja@gmail.com',
-      status: 'active',
-      token: 'xa',
-      password: 'test',
-      role: 'member',
-      medias: {
-        avatar: '/img/avatars/5.svg',
-        flag: '/img/icons/flags/united-states-of-america.svg',
-      },
-      notifications: [],
+async function findAll(token: string) {
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/users', {
+    method: 'get',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-type': 'application/json',
     },
-    {
-      id: '1',
-      firstName: 'Jordan',
-      lastName: 'ANAFACK',
-      email: 'anafackjordan@gmail.com',
-      status: 'active',
-      token: 'xa',
-      password: 'test',
-      role: 'admin',
-      medias: {
-        avatar: '/img/avatars/5.svg',
-        flag: '/img/icons/flags/united-states-of-america.svg',
-      },
-      notifications: [],
-    },
-    {
-      id: '2',
-      firstName: 'Diderot',
-      lastName: 'AR.',
-      email: 'jordananafack@gmail.com',
-      status: 'active',
-      token: 'xb',
-      password: 'test2',
-      role: 'member',
-      medias: {
-        avatar: '/img/avatars/4.svg',
-        flag: '/img/icons/flags/united-states-of-america.svg',
-      },
-    },
-  ])
+  }).catch((error) => console.log(error))
+  console.log(data)
+
+  return Promise.resolve(data)
 }
-async function updateUser() {}
+
+async function updateOne(id: string, body: User, token: string) {
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/users/' + id, {
+    method: 'PUT',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-type': 'application/json',
+    },
+    body: body,
+  }).catch((error) => console.log(error))
+  console.log(data)
+
+  return Promise.resolve(data)
+}

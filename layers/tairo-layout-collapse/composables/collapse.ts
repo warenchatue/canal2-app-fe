@@ -75,8 +75,8 @@ export function useCollapse() {
       return []
     }
     let items = app.tairo.collapse?.navigation?.items
-    console.log(auth.user.role)
-    if (auth.user.role != 'admin') {
+    console.log(auth.user.appRole)
+    if (auth.user.appRole?.name != 'Admin') {
       items = items?.filter((item) => !item.isAdmin)
     }
 

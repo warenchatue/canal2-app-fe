@@ -8,8 +8,8 @@ definePageMeta({
   title: 'Planning de diffusion',
   preview: {
     title: 'Planning de diffusion',
-    description: 'Contribution and withdrawal',
-    categories: ['bo', 'finances'],
+    description: '',
+    categories: ['bo', 'spots'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -22,7 +22,6 @@ const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(10)
 const isModalNewTxnOpen = ref(false)
-const activeFundRaising = ref({ id: '', name: '', category: '', image: '' })
 
 watch([filter, perPage], () => {
   router.push({
@@ -33,18 +32,19 @@ watch([filter, perPage], () => {
 })
 
 const app = useAppStore()
-const orgStore = useOrgStore()
+const token = useCookie('token')
 const query = computed(() => {
   return {
     filter: filter.value,
     perPage: perPage.value,
     page: page.value,
-    action: 'getPlanning',
+    action: 'findAll',
+    token: token.value,
   }
 })
 
 const { data, pending, error, refresh } = await useFetch(
-  '/api/spots/packages',
+  '/api/spots/plannings',
   {
     query,
   },
@@ -89,59 +89,7 @@ function selectOperation(id: string) {
   }, 150)
 }
 
-const operationTypes = [
-  {
-    id: '1',
-    name: 'VIREMENT',
-  },
-  {
-    id: '2',
-    name: 'DEPOT',
-  },
-]
 
-const mouvementTypes = [
-  {
-    id: '1',
-    name: 'DEBIT',
-  },
-  {
-    id: '2',
-    name: 'CREDIT',
-  },
-]
-
-const banks = [
-  {
-    id: '1',
-    name: 'CBC',
-    logo: '/img/avatars/company.svg',
-  },
-  {
-    id: '2',
-    name: 'AFB',
-    logo: '/img/avatars/company.svg',
-  },
-]
-
-const currencies = [
-  {
-    id: '1',
-    name: 'EURO',
-  },
-  {
-    id: '2',
-    name: 'DOLLAR USD',
-  },
-  {
-    id: '3',
-    name: 'XAF',
-  },
-  {
-    id: '4',
-    name: 'LIVRE STERLING',
-  },
-]
 
 // Ask the user for confirmation before leaving the page if the form has unsaved changes
 // onBeforeRouteLeave(() => {
@@ -860,80 +808,6 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 sm:col-span-6 mt-2">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="label"
-                    >
-                      <BaseInput
-                        label="Libéllé"
-                        icon="ph:note"
-                        placeholder="Ex: virement"
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        type="text"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="grid grid-cols-12 gap-4 mt-2">
-                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
-                      <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
-                        name="operationType"
-                      >
-                        <BaseListbox
-                          label="Type d'opération"
-                          :items="operationTypes"
-                          :properties="{
-                            value: 'id',
-                            label: 'name',
-                            sublabel: '',
-                            media: '',
-                          }"
-                          v-model="field.value"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        />
-                      </Field>
-                    </div>
-                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
-                      <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
-                        name="currency"
-                      >
-                        <BaseListbox
-                          label="Devise"
-                          :items="currencies"
-                          :properties="{
-                            value: 'id',
-                            label: 'name',
-                            sublabel: '',
-                            media: '',
-                          }"
-                          v-model="field.value"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        />
-                      </Field>
-                    </div>
-                  </div>
-                  <div class="col-span-12 sm:col-span-6 mt-2">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="montant"
                     >
                       <BaseInput
@@ -948,62 +822,6 @@ const onSubmit = handleSubmit(
                         @blur="handleBlur"
                       />
                     </Field>
-                  </div>
-                  <div class="grid grid-cols-12 gap-4 mt-2">
-                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
-                      <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
-                        name="bank"
-                      >
-                        <BaseListbox
-                          label="Banque"
-                          :items="banks"
-                          :properties="{
-                            value: 'id',
-                            label: 'name',
-                            sublabel: '',
-                            media: 'logo',
-                          }"
-                          v-model="field.value"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        />
-                      </Field>
-                    </div>
-                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
-                      <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
-                        name="position"
-                      >
-                        <BaseListbox
-                          label="Type de mouvement"
-                          :items="mouvementTypes"
-                          :properties="{
-                            value: 'id',
-                            label: 'name',
-                            sublabel: '',
-                            media: '',
-                          }"
-                          v-model="field.value"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        />
-                      </Field>
-                    </div>
                   </div>
                 </div>
               </div>

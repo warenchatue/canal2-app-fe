@@ -5,6 +5,7 @@ export default defineEventHandler(async (event) => {
   const filter = (query.filter as string) || ''
   const action = (query.action as string) || 'get'
   const id = (query.id as string) || ''
+  const packageId = (query.packageId as string) || ''
   const token = (query.token as string) || ''
 
   if (action == 'findOne') {
@@ -16,17 +17,17 @@ export default defineEventHandler(async (event) => {
       total: data.length,
       data: filterData(data, filter, page, perPage),
     }
-  } else if (action == 'createAnnouncer') {
+  } else if (action == 'createPlanning') {
     const body = await readBody(event)
     console.log(body)
-    const data = await createAnnouncer(body, token)
+    const data = await createPlanning(packageId, body, token)
     return { data: data, success: true }
-  } else if (action == 'updateAnnouncer') {
+  } else if (action == 'updatePlanning') {
     const body = await readBody(event)
-    const data = await updateAnnouncer(id, body, token)
+    const data = await updatePlanning(id, body, token)
     return { data: data, success: true }
   } else if (action == 'delete') {
-    const data = await deleteAnnouncer(id, token)
+    const data = await deletePlanning(id, token)
     return { data: data, success: true }
   }
 })
@@ -44,7 +45,7 @@ function filterData(
   const filterRe = new RegExp(filter, 'i')
   return data
     .filter((item) => {
-      return [item.name, item.email, item.status].some((item) =>
+      return [item.product, item.type, item.message].some((item) =>
         item.match(filterRe),
       )
     })
@@ -55,7 +56,7 @@ async function findOne(id: string, token: string) {
   console.log('findOne ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/announcers/' + id,
+    runtimeConfig.env.apiUrl + '/plannings/' + id,
     {
       method: 'get',
       headers: {
@@ -71,7 +72,7 @@ async function findOne(id: string, token: string) {
 async function findAll(token: string) {
   console.log('findAll ' + token)
   const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/announcers', {
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/plannings', {
     method: 'get',
     headers: {
       Authorization: 'Bearer ' + token,
@@ -82,26 +83,29 @@ async function findAll(token: string) {
   return Promise.resolve(data)
 }
 
-async function createAnnouncer(body: any, token: string) {
-  console.log('createAnnouncer ' + token)
+async function createPlanning(packageId: string, body: any, token: string) {
+  console.log('createPlanning ' + token)
   const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/announcers', {
-    method: 'post',
-    headers: {
-      Authorization: 'Bearer ' + token,
-      'Content-type': 'application/json',
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/plannings/' + packageId,
+    {
+      method: 'post',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+      body: body,
     },
-    body: body,
-  }).catch((error) => console.log(error))
+  ).catch((error) => console.log(error))
   console.log(data)
   return Promise.resolve(data)
 }
 
-async function updateAnnouncer(id: string, body: any, token: string) {
-  console.log('updateAnnouncer ' + token)
+async function updatePlanning(id: string, body: any, token: string) {
+  console.log('updatePlanning ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/announcers/' + id,
+    runtimeConfig.env.apiUrl + '/plannings/' + id,
     {
       method: 'PUT',
       headers: {
@@ -115,11 +119,11 @@ async function updateAnnouncer(id: string, body: any, token: string) {
   return Promise.resolve(data)
 }
 
-async function deleteAnnouncer(id: string, token: string) {
-  console.log('deleteAnnouncer ' + token)
+async function deletePlanning(id: string, token: string) {
+  console.log('deletePlanning ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/announcers/' + id,
+    runtimeConfig.env.apiUrl + '/plannings/' + id,
     {
       method: 'DELETE',
       headers: {

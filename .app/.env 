@@ -14,3 +14,9 @@ ENABLE_DOCUMENTATION=false
 # This is an additional feature of the documentation layer (with nuxt/content)
 # It enables edition via https://nuxt.studio/
 ENABLE_DOCUMENTATION_STUDIO=false
+
+NUXT_ENV_APP_ENV=local
+
+NUXT_ENV_API_URL=http://localhost:8700
+
+NUXT_PUBLIC_SITE_URL=http://localhost:3000

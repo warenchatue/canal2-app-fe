@@ -3,8 +3,6 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { storeToRefs } from 'pinia'
 import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
-import { useOrgStore } from '~/stores/org'
-import { Org } from '~/types/org'
 import { User } from '~/types/user'
 
 definePageMeta({
@@ -65,7 +63,6 @@ const { authenticateUser } = useAuthStore() // use authenticateUser action from 
 const { authenticated } = storeToRefs(useAuthStore()) // make authenticated state reactive with storeToRefs
 const auth = useAuthStore()
 const app = useAppStore()
-const orgStore = useOrgStore()
 if (authenticated.value == true) {
   router.push('/dashboards')
 }
@@ -80,40 +77,24 @@ const onSubmit = handleSubmit(async (values) => {
     await authenticateUser({
       username: values.email,
       password: values.password,
+      type: 'email',
     })
     if (authenticated) {
       //update myOrgs
+      const token = useCookie('token')
       const query = computed(() => {
         return {
-          action: 'getUserOrgs',
+          action: 'findUserOrgs',
+          token: token.value,
         }
       })
-      console.log('user id ' + auth.user.id)
       const { data, pending, error, refresh } = await useFetch('/api/orgs', {
-        method: 'post',
+        method: 'get',
         headers: { 'Content-Type': 'application/json' },
         query: query,
-        body: {
-          uid: auth.user.id,
-        },
       })
       if (data.value) {
-        var allOrgs: Org[] = []
-        data.value.data.forEach((org) => {
-          const baseOrg = <Org>{
-            id: org.id,
-            name: org.name,
-            slug: org.slug,
-            email: org.email,
-            type: org.type,
-            description: org.description,
-            medias: org.medias,
-          }
-          console.log(baseOrg)
-          allOrgs.push(baseOrg)
-        })
-        app.myOrgs = allOrgs
-        orgStore.myOrgs = allOrgs
+      
       }
       errorMessage = false
       toaster.clearAll()
@@ -125,7 +106,12 @@ const onSubmit = handleSubmit(async (values) => {
         closable: true,
       })
 
-      router.push('/select-org')
+      //Set countries and roles
+      app.setCountries()
+      app.setRoles()
+
+
+      router.push('/dashboards')
     }
     console.log(errorMessage)
 
@@ -293,7 +279,7 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
         <div class="text-center">
           <BaseText size="xs" class="text-muted-400">
-            © {{ new Date().getFullYear() }} Tairo. All rights reserved.
+            © {{ new Date().getFullYear() }} Digital Innova. All rights reserved.
           </BaseText>
         </div>
       </div>

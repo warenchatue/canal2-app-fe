@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { toTypedSchema } from '@vee-validate/zod'
+import { Field, useFieldError, useForm } from 'vee-validate'
+import { z } from 'zod'
+
 definePageMeta({
   title: 'Users',
   preview: {
@@ -13,10 +17,13 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
+const appStore = useAppStore()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 
 const filter = ref('')
 const perPage = ref(10)
+const token = useCookie('token')
+const success = ref(false)
 
 watch([filter, perPage], () => {
   router.push({
@@ -28,21 +35,19 @@ watch([filter, perPage], () => {
 
 const query = computed(() => {
   return {
+    action: 'findAll',
+    token: token.value,
     filter: filter.value,
     perPage: perPage.value,
     page: page.value,
   }
 })
 
-const { data, pending, error, refresh } = await useFetch(
-  '/api/users',
-  {
-    query,
-  },
-)
+const { data, pending, error, refresh } = await useFetch('/api/users', {
+  query,
+})
 
 const selected = ref<number[]>([])
-
 const isAllVisibleSelected = computed(() => {
   return selected.value.length === data.value?.data.length
 })
@@ -51,9 +56,220 @@ function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
     selected.value = []
   } else {
-    selected.value = data.value?.data.map((item) => item.id) ?? []
+    selected.value = data.value?.data.map((item: any) => item.id) ?? []
   }
 }
+
+const isModalNewUserOpen = ref(false)
+const isEdit = ref(false)
+const { registerUser, updateUser } = useAuthStore()
+
+// This is the object that will contain the validation messages
+const ONE_MB = 1000000
+const VALIDATION_TEXT = {
+  NAME_REQUIRED: "Name can't be empty",
+  PHONE_REQUIRED: "Phone number can't be empty",
+  EMAIL_REQUIRED: "Email address can't be empty",
+  COUNTRY_REQUIRED: 'Please select a country',
+}
+
+// This is the Zod schema for the form input
+// It's used to define the shape that the form data will have
+const zodSchema = z
+  .object({
+    user: z.object({
+      _id: z.string().optional(),
+      firstName: z.string(),
+      lastName: z.string().min(1, VALIDATION_TEXT.NAME_REQUIRED),
+      email: z.string(),
+      userType: z.union([z.literal('personal'), z.literal('corporate')]),
+      status: z.union([z.literal('active'), z.literal('inactive')]),
+      phone: z.string(),
+      appRole: z.object({
+        _id: z.string(),
+        name: z.string(),
+        flag: z.string().optional(),
+        description: z.string(),
+      }),
+      country: z
+        .object({
+          _id: z.string(),
+          abbr: z.string(),
+          name: z.string(),
+          flag: z.string().optional(),
+        })
+        .optional()
+        .nullable(),
+    }),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.user.lastName) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: VALIDATION_TEXT.NAME_REQUIRED,
+        path: ['user.lastName'],
+      })
+    }
+
+    if (!data.user.email) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: VALIDATION_TEXT.EMAIL_REQUIRED,
+        path: ['user.email'],
+      })
+    }
+  })
+
+// Zod has a great infer method that will
+// infer the shape of the schema into a TypeScript type
+type FormInput = z.infer<typeof zodSchema>
+
+const validationSchema = toTypedSchema(zodSchema)
+const initialValues = computed<FormInput>(() => ({
+  avatar: null,
+  user: {
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    userType: 'personal',
+    status: 'active',
+    appRole: {
+      _id: '',
+      name: '',
+      description: '',
+      flag: '',
+    },
+    country: {
+      _id: '',
+      abbr: '',
+      name: '',
+      flag: '',
+    },
+  },
+}))
+
+const {
+  handleSubmit,
+  isSubmitting,
+  setFieldError,
+  meta,
+  values,
+  errors,
+  resetForm,
+  setFieldValue,
+  setErrors,
+} = useForm({
+  validationSchema,
+  initialValues,
+})
+
+const toaster = useToaster()
+
+function editUser(user: any) {
+  isModalNewUserOpen.value = true
+  isEdit.value = true
+  setFieldValue('user._id', user._id)
+  setFieldValue('user.firstName', user.firstName)
+  setFieldValue('user.lastName', user.lastName)
+  setFieldValue('user.email', user.email)
+  setFieldValue('user.phone', user.phone)
+  setFieldValue('user.userType', user.userType)
+  setFieldValue('user.appRole', user.appRole)
+  setFieldValue('user.country', user.country)
+  setFieldValue('user.status', user.status)
+}
+
+// This is where you would send the form data to the server
+const onSubmit = handleSubmit(
+  async (values) => {
+    success.value = false
+    // here you have access to the validated form values
+    console.log('user-create-success', values)
+
+    try {
+      const isSuccess = ref(false)
+      if (isEdit.value == true) {
+        isSuccess.value = await updateUser(
+          {
+            ...values.user,
+          },
+          true,
+        )
+      } else {
+        isSuccess.value = await registerUser(
+          {
+            ...values.user,
+            password: '12345',
+          },
+          true,
+        )
+      }
+
+      if (isSuccess.value) {
+        success.value = true
+        resetForm()
+        toaster.clearAll()
+        toaster.show({
+          title: 'Success',
+          message: `User created!`,
+          color: 'success',
+          icon: 'ph:user-circle-fill',
+          closable: true,
+        })
+
+        isModalNewUserOpen.value = false
+        //refresh
+        filter.value = 'user'
+        filter.value = ''
+      } else {
+        toaster.clearAll()
+        toaster.show({
+          title: 'Error',
+          message: `An error occured!`,
+          color: 'warning',
+          icon: 'ph:check',
+          closable: true,
+        })
+      }
+    } catch (error: any) {
+      console.log(error)
+      // this will set the error on the form
+      if (error.message === 'Fake backend validation error') {
+        // @ts-expect-error - vee validate typing bug with nested keys
+        setFieldError('user.name', 'This name is not allowed')
+
+        document.documentElement.scrollTo({
+          top: 0,
+          behavior: 'smooth',
+        })
+
+        toaster.clearAll()
+        toaster.show({
+          title: 'Oops!',
+          message: 'Please review the errors in the form',
+          color: 'danger',
+          icon: 'lucide:alert-triangle',
+          closable: true,
+        })
+      }
+      return
+    }
+  },
+  (error) => {
+    // this callback is optional and called only if the form has errors
+    success.value = false
+
+    // here you have access to the error
+    console.log('user-create-error', error)
+
+    // you can use it to scroll to the first error
+    document.documentElement.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    })
+  },
+)
 </script>
 
 <template>
@@ -83,7 +299,7 @@ function toggleAllVisibleSelection() {
           <option :value="100">100 per page</option>
         </BaseSelect>
         <BaseButton
-          to="./create-project"
+          @click="resetForm(), ((isModalNewUserOpen = true), (isEdit = false))"
           color="primary"
           class="w-full sm:w-44"
         >
@@ -129,12 +345,16 @@ function toggleAllVisibleSelection() {
                     />
                   </div>
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Nom </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Email</TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Status</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>
-                  Orgs
+                  Utilisateur
                 </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Pays</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Tel</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Role</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Status</TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Orgs </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Dons </TairoTableHeading>
+
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
               </template>
 
@@ -174,81 +394,75 @@ function toggleAllVisibleSelection() {
                     />
                     <div class="ms-3 leading-none">
                       <h4 class="font-sans text-sm font-medium">
-                        {{ item.firstName }}  {{ item.lastName }}
+                        {{ item.firstName }} {{ item.lastName }}
                       </h4>
                       <p class="text-muted-400 font-sans text-xs">
-                        {{ item.role }}
+                        {{ item.email }}
+                      </p>
+                    </div>
+                  </div>
+                </TairoTableCell>
+                <TairoTableCell spaced>
+                  <div class="flex items-center">
+                    <BaseAvatar
+                      :src="item.country?.flag"
+                      :text="item.initials"
+                      :class="getRandomColor()"
+                    />
+                    <div class="ms-3 leading-none">
+                      <h4 class="font-sans text-sm font-medium">
+                        {{ item.country?.name }}
+                      </h4>
+                      <p class="text-muted-400 font-sans text-xs">
+                        {{ item.country?.abbr }}
                       </p>
                     </div>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.email }}
+                  {{ item.phone }}
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ item.appRole.name ?? 'Basic' }}
                 </TairoTableCell>
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag
-                    v-if="item.status === 'active'"
+                    v-if="item.state === 'active'"
                     color="success"
                     flavor="pastel"
                     shape="full"
                     condensed
                     class="font-medium"
                   >
-                    {{ item.status }}
+                    {{ item.state }}
                   </BaseTag>
                   <BaseTag
-                    v-else-if="item.status === 'new'"
-                    color="info"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    {{ item.status }}
-                  </BaseTag>
-                  <BaseTag
-                    v-else-if="item.status === 'busy'"
+                    v-else-if="item.state === 'inactive'"
                     color="warning"
                     flavor="pastel"
                     shape="full"
                     condensed
                     class="font-medium"
                   >
-                    {{ item.status }}
-                  </BaseTag>
-                  <BaseTag
-                    v-else-if="item.status === 'offline'"
-                    color="muted"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    {{ item.status }}
+                    {{ item.state }}
                   </BaseTag>
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
-                    <div class="relative">
-                      <BaseProgressCircle
-                        :value="80"
-                        :thickness="1"
-                        :size="50"
-                        class="text-success-500"
-                      />
-                      <span
-                        class="absolute start-1/2 top-1/2 z-10 ms-0.5 -translate-x-1/2 -translate-y-1/2 font-sans text-[0.65rem] font-semibold"
-                      >
-                        {{ 80 }}%
-                      </span>
-                    </div>
                     <span class="text-muted-400 font-sans text-xs">
-                      2 orgs
+                      {{ item.ownedOrgs }}
                     </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
-                  <BaseButtonAction muted>Manage</BaseButtonAction>
+                  <div class="flex items-center">
+                    <span class="text-muted-400 font-sans text-xs"> 5 </span>
+                  </div>
+                </TairoTableCell>
+                <TairoTableCell spaced>
+                  <BaseButtonAction @click="editUser(item)">
+                    <Icon name="lucide:edit" class="h-4 w-4"
+                  /></BaseButtonAction>
                 </TairoTableCell>
               </TairoTableRow>
             </TairoTable>
@@ -264,5 +478,211 @@ function toggleAllVisibleSelection() {
         </div>
       </div>
     </TairoContentWrapper>
+
+    <!-- Modal new user -->
+    <TairoModal
+      :open="isModalNewUserOpen"
+      size="xl"
+      @close="isModalNewUserOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Nouvel Utilisateur
+          </h3>
+
+          <BaseButtonClose @click="isModalNewUserOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <BaseCard class="w-full">
+        <form
+          method="POST"
+          action=""
+          class="divide-muted-200 dark:divide-muted-700"
+          @submit.prevent="onSubmit"
+        >
+          <div
+            shape="curved"
+            class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
+          >
+            <div class="mx-auto flex w-full flex-col">
+              <div>
+                <div class="grid grid-cols-12 gap-4">
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="user.lastName"
+                    >
+                      <BaseInput
+                        label="Nom"
+                        icon="ph:user-duotone"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="user.firstName"
+                    >
+                      <BaseInput
+                        label="Prénom"
+                        icon="ph:user-duotone"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="user.email"
+                    >
+                      <BaseInput
+                        label="Email"
+                        icon="ph:globe-duotone"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="user.phone"
+                    >
+                      <BaseInput
+                        label="Numéro de téléphone"
+                        icon="ph:phone-duotone"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                </div>
+                <div class="grid grid-cols-12 gap-4 mt-4">
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="user.country"
+                    >
+                      <BaseListbox
+                        label="Pays"
+                        :items="appStore.countries"
+                        :properties="{
+                          value: '_id',
+                          label: 'name',
+                          sublabel: 'abbr',
+                          media: 'flag',
+                        }"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="user.userType"
+                    >
+                      <BaseSelect
+                        label="Type d'utilisateur *"
+                        icon="ph:funnel"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      >
+                        <option value="personal">Compte Individuel</option>
+                        <option value="corporate">Compte Business</option>
+                      </BaseSelect>
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="user.appRole"
+                    >
+                      <BaseListbox
+                        label="Role"
+                        :items="appStore.roles"
+                        :properties="{
+                          value: '_id',
+                          label: 'name',
+                          sublabel: 'description',
+                          media: 'flag',
+                        }"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="user.status"
+                    >
+                      <BaseSelect
+                        label="Statut *"
+                        icon="ph:funnel"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      >
+                        <option value="active">Actif</option>
+                        <option value="inactive">Inactif</option>
+                      </BaseSelect>
+                    </Field>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </BaseCard>
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalNewUserOpen = false">Annuler</BaseButton>
+
+            <BaseButton color="primary" flavor="solid" @click="onSubmit">
+              {{ isEdit == true ? 'Modifier' : 'Créer' }}
+            </BaseButton>
+          </div>
+        </div>
+      </template>
+    </TairoModal>
   </div>
 </template>

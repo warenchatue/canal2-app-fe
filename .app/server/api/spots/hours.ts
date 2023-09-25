@@ -4,39 +4,30 @@ export default defineEventHandler(async (event) => {
   const page = parseInt((query.page as string) || '1', 10)
   const filter = (query.filter as string) || ''
   const action = (query.action as string) || 'get'
+  const id = (query.id as string) || ''
+  const token = (query.token as string) || ''
 
-  if (perPage >= 50) {
-    // Create an artificial delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-  }
-
-  console.log(action)
-
-  if (action == 'get') {
-    const data = await getHours()
+  if (action == 'findOne') {
+    const data = await findOne(id, token)
+    return { data: data, success: true }
+  } else if (action == 'findAll') {
+    const data = await findAll(token)
     return {
       total: data.length,
       data: filterData(data, filter, page, perPage),
     }
-  } else if (action == 'post') {
+  } else if (action == 'createHour') {
     const body = await readBody(event)
     console.log(body)
-    const data = await getHours()
-
-    const hours = data.filter(
-      (d) => d.code == body.name && d.code == body.password,
-    )
-    if (hours?.length == 1) {
-      console.log('Hours found')
-      return {
-        data: hours[0],
-      }
-    } else {
-      console.log('Hours not found')
-      return {
-        data: null,
-      }
-    }
+    const data = await createHour(body, token)
+    return { data: data, success: true }
+  } else if (action == 'updateHour') {
+    const body = await readBody(event)
+    const data = await updateHour(id, body, token)
+    return { data: data, success: true }
+  } else if (action == 'delete') {
+    const data = await deleteHour(id, token)
+    return { data: data, success: true }
   }
 })
 
@@ -60,44 +51,74 @@ function filterData(
     .slice(offset, offset + perPage)
 }
 
-async function createHour() {}
-async function getHours() {
-  return Promise.resolve([
-    {
-      id: '0',
-      code: '7:25',
-      name: '7H25',
-      type: 'SPOT',
-      status: 'active',
+async function findOne(id: string, token: string) {
+  console.log('findOne ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/hours/' + id, {
+    method: 'get',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-type': 'application/json',
     },
-    {
-      id: '0',
-      code: '8:25',
-      name: '8H25',
-      type: 'SPOT',
-      status: 'active',
-    },
-    {
-      id: '0',
-      code: '9:25',
-      name: '9H25',
-      type: 'BA',
-      status: 'active',
-    },
-    {
-      id: '0',
-      code: '10:25',
-      name: '10H25',
-      type: 'BA',
-      status: 'active',
-    },
-    {
-      id: '0',
-      code: '11:25',
-      name: '11H25',
-      type: 'SPOT',
-      status: 'active',
-    },
-  ])
+  }).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
 }
-async function updateHour() {}
+
+async function findAll(token: string) {
+  console.log('findAll ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/hours', {
+    method: 'get',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-type': 'application/json',
+    },
+  }).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
+}
+
+async function createHour(body: any, token: string) {
+  console.log('createHour '+ token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/hours', {
+    method: 'post',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-type': 'application/json',
+    },
+    body: body,
+  }).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
+}
+
+async function updateHour(id: string, body: any, token: string) {
+  console.log('updateHour ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/hours/' + id, {
+    method: 'PUT',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-type': 'application/json',
+    },
+    body: body,
+  }).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
+}
+
+async function deleteHour(id: string, token: string) {
+  console.log('deleteHour ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/hours/' + id, {
+    method: 'DELETE',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-type': 'application/json',
+    },
+  }).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
+}

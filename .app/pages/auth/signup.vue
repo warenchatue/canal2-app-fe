@@ -28,6 +28,7 @@ const VALIDATION_TEXT = {
 // It's used to define the shape that the form data will have
 const zodSchema = z
   .object({
+    lastName: z.string(),
     email: z.string().email(VALIDATION_TEXT.EMAIL_REQUIRED),
     password: z.string().min(8, VALIDATION_TEXT.PASSWORD_LENGTH),
     confirmPassword: z.string(),
@@ -57,6 +58,7 @@ type FormInput = z.infer<typeof zodSchema>
 
 const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
+  lastName: '',
   email: '',
   password: '',
   confirmPassword: '',
@@ -69,10 +71,11 @@ const { handleSubmit, isSubmitting } = useForm({
 
 const router = useRouter()
 const toaster = useToaster()
-const { authenticateUser } = useAuthStore()
+const { registerUser } = useAuthStore()
 const { authenticated } = storeToRefs(useAuthStore())
+const app = useAppStore()
 if (authenticated.value == true) {
-  router.push('/select-org')
+  router.push('/dashboards')
 }
 
 // This is where you would send the form data to the server
@@ -81,12 +84,15 @@ const onSubmit = handleSubmit(async (values) => {
   console.log('auth-success', values)
 
   try {
-    // fake delay, this will make isSubmitting value to be true
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    await authenticateUser({
-      username: values.email,
-      password: values.password,
-    })
+    await registerUser(
+      {
+        firstName: '',
+        lastName: values.lastName,
+        password: values.password,
+        email: values.email,
+      },
+      false
+    )
     if (authenticated) {
       toaster.clearAll()
       toaster.show({
@@ -97,7 +103,11 @@ const onSubmit = handleSubmit(async (values) => {
         closable: true,
       })
 
-      router.push('/auth/onboarding/onboarding-1')
+      router.push('/select-org')
+
+      //Set countries and roles
+      app.setCountries()
+      app.setRoles()
     }
   } catch (error: any) {
     // handle error
@@ -224,7 +234,7 @@ const onSubmit = handleSubmit(async (values) => {
           >
             <div class="text-center">
               <BaseHeading as="h2" size="3xl" weight="medium">
-                Bienvenue sur 2SPOT
+                Bienvenue sur Dinno Fund
               </BaseHeading>
               <BaseParagraph size="sm" class="text-muted-400 mb-6">
                 Commençons par la création de votre compte
@@ -234,6 +244,27 @@ const onSubmit = handleSubmit(async (values) => {
               <div class="mb-4 space-y-4">
                 <Field
                   v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                  name="lastName"
+                >
+                  <BaseInput
+                    :model-value="field.value"
+                    :error="errorMessage"
+                    :disabled="isSubmitting"
+                    type=""
+                    label="Nom"
+                    placeholder="ex: Doe"
+                    icon="lucide:mail"
+                    :classes="{
+                      input: 'h-12 !ps-12',
+                      icon: 'h-12 w-12',
+                    }"
+                    @update:model-value="handleChange"
+                    @blur="handleBlur"
+                  />
+                </Field>
+
+                <Field
+                  v-slot="{ field, errorMessage, handleChange, handleBlur }"
                   name="email"
                 >
                   <BaseInput
@@ -241,7 +272,7 @@ const onSubmit = handleSubmit(async (values) => {
                     :error="errorMessage"
                     :disabled="isSubmitting"
                     type="email"
-                    label="Email address"
+                    label="Adresse email"
                     placeholder="ex: maya@cssninja.io"
                     icon="lucide:mail"
                     :classes="{
@@ -262,7 +293,7 @@ const onSubmit = handleSubmit(async (values) => {
                     :error="errorMessage"
                     :disabled="isSubmitting"
                     type="password"
-                    label="Password"
+                    label="Mot de passe"
                     placeholder="••••••••••"
                     icon="lucide:lock"
                     :classes="{
@@ -283,7 +314,7 @@ const onSubmit = handleSubmit(async (values) => {
                     :error="errorMessage"
                     :disabled="isSubmitting"
                     type="password"
-                    label="Confirm Password"
+                    label="Confirmer Mot de Passe"
                     placeholder="••••••••••"
                     icon="lucide:lock"
                     :classes="{

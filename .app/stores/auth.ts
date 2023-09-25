@@ -1,24 +1,28 @@
+import { User } from '~/types/user'
+
 const delay = (t: number) => new Promise((r) => setTimeout(r, t))
 
 const baseUser = {
-  id: '',
+  _id: '',
   firstName: '',
   lastName: '',
   email: '',
-  role: 'member',
+  appRole: {},
   picture: '',
 }
 
-interface UserPayloadInterface {
+export interface UserPayloadInterface {
   username: string
   password: string
+  type: string
 }
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     authenticated: false,
-    loading: false,
+    token: null,
     user: baseUser,
+    loading: false,
   }),
 
   persist: true,
@@ -35,33 +39,93 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async authenticateUser({ username, password }: UserPayloadInterface) {
-      const { data, pending }: any = await useFetch('/api/users', {
+      const { data, success }: any = await useFetch('/api/auth', {
         method: 'post',
         headers: { 'Content-Type': 'application/json' },
         query: {
-          action: 'post',
+          action: 'login',
         },
         body: {
           username,
           password,
+          type: 'email',
         },
       })
-      this.loading = pending
-
-      var myUser = data._value.data
-      console.log(myUser)
+      this.loading = success
+      var response = data._value.data
+      console.log('response')
+      console.log(response)
 
       if (data.value) {
-        this.user.id = myUser.id
-        this.user.firstName = myUser.firstName
-        this.user.lastName = myUser.lastName
-        this.user.email = myUser.email
-        this.user.role = myUser.role
-        this.user.picture = myUser.picture
+        this.user._id = response.user._id
+        this.user.firstName = response.user.firstName
+        this.user.lastName = response.user.lastName
+        this.user.email = response.user.email
+        this.user.appRole = response.user.appRole
+        this.user.picture = ''
         this.authenticated = true
         const token = useCookie('token') // useCookie new hook in nuxt 3
-        token.value = myUser.token // set token to cookie
+        token.value = response.accessToken // set token to cookie
         this.authenticated = true // set authenticated  state value to true
+      }
+    },
+    async registerUser(user: User, isAdmin: boolean): Promise<boolean> {
+      const { data, success }: any = await useFetch('/api/auth', {
+        method: 'post',
+        headers: { 'Content-Type': 'application/json' },
+        query: {
+          action: 'register',
+        },
+        body: {
+          ...user,
+        },
+      })
+      this.loading = success
+      var response = data._value.data
+      console.log('response')
+      console.log(response)
+
+      if (data.value && isAdmin == false) {
+        this.user._id = response.user._id
+        this.user.firstName = response.user.firstName
+        this.user.lastName = response.user.lastName
+        this.user.email = response.user.email
+        this.user.appRole = response.user.appRole
+        this.user.picture = ''
+        this.authenticated = true
+        const token = useCookie('token') // useCookie new hook in nuxt 3
+        token.value = response.accessToken // set token to cookie
+        this.authenticated = true // set authenticated  state value to true
+        return true
+      } else if (data.value && isAdmin == true) {
+        return true
+      } else {
+        return false
+      }
+    },
+    async updateUser(user: User, isAdmin: boolean): Promise<boolean> {
+      const token = useCookie('token')
+      const { data, success }: any = await useFetch('/api/users', {
+        method: 'post',
+        headers: { 'Content-Type': 'application/json' },
+        query: {
+          action: 'updateOne',
+          id: user._id,
+          token: token.value,
+        },
+        body: {
+          ...user,
+        },
+      })
+      this.loading = success
+      var response = data._value.data
+      console.log('response')
+      console.log(response)
+
+      if (data.value && isAdmin == true) {
+        return true
+      } else {
+        return false
       }
     },
     logUserOut() {
@@ -69,7 +133,7 @@ export const useAuthStore = defineStore('auth', {
       this.authenticated = false // set authenticated  state value to false
       token.value = null // clear the token cookie
       this.user = baseUser
-      const router  = useRouter()
+      const router = useRouter()
       router.push('/')
     },
   },

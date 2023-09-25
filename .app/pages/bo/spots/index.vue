@@ -17,7 +17,6 @@ definePageMeta({
   },
 })
 
-const orgStore = useOrgStore()
 const app = useAppStore()
 const lineRevenue = reactive(useLineRevenue())
 const radialGoal = reactive(useRadialGoal())
@@ -327,7 +326,6 @@ const query = computed(() => {
     filter: filter.value,
     perPage: perPage.value,
     page: page.value,
-    slug: app.activeOrg.slug,
     action: 'getForOrg',
   }
 })

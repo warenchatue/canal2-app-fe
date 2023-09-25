@@ -3,23 +3,17 @@ export default defineEventHandler(async (event) => {
   const perPage = parseInt((query.perPage as string) || '5', 10)
   const page = parseInt((query.page as string) || '1', 10)
   const filter = (query.filter as string) || ''
-  const action = (query.action as string ) || 'get'
+  const id = (query.id as string) || ''
+  const token = (query.token as string) || ''
+  const action = (query.action as string) || 'get'
 
-  if (perPage >= 50) {
-    // Create an artificial delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-  }
-
-  if(action == 'get'){
-
-    const data = await getRoles()
-
+  if (action == 'findAll') {
+    const data = await findAll(token)
     return {
       total: data.length,
       data: filterData(data, filter, page, perPage),
     }
   }
-
 })
 
 function filterData(
@@ -35,30 +29,23 @@ function filterData(
   const filterRe = new RegExp(filter, 'i')
   return data
     .filter((item) => {
-      return [item.name, item.slug].some((item) =>
+      return [item.name, item.abbr, item.dial].some((item) =>
         item.match(filterRe),
       )
     })
     .slice(offset, offset + perPage)
 }
 
-async function getRoles() {
-  return Promise.resolve([
-    {
-      id: '1',
-      name: 'Admin',
-      slug: 'admin',
-      medias: {
-        avatar: '/img/avatars/5.svg',
-      },
+async function findAll(token: string) {
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/countries', {
+    method: 'get',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-type': 'application/json',
     },
-    {
-      id: '2',
-      name: 'Member',
-      slug: 'member',
-      medias: {
-        avatar: '/img/avatars/5.svg',
-      },
-    },
-  ])
+  }).catch((error) => console.log(error))
+  console.log(data)
+
+  return Promise.resolve(data)
 }

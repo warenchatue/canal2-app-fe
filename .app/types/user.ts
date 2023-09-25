@@ -1,14 +1,14 @@
 import { Country } from './country'
 import { Media } from './medias'
 
-export type Role = 'member' | 'admin' | 'guest'
-
 export interface User {
-  id?: String
-  firstName: string
-  lastName: string
-  role?: Role | 'guest'
-  email?: string
+  _id?: String
+  firstName?: string
+  lastName?: string
+  password?: string
+  appRole?: any
+  email: string
+  phone?: string
   city?: string
   county?: Country
   medias?: Media

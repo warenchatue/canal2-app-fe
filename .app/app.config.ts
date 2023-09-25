@@ -115,38 +115,38 @@ export default defineAppConfig({
               },
               {
                 name: 'Horaires',
-                to: '/bo/spots/timetable',
+                to: '/bo/spots/hours',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
             ],
           },
-          {
-            name: 'Emissions',
-            icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
-            activePath: '/bo/estimations',
-            children: [
-              {
-                name: 'Tableau de bord',
-                to: '/bo/estimations',
-                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Liste de diffusion',
-                to: '/bo/estimations/operations',
-                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Planing de diffusion',
-                to: '/bo/estimations/operations',
-                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Horaires',
-                to: '/bo/estimations/operations',
-                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
-              },
-            ],
-          },
+          // {
+          //   name: 'Emissions',
+          //   icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
+          //   activePath: '/bo/estimations',
+          //   children: [
+          //     {
+          //       name: 'Tableau de bord',
+          //       to: '/bo/estimations',
+          //       icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
+          //     },
+          //     {
+          //       name: 'Liste de diffusion',
+          //       to: '/bo/estimations/operations',
+          //       icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
+          //     },
+          //     {
+          //       name: 'Planing de diffusion',
+          //       to: '/bo/estimations/operations',
+          //       icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
+          //     },
+          //     {
+          //       name: 'Horaires',
+          //       to: '/bo/estimations/operations',
+          //       icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
+          //     },
+          //   ],
+          // },
 
           {
             name: 'Admin',
