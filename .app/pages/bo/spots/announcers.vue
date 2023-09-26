@@ -517,7 +517,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Nouvel Annonceur
+            {{  isEdit == true ? "Mise à jour": "Nouvel" }} Annonceur
           </h3>
 
           <BaseButtonClose @click="isModalNewAnnouncerOpen = false" />

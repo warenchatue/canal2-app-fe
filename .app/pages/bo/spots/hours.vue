@@ -482,7 +482,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Nouvelle Horaire
+             {{  isEdit == true ? "Mise à jour": "Nouvelle" }} Horaire
           </h3>
 
           <BaseButtonClose @click="isModalNewHourOpen = false" />
@@ -616,7 +616,7 @@ const onSubmit = handleSubmit(
     </TairoModal>
 
     <!-- Modal delete -->
-    <TairoModal :open="isModalDeleteHourOpen" size="sm" @close="closeModal">
+    <TairoModal :open="isModalDeleteHourOpen" size="sm" @close="isModalDeleteHourOpen">
       <template #header>
         <!-- Header -->
         <div class="flex w-full items-center justify-between p-4 md:p-6">
@@ -626,7 +626,7 @@ const onSubmit = handleSubmit(
             Suppression d'une horaire
           </h3>
 
-          <BaseButtonClose @click="closeModal" />
+          <BaseButtonClose @click="isModalDeleteHourOpen" />
         </div>
       </template>
 
@@ -636,7 +636,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
           >
-            Supprimer {{ currentHour?.name }} ?
+            Supprimer <span class="text-red-500">{{ currentHour?.name }}</span> ?
           </h3>
 
           <p

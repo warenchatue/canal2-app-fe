@@ -581,7 +581,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>Vue d'ensemble</span>
+                <span>Bilan total des spots</span>
               </BaseHeading>
             </div>
             <div class="mb-6">
@@ -595,7 +595,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                   class="border-muted-200 dark:border-muted-700 flex-1 border-r px-2"
                 >
                   <span class="text-muted-400 font-sans text-xs">
-                    Completed
+                    Spots diffusés
                   </span>
                   <p
                     class="text-muted-800 dark:text-muted-100 font-sans text-lg font-medium"
@@ -605,7 +605,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 </div>
                 <div class="flex-1 px-2">
                   <span class="text-muted-400 font-sans text-xs">
-                    In Progress
+                    Spots non diffusés
                   </span>
                   <p
                     class="text-muted-800 dark:text-muted-100 font-sans text-lg font-medium"
@@ -628,7 +628,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>Evolution des opérations</span>
+                <span>Indice de fiabilité</span>
               </BaseHeading>
             </div>
             <div class="mb-6">

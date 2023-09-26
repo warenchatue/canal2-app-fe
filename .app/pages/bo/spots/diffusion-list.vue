@@ -89,8 +89,6 @@ function selectOperation(id: string) {
   }, 150)
 }
 
-
-
 // Ask the user for confirmation before leaving the page if the form has unsaved changes
 // onBeforeRouteLeave(() => {
 //   if (meta.value.dirty) {
@@ -271,7 +269,7 @@ const onSubmit = handleSubmit(
         <BaseInput
           v-model="filter"
           icon="lucide:search"
-          placeholder="Filtrer opera..."
+          placeholder="Filtre spot..."
           :classes="{
             wrapper: 'w-full sm:w-auto',
           }"
@@ -577,7 +575,7 @@ const onSubmit = handleSubmit(
                   Produit
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced
-                  >Titre du message.</TairoTableHeading
+                  >Titre du message</TairoTableHeading
                 >
                 <TairoTableHeading uppercase spaced>Duréé</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
@@ -613,37 +611,44 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
+                    <span
+                      class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                    >
                       {{ new Date(item.date).toLocaleDateString('fr-FR') }}
                     </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
+                    <span
+                      class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                    >
                       {{ new Date(item.date).toLocaleTimeString('fr-FR') }}
                     </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs"> </span>
+                    <span
+                      class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                    >
+                    </span>
                   </div>
                 </TairoTableCell>
 
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseAvatar
-                      :src="item.announcer?.logo"
+                      :src="item.spot?.package?.announcer?.logo"
                       :text="item.initials"
                       :class="getRandomColor()"
                     />
                     <div class="ms-3 leading-none">
                       <h4 class="font-sans text-sm font-medium">
-                        {{ item.announcer?.name }}
+                        {{ item.spot?.package?.announcer?.name }}
                       </h4>
                       <p class="text-muted-400 font-sans text-xs">
-                        {{ item.announcer?.email }}
+                        {{ item.spot?.package?.announcer?.email }}
                       </p>
                     </div>
                   </div>
@@ -651,21 +656,27 @@ const onSubmit = handleSubmit(
 
                 <TairoTableCell spaced>
                   <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
+                    <span
+                      class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                    >
                       {{ item.spot.product }}
                     </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
+                    <span
+                      class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                    >
                       {{ item.spot.message }}
                     </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
+                    <span
+                      class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                    >
                       {{ item.spot.duration }}
                     </span>
                   </div>

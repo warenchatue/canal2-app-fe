@@ -11,10 +11,11 @@ export default defineEventHandler(async (event) => {
     const data = await findOne(id, token)
     return { data: data, success: true }
   } else if (action == 'findAll') {
-    const data = await findAll(token)
+    const response = await findAll(token)
     return {
-      total: data.length,
-      data: filterData(data, filter, page, perPage),
+      total: response.metaData.totalItems,
+      metaData: response.metaData,
+      data: filterData(response.data, filter, page, perPage),
     }
   } else if (action == 'createPackage') {
     const body = await readBody(event)

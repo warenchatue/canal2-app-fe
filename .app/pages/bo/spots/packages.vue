@@ -382,7 +382,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>705</span>
+                <span>{{ data.metaData?.totalItems }}</span>
               </BaseHeading>
             </div>
             <div
@@ -423,7 +423,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>75</span>
+                <span>{{ data.metaData?.totalAnnouncers }}</span>
               </BaseHeading>
             </div>
             <div
@@ -464,7 +464,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>1500</span>
+                <span>{{ data.metaData?.totalSpots }}</span>
               </BaseHeading>
             </div>
             <div
@@ -505,7 +505,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>170</span>
+                <span>{{ data.metaData?.totalFiles }}</span>
               </BaseHeading>
             </div>
             <div
@@ -702,7 +702,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            {{ isEdit == true ? 'Editer' : 'Nouveau'}} Package
+            {{ isEdit == true ? 'Editer' : 'Nouveau' }} Package
           </h3>
 
           <BaseButtonClose @click="isModalNewPackageOpen = false" />
