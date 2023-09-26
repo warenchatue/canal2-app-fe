@@ -14,7 +14,7 @@ export default defineAppConfig({
     defaultShapes: {},
   },
   tairo: {
-    title: '2SPOT',
+    title: 'C2SPOT',
     sidebar: {},
     collapse: {
       toolbar: {

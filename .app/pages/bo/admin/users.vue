@@ -61,6 +61,7 @@ function toggleAllVisibleSelection() {
 }
 
 const isModalNewUserOpen = ref(false)
+const isModalDeleteUserOpen = ref(false)
 const isEdit = ref(false)
 const { registerUser, updateUser } = useAuthStore()
 
@@ -165,6 +166,7 @@ const {
 })
 
 const toaster = useToaster()
+const currentUser = ref({})
 
 function editUser(user: any) {
   isModalNewUserOpen.value = true
@@ -178,6 +180,52 @@ function editUser(user: any) {
   setFieldValue('user.appRole', user.appRole)
   setFieldValue('user.country', user.country)
   setFieldValue('user.status', user.status)
+}
+
+function confirmDeleteUser(user: any) {
+  isModalDeleteUserOpen.value = true
+  isEdit.value = false
+  currentUser.value = user
+}
+
+async function deleteUser(user: any) {
+  const query2 = computed(() => {
+    return {
+      action: 'deleteUser',
+      token: token.value,
+      id: user?._id,
+    }
+  })
+
+  const response = await useFetch('/api/users', {
+    method: 'delete',
+    headers: { 'Content-Type': 'application/json' },
+    query: query2,
+  })
+
+  if (response.data?.value?.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Utilisateur supprimé !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalDeleteUserOpen.value = false
+    filter.value = 'role'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Oops',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
 }
 
 // This is where you would send the form data to the server
@@ -352,8 +400,6 @@ const onSubmit = handleSubmit(
                 <TairoTableHeading uppercase spaced>Tel</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Role</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Status</TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Orgs </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Dons </TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
               </template>
@@ -448,21 +494,17 @@ const onSubmit = handleSubmit(
                   </BaseTag>
                 </TairoTableCell>
                 <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
-                      {{ item.ownedOrgs }}
-                    </span>
+                  <div class="flex">
+                    <BaseButtonAction @click="editUser(item)">
+                      <Icon name="lucide:edit" class="h-4 w-4"
+                    /></BaseButtonAction>
+                    <BaseButtonAction
+                      @click="confirmDeleteUser(item)"
+                      class="!mx-3"
+                    >
+                      <Icon name="lucide:trash" class="h-4 w-4"
+                    /></BaseButtonAction>
                   </div>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs"> 5 </span>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <BaseButtonAction @click="editUser(item)">
-                    <Icon name="lucide:edit" class="h-4 w-4"
-                  /></BaseButtonAction>
                 </TairoTableCell>
               </TairoTableRow>
             </TairoTable>
@@ -491,7 +533,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Nouvel Utilisateur
+            {{ isEdit == true ? 'Mêttre à jour ' : 'Nouvel' }} Utilisateur
           </h3>
 
           <BaseButtonClose @click="isModalNewUserOpen = false" />
@@ -680,6 +722,61 @@ const onSubmit = handleSubmit(
             <BaseButton color="primary" flavor="solid" @click="onSubmit">
               {{ isEdit == true ? 'Modifier' : 'Créer' }}
             </BaseButton>
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+    <!-- Modal delete -->
+    <TairoModal
+      :open="isModalDeleteUserOpen"
+      size="sm"
+      @close="isModalDeleteUserOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Suppression d'un utilisateur
+          </h3>
+
+          <BaseButtonClose @click="isModalDeleteUserOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <h3
+            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
+          >
+            Supprimer
+            <span class="text-red-500">{{ currentUser?.firstName }} {{ currentUser?.lastName }}</span> ?
+          </h3>
+
+          <p
+            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est irreversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalDeleteUserOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="deleteUser(currentUser)"
+              >Supprimer</BaseButton
+            >
           </div>
         </div>
       </template>

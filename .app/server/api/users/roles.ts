@@ -11,7 +11,6 @@ export default defineEventHandler(async (event) => {
 
   if (action == 'findAll') {
     const data = await findAll(token)
-
     return {
       total: data.length,
       data: filterData(data, filter, page, perPage),
@@ -19,6 +18,13 @@ export default defineEventHandler(async (event) => {
   } else if (action == 'createRole') {
     const body = await readBody(event)
     const data = await createRole(body, token)
+    return { data: data, success: true }
+  } else if (action == 'updateRole') {
+    const body = await readBody(event)
+    const data = await updateRole(id, body, token)
+    return { data: data, success: true }
+  } else if (action == 'deleteRole') {
+    const data = await deleteRole(id, token)
     return { data: data, success: true }
   }
 })
@@ -36,7 +42,7 @@ function filterData(
   const filterRe = new RegExp(filter, 'i')
   return data
     .filter((item) => {
-      return [item.name, item.slug].some((item) => item.match(filterRe))
+      return [item.name, item.description].some((item) => item.match(filterRe))
     })
     .slice(offset, offset + perPage)
 }
@@ -53,15 +59,6 @@ async function findAll(token: string) {
   console.log(data)
 
   return Promise.resolve(data)
-
-  // {
-  //     id: '1',
-  //     name: 'Admin',
-  //     slug: 'admin',
-  //     medias: {
-  //       avatar: '/img/avatars/5.svg',
-  //     },
-  //   },
 }
 
 async function createRole(body: any, token: string) {
@@ -73,6 +70,36 @@ async function createRole(body: any, token: string) {
       'Content-type': 'application/json',
     },
     body: body,
+  }).catch((error) => console.log(error))
+  console.log(data)
+
+  return Promise.resolve(data)
+}
+
+async function updateRole(id: string, body: any, token: string) {
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/roles/' + id, {
+    method: 'PUT',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-type': 'application/json',
+    },
+    body: body,
+  }).catch((error) => console.log(error))
+  console.log(data)
+
+  return Promise.resolve(data)
+}
+
+async function deleteRole(id: string, token: string) {
+  console.log('deleteRole ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/roles/' + id, {
+    method: 'DELETE',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-type': 'application/json',
+    },
   }).catch((error) => console.log(error))
   console.log(data)
 

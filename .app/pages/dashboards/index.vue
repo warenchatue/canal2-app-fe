@@ -190,7 +190,7 @@ const auth = useAuthStore()
                   lead="tight"
                   class="text-muted-800 dark:text-white"
                 >
-                  <span>Bon retour, {{ auth.user.firstName }}</span>
+                  <span>Bon retour, {{ auth.user?.firstName?.length > 0 ? auth.user?.firstName : auth.user?.lastName }}</span>
                 </BaseHeading>
                 <BaseParagraph>
                   <span class="text-muted-400"

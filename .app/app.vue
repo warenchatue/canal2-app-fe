@@ -12,7 +12,7 @@ useHead({
   titleTemplate: (titleChunk) => {
     return titleChunk
       ? `${titleChunk} - ${app.tairo.title}`
-      : `${app.tairo.title || '2SPOT'}`
+      : `${app.tairo.title || 'C2SPOT'}`
   },
   link: [
     {

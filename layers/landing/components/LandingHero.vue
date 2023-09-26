@@ -114,7 +114,7 @@ function useGaugePersonal() {
           size="lg"
           class="text-muted-500 dark:text-muted-100 mx-auto mb-4 max-w-2xl"
         >
-          2SPOT
+          C2SPOT
         </BaseParagraph>
         <div class="flex items-center justify-center">
           <BaseButton

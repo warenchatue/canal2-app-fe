@@ -24,6 +24,7 @@ export default defineEventHandler(async (event) => {
     return { data: data, success: true }
   } else if (action == 'updatePlanning') {
     const body = await readBody(event)
+    console.log(body)
     const data = await updatePlanning(id, body, token)
     return { data: data, success: true }
   } else if (action == 'delete') {
@@ -45,9 +46,12 @@ function filterData(
   const filterRe = new RegExp(filter, 'i')
   return data
     .filter((item) => {
-      return [item.product, item.type, item.message].some((item) =>
-        item.match(filterRe),
-      )
+      console.log(item)
+      return [
+        item.date,
+        item.spot?.product,
+        item.spot?.package?.announcer?.name,
+      ].some((item) => item.match(filterRe))
     })
     .slice(offset, offset + perPage)
 }

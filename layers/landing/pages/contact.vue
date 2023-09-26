@@ -13,7 +13,7 @@ const { y } = useNinjaWindowScroll()
   <div class="group/landing overflow-hidden" :class="y > 60 ? 'scrolled' : ''">
     <InnerPageHero
       class="inset-0"
-      :title="'Nos Organisations'"
+      :title="'Contact'"
       :image-url="'https://img.freepik.com/premium-photo/office-blue-desk-equipment-working-top-view-flat-lay-blue-background_38937-393.jpg'"
     />
     <div class="dark:bg-muted-900 bg-white pt-16">

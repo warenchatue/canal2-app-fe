@@ -27,6 +27,9 @@ export default defineEventHandler(async (event) => {
     console.log(finalBody)
     const data = await updateOne(id, finalBody, token)
     return { data: data, success: true }
+  } else if (action == 'deleteUser') {
+    const data = await deleteUser(id, token)
+    return { data: data, success: true }
   }
 })
 
@@ -73,6 +76,20 @@ async function updateOne(id: string, body: User, token: string) {
       'Content-type': 'application/json',
     },
     body: body,
+  }).catch((error) => console.log(error))
+  console.log(data)
+
+  return Promise.resolve(data)
+}
+
+async function deleteUser(id: string, token: string) {
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/users/' + id, {
+    method: 'DELETE',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-type': 'application/json',
+    },
   }).catch((error) => console.log(error))
   console.log(data)
 

@@ -22,7 +22,8 @@ const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(18)
 const token = useCookie('token')
-
+const isEdit = ref(false)
+const currentRole = ref({})
 watch([filter, perPage], () => {
   router.push({
     query: {
@@ -46,6 +47,61 @@ const { data, pending, error, refresh } = await useFetch('/api/users/roles', {
 })
 
 const isModalNewRoleOpen = ref(false)
+const isModalDeleteRoleOpen = ref(false)
+
+function editRole(role: any) {
+  isModalNewRoleOpen.value = true
+  isEdit.value = true
+  setFieldValue('role._id', role._id)
+  setFieldValue('role.name', role.name)
+  setFieldValue('role.description', role.description)
+}
+
+function confirmDeleteRole(role: any) {
+  isModalDeleteRoleOpen.value = true
+  isEdit.value = false
+  currentRole.value = role
+}
+
+async function deleteRole(role: any) {
+  const query2 = computed(() => {
+    return {
+      action: 'deleteRole',
+      token: token.value,
+      id: role?._id,
+    }
+  })
+
+  const response = await useFetch('/api/users/roles', {
+    method: 'delete',
+    headers: { 'Content-Type': 'application/json' },
+    query: query2,
+  })
+
+  if (response.data?.value?.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Role supprimé !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalDeleteRoleOpen.value = false
+    filter.value = 'role'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Oops',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+}
 
 // This is the object that will contain the validation messages
 const VALIDATION_TEXT = {
@@ -57,6 +113,7 @@ const VALIDATION_TEXT = {
 const zodSchema = z
   .object({
     role: z.object({
+      _id: z.string().optional(),
       name: z.string().min(1, VALIDATION_TEXT.NAME_REQUIRED),
       description: z.string().optional(),
     }),
@@ -109,28 +166,54 @@ const onSubmit = handleSubmit(
     console.log('role-create-success', values)
 
     try {
-      const query2 = computed(() => {
-        return {
-          action: 'createRole',
-          token: token.value,
-        }
-      })
+      const isSuccess = ref(false)
+      if (isEdit.value == true) {
+        const query2 = computed(() => {
+          return {
+            action: 'updateRole',
+            token: token.value,
+            id: values.role?._id,
+          }
+        })
 
-      const { data: response } = await useFetch('/api/users/roles', {
-        method: 'post',
-        query: query2,
-        body: { ...values.role },
-      })
-      if (response.value?.success) {
+        const response = await useFetch('/api/users/roles', {
+          method: 'put',
+          headers: { 'Content-Type': 'application/json' },
+          query: query2,
+          body: {
+            ...values.role,
+          },
+        })
+        isSuccess.value = response.data?.value?.success
+      } else {
+        const query2 = computed(() => {
+          return {
+            action: 'createRole',
+            token: token.value,
+          }
+        })
+
+        const { data: response } = await useFetch('/api/users/roles', {
+          method: 'post',
+          query: query2,
+          body: { ...values.role },
+        })
+
+        isSuccess.value = response.data?.value?.success
+      }
+      if (isSuccess) {
         toaster.clearAll()
         toaster.show({
           title: 'Success',
-          message: `Role créer!`,
+          message: `Role ${isEdit.value == true ? 'mis à jour' : 'créer'}!`,
           color: 'success',
           icon: 'ph:check',
           closable: true,
         })
         isModalNewRoleOpen.value = false
+        resetForm()
+        filter.value = 'role'
+        filter.value = ''
       } else {
         toaster.clearAll()
         toaster.show({
@@ -145,9 +228,6 @@ const onSubmit = handleSubmit(
       console.log(error)
       // this will set the error on the form
       if (error.message === 'Fake backend validation error') {
-        // @ts-expect-error - vee validate typing bug with nested keys
-        setFieldError('payment.name', 'This name is not allowed')
-
         document.documentElement.scrollTo({
           top: 0,
           behavior: 'smooth',
@@ -164,18 +244,7 @@ const onSubmit = handleSubmit(
       }
       return
     }
-
-    resetForm()
-
-    document.documentElement.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    })
-
     success.value = true
-    setTimeout(() => {
-      success.value = false
-    }, 3000)
   },
   (error) => {
     // this callback is optional and called only if the form has errors
@@ -209,7 +278,7 @@ const onSubmit = handleSubmit(
       </template>
       <template #right>
         <BaseButton
-          @click="isModalNewRoleOpen = true"
+          @click=";(isModalNewRoleOpen = true), (isEdit = false)"
           color="primary"
           class="w-full sm:w-38"
         >
@@ -281,22 +350,22 @@ const onSubmit = handleSubmit(
                     shape="curved"
                   >
                     <BaseDropdownItem
-                      to="#"
-                      title="Permissions"
-                      text="Manage permissions"
+                      @click="editRole(item)"
+                      title="Editer"
+                      text="Mêttre à jour"
                     >
                       <template #start>
                         <Icon
-                          name="ph:lock-duotone"
+                          name="ph:pencil-duotone"
                           class="me-2 block h-5 w-5"
                         />
                       </template>
                     </BaseDropdownItem>
                     <BaseDropdownDivide />
                     <BaseDropdownItem
-                      to="#"
+                      @click="confirmDeleteRole(item)"
                       title="Remove"
-                      text="Remove from list"
+                      text="Supprimer"
                     >
                       <template #start>
                         <Icon
@@ -333,7 +402,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Nouveau rôle
+            {{ isEdit == true ? 'Mêttre à jour' : 'Nouveau' }} rôle
           </h3>
 
           <BaseButtonClose @click="isModalNewRoleOpen = false" />
@@ -412,6 +481,62 @@ const onSubmit = handleSubmit(
             >
               Valider
             </BaseButton>
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal delete -->
+    <TairoModal
+      :open="isModalDeleteRoleOpen"
+      size="sm"
+      @close="isModalDeleteRoleOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Suppression d'un rôle
+          </h3>
+
+          <BaseButtonClose @click="isModalDeleteRoleOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <h3
+            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
+          >
+            Supprimer
+            <span class="text-red-500">{{ currentRole?.name }}</span> ?
+          </h3>
+
+          <p
+            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est irreversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalDeleteRoleOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="deleteRole(currentRole)"
+              >Supprimer</BaseButton
+            >
           </div>
         </div>
       </template>

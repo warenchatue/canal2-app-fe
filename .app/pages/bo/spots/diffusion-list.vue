@@ -22,6 +22,7 @@ const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(10)
 const isModalNewTxnOpen = ref(false)
+const isModalConfirmDiffusionOpen = ref(false)
 
 watch([filter, perPage], () => {
   router.push({
@@ -63,30 +64,60 @@ function toggleAllVisibleSelection() {
   }
 }
 
-const activeOperation = ref('1')
-const selectedOperation = computed(() => {
-  return data.value.data.find((op) => op.id === activeOperation.value)
-})
-
+const currentPlanning = ref({})
 const chatEl = ref<HTMLElement>()
 const expanded = ref(true)
 const loading = ref(false)
+const success = ref(false)
 
-function selectOperation(id: string) {
+function selectPlanning(planning: any) {
+  isModalConfirmDiffusionOpen.value = true
   loading.value = true
   setTimeout(() => {
-    activeOperation.value = id
+    currentPlanning.value = planning
     loading.value = false
-    setTimeout(() => {
-      expanded.value = false
-      if (chatEl.value) {
-        chatEl.value.scrollTo({
-          top: chatEl.value.scrollHeight,
-          behavior: 'smooth',
-        })
-      }
-    }, 100)
-  }, 150)
+  }, 10)
+}
+
+async function confirmDiffusion(planning: any) {
+  const query2 = computed(() => {
+    return {
+      action: 'updatePlanning',
+      token: token.value,
+      id: currentPlanning.value._id,
+    }
+  })
+
+  const response = await useFetch('/api/spots/plannings', {
+    method: 'put',
+    headers: { 'Content-Type': 'application/json' },
+    query: query2,
+    body: { ...currentPlanning.value._id, isManualPlay: true },
+  })
+
+  if (response.data?.value?.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Diffusion confirmée !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalConfirmDiffusionOpen.value = false
+    filter.value = 'planning'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Oops',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
 }
 
 // Ask the user for confirmation before leaving the page if the form has unsaved changes
@@ -187,21 +218,9 @@ const onSubmit = handleSubmit(
     success.value = false
 
     // here you have access to the validated form values
-    console.log('payment-create-success', values)
+    console.log('planning-create-success', values)
 
     try {
-      // fake delay, this will make isSubmitting value to be true
-      await new Promise((resolve, reject) => {
-        if (values.payment.name === 'Airbnb') {
-          // simulate a backend error
-          setTimeout(
-            () => reject(new Error('Fake backend validation error')),
-            2000,
-          )
-        }
-        setTimeout(resolve, 4000)
-      })
-
       toaster.clearAll()
       toaster.show({
         title: 'Success',
@@ -210,7 +229,6 @@ const onSubmit = handleSubmit(
         icon: 'ph:check',
         closable: true,
       })
-      router.push('/select-org')
     } catch (error: any) {
       // this will set the error on the form
       if (error.message === 'Fake backend validation error') {
@@ -390,7 +408,11 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>70 000</span>
+                <span>{{
+                  data.data?.filter(
+                    (e) => e.isManualPlay == true || e.isAutoPlay == true,
+                  ).length
+                }}</span>
               </BaseHeading>
             </div>
             <div
@@ -431,7 +453,11 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>400</span>
+                <span>{{
+                  data.data?.filter(
+                    (e) => e.isManualPlay == false && e.isAutoPlay == false,
+                  ).length
+                }}</span>
               </BaseHeading>
             </div>
             <div
@@ -472,7 +498,11 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>15</span>
+                <span>{{
+                  data?.data.filter(
+                    (e) => e.isManualPlay == false && e.isAutoPlay == false,
+                  ).length
+                }}</span>
               </BaseHeading>
             </div>
             <div
@@ -513,7 +543,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>8</span>
+                <span>{{ data.data?.length }}</span>
               </BaseHeading>
             </div>
             <div
@@ -566,7 +596,7 @@ const onSubmit = handleSubmit(
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Heure </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Pos </TairoTableHeading>
+                <!-- <TairoTableHeading uppercase spaced> Pos </TairoTableHeading> -->
                 <TairoTableHeading uppercase spaced>
                   Annonceur
                 </TairoTableHeading>
@@ -577,7 +607,7 @@ const onSubmit = handleSubmit(
                 <TairoTableHeading uppercase spaced
                   >Titre du message</TairoTableHeading
                 >
-                <TairoTableHeading uppercase spaced>Duréé</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Durée</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
               </template>
@@ -627,14 +657,14 @@ const onSubmit = handleSubmit(
                     </span>
                   </div>
                 </TairoTableCell>
-                <TairoTableCell spaced>
+                <!-- <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span
                       class="text-muted-600 dark:text-muted-300 font-sans text-base"
                     >
                     </span>
                   </div>
-                </TairoTableCell>
+                </TairoTableCell> -->
 
                 <TairoTableCell spaced>
                   <div class="flex items-center">
@@ -677,13 +707,13 @@ const onSubmit = handleSubmit(
                     <span
                       class="text-muted-600 dark:text-muted-300 font-sans text-base"
                     >
-                      {{ item.spot.duration }}
+                      {{ item.spot.duration ?? '50s' }}
                     </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag
-                    v-if="item.spot.isPlay == true"
+                    v-if="item.isManualPlay == true || item.isAutoPlay == true"
                     color="success"
                     flavor="pastel"
                     shape="full"
@@ -693,7 +723,9 @@ const onSubmit = handleSubmit(
                     Diffusé
                   </BaseTag>
                   <BaseTag
-                    v-else-if="item.spot.isPlay == false"
+                    v-else-if="
+                      item.isManualPlay == false && item.isAutoPlay == false
+                    "
                     color="warning"
                     flavor="pastel"
                     shape="full"
@@ -716,9 +748,17 @@ const onSubmit = handleSubmit(
 
                 <TairoTableCell spaced>
                   <BaseButtonAction
-                    @click.prevent="selectOperation(item.id)"
+                    @click.prevent="selectPlanning(item)"
                     muted
-                    >Manage</BaseButtonAction
+                    :class="{
+                      '!text-orange-400':
+                        item.isManualPlay == false && item.isAutoPlay == false,
+                      '!text-success-500':
+                        item.isManualPlay == true || item.isAutoPlay == true,
+                    }"
+                  >
+                    <Icon name="lucide:check" class="h-4 w-4" />
+                    valider</BaseButtonAction
                   >
                 </TairoTableCell>
               </TairoTableRow>
@@ -857,104 +897,69 @@ const onSubmit = handleSubmit(
         </div>
       </template>
     </TairoModal>
-    <!-- Current Operation -->
-    <div
-      class="ltablet:w-[310px] dark:bg-muted-800 fixed end-0 top-0 z-50 h-full w-[390px] bg-white transition-transform duration-300"
-      :class="expanded ? 'translate-x-full' : 'translate-x-0'"
+    <!-- Current Planning -->
+
+    <!-- Modal confirm diffusion -->
+    <TairoModal
+      :open="isModalConfirmDiffusionOpen"
+      size="sm"
+      @close="isModalConfirmDiffusionOpen = false"
     >
-      <div class="flex h-16 w-full items-center justify-between px-8">
-        <BaseHeading tag="h3" size="lg" class="text-muted-800 dark:text-white">
-          <span>Détails Operationn</span>
-        </BaseHeading>
-        <BaseButtonIcon small @click="expanded = true">
-          <Icon name="lucide:arrow-right" class="pointer-events-none h-4 w-4" />
-        </BaseButtonIcon>
-      </div>
-      <div class="relative flex w-full flex-col px-8">
-        <!-- Loader -->
-        <div v-if="loading" class="mt-8">
-          <div class="mb-3 flex items-center justify-center">
-            <BasePlaceload
-              class="h-24 w-24 shrink-0 rounded-full"
-              :width="96"
-              :height="96"
-            />
-          </div>
-          <div class="flex flex-col items-center">
-            <BasePlaceload class="mb-2 h-3 w-full max-w-[10rem] rounded" />
-            <BasePlaceload class="mb-2 h-3 w-full max-w-[6rem] rounded" />
-            <div class="my-4 flex w-full flex-col items-center">
-              <BasePlaceload class="mb-2 h-2 w-full max-w-[15rem] rounded" />
-              <BasePlaceload class="mb-2 h-2 w-full max-w-[13rem] rounded" />
-            </div>
-            <div class="mb-6 flex w-full items-center justify-center">
-              <div class="px-4">
-                <BasePlaceload class="h-3 w-[3.5rem] rounded" />
-              </div>
-              <div class="px-4">
-                <BasePlaceload class="h-3 w-[3.5rem] rounded" />
-              </div>
-            </div>
-            <div class="w-full">
-              <BasePlaceload class="h-10 w-full rounded-xl" />
-              <BasePlaceload class="mx-auto mt-3 h-3 w-[7.5rem] rounded" />
-            </div>
-          </div>
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Confirmation de diffusion
+          </h3>
+
+          <BaseButtonClose @click="isModalConfirmDiffusionOpen = false" />
         </div>
-        <!-- Operation details -->
-        <div v-else class="mt-8" @click.>
-          <div class="flex items-center justify-center">
-            <BaseAvatar :src="selectedOperation?.supplier?.logo" size="2xl" />
-          </div>
-          <div class="text-center">
-            <BaseHeading tag="h3" size="lg" class="mt-4">
-              <span>{{ selectedOperation?.supplier?.name }}</span>
-            </BaseHeading>
-            <BaseParagraph size="sm" class="text-muted-400">
-              <span>{{ selectedOperation?.supplier?.email }}</span>
-            </BaseParagraph>
-            <div class="my-4">
-              <BaseParagraph
-                size="sm"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <span>{{ selectedOperation?.label }}</span>
-              </BaseParagraph>
-              <BaseParagraph
-                size="sm"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <BaseParagraph>{{ selectedOperation?.amount }} </BaseParagraph
-                >span >
-              </BaseParagraph>
-            </div>
-            <div
-              class="divide-muted-200 dark:divide-muted-700 flex items-center justify-center divide-x"
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <h3
+            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
+          >
+            Voulez-vous confirmer la diffusion de
+            <span class="text-primary-500">{{
+              currentPlanning?.spot?.message
+            }}</span>
+            à
+            <span class="text-primary-500">{{
+              currentPlanning?.hour?.code
+            }}</span>
+            ?
+          </h3>
+
+          <p
+            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est rreversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalConfirmDiffusionOpen = false"
+              >Annuler</BaseButton
             >
-              <div class="flex items-center justify-center gap-2 px-4">
-                <Icon name="ph:pen" class="text-muted-400 h-4 w-4" />
-                <span class="text-muted-400 font-sans text-xs">
-                  Mêttre à jour
-                </span>
-              </div>
-              <div class="flex items-center justify-center gap-2 px-4">
-                <Icon name="ph:trash" class="text-muted-400 h-4 w-4" />
-                <span class="text-muted-400 font-sans text-xs">
-                  Supprimer
-                </span>
-              </div>
-            </div>
-            <div class="mt-6">
-              <BaseButton shape="curved" class="w-full">
-                <span>
-                  Consulter les operations de
-                  {{ selectedOperation?.supplier.name }}
-                </span>
-              </BaseButton>
-            </div>
+
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="confirmDiffusion(currentPlanning)"
+              >Valider</BaseButton
+            >
           </div>
         </div>
-      </div>
-    </div>
+      </template>
+    </TairoModal>
   </div>
 </template>

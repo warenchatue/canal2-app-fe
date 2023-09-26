@@ -36,28 +36,20 @@ const year = new Date().getFullYear()
         class="ltablet:mt-0 ltablet:gap-6 mt-6 flex flex-wrap items-center justify-center gap-4 lg:mt-0 lg:gap-6"
       >
         <NuxtLink
-          to="/demos"
+          to="/contact"
           class="text-muted-600 hover:text-primary-500 dark:text-muted-200 dark:hover:text-primary-400 text-sm transition-colors duration-300"
         >
           Politique de confidentialité
         </NuxtLink>
 
         <NuxtLink
-          to="/documentation"
+          to="/contact"
           class="text-muted-600 hover:text-primary-500 dark:text-muted-200 dark:hover:text-primary-400 text-sm transition-colors duration-300"
         >
           Contact
         </NuxtLink>
         <NuxtLink
-          to="https://github.com/shuriken-ui"
-          target="_blank"
-          rel="noopener"
-          class="text-muted-600 hover:text-primary-500 dark:text-muted-200 dark:hover:text-primary-400 text-sm transition-colors duration-300"
-        >
-         A-propos
-        </NuxtLink>
-        <NuxtLink
-          to="https://cssninja.io/faq/support"
+          to="/contact"
           target="_blank"
           rel="noopener"
           class="text-muted-600 hover:text-primary-500 dark:text-muted-200 dark:hover:text-primary-400 text-sm transition-colors duration-300"
@@ -71,7 +63,7 @@ const year = new Date().getFullYear()
         <span>
           ©
           <NuxtLink
-            to="https://cssninja.io"
+            to="/"
             target="_blank"
             rel="noopener"
             class="text-muted-600 hover:text-primary-500 dark:text-muted-200 dark:hover:text-primary-400 text-sm transition-colors duration-300"

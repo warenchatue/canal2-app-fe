@@ -8,7 +8,7 @@ definePageMeta({
   preview: {
     title: 'Spot - Annonceur',
     description: 'Contribution and withdrawal',
-    categories: ['bo', 'finances'],
+    categories: ['bo', 'packages'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -132,7 +132,7 @@ async function addSpotToPlanning() {
       return {
         action: 'createPlanning',
         token: token.value,
-        packageId : data.value?.data?._id
+        packageId: data.value?.data?._id,
       }
     })
 
@@ -879,7 +879,7 @@ const onSubmit = handleSubmit(
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
-                      {{ item.duration }}
+                      {{ item.duration ?? '50s' }}
                     </span>
                   </div>
                 </TairoTableCell>
@@ -1299,13 +1299,13 @@ const onSubmit = handleSubmit(
         <BaseText size="base"
           >Annonceur:
           <span class="text-primary-500">{{
-            data?.package?.announcer?.name
+            data?.data?.announcer?.name
           }}</span>
         </BaseText>
 
         <BaseText size="base"
           >Période:
-          <span class="text-primary-500">{{ data?.package?.period }}</span>
+          <span class="text-primary-500">{{ data.data?.period }}</span>
         </BaseText>
 
         <div>
