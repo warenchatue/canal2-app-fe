@@ -9,7 +9,7 @@ definePageMeta({
   preview: {
     title: 'Planning de diffusion',
     description: '',
-    categories: ['bo', 'spots'],
+    categories: ['bo', 'spots', 'diffusion-list'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -20,9 +20,18 @@ const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(10)
+const perPage = ref(25)
 const isModalNewTxnOpen = ref(false)
 const isModalConfirmDiffusionOpen = ref(false)
+const dates = ref({
+  start: new Date(),
+  end: new Date(),
+})
+
+watch([dates], () => {
+  filter.value = dates.value.start.toDateString()
+  console.log(filter.value)
+})
 
 watch([filter, perPage], () => {
   router.push({
@@ -296,7 +305,6 @@ const onSubmit = handleSubmit(
           <DatePicker
             v-model.range="dates"
             :masks="masks"
-            :min-date="new Date()"
             mode="date"
             hide-time-header
             trim-weeks
@@ -408,11 +416,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{
-                  data.data?.filter(
-                    (e) => e.isManualPlay == true || e.isAutoPlay == true,
-                  ).length
-                }}</span>
+                <span>{{ data.metaData?.totalDiffused }}</span>
               </BaseHeading>
             </div>
             <div
@@ -420,7 +424,7 @@ const onSubmit = handleSubmit(
             >
               <span>+7.8%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">depuis le mois dernier</span>
+              <span class="text-muted-400 text-xs">en hausse</span>
             </div>
           </BaseCard>
         </div>
@@ -453,11 +457,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{
-                  data.data?.filter(
-                    (e) => e.isManualPlay == false && e.isAutoPlay == false,
-                  ).length
-                }}</span>
+                <span>{{ data.metaData?.totalNotDiffused }}</span>
               </BaseHeading>
             </div>
             <div
@@ -498,11 +498,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{
-                  data?.data.filter(
-                    (e) => e.isManualPlay == false && e.isAutoPlay == false,
-                  ).length
-                }}</span>
+                <span>{{ data.metaData?.totalPending }}</span>
               </BaseHeading>
             </div>
             <div
@@ -543,7 +539,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data.data?.length }}</span>
+                <span>{{ data.metaData?.totalToday }}</span>
               </BaseHeading>
             </div>
             <div

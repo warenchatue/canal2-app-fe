@@ -8,7 +8,7 @@ definePageMeta({
   preview: {
     title: 'Packages',
     description: 'Contribution and withdrawal',
-    categories: ['bo', 'packages'],
+    categories: ['bo', 'spots', 'packages'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,

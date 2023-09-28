@@ -8,7 +8,7 @@ definePageMeta({
   preview: {
     title: 'Spot - Annonceur',
     description: 'Contribution and withdrawal',
-    categories: ['bo', 'packages'],
+    categories: ['bo', 'spots', 'packages'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -18,10 +18,15 @@ definePageMeta({
 const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
-
+const filter = ref('')
+const perPage = ref(20)
 const token = useCookie('token')
+
 const queryHours = computed(() => {
   return {
+    filter: filter.value,
+    perPage: perPage.value,
+    page: page.value,
     action: 'findAll',
     token: token.value,
   }
@@ -31,8 +36,6 @@ const { data: hoursData } = await useFetch('/api/spots/hours', {
   query: queryHours,
 })
 
-const filter = ref('')
-const perPage = ref(10)
 const isModalNewSpotOpen = ref(false)
 const isModalDeleteSpotOpen = ref(false)
 const isModalPlanningOpen = ref(false)
@@ -128,34 +131,51 @@ async function addSpotToPlanning() {
 
   try {
     const isSuccess = ref(false)
-    const query2 = computed(() => {
-      return {
-        action: 'createPlanning',
-        token: token.value,
-        packageId: data.value?.data?._id,
-      }
-    })
+    const queryNewPlanning = {
+      action: 'createPlanning',
+      token: token.value,
+      packageId: data.value?.data?._id,
+      key: `${Math.random() * 10}`,
+    }
 
-    const response = await useFetch('/api/spots/plannings', {
-      method: 'post',
-      headers: { 'Content-Type': 'application/json' },
-      query: query2,
-      body: {
-        ...spotPlanning,
-        _id: undefined,
+    // const response = await useFetch(() => '/api/spots/plannings', {
+    //   key: `${Math.random() * 10}`,
+    //   ca: false,
+    //   method: 'post',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   query: queryNewPlanning,
+    //   body: {
+    //     ...spotPlanning,
+    //     _id: undefined,
+    //   },
+    // })
+
+    const response = await $fetch(
+      '/api/spots/plannings?action=createPlanning&token=' +
+        token.value +
+        '&packageId=' +
+        data.value?.data?._id,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: {
+          ...spotPlanning,
+          _id: undefined,
+        },
       },
-    })
+    )
 
-    isSuccess.value = response.data.value?.success
-    if (isSuccess) {
+    console.log(response)
+    isSuccess.value = response?.success
+    if (isSuccess.value == true) {
       success.value = true
-      data.value?.data?.plannings.push(response.data.value?.data)
+      data.value?.data?.plannings.push(response.data)
       toaster.clearAll()
       toaster.show({
         title: 'Success',
         message:
           isEdit.value == false
-            ? `Spot Ajouté au planning !`
+            ? `Spot ajouté au planning !`
             : `Spot mis à jour`,
         color: 'success',
         icon: 'ph:check',
@@ -198,7 +218,7 @@ function checkSpot(d: number, hour: string) {
     parseInt(hourArray[1]),
   )
   const plannedSpots = data.value?.data?.plannings?.filter(
-    (p) => p.date == date.toISOString(),
+    (p: any) => p.date == date?.toISOString(),
   )
   if (plannedSpots.length == 0) {
     return ['+', 'secondary']
@@ -615,7 +635,7 @@ const onSubmit = handleSubmit(
             >
               <span>+7.8%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">depuis le mois dernier</span>
+              <span class="text-muted-400 text-xs">en hausse</span>
             </div>
           </BaseCard>
         </div>
@@ -1327,7 +1347,7 @@ const onSubmit = handleSubmit(
           </BaseButton>
         </div>
       </div>
-      <div class="grid grid-cols-12 gap-4 pb-5 px-2 overflow-y-auto">
+      <div class="grid grid-cols-12 gap-4 pb-5 px-2 h-[550px] overflow-auto">
         <!-- Stat tile -->
         <div class="col-span-6 md:col-span-1">
           <BaseCard class="space-y-4 items-center">

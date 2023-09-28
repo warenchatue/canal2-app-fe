@@ -9,7 +9,7 @@ definePageMeta({
   preview: {
     title: 'Horaires',
     description: 'Contribution and withdrawal',
-    categories: ['bo', 'finances'],
+    categories: ['bo', 'spots', 'hours'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -19,7 +19,6 @@ definePageMeta({
 const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
-
 const filter = ref('')
 const perPage = ref(10)
 const isModalNewHourOpen = ref(false)

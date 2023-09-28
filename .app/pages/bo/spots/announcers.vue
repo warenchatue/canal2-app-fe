@@ -8,7 +8,7 @@ definePageMeta({
   preview: {
     title: 'Annonceurs',
     description: 'Contribution and withdrawal',
-    categories: ['bo', 'finances'],
+    categories: ['bo', 'spots','announcers'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,

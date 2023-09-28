@@ -248,7 +248,7 @@ const onSubmit = handleSubmit(
         isSuccess.value = await registerUser(
           {
             ...values.user,
-            password: '12345',
+            password: '12345678',
           },
           true,
         )
@@ -752,7 +752,10 @@ const onSubmit = handleSubmit(
             class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
           >
             Supprimer
-            <span class="text-red-500">{{ currentUser?.firstName }} {{ currentUser?.lastName }}</span> ?
+            <span class="text-red-500"
+              >{{ currentUser?.firstName }} {{ currentUser?.lastName }}</span
+            >
+            ?
           </h3>
 
           <p

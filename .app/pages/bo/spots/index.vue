@@ -10,7 +10,7 @@ definePageMeta({
   preview: {
     title: 'Analytics dashboard',
     description: 'Analytic',
-    categories: ['dashboards'],
+    categories: ['bo', 'spots'],
     src: '/img/screens/dashboards-analytics.png',
     srcDark: '/img/screens/dashboards-analytics-dark.png',
     order: 2,
@@ -381,7 +381,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
             >
               <span>+7.8%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">depuis le mois dernier</span>
+              <span class="text-muted-400 text-xs">en hause</span>
             </div>
           </BaseCard>
         </div>
@@ -422,7 +422,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
             >
               <span>+7.8%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">depuis le mois dernier</span>
+              <span class="text-muted-400 text-xs">en hausse</span>
             </div>
           </BaseCard>
         </div>

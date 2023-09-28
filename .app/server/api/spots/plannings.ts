@@ -7,15 +7,17 @@ export default defineEventHandler(async (event) => {
   const id = (query.id as string) || ''
   const packageId = (query.packageId as string) || ''
   const token = (query.token as string) || ''
+  const key = (query.key as string) || ''
 
   if (action == 'findOne') {
     const data = await findOne(id, token)
     return { data: data, success: true }
   } else if (action == 'findAll') {
-    const data = await findAll(token)
+    const response = await findAll(token)
     return {
-      total: data.length,
-      data: filterData(data, filter, page, perPage),
+      total: response.metaData.totalItems,
+      metaData: response.metaData,
+      data: filterData(response.data, filter, page, perPage),
     }
   } else if (action == 'createPlanning') {
     const body = await readBody(event)
@@ -41,19 +43,18 @@ function filterData(
 ) {
   const offset = (page - 1) * perPage
   if (!filter) {
-    return data.slice(offset, offset + perPage)
+    data.slice(offset, offset + perPage)
   }
   const filterRe = new RegExp(filter, 'i')
-  return data
-    .filter((item) => {
-      console.log(item)
-      return [
-        item.date,
-        item.spot?.product,
-        item.spot?.package?.announcer?.name,
-      ].some((item) => item.match(filterRe))
-    })
-    .slice(offset, offset + perPage)
+  const filteredData = data.filter((item) => {
+    return [
+      new Date(item.date).toDateString(),
+      item.spot?.product,
+      item.spot?.package?.announcer?.name,
+    ].some((item) => item.match(filterRe))
+  })
+
+  return filteredData.slice(offset, offset + perPage)
 }
 
 async function findOne(id: string, token: string) {

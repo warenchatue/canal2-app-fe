@@ -39,7 +39,13 @@ function filterData(
 ) {
   const offset = (page - 1) * perPage
   if (!filter) {
-    return data.slice(offset, offset + perPage)
+    return data
+      .sort(function (a, b) {
+        return parseInt(a.name.split(':')[0]) < parseInt(b.name.split(':')[0])
+          ? -1
+          : 1
+      })
+      .slice(offset, offset + perPage)
   }
   const filterRe = new RegExp(filter, 'i')
   return data
@@ -47,6 +53,9 @@ function filterData(
       return [item.name, item.code, item.type].some((item) =>
         item.match(filterRe),
       )
+    })
+    .sort(function (a, b) {
+      return a.name.split(':')[0] < b.name.split(':')[0] ? -1 : 1
     })
     .slice(offset, offset + perPage)
 }
@@ -80,7 +89,7 @@ async function findAll(token: string) {
 }
 
 async function createHour(body: any, token: string) {
-  console.log('createHour '+ token)
+  console.log('createHour ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(runtimeConfig.env.apiUrl + '/hours', {
     method: 'post',
