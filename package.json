@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "c2spot",
+  "name": "c2pub",
   "version": "1.1.2",
   "type": "module",
   "main": "./nuxt.config.ts",

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 definePageMeta({
-  title: 'C2SPOT',
+  title: 'C2PUB',
   description: 'Système de plannification des spots publicitaires',
   breadcrumb: {
-    label: 'C2SPOT',
+    label: 'C2PUB',
   },
   layout: 'empty',
 })

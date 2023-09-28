@@ -14,7 +14,7 @@ export default defineAppConfig({
     defaultShapes: {},
   },
   tairo: {
-    title: 'C2SPOT',
+    title: 'C2PUB',
     sidebar: {},
     collapse: {
       toolbar: {
@@ -89,7 +89,7 @@ export default defineAppConfig({
           },
 
           {
-            name: 'Spots',
+            name: 'Pub',
             icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
             activePath: '/bo/spots',
             children: [

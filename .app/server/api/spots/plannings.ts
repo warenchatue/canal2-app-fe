@@ -19,6 +19,13 @@ export default defineEventHandler(async (event) => {
       metaData: response.metaData,
       data: filterData(response.data, filter, page, perPage),
     }
+  } else if (action == 'findAllStats') {
+    const response = await findAllStats(token)
+    return {
+      total: response.metaData.totalItems,
+      metaData: response.metaData,
+      data: filterData(response.data, filter, page, perPage),
+    }
   } else if (action == 'createPlanning') {
     const body = await readBody(event)
     console.log(body)
@@ -84,6 +91,23 @@ async function findAll(token: string) {
       'Content-type': 'application/json',
     },
   }).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
+}
+
+async function findAllStats(token: string) {
+  console.log('findAllStats ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/plannings/stats',
+    {
+      method: 'get',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
   console.log(data)
   return Promise.resolve(data)
 }

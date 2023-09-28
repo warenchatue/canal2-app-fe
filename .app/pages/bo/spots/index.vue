@@ -17,46 +17,58 @@ definePageMeta({
   },
 })
 
-const app = useAppStore()
-const lineRevenue = reactive(useLineRevenue())
+const route = useRoute()
+const router = useRouter()
+const page = computed(() => parseInt((route.query.page as string) ?? '1'))
+const filter = ref('')
+const perPage = ref(10)
+const token = useCookie('token')
+const query = computed(() => {
+  return {
+    filter: filter.value,
+    perPage: perPage.value,
+    page: page.value,
+    action: 'findAllStats',
+    token: token.value,
+  }
+})
+
+const { data, pending, error, refresh } = await useFetch(
+  '/api/spots/plannings',
+  {
+    query,
+  },
+)
+
+const lineSpots = reactive(useLineSpots())
 const radialGoal = reactive(useRadialGoal())
 const radialGrowth = reactive(useRadialGrowth())
-const barSalesProfit = reactive(useBarSalesProfit())
 
-const people = [
+const years = [
   {
-    id: 1,
-    name: 'Clarissa Perez',
-    text: 'Sales Manager',
-    media: '/img/avatars/19.svg',
-  },
-  {
-    id: 2,
-    name: 'Aaron Splatter',
-    text: 'Project Manager',
-    media: '/img/avatars/16.svg',
-  },
-  {
-    id: 3,
-    name: 'Mike Miller',
-    text: 'UI/UX Designer',
-    media: '/img/avatars/3.svg',
-  },
-  {
-    id: 4,
-    name: 'Benedict Kessler',
-    text: 'Mobile Developer',
-    media: '/img/avatars/22.svg',
-  },
-  {
-    id: 5,
-    name: 'Maya Rosselini',
-    text: 'Product Manager',
-    media: '/img/avatars/2.svg',
+    id: '2023',
+    name: '2023',
   },
 ]
 
-function useLineRevenue() {
+const pubCategories = [
+  {
+    id: 'SPOT',
+    name: 'SPOT',
+  },
+  {
+    id: 'BA',
+    name: "Bande d'annonce",
+  },
+  {
+    id: 'ALL',
+    name: 'Tout',
+  },
+]
+const activeYear = ref()
+const activeCategory = ref()
+
+function useLineSpots() {
   const { primary } = useTailwindColors()
   const type = 'line'
   const height = 250
@@ -64,15 +76,15 @@ function useLineRevenue() {
   const options = {
     chart: {
       zoom: {
-        enabled: false,
+        enabled: true,
       },
       toolbar: {
-        show: false,
+        show: true,
       },
     },
     colors: [primary.value],
     dataLabels: {
-      enabled: false,
+      enabled: true,
     },
     stroke: {
       width: [2, 2, 2],
@@ -86,6 +98,7 @@ function useLineRevenue() {
     },
     xaxis: {
       categories: [
+        'Jan',
         'Feb',
         'Mar',
         'Apr',
@@ -95,12 +108,14 @@ function useLineRevenue() {
         'Aug',
         'Sep',
         'Oct',
+        'Nov',
+        'Dec',
       ],
     },
     tooltip: {
       y: {
         formatter: function (val: string) {
-          return '$' + val
+          return '' + val
         },
       },
     },
@@ -108,8 +123,8 @@ function useLineRevenue() {
 
   const series = ref([
     {
-      name: 'Revenue',
-      data: [100, 400, 362, 510, 456, 612, 652, 915, 755],
+      name: 'Diffusés',
+      data: data.value?.metaData?.statsValues,
     },
   ])
 
@@ -122,20 +137,20 @@ function useLineRevenue() {
 }
 
 function useRadialGoal() {
-  const { primary, success } = useTailwindColors()
+  const { success, danger } = useTailwindColors()
   const type = 'radialBar'
-  const height = 220
+  const height = 250
 
   const options = {
     chart: {
       offsetY: -10,
     },
-    colors: [primary.value, success.value],
+    colors: [success.value, danger.value],
     plotOptions: {
       radialBar: {
         startAngle: -135,
         endAngle: 135,
-        inverseOrder: true,
+        inverseOrder: false,
         dataLabels: {
           show: true,
           name: {
@@ -151,13 +166,13 @@ function useRadialGoal() {
             offsetY: -5,
           },
           total: {
-            show: true,
-            fontSize: '14px',
+            show: false,
+            fontSize: '20px',
             fontWeight: 500,
           },
         },
         hollow: {
-          margin: 15,
+          margin: 30,
           size: '75%',
         },
         track: {
@@ -169,10 +184,20 @@ function useRadialGoal() {
     stroke: {
       lineCap: 'round',
     },
-    labels: ['Efficiency', 'Productivity'],
+    labels: ['Diffusés', 'Non Diffusés'],
   }
 
-  const series = ref([57, 86])
+  const series = ref([
+    (
+      (data.value?.metaData?.totalDiffused / data.value?.metaData?.totalItems) *
+      100
+    ).toFixed(),
+    (
+      (data.value?.metaData?.totalNotDiffused /
+        data.value?.metaData?.totalItems) *
+      100
+    ).toFixed(),
+  ])
 
   return {
     type,
@@ -184,7 +209,7 @@ function useRadialGoal() {
 
 function useRadialGrowth() {
   const { success } = useTailwindColors()
-  const height = 180
+  const height = 250
   const type = 'radialBar'
 
   const options = {
@@ -203,7 +228,7 @@ function useRadialGrowth() {
           show: true,
           name: {
             show: true,
-            fontSize: '0.7rem',
+            fontSize: '0.9rem',
             fontFamily: 'Roboto',
             fontWeight: 400,
             offsetY: -10,
@@ -218,10 +243,15 @@ function useRadialGrowth() {
         },
       },
     },
-    labels: ['Growth'],
+    labels: ['Diffusés'],
   }
 
-  const series = ref([65])
+  const series = ref([
+    (
+      (data.value?.metaData?.totalDiffused / data.value?.metaData?.totalItems) *
+      100
+    ).toFixed(),
+  ])
 
   return {
     type,
@@ -315,27 +345,6 @@ function useBarSalesProfit() {
     series,
   }
 }
-
-const route = useRoute()
-const router = useRouter()
-const page = computed(() => parseInt((route.query.page as string) ?? '1'))
-const filter = ref('')
-const perPage = ref(10)
-const query = computed(() => {
-  return {
-    filter: filter.value,
-    perPage: perPage.value,
-    page: page.value,
-    action: 'getForOrg',
-  }
-})
-const activeFundRaising = ref({ id: '', name: '', category: '', image: '' })
-const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
-  '/api/funds-raising',
-  {
-    query,
-  },
-)
 </script>
 
 <template>
@@ -355,7 +364,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Spots diffusés</span>
+                <span>Total diffusés</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -373,7 +382,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>45 000</span>
+                <span>{{ data?.metaData?.totalDiffused }}</span>
               </BaseHeading>
             </div>
             <div
@@ -414,7 +423,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>7000</span>
+                <span>{{ 0 }}</span>
               </BaseHeading>
             </div>
             <div
@@ -455,7 +464,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>150</span>
+                <span>0</span>
               </BaseHeading>
             </div>
             <div
@@ -496,7 +505,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>12</span>
+                <span>0</span>
               </BaseHeading>
             </div>
             <div
@@ -519,23 +528,55 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>Spots</span>
+                <span>Année</span>
               </BaseHeading>
+
               <Field
                 v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                name="payment.country"
+                name="year"
               >
                 <BaseListbox
                   class="px-10"
                   label=""
-                  :items="fundsRaisingData?.data"
+                  :items="years"
                   :properties="{
                     value: 'id',
                     label: 'name',
-                    sublabel: 'category',
+                    sublabel: 'name',
                     media: 'image',
                   }"
-                  v-model="activeFundRaising"
+                  v-model="activeYear"
+                  :error="errorMessage"
+                  :disabled="isSubmitting"
+                  @update:model-value="handleChange"
+                  @blur="handleBlur"
+                />
+              </Field>
+              <BaseHeading
+                as="h3"
+                size="md"
+                weight="semibold"
+                lead="tight"
+                class="text-muted-800 dark:text-white"
+              >
+                <span>Categorie</span>
+              </BaseHeading>
+
+              <Field
+                v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                name="category"
+              >
+                <BaseListbox
+                  class="px-10"
+                  label=""
+                  :items="pubCategories"
+                  :properties="{
+                    value: 'id',
+                    label: 'name',
+                    sublabel: 'name',
+                    media: 'image',
+                  }"
+                  v-model="activeCategory"
                   :error="errorMessage"
                   :disabled="isSubmitting"
                   @update:model-value="handleChange"
@@ -553,7 +594,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
               <div>
                 <span class="text-muted-400 font-sans text-xs">Ce mois</span>
                 <p class="text-primary-500 font-sans text-lg font-medium">
-                  450
+                  {{ data.metaData?.resumeValues[1] }} spots diffusés
                 </p>
               </div>
               <div>
@@ -563,11 +604,11 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                 <p
                   class="text-muted-800 dark:text-muted-100 font-sans text-lg font-medium"
                 >
-                  410
+                  {{ data.metaData?.resumeValues[0] }} spots diffusés
                 </p>
               </div>
             </div>
-            <AddonApexcharts v-bind="lineRevenue" />
+            <AddonApexcharts v-bind="lineSpots" />
           </BaseCard>
         </div>
         <!-- Chart -->
@@ -600,7 +641,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                   <p
                     class="text-muted-800 dark:text-muted-100 font-sans text-lg font-medium"
                   >
-                    1431
+                    {{ data.metaData?.totalDiffused }}
                   </p>
                 </div>
                 <div class="flex-1 px-2">
@@ -610,7 +651,7 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                   <p
                     class="text-muted-800 dark:text-muted-100 font-sans text-lg font-medium"
                   >
-                    219
+                    {{ data.metaData?.totalNotDiffused }}
                   </p>
                 </div>
               </div>
@@ -645,10 +686,10 @@ const { data: fundsRaisingData, pending: fundsRaisingPending } = await useFetch(
                     lead="tight"
                     class="text-muted-800 dark:text-white"
                   >
-                    <span>{{ orgStore?.activeOrg?.name }}</span>
+                    <span>Indicateur global</span>
                   </BaseHeading>
                   <BaseParagraph size="xs">
-                    <span class="text-muted-400">Indicateur global</span>
+                    <span class="text-muted-400"></span>
                   </BaseParagraph>
                 </div>
               </div>
