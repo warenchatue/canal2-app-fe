@@ -371,7 +371,7 @@ function useBarSalesProfit() {
                 class="bg-success-100 text-success-500 dark:bg-success-500/20 dark:text-success-400 dark:border-success-500 dark:border-2"
                 shape="full"
               >
-                <Icon name="ph:money" class="h-5 w-5" />
+                <Icon name="ph:play" class="h-5 w-5" />
               </BaseIconBox>
             </div>
             <div class="mb-2">
@@ -383,6 +383,46 @@ function useBarSalesProfit() {
                 class="text-muted-800 dark:text-white"
               >
                 <span>{{ data?.metaData?.totalDiffused }}</span>
+              </BaseHeading>
+            </div>
+            <div
+              class="text-success-500 flex items-center gap-1 font-sans text-sm"
+            >
+              <span>+7.8%</span>
+              <Icon name="lucide:trending-up" class="h-5 w-5" />
+              <span class="text-muted-400 text-xs">en hause</span>
+            </div>
+          </BaseCard>
+        </div>
+        <div class="col-span-12 md:col-span-3">
+          <BaseCard class="p-4">
+            <div class="mb-1 flex items-center justify-between">
+              <BaseHeading
+                as="h5"
+                size="sm"
+                weight="medium"
+                lead="tight"
+                class="text-muted-500 dark:text-muted-400"
+              >
+                <span>Total Non diffusés</span>
+              </BaseHeading>
+              <BaseIconBox
+                size="xs"
+                class="bg-danger-100 text-danger-500 dark:bg-danger-500/20 dark:text-danger-400 dark:border-danger-500 dark:border-2"
+                shape="full"
+              >
+                <Icon name="ph:warning" class="h-5 w-5" />
+              </BaseIconBox>
+            </div>
+            <div class="mb-2">
+              <BaseHeading
+                as="h4"
+                size="3xl"
+                weight="bold"
+                lead="tight"
+                class="text-muted-800 dark:text-white"
+              >
+                <span>{{ data?.metaData?.totalNotDiffused }}</span>
               </BaseHeading>
             </div>
             <div
@@ -409,10 +449,10 @@ function useBarSalesProfit() {
               </BaseHeading>
               <BaseIconBox
                 size="xs"
-                class="bg-success-100 text-success-500 dark:bg-success-500/20 dark:text-success-400 dark:border-success-500 dark:border-2"
+                class="bg-yellow-100 text-yellow-500 dark:bg-yellow-500/20 dark:text-yellow-400 dark:border-yellow-500 dark:border-2"
                 shape="full"
               >
-                <Icon name="ph:money" class="h-5 w-5" />
+                <Icon name="ph:package" class="h-5 w-5" />
               </BaseIconBox>
             </div>
             <div class="mb-2">
@@ -453,7 +493,7 @@ function useBarSalesProfit() {
                 class="bg-yellow-100 text-yellow-500 dark:border-2 dark:border-yellow-500 dark:bg-yellow-500/20 dark:text-yellow-400"
                 shape="full"
               >
-                <Icon name="ph:money" class="h-5 w-5" />
+                <Icon name="ph:user" class="h-5 w-5" />
               </BaseIconBox>
             </div>
             <div class="mb-2">
@@ -477,46 +517,6 @@ function useBarSalesProfit() {
           </BaseCard>
         </div>
         <!-- Stat tile -->
-        <div class="col-span-12 md:col-span-3">
-          <BaseCard class="p-4">
-            <div class="mb-1 flex items-center justify-between">
-              <BaseHeading
-                as="h5"
-                size="sm"
-                weight="medium"
-                lead="tight"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <span>Plages de diffusion</span>
-              </BaseHeading>
-              <BaseIconBox
-                size="xs"
-                class="bg-primary-100 text-primary-500 dark:bg-primary-500/20 dark:text-primary-400 dark:border-primary-500 dark:border-2"
-                shape="full"
-              >
-                <Icon name="ph:money" class="h-5 w-5" />
-              </BaseIconBox>
-            </div>
-            <div class="mb-2">
-              <BaseHeading
-                as="h4"
-                size="3xl"
-                weight="bold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>0</span>
-              </BaseHeading>
-            </div>
-            <div
-              class="text-success-500 flex items-center gap-1 font-sans text-sm"
-            >
-              <span>+10%</span>
-              <Icon name="lucide:trending-up" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">en hausse</span>
-            </div>
-          </BaseCard>
-        </div>
         <!-- Chart -->
         <div class="col-span-12 md:col-span-12">
           <BaseCard class="p-6">
