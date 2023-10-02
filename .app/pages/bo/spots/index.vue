@@ -423,7 +423,7 @@ function useBarSalesProfit() {
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ 0 }}</span>
+                <span>{{ data?.metaData?.totalPackages }}</span>
               </BaseHeading>
             </div>
             <div
@@ -594,7 +594,7 @@ function useBarSalesProfit() {
               <div>
                 <span class="text-muted-400 font-sans text-xs">Ce mois</span>
                 <p class="text-primary-500 font-sans text-lg font-medium">
-                  {{ data.metaData?.resumeValues[1] }} spots diffusés
+                  {{ data.metaData?.resumeValues[1] ?? 0 }} spots diffusés
                 </p>
               </div>
               <div>
@@ -604,7 +604,7 @@ function useBarSalesProfit() {
                 <p
                   class="text-muted-800 dark:text-muted-100 font-sans text-lg font-medium"
                 >
-                  {{ data.metaData?.resumeValues[0] }} spots diffusés
+                  {{ data.metaData?.resumeValues[0] ?? 0 }} spots diffusés
                 </p>
               </div>
             </div>

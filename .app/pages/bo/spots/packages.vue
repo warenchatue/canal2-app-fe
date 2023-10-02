@@ -143,6 +143,7 @@ const zodSchema = z
     spotPackage: z.object({
       _id: z.string().optional(),
       label: z.string().min(1, VALIDATION_TEXT.LABEL_REQUIRED),
+      totalAmount: z.number(),
       numberSpots: z.number(),
       numberFiles: z.number(),
       status: z.union([z.literal('active'), z.literal('trashed')]).optional(),
@@ -177,6 +178,7 @@ const initialValues = computed<FormInput>(() => ({
   avatar: null,
   spotPackage: {
     label: '',
+    totalAmount: 0,
     numberSpots: 0,
     numberFiles: 0,
     period: '',
@@ -349,7 +351,7 @@ const onSubmit = handleSubmit(
           @click=";(isModalNewPackageOpen = true), (isEdit = false)"
         >
           <Icon name="ph:plus" class="h-4 w-4" />
-          <span>Nouveau Package</span>
+          <span>Nouveau package</span>
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">
@@ -364,7 +366,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Commandes</span>
+                <span>Total</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -702,7 +704,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            {{ isEdit == true ? 'Editer' : 'Nouveau' }} Package
+            {{ isEdit == true ? 'Editer' : 'Nouveau' }} package
           </h3>
 
           <BaseButtonClose @click="isModalNewPackageOpen = false" />
@@ -741,7 +743,25 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                  <div class="col-span-12 md:col-span-3">
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="spotPackage.totalAmount"
+                    >
+                      <BaseInput
+                        label="Montant total"
+                        icon="ph:file-duotone"
+                        type="number"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="spotPackage.numberSpots"
@@ -759,7 +779,7 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                  <div class="col-span-12 md:col-span-3">
+                  <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="spotPackage.numberFiles"
