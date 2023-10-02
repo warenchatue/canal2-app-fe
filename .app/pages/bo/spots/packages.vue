@@ -664,7 +664,7 @@ const onSubmit = handleSubmit(
                       :to="'/bo/spots/package-details/' + item._id"
                       muted
                     >
-                      <Icon name="lucide:eye" class="h-4 w-4"
+                      <Icon name="lucide:settings" class="h-4 w-4"
                     /></BaseButtonAction>
                     <BaseButtonAction @click="editPackage(item)">
                       <Icon name="lucide:edit" class="h-4 w-4"
