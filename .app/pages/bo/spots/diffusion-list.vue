@@ -16,6 +16,7 @@ definePageMeta({
   },
 })
 
+const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
@@ -378,6 +379,7 @@ const onSubmit = handleSubmit(
           <option :value="100">100 per page</option>
         </BaseSelect>
         <BaseButton
+          :disabled="authStore.user.appRole.name != 'Admin'"
           @click="isModalNewTxnOpen = true"
           color="primary"
           class="w-full sm:w-48"
@@ -746,6 +748,7 @@ const onSubmit = handleSubmit(
                   <BaseButtonAction
                     @click.prevent="selectPlanning(item)"
                     muted
+                    :disabled="authStore.user.appRole.name != 'Admin'"
                     :class="{
                       '!text-orange-400':
                         item.isManualPlay == false && item.isAutoPlay == false,
@@ -784,7 +787,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Nouvelle Opération
+            Importer liste de diffusion
           </h3>
 
           <BaseButtonClose @click="isModalNewTxnOpen = false" />
@@ -806,61 +809,15 @@ const onSubmit = handleSubmit(
             <div class="mx-auto flex w-full flex-col">
               <div>
                 <div>
-                  <div class="grid grid-cols-12 gap-4">
-                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
-                      <DatePicker
-                        v-model.range="dates"
-                        :masks="masks"
-                        :min-date="new Date()"
-                        mode="date"
-                        hide-time-header
-                        trim-weeks
-                      >
-                        <template #default="{ inputValue, inputEvents }">
-                          <div class="flex w-full flex-col gap-4 sm:flex-row">
-                            <div class="relative grow">
-                              <Field
-                                v-slot="{
-                                  field,
-                                  errorMessage,
-                                  handleChange,
-                                  handleBlur,
-                                }"
-                                name="event.startDateTime"
-                              >
-                                <BaseInput
-                                  shape="rounded"
-                                  label="Date de l'operation"
-                                  icon="ph:calendar-blank-duotone"
-                                  :value="inputValue.start"
-                                  v-on="inputEvents.start"
-                                  :classes="{
-                                    input: '!h-11 !ps-11',
-                                    icon: '!h-11 !w-11',
-                                  }"
-                                  :model-value="field.value"
-                                  :error="errorMessage"
-                                  :disabled="isSubmitting"
-                                  type="text"
-                                  @update:model-value="handleChange"
-                                  @blur="handleBlur"
-                                />
-                              </Field>
-                            </div>
-                          </div>
-                        </template>
-                      </DatePicker>
-                    </div>
-                  </div>
                   <div class="col-span-12 sm:col-span-6 mt-2">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="montant"
                     >
                       <BaseInput
-                        label="Montant"
-                        icon="ph:money"
-                        placeholder="Ex: 500 000 000"
+                        label="Fichier"
+                        icon="ph:file"
+                        placeholder=""
                         :model-value="field.value"
                         :error="errorMessage"
                         :disabled="isSubmitting"
@@ -887,7 +844,7 @@ const onSubmit = handleSubmit(
               flavor="solid"
               @click="isModalNewTxnOpen = false"
             >
-              Créer
+              Importer
             </BaseButton>
           </div>
         </div>
