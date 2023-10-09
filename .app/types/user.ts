@@ -1,6 +1,14 @@
 import { Country } from './country'
 import { Media } from './medias'
 
+export type UserRole =
+  | 'SuperAdmin'
+  | 'Admin'
+  | 'Broadcast'
+  | 'Schedule'
+  | 'Billing'
+  | 'sales'
+
 export interface User {
   _id?: String
   firstName?: string
