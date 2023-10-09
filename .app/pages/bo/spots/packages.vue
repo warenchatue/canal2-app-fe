@@ -4,9 +4,9 @@ import { Field, useFieldError, useForm } from 'vee-validate'
 import { z } from 'zod'
 
 definePageMeta({
-  title: 'Packages',
+  title: 'Commandes',
   preview: {
-    title: 'Packages',
+    title: 'Commandes',
     description: 'Contribution and withdrawal',
     categories: ['bo', 'spots', 'packages'],
     src: '/img/screens/layouts-table-list-1.png',
@@ -15,6 +15,7 @@ definePageMeta({
   },
 })
 
+const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
@@ -24,6 +25,19 @@ const perPage = ref(10)
 const isModalNewPackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
 const isEdit = ref(false)
+
+const orderContracts = ref<FileList | null>()
+const orderInvoices = ref<FileList | null>()
+
+watch(orderContracts, (value) => {
+  console.log('orderContracts')
+  console.log(orderContracts.value)
+})
+
+watch(orderInvoices, (value) => {
+  console.log('orderInvoices')
+  console.log(orderInvoices.value)
+})
 
 watch([filter, perPage], () => {
   router.push({
@@ -60,7 +74,7 @@ function editPackage(spotPackage: any) {
   setFieldValue('spotPackage._id', spotPackage._id)
   setFieldValue('spotPackage.label', spotPackage.label)
   setFieldValue('spotPackage.numberSpots', spotPackage.numberSpots)
-  setFieldValue('spotPackage.numberFiles', spotPackage.numberFiles)
+  setFieldValue('spotPackage.numberProducts', spotPackage.numberProducts)
   setFieldValue('spotPackage.period', spotPackage.period)
   setFieldValue('spotPackage.announcer', spotPackage.announcer)
   setFieldValue('spotPackage.status', spotPackage.status)
@@ -145,8 +159,15 @@ const zodSchema = z
       label: z.string().min(1, VALIDATION_TEXT.LABEL_REQUIRED),
       totalAmount: z.number(),
       numberSpots: z.number(),
-      numberFiles: z.number(),
-      status: z.union([z.literal('active'), z.literal('trashed')]).optional(),
+      numberProducts: z.number(),
+      status: z
+        .union([
+          z.literal('onHold'),
+          z.literal('confirmed'),
+          z.literal('paid'),
+          z.literal('closed'),
+        ])
+        .optional(),
       period: z.string(),
       announcer: z
         .object({
@@ -180,9 +201,9 @@ const initialValues = computed<FormInput>(() => ({
     label: '',
     totalAmount: 0,
     numberSpots: 0,
-    numberFiles: 0,
+    numberProducts: 0,
     period: '',
-    status: 'active',
+    status: 'onHold',
     announcer: {
       _id: '',
       email: '',
@@ -489,7 +510,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Fichiers</span>
+                <span>Produits</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -569,7 +590,7 @@ const onSubmit = handleSubmit(
                 >
 
                 <TairoTableHeading uppercase spaced>Diffusés</TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Fichiers</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Produits</TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>Période</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
@@ -630,7 +651,7 @@ const onSubmit = handleSubmit(
                   {{ item.numberPlay ?? 0 }} spots
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.numberFiles }}
+                  {{ item.numberProducts }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{ item.period }}
@@ -726,7 +747,7 @@ const onSubmit = handleSubmit(
             <div class="mx-auto flex w-full flex-col">
               <div>
                 <div class="grid grid-cols-12 gap-4">
-                  <div class="col-span-12 md:col-span-12">
+                  <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="spotPackage.label"
@@ -746,10 +767,10 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.totalAmount"
+                      name="spotPackage.numberProducts"
                     >
                       <BaseInput
-                        label="Montant total"
+                        label="Nombre de produits"
                         icon="ph:file-duotone"
                         type="number"
                         placeholder=""
@@ -761,6 +782,7 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
+
                   <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
@@ -779,19 +801,46 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
+
                   <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.numberFiles"
+                      name="spotPackage.totalAmount"
                     >
                       <BaseInput
-                        label="Nombre de produits"
+                        label="Montant total Facture"
                         icon="ph:file-duotone"
                         type="number"
                         placeholder=""
                         :model-value="field.value"
                         :error="errorMessage"
-                        :disabled="isSubmitting"
+                        :disabled="
+                          isSubmitting ||
+                          (authStore.user?.appRole?.name != 'Admin' &&
+                            authStore.user?.appRole?.name != 'Billing')
+                        "
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="spotPackage.totalAmount"
+                    >
+                      <BaseInput
+                        label="Nombre de spots payés"
+                        icon="ph:file-duotone"
+                        type="number"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="
+                          isSubmitting ||
+                          (authStore.user?.appRole?.name != 'Admin' &&
+                            authStore.user?.appRole?.name != 'Billing')
+                        "
                         @update:model-value="handleChange"
                         @blur="handleBlur"
                       />
@@ -848,14 +897,332 @@ const onSubmit = handleSubmit(
                         icon="ph:funnel"
                         :model-value="field.value"
                         :error="errorMessage"
-                        :disabled="isSubmitting"
+                        :disabled="
+                          isSubmitting ||
+                          (authStore.user?.appRole?.name != 'Admin' &&
+                            authStore.user?.appRole?.name != 'Billing')
+                        "
                         @update:model-value="handleChange"
                         @blur="handleBlur"
                       >
-                        <option value="active">Actif</option>
-                        <option value="trashed">Inactif</option>
+                        <option value="onHold">En attente de validation</option>
+                        <option value="confirmed">Validéé</option>
+                        <option value="completed">Soldée</option>
+                        <option value="closed">Cloturées</option>
                       </BaseSelect>
                     </Field>
+                  </div>
+                  <div
+                    class="mt-2 ltablet:col-span-6 col-span-12 lg:col-span-6"
+                  >
+                    <div class="relative mx-auto max-w-3xl">
+                      <BaseInputFileHeadless
+                        multiple
+                        v-model="orderContracts"
+                        v-slot="{ open, remove, preview, drop, files }"
+                        :disabled="
+                          authStore.user?.appRole?.name != 'Admin' &&
+                          authStore.user?.appRole?.name != 'Billing'
+                        "
+                      >
+                        <!-- Controls -->
+                        <div class="mb-4 flex items-center gap-2">
+                          <button
+                            type="button"
+                            class="nui-focus border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-800 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300"
+                            tooltip="Select files"
+                            @click="open"
+                          >
+                            <Icon
+                              name="lucide:plus"
+                              class="absolute start-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2"
+                            />
+                            <span class="sr-only">Select files</span>
+                          </button>
+                          <button
+                            type="button"
+                            class="nui-focus border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-800 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300"
+                            tooltip="Start Upload"
+                          >
+                            <Icon name="lucide:arrow-up" class="h-4 w-4" />
+
+                            <span class="sr-only">Start Upload</span>
+                          </button>
+                        </div>
+
+                        <div
+                          class=""
+                          @dragenter.stop.prevent
+                          @dragover.stop.prevent
+                          @drop="drop"
+                        >
+                          <div
+                            v-if="!orderContracts?.length"
+                            class="nui-focus border-muted-300 dark:border-muted-800 hover:border-muted-400 focus:border-muted-400 dark:hover:border-muted-700 dark:focus:border-muted-700 group cursor-pointer rounded-lg border-[3px] border-dashed p-4 transition-colors duration-300"
+                            tabindex="0"
+                            role="button"
+                            @click="open"
+                            @keydown.enter.prevent="open"
+                          >
+                            <div class="p-5 text-center">
+                              <Icon
+                                name="mdi-light:cloud-upload"
+                                class="text-muted-400 group-hover:text-primary-500 group-focus:text-primary-500 mb-2 h-12 w-12 transition-colors duration-300"
+                              />
+                              <h4 class="text-muted-400 font-sans text-sm">
+                                Glissez et déposer
+                              </h4>
+                              <div>
+                                <span
+                                  class="text-muted-400 font-sans text-xs font-semibold uppercase"
+                                >
+                                  Ou
+                                </span>
+                              </div>
+                              <label
+                                for="file"
+                                class="text-muted-400 group-hover:text-primary-500 group-focus:text-primary-500 cursor-pointer font-sans text-sm underline underline-offset-4 transition-colors duration-300"
+                              >
+                                Selectionnez le contrat
+                              </label>
+                            </div>
+                          </div>
+                          <ul v-else class="mt-6 space-y-2">
+                            <li v-for="file in orderContracts" :key="file.name">
+                              <div
+                                class="border-muted-200 dark:border-muted-700 dark:bg-muted-800 relative flex items-center justify-end gap-2 rounded-xl border bg-white p-3"
+                              >
+                                <div class="flex items-center gap-2">
+                                  <div class="shrink-0">
+                                    <img
+                                      class="h-14 w-14 rounded-xl object-cover object-center"
+                                      v-if="file.type.startsWith('image')"
+                                      src="/img/avatars/placeholder-file.png"
+                                      alt="Image preview"
+                                    />
+                                    <img
+                                      v-else
+                                      class="h-14 w-14 rounded-xl object-cover object-center"
+                                      src="/img/avatars/placeholder-file.png"
+                                      alt="Image preview"
+                                    />
+                                  </div>
+                                  <div class="font-sans">
+                                    <span
+                                      class="text-muted-800 dark:text-muted-100 line-clamp-1 block text-sm"
+                                    >
+                                      {{ file.name }}
+                                    </span>
+                                    <span class="text-muted-400 block text-xs">
+                                      {{ formatFileSize(file.size) }}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div
+                                  class="ms-auto w-32 px-4 transition-opacity duration-300"
+                                  :class="'opacity-100'"
+                                >
+                                  <BaseProgress
+                                    :value="0"
+                                    size="xs"
+                                    :color="'success'"
+                                  />
+                                </div>
+                                <div class="flex gap-2">
+                                  <button
+                                    class="border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-900 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-60"
+                                    disabled
+                                    type="button"
+                                    tooltip="Cancel"
+                                  >
+                                    <Icon name="lucide:slash" class="h-4 w-4" />
+                                    <span class="sr-only">Cancel</span>
+                                  </button>
+
+                                  <button
+                                    class="border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-900 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300"
+                                    type="button"
+                                    tooltip="Upload"
+                                  >
+                                    <Icon
+                                      name="lucide:arrow-up"
+                                      class="h-4 w-4"
+                                    />
+                                    <span class="sr-only">Upload</span>
+                                  </button>
+                                  <button
+                                    class="border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-900 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300"
+                                    type="button"
+                                    tooltip="Remove"
+                                    @click.prevent="remove(file)"
+                                  >
+                                    <Icon name="lucide:x" class="h-4 w-4" />
+                                    <span class="sr-only">Remove</span>
+                                  </button>
+                                </div>
+                              </div>
+                            </li>
+                          </ul>
+                        </div>
+                      </BaseInputFileHeadless>
+                    </div>
+                  </div>
+                  <div
+                    class="mt-2 ltablet:col-span-6 col-span-12 lg:col-span-6"
+                  >
+                    <div class="relative mx-auto max-w-3xl">
+                      <BaseInputFileHeadless
+                        multiple
+                        v-model="orderInvoices"
+                        v-slot="{ open, remove, preview, drop, files }"
+                        :disabled="
+                          authStore.user?.appRole?.name != 'Admin' &&
+                          authStore.user?.appRole?.name != 'Billing'
+                        "
+                      >
+                        <!-- Controls -->
+                        <div class="mb-4 flex items-center gap-2">
+                          <button
+                            type="button"
+                            class="nui-focus border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-800 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300"
+                            tooltip="Select files"
+                            @click="open"
+                          >
+                            <Icon
+                              name="lucide:plus"
+                              class="absolute start-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2"
+                            />
+                            <span class="sr-only">Select files</span>
+                          </button>
+                          <button
+                            type="button"
+                            class="nui-focus border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-800 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300"
+                            tooltip="Start Upload"
+                          >
+                            <Icon name="lucide:arrow-up" class="h-4 w-4" />
+
+                            <span class="sr-only">Start Upload</span>
+                          </button>
+                        </div>
+
+                        <div
+                          class=""
+                          @dragenter.stop.prevent
+                          @dragover.stop.prevent
+                          @drop="drop"
+                        >
+                          <div
+                            v-if="!orderInvoices?.length"
+                            class="nui-focus border-muted-300 dark:border-muted-800 hover:border-muted-400 focus:border-muted-400 dark:hover:border-muted-700 dark:focus:border-muted-700 group cursor-pointer rounded-lg border-[3px] border-dashed p-4 transition-colors duration-300"
+                            tabindex="0"
+                            role="button"
+                            @click="open"
+                            @keydown.enter.prevent="open"
+                          >
+                            <div class="p-5 text-center">
+                              <Icon
+                                name="mdi-light:cloud-upload"
+                                class="text-muted-400 group-hover:text-primary-500 group-focus:text-primary-500 mb-2 h-12 w-12 transition-colors duration-300"
+                              />
+                              <h4 class="text-muted-400 font-sans text-sm">
+                                Glissez et déposer
+                              </h4>
+                              <div>
+                                <span
+                                  class="text-muted-400 font-sans text-xs font-semibold uppercase"
+                                >
+                                  Ou
+                                </span>
+                              </div>
+                              <label
+                                for="file"
+                                class="text-muted-400 group-hover:text-primary-500 group-focus:text-primary-500 cursor-pointer font-sans text-sm underline underline-offset-4 transition-colors duration-300"
+                              >
+                                Selectionnez la facture
+                              </label>
+                            </div>
+                          </div>
+                          <ul v-else class="mt-6 space-y-2">
+                            <li v-for="file in orderInvoices" :key="file.name">
+                              <div
+                                class="border-muted-200 dark:border-muted-700 dark:bg-muted-800 relative flex items-center justify-end gap-2 rounded-xl border bg-white p-3"
+                              >
+                                <div class="flex items-center gap-2">
+                                  <div class="shrink-0">
+                                    <img
+                                      class="h-14 w-14 rounded-xl object-cover object-center"
+                                      v-if="file.type.startsWith('image')"
+                                      src="/img/avatars/placeholder-file.png"
+                                      alt="Image preview"
+                                    />
+                                    <img
+                                      v-else
+                                      class="h-14 w-14 rounded-xl object-cover object-center"
+                                      src="/img/avatars/placeholder-file.png"
+                                      alt="Image preview"
+                                    />
+                                  </div>
+                                  <div class="font-sans">
+                                    <span
+                                      class="text-muted-800 dark:text-muted-100 line-clamp-1 block text-sm"
+                                    >
+                                      {{ file.name }}
+                                    </span>
+                                    <span class="text-muted-400 block text-xs">
+                                      {{ formatFileSize(file.size) }}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div
+                                  class="ms-auto w-32 px-4 transition-opacity duration-300"
+                                  :class="'opacity-100'"
+                                >
+                                  <BaseProgress
+                                    :value="0"
+                                    size="xs"
+                                    :color="'success'"
+                                  />
+                                </div>
+                                <div class="flex gap-2">
+                                  <button
+                                    class="border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-900 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-60"
+                                    disabled
+                                    type="button"
+                                    tooltip="Cancel"
+                                  >
+                                    <Icon name="lucide:slash" class="h-4 w-4" />
+                                    <span class="sr-only">Cancel</span>
+                                  </button>
+
+                                  <button
+                                    class="border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-900 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300"
+                                    type="button"
+                                    tooltip="Upload"
+                                  >
+                                    <Icon
+                                      name="lucide:arrow-up"
+                                      class="h-4 w-4"
+                                    />
+                                    <span class="sr-only">Upload</span>
+                                  </button>
+                                  <button
+                                    class="border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-900 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300"
+                                    type="button"
+                                    tooltip="Remove"
+                                    @click.prevent="remove(file)"
+                                  >
+                                    <Icon name="lucide:x" class="h-4 w-4" />
+                                    <span class="sr-only">Remove</span>
+                                  </button>
+                                </div>
+                              </div>
+                            </li>
+                          </ul>
+                        </div>
+                      </BaseInputFileHeadless>
+                    </div>
                   </div>
                 </div>
               </div>

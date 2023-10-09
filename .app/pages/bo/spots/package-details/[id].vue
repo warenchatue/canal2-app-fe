@@ -15,6 +15,7 @@ definePageMeta({
   },
 })
 
+const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
@@ -137,18 +138,6 @@ async function addSpotToPlanning() {
       packageId: data.value?.data?._id,
       key: `${Math.random() * 10}`,
     }
-
-    // const response = await useFetch(() => '/api/spots/plannings', {
-    //   key: `${Math.random() * 10}`,
-    //   ca: false,
-    //   method: 'post',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   query: queryNewPlanning,
-    //   body: {
-    //     ...spotPlanning,
-    //     _id: undefined,
-    //   },
-    // })
 
     const response = await $fetch(
       '/api/spots/plannings?action=createPlanning&token=' +
@@ -407,7 +396,7 @@ const onSubmit = handleSubmit(
     success.value = false
 
     // here you have access to the validated form values
-    console.log('spot-create-success', values)
+    console.log('spot-product-success', values)
 
     try {
       const isSuccess = ref(false)
@@ -454,14 +443,16 @@ const onSubmit = handleSubmit(
         toaster.clearAll()
         toaster.show({
           title: 'Success',
-          message: isEdit.value == false ? `Spot créé !` : `Spot mis à jour`,
+          message:
+            isEdit.value == false ? `Produit créé !` : `Produit mis à jour`,
           color: 'success',
           icon: 'ph:check',
           closable: true,
         })
         isModalNewSpotOpen.value = false
         resetForm()
-        filter.value = 'spot'
+        location.reload()
+        filter.value = 'product'
         filter.value = ''
       } else {
         toaster.clearAll()
@@ -587,7 +578,7 @@ const onSubmit = handleSubmit(
           class="w-full sm:w-48"
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
-          <span>Nouveau Spot</span>
+          <span>Nouveau Produit</span>
         </BaseButton>
         <BaseButton
           @click="router.push('/bo/spots/package-details/' + data.data?._id)"
@@ -969,7 +960,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            {{ isEdit == true ? 'Editer' : 'Nouveau' }} Spot
+            {{ isEdit == true ? 'Editer' : 'Nouveau' }} produit
           </h3>
 
           <BaseButtonClose @click="isModalNewSpotOpen = false" />
@@ -999,7 +990,7 @@ const onSubmit = handleSubmit(
                       <BaseInput
                         label="Produit *"
                         icon="ph:user-duotone"
-                        placeholder="spot xxxx"
+                        placeholder="produit xxxx"
                         :model-value="field.value"
                         :error="errorMessage"
                         :disabled="isSubmitting"
@@ -1016,7 +1007,7 @@ const onSubmit = handleSubmit(
                       <BaseInput
                         label="Message"
                         icon="ph:chat-duotone"
-                        placeholder="spot xxxx"
+                        placeholder="message xxxx"
                         :model-value="field.value"
                         :error="errorMessage"
                         :disabled="isSubmitting"
@@ -1035,7 +1026,7 @@ const onSubmit = handleSubmit(
                       <BaseInput
                         label="Tag"
                         icon="ph:chat-duotone"
-                        placeholder="spot A"
+                        placeholder="A"
                         :model-value="field.value"
                         :error="errorMessage"
                         :disabled="isSubmitting"
@@ -1477,13 +1468,17 @@ const onSubmit = handleSubmit(
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
             <BaseButton @click="isModalPlanningOpen = false">Fermer</BaseButton>
-            <!-- <BaseButton
+            <BaseButton
               color="primary"
               flavor="solid"
+              v-if="
+                authStore.user?.appRole?.name == 'Admin' ||
+                authStore.user?.appRole?.name == 'Schedule'
+              "
               @click="isModalPlanningOpen = false"
             >
-              Fermer
-            </BaseButton> -->
+              Valider le planning
+            </BaseButton>
           </div>
         </div>
       </template>

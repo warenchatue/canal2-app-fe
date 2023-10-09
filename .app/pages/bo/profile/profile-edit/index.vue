@@ -334,6 +334,7 @@ const onSubmit = handleSubmit(
                   }
                 "
               />
+
               <BaseInputFileHeadless
                 accept="image/*"
                 v-model="inputFile"
