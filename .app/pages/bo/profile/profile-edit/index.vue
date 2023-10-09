@@ -15,6 +15,7 @@ definePageMeta({
   },
 })
 
+const autStore = useAuthStore()
 // This is the object that will contain the validation messages
 const ONE_MB = 1000000
 const VALIDATION_TEXT = {
@@ -67,10 +68,7 @@ const zodSchema = z
     social: z.object({
       facebook: z.string(),
       twitter: z.string(),
-      dribbble: z.string(),
       instagram: z.string(),
-      github: z.string(),
-      gitlab: z.string(),
     }),
   })
   .superRefine((data, ctx) => {
@@ -117,15 +115,13 @@ const zodSchema = z
 // infer the shape of the schema into a TypeScript type
 type FormInput = z.infer<typeof zodSchema>
 
-const { data, pending, error, refresh } = await useFetch('/api/profile')
-
 const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
   avatar: null,
   profile: {
-    firstName: data.value?.personalInfo?.firstName || '',
-    lastName: data.value?.personalInfo?.lastName || '',
-    role: data.value?.personalInfo?.role || '',
+    firstName: autStore.user?.firstName || '',
+    lastName: autStore.user?.lastName || '',
+    role: autStore.user?.appRole?.name || '',
     location: '',
     bio: '',
   },
@@ -138,10 +134,7 @@ const initialValues = computed<FormInput>(() => ({
   social: {
     facebook: '',
     twitter: '',
-    dribbble: '',
     instagram: '',
-    github: '',
-    gitlab: '',
   },
 }))
 
@@ -159,7 +152,7 @@ const answers = [
 ]
 
 // This is the computed value that will be used to display the current avatar
-const currentAvatar = computed(() => data.value?.personalInfo?.picture)
+const currentAvatar = computed(() => autStore.user?.photo)
 
 const {
   handleSubmit,
@@ -293,10 +286,10 @@ const onSubmit = handleSubmit(
             lead="normal"
             class="uppercase tracking-wider"
           >
-            General info
+            INFO GÉNÉRALE
           </BaseHeading>
           <BaseText size="xs" class="text-muted-400">
-            Edit your account's general information
+            Modifier les informations générales de votre compte
           </BaseText>
         </div>
         <div class="flex items-center gap-2">
@@ -326,8 +319,8 @@ const onSubmit = handleSubmit(
           </BaseMessage>
 
           <TairoFormGroup
-            label="Profile picture"
-            sublabel="This is how others will recognize you"
+            label="Photo de profil"
+            sublabel="C'est ainsi que les autres vous reconnaîtront"
           >
             <div
               class="relative flex flex-col items-center justify-center gap-4"

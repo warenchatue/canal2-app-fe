@@ -32,7 +32,7 @@ const projects = [
   },
   {
     id: 2,
-    name: "Validation d'un package par Alvine",
+    name: "Validation d'une commande par Alvine",
     image: '/img/icons/logos/flashlite.svg',
     badge: '/img/stacks/pricing/free.svg',
     updated: '30m ago',

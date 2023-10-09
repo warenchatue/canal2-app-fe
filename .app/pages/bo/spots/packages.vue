@@ -347,11 +347,11 @@ const onSubmit = handleSubmit(
         </BaseSelect>
         <BaseButton
           color="primary"
-          class="w-full sm:w-48"
+          class="w-full sm:w-52"
           @click=";(isModalNewPackageOpen = true), (isEdit = false)"
         >
           <Icon name="ph:plus" class="h-4 w-4" />
-          <span>Nouveau package</span>
+          <span>Nouvelle commande</span>
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">
@@ -704,7 +704,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            {{ isEdit == true ? 'Editer' : 'Nouveau' }} package
+            {{ isEdit == true ? 'Editer' : 'Nouvelle' }} commande
           </h3>
 
           <BaseButtonClose @click="isModalNewPackageOpen = false" />
@@ -785,7 +785,7 @@ const onSubmit = handleSubmit(
                       name="spotPackage.numberFiles"
                     >
                       <BaseInput
-                        label="Nombre de fichiers"
+                        label="Nombre de produits"
                         icon="ph:file-duotone"
                         type="number"
                         placeholder=""

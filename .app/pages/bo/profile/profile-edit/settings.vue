@@ -35,9 +35,7 @@ const zodSchema = z
     }),
     notifications: z.object({
       enabled: z.boolean(),
-      flushLowPriority: z.boolean(),
       marketing: z.boolean(),
-      partners: z.boolean(),
     }),
   })
   .superRefine((data, ctx) => {
@@ -243,14 +241,14 @@ const onSubmit = handleSubmit(
             lead="normal"
             class="uppercase tracking-wider"
           >
-            Settings
+            Sécurité
           </BaseHeading>
           <BaseText size="xs" class="text-muted-400">
-            Edit your account prefs and settings
+            Modifier les préférences et les paramètres de votre compte
           </BaseText>
         </div>
         <div class="flex items-center gap-2">
-          <BaseButton class="w-24" to="/layouts/profile">Cancel</BaseButton>
+          <BaseButton class="w-24" to="/layouts/profile">Annuler</BaseButton>
           <BaseButton
             type="submit"
             color="primary"
@@ -276,8 +274,8 @@ const onSubmit = handleSubmit(
           </BaseMessage>
 
           <TairoFormGroup
-            label="Change Password"
-            sublabel="For an improved account security"
+            label="Changer de mot de passe"
+            sublabel="Pour une meilleure sécurité du compte"
           >
             <div class="grid grid-cols-12 gap-4">
               <div class="col-span-12">
@@ -336,8 +334,8 @@ const onSubmit = handleSubmit(
             </div>
           </TairoFormGroup>
           <TairoFormGroup
-            label="2 Factor Auth"
-            sublabel="Two factor authentication"
+            label="Auth à 2 facteurs"
+            sublabel="Authentification à double facteur"
           >
             <div class="grid grid-cols-12 gap-4">
               <div class="col-span-12">
@@ -401,22 +399,6 @@ const onSubmit = handleSubmit(
               <div v-show="values.notifications?.enabled" class="col-span-12">
                 <Field
                   v-slot="{ field, handleChange, handleBlur }"
-                  name="notifications.flushLowPriority"
-                >
-                  <BaseSwitchBall
-                    :model-value="field.value"
-                    :disabled="isSubmitting"
-                    label="Flush"
-                    sublabel="Discard low priority notifications"
-                    color="primary"
-                    @update:model-value="handleChange"
-                    @blur="handleBlur"
-                  />
-                </Field>
-              </div>
-              <div v-show="values.notifications?.enabled" class="col-span-12">
-                <Field
-                  v-slot="{ field, handleChange, handleBlur }"
                   name="notifications.marketing"
                 >
                   <BaseSwitchBall
@@ -424,22 +406,6 @@ const onSubmit = handleSubmit(
                     :disabled="isSubmitting"
                     label="Marketing"
                     sublabel="Enable marketing emails"
-                    color="primary"
-                    @update:model-value="handleChange"
-                    @blur="handleBlur"
-                  />
-                </Field>
-              </div>
-              <div v-show="values.notifications?.enabled" class="col-span-12">
-                <Field
-                  v-slot="{ field, handleChange, handleBlur }"
-                  name="notifications.partners"
-                >
-                  <BaseSwitchBall
-                    :model-value="field.value"
-                    :disabled="isSubmitting"
-                    label="Partners"
-                    sublabel="Enable partner emails"
                     color="primary"
                     @update:model-value="handleChange"
                     @blur="handleBlur"

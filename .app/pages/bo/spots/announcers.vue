@@ -470,7 +470,7 @@ const onSubmit = handleSubmit(
                 <TairoTableCell spaced>
                   <div class="flex">
                     <BaseButtonAction to="/bo/spots/packages" muted
-                      >Packages</BaseButtonAction
+                      >commandes</BaseButtonAction
                     >
                     <BaseButtonAction
                       class="mx-2"

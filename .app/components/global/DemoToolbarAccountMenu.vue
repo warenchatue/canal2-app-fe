@@ -50,17 +50,18 @@ const auth = useAuthStore()
               >
                 {{ auth.user.firstName }} {{ auth.user.lastName }}
               </h6>
-              <p class="text-muted-400 mb-4 font-sans text-xs">maya@tairo.io</p>
+              <p class="text-muted-400 mb-2 font-sans text-xs">{{ auth.user.email }}</p>
+              <p class="text-primary-500 mb-4 font-semi-bold text-xs">{{ auth.user.appRole?.name }}</p>
               <BaseButton
                 to="/bo/profile/profile-edit"
                 shape="curved"
                 class="w-full"
                 @click.passive="close"
-                >Manage Account</BaseButton
+                >Manage account</BaseButton
               >
             </div>
           </div>
-          <div class="p-6">
+          <div class="p-3">
             <BaseButton
               @click.passive="close"
               @click="auth.logUserOut()"

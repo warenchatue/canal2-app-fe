@@ -104,7 +104,7 @@ export default defineAppConfig({
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Packages',
+                name: 'Commandes',
                 to: '/bo/spots/packages',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
