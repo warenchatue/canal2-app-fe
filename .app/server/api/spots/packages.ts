@@ -17,6 +17,13 @@ export default defineEventHandler(async (event) => {
       metaData: response.metaData,
       data: filterData(response.data, filter, page, perPage),
     }
+  } else if (action == 'findAllReport') {
+    const response = await findAll(token)
+    return {
+      total: response.metaData.totalItems,
+      metaData: response.metaData,
+      data: filterData(response.data, filter, page, perPage, true),
+    }
   } else if (action == 'createPackage') {
     const body = await readBody(event)
     console.log(body)
@@ -32,23 +39,53 @@ export default defineEventHandler(async (event) => {
   }
 })
 
-
 function filterData(
   data: any[],
   filter: string,
   page: number,
   perPage: number,
+  isReport = false,
 ) {
   const offset = (page - 1) * perPage
+  if (isReport == true) {
+    data = data.map((item) => {
+      const plannings = item.plannings.sort((a: any, b: any) => {
+        return a.date < b.date ? -1 : 1
+      })
+      console.log('Sorted plannings')
+      console.log(plannings)
+      if (plannings.length > 0) {
+        const d2 = new Date(plannings[plannings.length - 1].date ?? '')
+        const d1 = new Date(plannings[0].date ?? '')
+        const diff = Math.abs(d2 - d1)
+        const durationDays = Math.ceil(diff / (1000 * 60 * 60 * 24))
+        const totalDiffused = plannings.filter((e) => {
+          return e.isManualPlay == true || e.isAutoPlay == true
+        }).length
+        item.durationDays = durationDays + 1
+        item.totalDiffused = totalDiffused
+        item.startDate = new Date(plannings[0].date).toLocaleDateString('fr-FR')
+        item.endDate = new Date(
+          plannings[plannings.length - 1].date,
+        ).toLocaleDateString('fr-FR')
+      } else {
+        item.durationDays = 0
+        item.totalDiffused = 0
+        item.startDate = ''
+        item.endDate = ''
+      }
+      console.log(item)
+      return item
+    })
+  }
+
   if (!filter) {
     return data.slice(offset, offset + perPage)
   }
   const filterRe = new RegExp(filter, 'i')
   return data
     .filter((item) => {
-      return [item.announcer.name, item.date, item.message].some((item) =>
-        item.match(filterRe),
-      )
+      return [item.code, item.label].some((item) => item.match(filterRe))
     })
     .slice(offset, offset + perPage)
 }
@@ -56,16 +93,13 @@ function filterData(
 async function findOne(id: string, token: string) {
   console.log('findOne ' + token)
   const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/packages/' + id,
-    {
-      method: 'get',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-type': 'application/json',
-      },
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/packages/' + id, {
+    method: 'get',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-type': 'application/json',
     },
-  ).catch((error) => console.log(error))
+  }).catch((error) => console.log(error))
   console.log(data)
   return Promise.resolve(data)
 }
@@ -93,7 +127,7 @@ async function createPackage(body: any, token: string) {
       Authorization: 'Bearer ' + token,
       'Content-type': 'application/json',
     },
-    body: body,
+    body: { ...body, code: makeId(4) + '_' + makeId(4) },
   }).catch((error) => console.log(error))
   console.log(data)
   return Promise.resolve(data)
@@ -102,17 +136,14 @@ async function createPackage(body: any, token: string) {
 async function updatePackage(id: string, body: any, token: string) {
   console.log('updatePackage ' + token)
   const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/packages/' + id,
-    {
-      method: 'PUT',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-type': 'application/json',
-      },
-      body: body,
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/packages/' + id, {
+    method: 'PUT',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-type': 'application/json',
     },
-  ).catch((error) => console.log(error))
+    body: body,
+  }).catch((error) => console.log(error))
   console.log(data)
   return Promise.resolve(data)
 }
@@ -120,16 +151,25 @@ async function updatePackage(id: string, body: any, token: string) {
 async function deletePackage(id: string, token: string) {
   console.log('deletePackage ' + token)
   const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/packages/' + id,
-    {
-      method: 'DELETE',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-type': 'application/json',
-      },
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/packages/' + id, {
+    method: 'DELETE',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-type': 'application/json',
     },
-  ).catch((error) => console.log(error))
+  }).catch((error) => console.log(error))
   console.log(data)
   return Promise.resolve(data)
+}
+
+function makeId(length: number) {
+  let result = ''
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#!&'
+  const charactersLength = characters.length
+  let counter = 0
+  while (counter < length) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength))
+    counter += 1
+  }
+  return result
 }

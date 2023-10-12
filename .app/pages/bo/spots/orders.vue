@@ -24,6 +24,8 @@ const filter = ref('')
 const perPage = ref(10)
 const isModalNewPackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
+const isModalConfirmOrderOpen = ref(false)
+
 const isEdit = ref(false)
 
 const orderContracts = ref<FileList | null>()
@@ -71,6 +73,7 @@ const { data: announcers } = await useFetch('/api/spots/announcers', {
 function editPackage(spotPackage: any) {
   isModalNewPackageOpen.value = true
   isEdit.value = true
+  currentPackage.value = spotPackage
   setFieldValue('spotPackage._id', spotPackage._id)
   setFieldValue('spotPackage.label', spotPackage.label)
   setFieldValue('spotPackage.numberSpots', spotPackage.numberSpots)
@@ -78,6 +81,13 @@ function editPackage(spotPackage: any) {
   setFieldValue('spotPackage.period', spotPackage.period)
   setFieldValue('spotPackage.announcer', spotPackage.announcer)
   setFieldValue('spotPackage.status', spotPackage.status)
+  setFieldValue('spotPackage.invoice.amount', spotPackage.invoice.amount)
+  setFieldValue('spotPackage.invoice.label', spotPackage.invoice.label)
+  setFieldValue('spotPackage.invoice.pending', spotPackage.invoice.pending)
+  setFieldValue(
+    'spotPackage.invoice.totalSpotsPaid',
+    spotPackage.invoice.totalSpotsPaid,
+  )
 }
 
 function confirmDeletePackage(spotPackage: any) {
@@ -157,7 +167,6 @@ const zodSchema = z
     spotPackage: z.object({
       _id: z.string().optional(),
       label: z.string().min(1, VALIDATION_TEXT.LABEL_REQUIRED),
-      totalAmount: z.number(),
       numberSpots: z.number(),
       numberProducts: z.number(),
       status: z
@@ -169,6 +178,16 @@ const zodSchema = z
         ])
         .optional(),
       period: z.string(),
+      invoice: z
+        .object({
+          label: z.string(),
+          amount: z.number(),
+          pending: z.number(),
+          totalSpotsPaid: z.number(),
+          url: z.string(),
+        })
+        .optional()
+        .nullable(),
       announcer: z
         .object({
           _id: z.string(),
@@ -199,11 +218,17 @@ const initialValues = computed<FormInput>(() => ({
   avatar: null,
   spotPackage: {
     label: '',
-    totalAmount: 0,
     numberSpots: 0,
     numberProducts: 0,
     period: '',
     status: 'onHold',
+    invoice: {
+      label: '',
+      amount: 0,
+      pending: 0,
+      totalSpotsPaid: 0,
+      url: '',
+    },
     announcer: {
       _id: '',
       email: '',
@@ -230,6 +255,54 @@ const {
 
 const toaster = useToaster()
 const success = ref(false)
+
+async function confirmOrder() {
+  const query4 = computed(() => {
+    return {
+      action: 'updatePackage',
+      token: token.value,
+      id: currentPackage.value._id,
+    }
+  })
+  if (authStore.user?.appRole?.name == 'Sale') {
+    currentPackage.value.orderValidator = authStore.user._id
+  } else if (authStore.user.appRole?.name == 'Billing') {
+    currentPackage.value.billValidator = authStore.user._id
+  } else if (authStore.user.appRole?.name == 'Admin') {
+    currentPackage.value.adminValidator = authStore.user._id
+  }
+
+  const response = await useFetch('/api/spots/packages', {
+    method: 'put',
+    headers: { 'Content-Type': 'application/json' },
+    query: query4,
+    body: { ...currentPackage.value },
+  })
+
+  if (response.data?.value?.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Commande confirmée !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalConfirmOrderOpen.value = false
+    filter.value = 'order'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Oops',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+}
 
 // This is where you would send the form data to the server
 const onSubmit = handleSubmit(
@@ -579,6 +652,7 @@ const onSubmit = handleSubmit(
                     />
                   </div>
                 </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Code</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>
                   Annonceur
                 </TairoTableHeading>
@@ -623,6 +697,9 @@ const onSubmit = handleSubmit(
                       class="text-primary-500"
                     />
                   </div>
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ item.code }}
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
@@ -716,7 +793,7 @@ const onSubmit = handleSubmit(
     <!-- Modal new Package -->
     <TairoModal
       :open="isModalNewPackageOpen"
-      size="xl"
+      size="3xl"
       @close="isModalNewPackageOpen = false"
     >
       <template #header>
@@ -746,6 +823,11 @@ const onSubmit = handleSubmit(
           >
             <div class="mx-auto flex w-full flex-col">
               <div>
+                <p
+                  class="font-alt text-muted-500 dark:text-muted-200 text-lg leading-5"
+                >
+                  Information sur la commande
+                </p>
                 <div class="grid grid-cols-12 gap-4">
                   <div class="col-span-12 md:col-span-6">
                     <Field
@@ -755,7 +837,7 @@ const onSubmit = handleSubmit(
                       <BaseInput
                         label="Libéllé"
                         icon="ph:user-duotone"
-                        placeholder="ref facture : FACT N_ XXXXXX"
+                        placeholder="ex: Bon de commande"
                         :model-value="field.value"
                         :error="errorMessage"
                         :disabled="isSubmitting"
@@ -801,51 +883,6 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.totalAmount"
-                    >
-                      <BaseInput
-                        label="Montant total Facture"
-                        icon="ph:file-duotone"
-                        type="number"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="
-                          isSubmitting ||
-                          (authStore.user?.appRole?.name != 'Admin' &&
-                            authStore.user?.appRole?.name != 'Billing')
-                        "
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.totalAmount"
-                    >
-                      <BaseInput
-                        label="Nombre de spots payés"
-                        icon="ph:file-duotone"
-                        type="number"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="
-                          isSubmitting ||
-                          (authStore.user?.appRole?.name != 'Admin' &&
-                            authStore.user?.appRole?.name != 'Billing')
-                        "
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
                   <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
@@ -863,8 +900,6 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                </div>
-                <div class="grid grid-cols-12 gap-4 mt-4">
                   <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
@@ -912,317 +947,124 @@ const onSubmit = handleSubmit(
                       </BaseSelect>
                     </Field>
                   </div>
-                  <div
-                    class="mt-2 ltablet:col-span-6 col-span-12 lg:col-span-6"
-                  >
-                    <div class="relative mx-auto max-w-3xl">
-                      <BaseInputFileHeadless
-                        multiple
-                        v-model="orderContracts"
-                        v-slot="{ open, remove, preview, drop, files }"
-                        :disabled="
-                          authStore.user?.appRole?.name != 'Admin' &&
-                          authStore.user?.appRole?.name != 'Billing'
-                        "
-                      >
-                        <!-- Controls -->
-                        <div class="mb-4 flex items-center gap-2">
-                          <button
-                            type="button"
-                            class="nui-focus border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-800 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300"
-                            tooltip="Select files"
-                            @click="open"
-                          >
-                            <Icon
-                              name="lucide:plus"
-                              class="absolute start-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2"
-                            />
-                            <span class="sr-only">Select files</span>
-                          </button>
-                          <button
-                            type="button"
-                            class="nui-focus border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-800 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300"
-                            tooltip="Start Upload"
-                          >
-                            <Icon name="lucide:arrow-up" class="h-4 w-4" />
-
-                            <span class="sr-only">Start Upload</span>
-                          </button>
-                        </div>
-
-                        <div
-                          class=""
-                          @dragenter.stop.prevent
-                          @dragover.stop.prevent
-                          @drop="drop"
-                        >
-                          <div
-                            v-if="!orderContracts?.length"
-                            class="nui-focus border-muted-300 dark:border-muted-800 hover:border-muted-400 focus:border-muted-400 dark:hover:border-muted-700 dark:focus:border-muted-700 group cursor-pointer rounded-lg border-[3px] border-dashed p-4 transition-colors duration-300"
-                            tabindex="0"
-                            role="button"
-                            @click="open"
-                            @keydown.enter.prevent="open"
-                          >
-                            <div class="p-5 text-center">
-                              <Icon
-                                name="mdi-light:cloud-upload"
-                                class="text-muted-400 group-hover:text-primary-500 group-focus:text-primary-500 mb-2 h-12 w-12 transition-colors duration-300"
-                              />
-                              <h4 class="text-muted-400 font-sans text-sm">
-                                Glissez et déposer
-                              </h4>
-                              <div>
-                                <span
-                                  class="text-muted-400 font-sans text-xs font-semibold uppercase"
-                                >
-                                  Ou
-                                </span>
-                              </div>
-                              <label
-                                for="file"
-                                class="text-muted-400 group-hover:text-primary-500 group-focus:text-primary-500 cursor-pointer font-sans text-sm underline underline-offset-4 transition-colors duration-300"
-                              >
-                                Selectionnez le contrat
-                              </label>
-                            </div>
-                          </div>
-                          <ul v-else class="mt-6 space-y-2">
-                            <li v-for="file in orderContracts" :key="file.name">
-                              <div
-                                class="border-muted-200 dark:border-muted-700 dark:bg-muted-800 relative flex items-center justify-end gap-2 rounded-xl border bg-white p-3"
-                              >
-                                <div class="flex items-center gap-2">
-                                  <div class="shrink-0">
-                                    <img
-                                      class="h-14 w-14 rounded-xl object-cover object-center"
-                                      v-if="file.type.startsWith('image')"
-                                      src="/img/avatars/placeholder-file.png"
-                                      alt="Image preview"
-                                    />
-                                    <img
-                                      v-else
-                                      class="h-14 w-14 rounded-xl object-cover object-center"
-                                      src="/img/avatars/placeholder-file.png"
-                                      alt="Image preview"
-                                    />
-                                  </div>
-                                  <div class="font-sans">
-                                    <span
-                                      class="text-muted-800 dark:text-muted-100 line-clamp-1 block text-sm"
-                                    >
-                                      {{ file.name }}
-                                    </span>
-                                    <span class="text-muted-400 block text-xs">
-                                      {{ formatFileSize(file.size) }}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <div
-                                  class="ms-auto w-32 px-4 transition-opacity duration-300"
-                                  :class="'opacity-100'"
-                                >
-                                  <BaseProgress
-                                    :value="0"
-                                    size="xs"
-                                    :color="'success'"
-                                  />
-                                </div>
-                                <div class="flex gap-2">
-                                  <button
-                                    class="border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-900 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-60"
-                                    disabled
-                                    type="button"
-                                    tooltip="Cancel"
-                                  >
-                                    <Icon name="lucide:slash" class="h-4 w-4" />
-                                    <span class="sr-only">Cancel</span>
-                                  </button>
-
-                                  <button
-                                    class="border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-900 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300"
-                                    type="button"
-                                    tooltip="Upload"
-                                  >
-                                    <Icon
-                                      name="lucide:arrow-up"
-                                      class="h-4 w-4"
-                                    />
-                                    <span class="sr-only">Upload</span>
-                                  </button>
-                                  <button
-                                    class="border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-900 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300"
-                                    type="button"
-                                    tooltip="Remove"
-                                    @click.prevent="remove(file)"
-                                  >
-                                    <Icon name="lucide:x" class="h-4 w-4" />
-                                    <span class="sr-only">Remove</span>
-                                  </button>
-                                </div>
-                              </div>
-                            </li>
-                          </ul>
-                        </div>
-                      </BaseInputFileHeadless>
-                    </div>
+                  <div class="ltablet:col-span-12 col-span-12 lg:col-span-12">
+                    <BaseInputFile
+                      v-model="orderContracts"
+                      :disabled="
+                        isSubmitting ||
+                        (authStore.user?.appRole?.name != 'Admin' &&
+                          authStore.user?.appRole?.name != 'Sale')
+                      "
+                      shape="straight"
+                      label="Slectionnez le contrat"
+                    />
                   </div>
-                  <div
-                    class="mt-2 ltablet:col-span-6 col-span-12 lg:col-span-6"
-                  >
-                    <div class="relative mx-auto max-w-3xl">
-                      <BaseInputFileHeadless
-                        multiple
-                        v-model="orderInvoices"
-                        v-slot="{ open, remove, preview, drop, files }"
+                </div>
+                <p
+                  class="font-alt text-muted-500 mt-5 dark:text-muted-200 text-lg leading-5"
+                >
+                  Information sur la facture
+                </p>
+                <div class="grid grid-cols-12 gap-4 mt-4">
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="spotPackage.invoice.label"
+                    >
+                      <BaseInput
+                        label="Libelé facture"
+                        icon="ph:chat-duotone"
+                        type="text"
+                        placeholder="ex: Fact N_ XXXXX"
+                        :model-value="field.value"
+                        :error="errorMessage"
                         :disabled="
-                          authStore.user?.appRole?.name != 'Admin' &&
-                          authStore.user?.appRole?.name != 'Billing'
+                          isSubmitting ||
+                          (authStore.user?.appRole?.name != 'Admin' &&
+                            authStore.user?.appRole?.name != 'Billing')
                         "
-                      >
-                        <!-- Controls -->
-                        <div class="mb-4 flex items-center gap-2">
-                          <button
-                            type="button"
-                            class="nui-focus border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-800 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300"
-                            tooltip="Select files"
-                            @click="open"
-                          >
-                            <Icon
-                              name="lucide:plus"
-                              class="absolute start-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2"
-                            />
-                            <span class="sr-only">Select files</span>
-                          </button>
-                          <button
-                            type="button"
-                            class="nui-focus border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-800 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300"
-                            tooltip="Start Upload"
-                          >
-                            <Icon name="lucide:arrow-up" class="h-4 w-4" />
-
-                            <span class="sr-only">Start Upload</span>
-                          </button>
-                        </div>
-
-                        <div
-                          class=""
-                          @dragenter.stop.prevent
-                          @dragover.stop.prevent
-                          @drop="drop"
-                        >
-                          <div
-                            v-if="!orderInvoices?.length"
-                            class="nui-focus border-muted-300 dark:border-muted-800 hover:border-muted-400 focus:border-muted-400 dark:hover:border-muted-700 dark:focus:border-muted-700 group cursor-pointer rounded-lg border-[3px] border-dashed p-4 transition-colors duration-300"
-                            tabindex="0"
-                            role="button"
-                            @click="open"
-                            @keydown.enter.prevent="open"
-                          >
-                            <div class="p-5 text-center">
-                              <Icon
-                                name="mdi-light:cloud-upload"
-                                class="text-muted-400 group-hover:text-primary-500 group-focus:text-primary-500 mb-2 h-12 w-12 transition-colors duration-300"
-                              />
-                              <h4 class="text-muted-400 font-sans text-sm">
-                                Glissez et déposer
-                              </h4>
-                              <div>
-                                <span
-                                  class="text-muted-400 font-sans text-xs font-semibold uppercase"
-                                >
-                                  Ou
-                                </span>
-                              </div>
-                              <label
-                                for="file"
-                                class="text-muted-400 group-hover:text-primary-500 group-focus:text-primary-500 cursor-pointer font-sans text-sm underline underline-offset-4 transition-colors duration-300"
-                              >
-                                Selectionnez la facture
-                              </label>
-                            </div>
-                          </div>
-                          <ul v-else class="mt-6 space-y-2">
-                            <li v-for="file in orderInvoices" :key="file.name">
-                              <div
-                                class="border-muted-200 dark:border-muted-700 dark:bg-muted-800 relative flex items-center justify-end gap-2 rounded-xl border bg-white p-3"
-                              >
-                                <div class="flex items-center gap-2">
-                                  <div class="shrink-0">
-                                    <img
-                                      class="h-14 w-14 rounded-xl object-cover object-center"
-                                      v-if="file.type.startsWith('image')"
-                                      src="/img/avatars/placeholder-file.png"
-                                      alt="Image preview"
-                                    />
-                                    <img
-                                      v-else
-                                      class="h-14 w-14 rounded-xl object-cover object-center"
-                                      src="/img/avatars/placeholder-file.png"
-                                      alt="Image preview"
-                                    />
-                                  </div>
-                                  <div class="font-sans">
-                                    <span
-                                      class="text-muted-800 dark:text-muted-100 line-clamp-1 block text-sm"
-                                    >
-                                      {{ file.name }}
-                                    </span>
-                                    <span class="text-muted-400 block text-xs">
-                                      {{ formatFileSize(file.size) }}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <div
-                                  class="ms-auto w-32 px-4 transition-opacity duration-300"
-                                  :class="'opacity-100'"
-                                >
-                                  <BaseProgress
-                                    :value="0"
-                                    size="xs"
-                                    :color="'success'"
-                                  />
-                                </div>
-                                <div class="flex gap-2">
-                                  <button
-                                    class="border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-900 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-60"
-                                    disabled
-                                    type="button"
-                                    tooltip="Cancel"
-                                  >
-                                    <Icon name="lucide:slash" class="h-4 w-4" />
-                                    <span class="sr-only">Cancel</span>
-                                  </button>
-
-                                  <button
-                                    class="border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-900 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300"
-                                    type="button"
-                                    tooltip="Upload"
-                                  >
-                                    <Icon
-                                      name="lucide:arrow-up"
-                                      class="h-4 w-4"
-                                    />
-                                    <span class="sr-only">Upload</span>
-                                  </button>
-                                  <button
-                                    class="border-muted-200 hover:border-primary-500 text-muted-700 dark:text-muted-200 hover:text-primary-600 dark:border-muted-700 dark:bg-muted-900 dark:hover:border-primary-500 dark:hover:text-primary-600 relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors duration-300"
-                                    type="button"
-                                    tooltip="Remove"
-                                    @click.prevent="remove(file)"
-                                  >
-                                    <Icon name="lucide:x" class="h-4 w-4" />
-                                    <span class="sr-only">Remove</span>
-                                  </button>
-                                </div>
-                              </div>
-                            </li>
-                          </ul>
-                        </div>
-                      </BaseInputFileHeadless>
-                    </div>
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="spotPackage.invoice.amount"
+                    >
+                      <BaseInput
+                        label="Montant total Facture"
+                        icon="ph:file-duotone"
+                        type="number"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="
+                          isSubmitting ||
+                          (authStore.user?.appRole?.name != 'Admin' &&
+                            authStore.user?.appRole?.name != 'Billing')
+                        "
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="spotPackage.invoice.pending"
+                    >
+                      <BaseInput
+                        label="Montant restant à payé"
+                        icon="ph:file-duotone"
+                        type="number"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="
+                          isSubmitting ||
+                          (authStore.user?.appRole?.name != 'Admin' &&
+                            authStore.user?.appRole?.name != 'Billing')
+                        "
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="spotPackage.invoice.totalSpotsPaid"
+                    >
+                      <BaseInput
+                        label="Nombre de spots payés"
+                        icon="ph:file-duotone"
+                        type="number"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="
+                          isSubmitting ||
+                          (authStore.user?.appRole?.name != 'Admin' &&
+                            authStore.user?.appRole?.name != 'Billing')
+                        "
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-12 col-span-12 lg:col-span-12">
+                    <BaseInputFile
+                      v-model="orderInvoices"
+                      :disabled="
+                        isSubmitting ||
+                        (authStore.user?.appRole?.name != 'Admin' &&
+                          authStore.user?.appRole?.name != 'Billing')
+                      "
+                      shape="straight"
+                      label="Slectionnez la facture"
+                    />
                   </div>
                 </div>
               </div>
@@ -1237,6 +1079,38 @@ const onSubmit = handleSubmit(
             <BaseButton @click="isModalNewPackageOpen = false"
               >Annuler</BaseButton
             >
+            <div v-if="isEdit == true" class="flex">
+              <BaseButton
+                :color="currentPackage?.orderValidator ? 'success' : 'warning'"
+                class="!mx-2"
+                flavor="solid"
+                @click="isModalConfirmOrderOpen = true"
+                :disabled="authStore.user?.appRole?.name != 'Sale'"
+              >
+                <span class="text-bold text-muted-700">
+                  OK du Service CCial</span
+                >
+              </BaseButton>
+              <BaseButton
+                :color="currentPackage?.billValidator ? 'success' : 'warning'"
+                flavor="solid"
+                @click="isModalConfirmOrderOpen = true"
+                :disabled="authStore.user?.appRole?.name != 'Billing'"
+              >
+                <span class="text-bold text-muted-700">
+                  OK du Sevice de Fact</span
+                >
+              </BaseButton>
+              <BaseButton
+                :color="currentPackage?.adminValidator ? 'success' : 'warning'"
+                class="!mx-2"
+                flavor="solid"
+                @click="isModalConfirmOrderOpen = true"
+                :disabled="authStore.user?.appRole?.name != 'Admin'"
+              >
+                <span class="text-bold text-muted-700"> OK du PDG/DG/DO</span>
+              </BaseButton>
+            </div>
 
             <BaseButton color="primary" flavor="solid" @click="onSubmit">
               {{ isEdit == true ? 'Modifier' : 'Créer' }}
@@ -1296,6 +1170,64 @@ const onSubmit = handleSubmit(
               flavor="solid"
               @click="deletePackage(currentPackage)"
               >Suppimer</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal confirm order -->
+    <TairoModal
+      :open="isModalConfirmOrderOpen"
+      size="sm"
+      @close="isModalConfirmOrderOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Confirmation de la commande
+          </h3>
+
+          <BaseButtonClose @click="isModalConfirmOrderOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <h3
+            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
+          >
+            Voulez-vous confirmer la commande
+            <span class="text-primary-500">{{ currentPackage.label }}</span>
+            de
+            <span class="text-primary-500"
+              >{{ currentPackage?.announcer.name }}
+            </span>
+            ?
+          </h3>
+
+          <p
+            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est reversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalConfirmOrderOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton color="primary" flavor="solid" @click="confirmOrder()"
+              >Valider</BaseButton
             >
           </div>
         </div>

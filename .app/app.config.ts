@@ -90,13 +90,18 @@ export default defineAppConfig({
 
           {
             name: 'Pub',
-            icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
+            icon: { name: 'ph:target-duotone', class: 'w-5 h-5' },
             activePath: '/bo/spots',
             children: [
               {
                 name: 'Tableau de bord',
                 to: '/bo/spots',
-                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
+                icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Raports',
+                to: '/bo/spots/reports',
+                icon: { name: 'lucide:file', class: 'w-4 h-4' },
               },
               {
                 name: 'Planning de diffusion',
@@ -105,7 +110,7 @@ export default defineAppConfig({
               },
               {
                 name: 'Commandes',
-                to: '/bo/spots/packages',
+                to: '/bo/spots/orders',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
@@ -120,6 +125,7 @@ export default defineAppConfig({
               },
             ],
           },
+
           // {
           //   name: 'Emissions',
           //   icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
@@ -169,6 +175,18 @@ export default defineAppConfig({
           {
             name: 'Divider',
             divider: true,
+          },
+          {
+            name: 'Profile',
+            icon: { name: 'ph:user-duotone', class: 'w-5 h-5' },
+            activePath: '/bo/profile',
+            children: [
+              {
+                name: 'Notifications',
+                to: '/bo/notifications',
+                icon: { name: 'ph:chat-duotone', class: 'w-4 h-4' },
+              },
+            ],
           },
           {
             name: 'Customiser',

@@ -41,6 +41,7 @@ const isModalNewSpotOpen = ref(false)
 const isModalDeleteSpotOpen = ref(false)
 const isModalPlanningOpen = ref(false)
 const isModalNewSpotPlanningOpen = ref(false)
+const isModalConfirmPlanningOpen = ref(false)
 const isEdit = ref(false)
 const activeSpot = ref({ _id: '', product: '', tag: '', flag: '' })
 const currentSpot = ref({})
@@ -132,18 +133,13 @@ async function addSpotToPlanning() {
 
   try {
     const isSuccess = ref(false)
-    const queryNewPlanning = {
-      action: 'createPlanning',
-      token: token.value,
-      packageId: data.value?.data?._id,
-      key: `${Math.random() * 10}`,
-    }
-
     const response = await $fetch(
       '/api/spots/plannings?action=createPlanning&token=' +
         token.value +
         '&packageId=' +
-        data.value?.data?._id,
+        data.value?.data?._id +
+        '&orderCode=' +
+        data.value?.data?.code,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -206,13 +202,35 @@ function checkSpot(d: number, hour: string) {
     parseInt(hourArray[0]),
     parseInt(hourArray[1]),
   )
-  const plannedSpots = data.value?.data?.plannings?.filter(
-    (p: any) => p.date == date?.toISOString(),
+
+  var plannedSpots = data.value?.data?.plannings?.filter(
+    (p: any) =>
+      new Date(p.date).toLocaleString('fr-FR') == date?.toLocaleString('fr-FR'),
   )
   if (plannedSpots.length == 0) {
-    return ['+', 'secondary']
+    return ['+', 'default']
   } else {
-    return [plannedSpots[0].spot.tag, 'primary']
+    const dateNow = new Date().toLocaleString('fr-FR')
+    var dateP = new Date(plannedSpots[0].date).toLocaleString('fr-FR')
+    console.log(plannedSpots[0])
+
+    if (
+      dateP < dateNow &&
+      plannedSpots[0].isManualPlay == false &&
+      plannedSpots[0].isAutoPlay == false
+    ) {
+      return [plannedSpots[0].spot.tag, 'danger']
+    } else if (
+      dateP < dateNow &&
+      (plannedSpots[0].isManualPlay == true ||
+        plannedSpots[0].isAutoPlay == true)
+    ) {
+      return [plannedSpots[0].spot.tag, 'primary']
+    } else if (dateP > dateNow) {
+      console.log(dateP)
+      console.log(dateNow)
+      return [plannedSpots[0].spot.tag, 'warning']
+    }
   }
 }
 
@@ -355,6 +373,47 @@ const zodSchema = z
       })
     }
   })
+
+async function confirmPlanning() {
+  const query4 = computed(() => {
+    return {
+      action: 'updatePackage',
+      token: token.value,
+      id: data.value.data._id,
+    }
+  })
+
+  const response = await useFetch('/api/spots/packages', {
+    method: 'put',
+    headers: { 'Content-Type': 'application/json' },
+    query: query4,
+    body: { ...data.value.data, planningValidator: authStore.user._id },
+  })
+
+  if (response.data?.value?.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Commande confirmée !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalConfirmPlanningOpen.value = false
+    filter.value = 'order'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Oops',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+}
 
 // Zod has a great infer method that will
 // infer the shape of the schema into a TypeScript type
@@ -1300,12 +1359,17 @@ const onSubmit = handleSubmit(
       <!-- Body -->
       <div class="flex justify-between items-center p-2">
         <BaseText size="base"
-          >Mois:
+          >Mois actuel:
           <span class="text-primary-500"
             >{{ formatter.format(activeDate) }}
             {{ activeDate.getFullYear() }}</span
           ></BaseText
         >
+
+        <BaseText size="base"
+          >Total Commandés:
+          <span class="text-primary-500">{{ data?.data?.numberSpots }} </span>
+        </BaseText>
 
         <BaseText size="base"
           >Annonceur:
@@ -1445,8 +1509,7 @@ const onSubmit = handleSubmit(
                   <BaseButton
                     @click="openSpotPlanningModal(d.toString(), h)"
                     :color="checkSpot(d, h.code)[1]"
-                    flavor="solid"
-                    class="!w-8 !h-[38px] rounded-full !p-1 dark:bg-muted-700 bg-gray-200"
+                    class="!w-8 !h-[38px] rounded-full !p-1"
                   >
                     <!-- <span
                       v-if="dayOfWeek(d)"
@@ -1469,16 +1532,71 @@ const onSubmit = handleSubmit(
           <div class="flex gap-x-2">
             <BaseButton @click="isModalPlanningOpen = false">Fermer</BaseButton>
             <BaseButton
-              color="primary"
+              :color="data.data.planningValidator ? 'success' : 'warning'"
               flavor="solid"
               v-if="
                 authStore.user?.appRole?.name == 'Admin' ||
                 authStore.user?.appRole?.name == 'Schedule'
               "
-              @click="isModalPlanningOpen = false"
+              @click="isModalConfirmPlanningOpen = true"
             >
               Valider le planning
             </BaseButton>
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal confirm planning -->
+    <TairoModal
+      :open="isModalConfirmPlanningOpen"
+      size="sm"
+      @close="isModalConfirmPlanningOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Confirmation du planning
+          </h3>
+
+          <BaseButtonClose @click="isModalConfirmPlanningOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <h3
+            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
+          >
+            Voulez-vous confirmer ce planning ?
+          </h3>
+
+          <p
+            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est reversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalConfirmPlanningOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="confirmPlanning()"
+              >Valider</BaseButton
+            >
           </div>
         </div>
       </template>

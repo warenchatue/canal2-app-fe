@@ -5,6 +5,7 @@ export default defineEventHandler(async (event) => {
   const filter = (query.filter as string) || ''
   const action = (query.action as string) || 'get'
   const id = (query.id as string) || ''
+  const orderCode = (query.orderCode as string) || ''
   const packageId = (query.packageId as string) || ''
   const token = (query.token as string) || ''
   const key = (query.key as string) || ''
@@ -29,7 +30,7 @@ export default defineEventHandler(async (event) => {
   } else if (action == 'createPlanning') {
     const body = await readBody(event)
     console.log(body)
-    const data = await createPlanning(packageId, body, token)
+    const data = await createPlanning(packageId, orderCode, body, token)
     return { data: data, success: true }
   } else if (action == 'updatePlanning') {
     const body = await readBody(event)
@@ -112,7 +113,12 @@ async function findAllStats(token: string) {
   return Promise.resolve(data)
 }
 
-async function createPlanning(packageId: string, body: any, token: string) {
+async function createPlanning(
+  packageId: string,
+  orderCode: string,
+  body: any,
+  token: string,
+) {
   console.log('createPlanning ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
@@ -123,7 +129,7 @@ async function createPlanning(packageId: string, body: any, token: string) {
         Authorization: 'Bearer ' + token,
         'Content-type': 'application/json',
       },
-      body: body,
+      body: { ...body, code: orderCode + '_' + makeId(4) },
     },
   ).catch((error) => console.log(error))
   console.log(data)
@@ -163,4 +169,16 @@ async function deletePlanning(id: string, token: string) {
   ).catch((error) => console.log(error))
   console.log(data)
   return Promise.resolve(data)
+}
+
+function makeId(length: number) {
+  let result = ''
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#'
+  const charactersLength = characters.length
+  let counter = 0
+  while (counter < length) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength))
+    counter += 1
+  }
+  return result
 }

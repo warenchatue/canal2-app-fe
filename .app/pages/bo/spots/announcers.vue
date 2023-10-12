@@ -397,10 +397,10 @@ const onSubmit = handleSubmit(
                 <TairoTableHeading uppercase spaced> Tel </TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>
-                  Spots commandés
+                  Total commandés
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>
-                  Spots diffusés
+                  Total diffusés
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
               </template>
@@ -469,7 +469,7 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex">
-                    <BaseButtonAction to="/bo/spots/packages" muted
+                    <BaseButtonAction to="/bo/spots/orders" muted
                       >commandes</BaseButtonAction
                     >
                     <BaseButtonAction

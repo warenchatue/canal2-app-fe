@@ -6,7 +6,7 @@ import 'v-calendar/dist/style.css'
 import '~/assets/css/vcalendar.css'
 
 definePageMeta({
-  title: 'Dashboard Analytique',
+  title: 'Tableau de Bord PUBS',
   preview: {
     title: 'Analytics dashboard',
     description: 'Analytic',
@@ -51,6 +51,57 @@ const years = [
   },
 ]
 
+const months = [
+  {
+    id: '01',
+    name: 'Jan',
+  },
+  {
+    id: '02',
+    name: 'Fev',
+  },
+  {
+    id: '03',
+    name: 'Mars',
+  },
+  {
+    id: '04',
+    name: 'Avril',
+  },
+  {
+    id: '05',
+    name: 'Mai',
+  },
+  {
+    id: '06',
+    name: 'Juin',
+  },
+  {
+    id: '07',
+    name: 'Juil',
+  },
+  {
+    id: '08',
+    name: 'Aôut',
+  },
+  {
+    id: '09',
+    name: 'Sept',
+  },
+  {
+    id: '10',
+    name: 'Oct',
+  },
+  {
+    id: '11',
+    name: 'Nov',
+  },
+  {
+    id: '12',
+    name: 'Dec',
+  },
+]
+
 const pubCategories = [
   {
     id: 'SPOT',
@@ -66,6 +117,7 @@ const pubCategories = [
   },
 ]
 const activeYear = ref()
+const activeMonth = ref()
 const activeCategory = ref()
 
 function useLineSpots() {
@@ -352,6 +404,109 @@ function useBarSalesProfit() {
     <!-- Grid column -->
     <div class="ltablet:col-span-9 col-span-12 lg:col-span-12">
       <!-- Inner grid -->
+      <div class="mb-4 flex items-center justify-between">
+        <BaseHeading
+          as="h3"
+          size="md"
+          weight="semibold"
+          lead="tight"
+          class="text-muted-800 dark:text-white"
+        >
+          <span>Année</span>
+        </BaseHeading>
+        <Field
+          v-slot="{ field, errorMessage, handleChange, handleBlur }"
+          name="year"
+        >
+          <BaseListbox
+            class="px-10"
+            label=""
+            :items="years"
+            :properties="{
+              value: 'id',
+              label: 'name',
+              sublabel: 'name',
+              media: 'image',
+            }"
+            v-model="activeYear"
+            :error="errorMessage"
+            :disabled="isSubmitting"
+            @update:model-value="handleChange"
+            @blur="handleBlur"
+          />
+        </Field>
+
+        <BaseHeading
+          as="h3"
+          size="md"
+          weight="semibold"
+          lead="tight"
+          class="text-muted-800 dark:text-white"
+        >
+          <span>Mois</span>
+        </BaseHeading>
+        <Field
+          v-slot="{ field, errorMessage, handleChange, handleBlur }"
+          name="month"
+        >
+          <BaseListbox
+            class="px-10"
+            label=""
+            :items="months"
+            :properties="{
+              value: 'id',
+              label: 'name',
+              sublabel: 'name',
+              media: 'image',
+            }"
+            v-model="activeMonth"
+            :error="errorMessage"
+            :disabled="isSubmitting"
+            @update:model-value="handleChange"
+            @blur="handleBlur"
+          />
+        </Field>
+
+        <BaseHeading
+          as="h3"
+          size="md"
+          weight="semibold"
+          lead="tight"
+          class="text-muted-800 dark:text-white"
+        >
+          <span>Categorie</span>
+        </BaseHeading>
+
+        <Field
+          v-slot="{ field, errorMessage, handleChange, handleBlur }"
+          name="category"
+        >
+          <BaseListbox
+            class="px-10"
+            label=""
+            :items="pubCategories"
+            :properties="{
+              value: 'id',
+              label: 'name',
+              sublabel: 'name',
+              media: 'image',
+            }"
+            v-model="activeCategory"
+            :error="errorMessage"
+            :disabled="isSubmitting"
+            @update:model-value="handleChange"
+            @blur="handleBlur"
+          />
+        </Field>
+        <NuxtLink
+          to="#"
+          class="bg-muted-200 hover:bg-muted-300 flex dark:bg-muted-700 dark:hover:bg-muted-900 text-primary-500 rounded-lg px-4 py-2 font-sans text-sm font-medium underline-offset-4 transition-colors duration-300 hover:underline"
+        >
+          Rechercher
+          <Icon name="lucide:search" class="h-5 w-10" />
+        </NuxtLink>
+      </div>
+
       <div class="grid grid-cols-12 gap-4">
         <!-- Stat tile -->
         <div class="col-span-12 md:col-span-3">
@@ -445,7 +600,7 @@ function useBarSalesProfit() {
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Packages</span>
+                <span>Total Commandes</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -520,76 +675,6 @@ function useBarSalesProfit() {
         <!-- Chart -->
         <div class="col-span-12 md:col-span-12">
           <BaseCard class="p-6">
-            <div class="mb-2 flex items-center justify-between">
-              <BaseHeading
-                as="h3"
-                size="md"
-                weight="semibold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>Année</span>
-              </BaseHeading>
-
-              <Field
-                v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                name="year"
-              >
-                <BaseListbox
-                  class="px-10"
-                  label=""
-                  :items="years"
-                  :properties="{
-                    value: 'id',
-                    label: 'name',
-                    sublabel: 'name',
-                    media: 'image',
-                  }"
-                  v-model="activeYear"
-                  :error="errorMessage"
-                  :disabled="isSubmitting"
-                  @update:model-value="handleChange"
-                  @blur="handleBlur"
-                />
-              </Field>
-              <BaseHeading
-                as="h3"
-                size="md"
-                weight="semibold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>Categorie</span>
-              </BaseHeading>
-
-              <Field
-                v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                name="category"
-              >
-                <BaseListbox
-                  class="px-10"
-                  label=""
-                  :items="pubCategories"
-                  :properties="{
-                    value: 'id',
-                    label: 'name',
-                    sublabel: 'name',
-                    media: 'image',
-                  }"
-                  v-model="activeCategory"
-                  :error="errorMessage"
-                  :disabled="isSubmitting"
-                  @update:model-value="handleChange"
-                  @blur="handleBlur"
-                />
-              </Field>
-              <NuxtLink
-                to="#"
-                class="bg-muted-100 hover:bg-muted-200 dark:bg-muted-700 dark:hover:bg-muted-900 text-primary-500 rounded-lg px-4 py-2 font-sans text-sm font-medium underline-offset-4 transition-colors duration-300 hover:underline"
-              >
-                Details
-              </NuxtLink>
-            </div>
             <div class="flex gap-8">
               <div>
                 <span class="text-muted-400 font-sans text-xs">Ce mois</span>

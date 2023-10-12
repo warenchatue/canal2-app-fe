@@ -5,7 +5,7 @@ export type UserRole =
   | 'SuperAdmin'
   | 'Admin'
   | 'Broadcast'
-  | 'Schedule'
+  | 'MediaPlanner'
   | 'Billing'
   | 'sales'
 
