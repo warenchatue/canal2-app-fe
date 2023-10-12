@@ -1,8 +1,36 @@
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
+  const query = getQuery(event)
+  const perPage = parseInt((query.perPage as string) || '5', 10)
+  const page = parseInt((query.page as string) || '1', 10)
+  const slug = (query.slug as string) || ''
+  const filter = (query.filter as string) || ''
+  const action = (query.action as string) || 'get'
+
   const data = await getData()
 
-  return data
+  return {
+    total: data.length,
+    data: filterData(data, filter, page, perPage),
+  }
 })
+
+function filterData(
+  data: any[],
+  filter: string,
+  page: number,
+  perPage: number,
+) {
+  const offset = (page - 1) * perPage
+  if (!filter) {
+    return data.slice(offset, offset + perPage)
+  }
+  const filterRe = new RegExp(filter, 'i')
+  return data
+    .filter((item) => {
+      return [item.date, item.time].some((item) => item.match(filterRe))
+    })
+    .slice(offset, offset + perPage)
+}
 
 async function getData() {
   return Promise.resolve([
@@ -80,6 +108,78 @@ async function getData() {
     },
     {
       id: 8,
+      user: {
+        name: 'John B.',
+        src: '/img/avatars/8.svg',
+        text: 'JB',
+      },
+      date: 'Feb 25, 2023',
+      time: '3:19 pm',
+      status: 1,
+      target: {
+        type: 'project',
+        name: 'Delivery App',
+        url: '/layouts/projects/details/delivery-app-project',
+        text: 'Changed the status of a task, in the',
+      },
+      people: [],
+    },
+    {
+      id: 9,
+      user: {
+        name: 'John B.',
+        src: '/img/avatars/8.svg',
+        text: 'JB',
+      },
+      date: 'Feb 25, 2023',
+      time: '3:19 pm',
+      status: 1,
+      target: {
+        type: 'project',
+        name: 'Delivery App',
+        url: '/layouts/projects/details/delivery-app-project',
+        text: 'Changed the status of a task, in the',
+      },
+      people: [],
+    },
+    {
+      id: 10,
+      user: {
+        name: 'John B.',
+        src: '/img/avatars/8.svg',
+        text: 'JB',
+      },
+      date: 'Feb 25, 2023',
+      time: '3:19 pm',
+      status: 1,
+      target: {
+        type: 'project',
+        name: 'Delivery App',
+        url: '/layouts/projects/details/delivery-app-project',
+        text: 'Changed the status of a task, in the',
+      },
+      people: [],
+    },
+    {
+      id: 11,
+      user: {
+        name: 'John B.',
+        src: '/img/avatars/8.svg',
+        text: 'JB',
+      },
+      date: 'Feb 25, 2023',
+      time: '3:19 pm',
+      status: 1,
+      target: {
+        type: 'project',
+        name: 'Delivery App',
+        url: '/layouts/projects/details/delivery-app-project',
+        text: 'Changed the status of a task, in the',
+      },
+      people: [],
+    },
+    {
+      id: 12,
       user: {
         name: 'John B.',
         src: '/img/avatars/8.svg',

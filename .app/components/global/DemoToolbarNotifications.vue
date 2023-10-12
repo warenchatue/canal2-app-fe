@@ -1,5 +1,38 @@
 <script setup lang="ts">
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
+
+const route = useRoute()
+const router = useRouter()
+const page = computed(() => parseInt((route.query.page as string) ?? '1'))
+const filter = ref('')
+const perPage = ref(10)
+const token = useCookie('token')
+const isEdit = ref(false)
+const currentRole = ref({})
+watch([filter, perPage], () => {
+  router.push({
+    query: {
+      page: undefined,
+    },
+  })
+})
+
+const query = computed(() => {
+  return {
+    action: 'findAll',
+    token: token.value,
+    filter: filter.value,
+    perPage: perPage.value,
+    page: page.value,
+  }
+})
+
+const { data, pending, error, refresh } = await useFetch(
+  '/api/profile/notifications',
+  {
+    query,
+  },
+)
 </script>
 
 <template>
@@ -13,7 +46,11 @@ import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
           <span
             class="border-muted-200 dark:border-muted-700 dark:bg-muted-800 flex h-9 w-9 items-center justify-center rounded-full border bg-white"
           >
-            <Icon name="ph:bell-duotone" class="text-muted-400 h-5 w-5" />
+            <!-- <BaseAvatar :src="''" :badge-src="''" size="2xl" class="mx-auto" /> -->
+            <Icon
+              name="ph:bell-duotone"
+              class="text-muted-400 animate-pulse h-5 w-5"
+            />
           </span>
         </button>
       </MenuButton>
@@ -37,7 +74,7 @@ import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
                 Notifications
               </h4>
               <NuxtLink
-                to="#"
+                to="/bo/profile/profile-notifications"
                 class="font-alt text-primary-500 text-sm font-semibold"
                 @click.passive="close"
               >
@@ -46,153 +83,18 @@ import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
             </div>
           </div>
           <div class="p-4">
-            <MenuItem as="div" v-slot="{ active }">
+            <MenuItem
+              v-for="item in data.data"
+              :key="item._id"
+              as="div"
+              v-slot="{ active }"
+            >
               <NuxtLink
                 to="#"
                 class="group flex w-full items-center rounded-md p-2 text-sm transition-colors duration-300"
                 :class="[
                   active
                     ? 'bg-muted-100 dark:bg-muted-700 text-primary-500'
-                    : 'text-muted-500',
-                ]"
-                @click.passive="close"
-              >
-                <div
-                  class="relative inline-flex h-9 w-9 items-center justify-center rounded-full"
-                >
-                  <img
-                    src="/img/avatars/12.svg"
-                    class="max-w-full rounded-full object-cover shadow-sm dark:border-transparent"
-                    alt=""
-                  />
-                </div>
-                <div class="ms-2">
-                  <h6
-                    class="font-heading text-muted-800 text-xs font-semibold leading-tight dark:text-white"
-                  >
-                    Helen Mariakis
-                    <span
-                      class="text-muted-500 dark:text-muted-400 font-normal"
-                    >
-                      left a comment
-                    </span>
-                  </h6>
-                  <p class="text-muted-400 font-sans text-xs">1 hour ago</p>
-                </div>
-              </NuxtLink>
-            </MenuItem>
-            <MenuItem as="div" v-slot="{ active }">
-              <NuxtLink
-                to="#"
-                class="group flex w-full items-center rounded-md p-2 text-sm transition-colors duration-300"
-                :class="[
-                  active
-                    ? 'bg-muted-100 dark:bg-muted-700  text-primary-500'
-                    : 'text-muted-500',
-                ]"
-                @click.passive="close"
-              >
-                <div
-                  class="relative inline-flex h-9 w-9 items-center justify-center rounded-full"
-                >
-                  <img
-                    src="/img/avatars/19.svg"
-                    class="max-w-full rounded-full object-cover shadow-sm dark:border-transparent"
-                    alt=""
-                  />
-                </div>
-                <div class="ms-2">
-                  <h6
-                    class="font-heading text-muted-800 text-xs font-semibold leading-tight dark:text-white"
-                  >
-                    Clarissa Perez
-                    <span
-                      class="text-muted-500 dark:text-muted-400 font-normal"
-                    >
-                      uploaded a file
-                    </span>
-                  </h6>
-                  <p class="text-muted-400 font-sans text-xs">2 hours ago</p>
-                </div>
-              </NuxtLink>
-            </MenuItem>
-            <MenuItem as="div" v-slot="{ active }">
-              <NuxtLink
-                to="#"
-                class="group flex w-full items-center rounded-md p-2 text-sm transition-colors duration-300"
-                :class="[
-                  active
-                    ? 'bg-muted-100 dark:bg-muted-700  text-primary-500'
-                    : 'text-muted-500',
-                ]"
-                @click.passive="close"
-              >
-                <div
-                  class="relative inline-flex h-9 w-9 items-center justify-center rounded-full"
-                >
-                  <img
-                    src="/img/avatars/3.svg"
-                    class="max-w-full rounded-full object-cover shadow-sm dark:border-transparent"
-                    alt=""
-                  />
-                </div>
-                <div class="ms-2">
-                  <h6
-                    class="font-heading text-muted-800 text-xs font-semibold leading-tight dark:text-white"
-                  >
-                    Mike Miller
-                    <span
-                      class="text-muted-500 dark:text-muted-400 font-normal"
-                    >
-                      left a comment
-                    </span>
-                  </h6>
-                  <p class="text-muted-400 font-sans text-xs">3 hours ago</p>
-                </div>
-              </NuxtLink>
-            </MenuItem>
-            <MenuItem as="div" v-slot="{ active }">
-              <NuxtLink
-                to="#"
-                class="group flex w-full items-center rounded-md p-2 text-sm transition-colors duration-300"
-                :class="[
-                  active
-                    ? 'bg-muted-100 dark:bg-muted-700  text-primary-500'
-                    : 'text-muted-500',
-                ]"
-                @click.passive="close"
-              >
-                <div
-                  class="relative inline-flex h-9 w-9 items-center justify-center rounded-full"
-                >
-                  <img
-                    src="/img/avatars/4.svg"
-                    class="max-w-full rounded-full object-cover shadow-sm dark:border-transparent"
-                    alt=""
-                  />
-                </div>
-                <div class="ms-2">
-                  <h6
-                    class="font-heading text-muted-800 text-xs font-semibold leading-tight dark:text-white"
-                  >
-                    Lana Henriks
-                    <span
-                      class="text-muted-500 dark:text-muted-400 font-normal"
-                    >
-                      sent you a message
-                    </span>
-                  </h6>
-                  <p class="text-muted-400 font-sans text-xs">Yesterday</p>
-                </div>
-              </NuxtLink>
-            </MenuItem>
-            <MenuItem as="div" v-slot="{ active }">
-              <NuxtLink
-                to="#"
-                class="group flex w-full items-center rounded-md p-2 text-sm transition-colors duration-300"
-                :class="[
-                  active
-                    ? 'bg-muted-100 dark:bg-muted-700  text-primary-500'
                     : 'text-muted-500',
                 ]"
                 @click.passive="close"
@@ -210,14 +112,18 @@ import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
                   <h6
                     class="font-heading text-muted-800 text-xs font-semibold leading-tight dark:text-white"
                   >
-                    Dan Walker
+                    {{ item.data?.memberName }}
                     <span
+                      v-if="item.type == 'newOrder'"
                       class="text-muted-500 dark:text-muted-400 font-normal"
                     >
-                      left a comment
+                      a créer une commande
                     </span>
                   </h6>
-                  <p class="text-muted-400 font-sans text-xs">Yesterday</p>
+                  <p class="text-muted-400 font-sans text-xs">
+                    {{ new Date(item.createdAt).toLocaleDateString('fr-FR') }}
+                    {{ new Date(item.createdAt).toLocaleTimeString('fr-FR') }}
+                  </p>
                 </div>
               </NuxtLink>
             </MenuItem>

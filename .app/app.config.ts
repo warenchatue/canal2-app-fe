@@ -183,7 +183,12 @@ export default defineAppConfig({
             children: [
               {
                 name: 'Notifications',
-                to: '/bo/notifications',
+                to: '/bo/profile/profile-notifications',
+                icon: { name: 'ph:chat-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Taches',
+                to: '/bo/profile/tasks',
                 icon: { name: 'ph:chat-duotone', class: 'w-4 h-4' },
               },
             ],

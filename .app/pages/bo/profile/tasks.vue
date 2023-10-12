@@ -4,11 +4,11 @@ import { Field, useFieldError, useForm } from 'vee-validate'
 import { z } from 'zod'
 
 definePageMeta({
-  title: 'Notifications',
+  title: 'Tâches',
   preview: {
-    title: 'Notifications',
+    title: 'Tâches',
     description: 'For item grids and collections',
-    categories: ['bo', 'profile'],
+    categories: ['bo', 'admin'],
     src: '/img/screens/layouts-tile-grid-1.png',
     srcDark: '/img/screens/layouts-tile-grid-1-dark.png',
     order: 61,
@@ -302,7 +302,7 @@ const onSubmit = handleSubmit(
           >
             <div class="ltablet:block hidden w-24 text-right lg:block">
               <BaseText size="xs" class="text-muted-400">
-                {{ new Date(item.createdAt).toLocaleDateString('fr-FR') }}
+                {{ item.date }}
               </BaseText>
             </div>
             <div
@@ -319,54 +319,44 @@ const onSubmit = handleSubmit(
                 <div
                   class="h-2 w-2 shrink-0 rounded-full"
                   :class="
-                    item.data.completed == false
+                    item.status === 0
                       ? 'bg-primary-500'
                       : 'bg-muted-300 dark:bg-muted-700/50'
                   "
                 ></div>
-                <BaseAvatar :src="'/img/avatars/8.svg'" size="sm" />
+                <BaseAvatar :src="item.user.src" size="sm" />
                 <div>
-                  <BaseText
-                    v-if="item.type == 'newOrder'"
-                    size="sm"
-                    lead="tight"
-                  >
+                  <BaseText size="sm" lead="tight">
                     <span class="text-muted-800 dark:text-muted-100"
-                      >{{ item.data.memberName }}&nbsp;</span
+                      >{{ item.user.name }}&nbsp;</span
                     >
                     <span class="text-muted-500 dark:text-muted-400"
-                      >a créer une nouvelle commande, code&nbsp;
-                    </span>
-
+                      >{{ item.target.text }}&nbsp;</span
+                    >
                     <NuxtLink
-                      :to="item.link"
+                      :to="item.target.url"
                       class="text-primary-500 underline-offset-4 hover:underline"
-                    >
-                      {{ item.data?.code }}</NuxtLink
+                      >{{ item.target.name }}</NuxtLink
                     >
                     <span class="text-muted-500 dark:text-muted-400"
-                      >&nbsp;{{ item.target?.type }}</span
+                      >&nbsp;{{ item.target.type }}</span
                     >
                   </BaseText>
                   <BaseText size="xs" class="text-muted-400">
-                    <span class="ltablet:hidden lg:hidden">
-                      {{
-                        new Date(item.createdAt).toLocaleDateString('fr-FR')
-                      }}</span
-                    >
-                    <span class="ltablet:hidden px-2 lg:hidden">&middot;</span>
-                    <span>{{
-                      new Date(item.createdAt).toLocaleTimeString('fr-FR')
+                    <span class="ltablet:hidden lg:hidden">{{
+                      item.date
                     }}</span>
+                    <span class="ltablet:hidden px-2 lg:hidden">&middot;</span>
+                    <span>{{ item.time }}</span>
                   </BaseText>
                 </div>
                 <div class="ms-auto hidden items-center gap-3 sm:flex">
-                  <!-- <BaseAvatar
+                  <BaseAvatar
                     v-for="user in item.people"
                     :key="user.name"
                     :src="user.src"
                     size="xxs"
-                  /> -->
+                  />
                 </div>
               </div>
             </BaseCard>
