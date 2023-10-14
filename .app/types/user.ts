@@ -1,13 +1,26 @@
 import { Country } from './country'
 import { Media } from './medias'
 
-export type UserRole =
-  | 'SuperAdmin'
-  | 'Admin'
-  | 'Broadcast'
-  | 'MediaPlanner'
-  | 'Billing'
-  | 'sales'
+export enum UserRole {
+  sale = 'Commercial',
+  saleTag = 'commercial',
+  respSaleTag = 'resp-commercial',
+  billing = 'Facturation',
+  billingTag = 'facturation',
+  respBillingTag = 'resp-facturation',
+  mediaPlanner = 'Plannification',
+  mediaPlannerTag = 'clannification',
+  respMediaPlannerTag = 'resp-plannification',
+  broadcast = 'Diffusion',
+  broadcastTag = 'diffusion',
+  respBroadcastTag = 'resp-Diffusion',
+  admin = 'Admin',
+  adminTag = 'admin',
+  pdgTag = 'pdg',
+  dgTag = 'dg',
+  doTag = 'do',
+  superAdmin = 'SuperAdmin',
+}
 
 export interface User {
   _id?: String

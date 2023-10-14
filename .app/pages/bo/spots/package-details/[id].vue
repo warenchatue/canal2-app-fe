@@ -2,13 +2,14 @@
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useFieldError, useForm } from 'vee-validate'
 import { z } from 'zod'
+import { UserRole } from '~/types/user'
 
 definePageMeta({
   title: 'Spot - Annonceur',
   preview: {
     title: 'Spot - Annonceur',
     description: 'Contribution and withdrawal',
-    categories: ['bo', 'spots', 'packages'],
+    categories: ['bo', 'spots', 'orders'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -392,16 +393,17 @@ async function confirmPlanning() {
 
   if (response.data?.value?.success) {
     success.value = true
+    data.value.data.planningValidator = authStore.user._id
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Commande confirmée !`,
+      message: `Plannning confirmé !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
     })
     isModalConfirmPlanningOpen.value = false
-    filter.value = 'order'
+    filter.value = 'planning'
     filter.value = ''
   } else {
     toaster.clearAll()
@@ -635,6 +637,11 @@ const onSubmit = handleSubmit(
           @click=";(isModalNewSpotOpen = true), (isEdit = false)"
           color="primary"
           class="w-full sm:w-48"
+          :disabled="
+            authStore.user.appRole.name != UserRole.sale &&
+            authStore.user.appRole.name != UserRole.mediaPlanner &&
+            authStore.user.appRole.name != UserRole.superAdmin
+          "
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
           <span>Nouveau Produit</span>
@@ -978,15 +985,36 @@ const onSubmit = handleSubmit(
 
                 <TairoTableCell spaced>
                   <div class="flex">
-                    <BaseButtonAction class="mx-2" to="" muted>
+                    <BaseButtonAction
+                      :disabled="
+                        authStore.user.appRole.name != UserRole.sale &&
+                        authStore.user.appRole.name != UserRole.broadcast &&
+                        authStore.user.appRole.name != UserRole.superAdmin
+                      "
+                      class="mx-2"
+                      to=""
+                      muted
+                    >
                       <Icon name="lucide:upload" class="h-4 w-4"
                     /></BaseButtonAction>
-                    <BaseButtonAction @click="editSpot(item)">
+                    <BaseButtonAction
+                      :disabled="
+                        authStore.user.appRole.name != UserRole.sale &&
+                        authStore.user.appRole.name != UserRole.mediaPlanner &&
+                        authStore.user.appRole.name != UserRole.superAdmin
+                      "
+                      @click="editSpot(item)"
+                    >
                       <Icon name="lucide:edit" class="h-4 w-4"
                     /></BaseButtonAction>
                     <BaseButtonAction
                       @click="confirmDeleteSpot(item)"
                       class="mx-2"
+                      :disabled="
+                        authStore.user.appRole.name != UserRole.sale &&
+                        authStore.user.appRole.name != UserRole.mediaPlanner &&
+                        authStore.user.appRole.name != UserRole.superAdmin
+                      "
                     >
                       <Icon name="lucide:trash" class="h-4 w-4 text-red-500"
                     /></BaseButtonAction>
@@ -1534,9 +1562,9 @@ const onSubmit = handleSubmit(
             <BaseButton
               :color="data.data.planningValidator ? 'success' : 'warning'"
               flavor="solid"
-              v-if="
-                authStore.user?.appRole?.name == 'Admin' ||
-                authStore.user?.appRole?.name == 'Schedule'
+              :disabled="
+                authStore.user?.appRole?.name != UserRole.superAdmin &&
+                authStore.user?.appRole?.name != UserRole.mediaPlanner
               "
               @click="isModalConfirmPlanningOpen = true"
             >

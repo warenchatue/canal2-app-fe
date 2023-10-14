@@ -3,6 +3,7 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useFieldError, useForm } from 'vee-validate'
 import { DatePicker } from 'v-calendar'
 import { z } from 'zod'
+import { UserRole } from '~/types/user'
 
 definePageMeta({
   title: 'Horaires',
@@ -16,6 +17,7 @@ definePageMeta({
   },
 })
 
+const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
@@ -25,6 +27,20 @@ const isModalNewHourOpen = ref(false)
 const isModalDeleteHourOpen = ref(false)
 const isEdit = ref(false)
 const currentHour = ref({})
+
+const toaster = useToaster()
+// Check if can have access
+if (authStore.user.appRole.name == UserRole.broadcast) {
+  toaster.clearAll()
+  toaster.show({
+    title: 'Désoler',
+    message: `Vous n'avez pas access à cette page!`,
+    color: 'danger',
+    icon: 'ph:check',
+    closable: true,
+  })
+  router.push('/bo/spots/diffusion-list')
+}
 
 watch([filter, perPage], () => {
   router.push({
@@ -194,7 +210,6 @@ const {
   initialValues,
 })
 
-const toaster = useToaster()
 const success = ref(false)
 const dates = ref({
   start: new Date(),
@@ -342,6 +357,11 @@ const onSubmit = handleSubmit(
           @click=";(isModalNewHourOpen = true), (isEdit = false)"
           color="primary"
           class="w-full sm:w-48"
+          :disabled="
+            authStore.user.appRole.name != UserRole.sale &&
+            authStore.user.appRole.name != UserRole.mediaPlanner &&
+            authStore.user.appRole.name != UserRole.superAdmin
+          "
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
           <span>Nouvelle Horaire</span>
@@ -443,12 +463,22 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex">
-                    <BaseButtonAction @click="editHour(item)">
+                    <BaseButtonAction
+                      :disabled="
+                        authStore.user.appRole.name != UserRole.sale &&
+                        authStore.user.appRole.name != UserRole.mediaPlanner &&
+                        authStore.user.appRole.name != UserRole.superAdmin
+                      "
+                      @click="editHour(item)"
+                    >
                       <Icon name="lucide:edit" class="h-4 w-4"
                     /></BaseButtonAction>
                     <BaseButtonAction
                       @click="confirmDeleteHour(item)"
                       class="mx-2"
+                      :disabled="
+                        authStore.user.appRole.name != UserRole.superAdmin
+                      "
                     >
                       <Icon name="lucide:trash" class="h-4 w-4 text-red-500"
                     /></BaseButtonAction>
@@ -481,7 +511,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-             {{  isEdit == true ? "Mise à jour": "Nouvelle" }} Horaire
+            {{ isEdit == true ? 'Mise à jour' : 'Nouvelle' }} Horaire
           </h3>
 
           <BaseButtonClose @click="isModalNewHourOpen = false" />
@@ -615,7 +645,11 @@ const onSubmit = handleSubmit(
     </TairoModal>
 
     <!-- Modal delete -->
-    <TairoModal :open="isModalDeleteHourOpen" size="sm" @close="isModalDeleteHourOpen">
+    <TairoModal
+      :open="isModalDeleteHourOpen"
+      size="sm"
+      @close="isModalDeleteHourOpen"
+    >
       <template #header>
         <!-- Header -->
         <div class="flex w-full items-center justify-between p-4 md:p-6">
@@ -635,7 +669,8 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
           >
-            Supprimer <span class="text-red-500">{{ currentHour?.name }}</span> ?
+            Supprimer
+            <span class="text-red-500">{{ currentHour?.name }}</span> ?
           </h3>
 
           <p

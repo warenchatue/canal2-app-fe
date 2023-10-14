@@ -576,7 +576,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Montant total</span>
+                <span>Total restant a payer</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -594,7 +594,14 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data.metaData?.totalFiles }}</span>
+                <span>
+                  {{
+                    new Intl.NumberFormat().format(
+                      data.data[0]?.globalPending ?? 0,
+                    )
+                  }}
+                  XAF</span
+                >
               </BaseHeading>
             </div>
             <div

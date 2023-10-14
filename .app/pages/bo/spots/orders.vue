@@ -2,13 +2,14 @@
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useFieldError, useForm } from 'vee-validate'
 import { z } from 'zod'
+import { UserRole } from '~/types/user'
 
 definePageMeta({
   title: 'Commandes',
   preview: {
     title: 'Commandes',
     description: 'Contribution and withdrawal',
-    categories: ['bo', 'spots', 'packages'],
+    categories: ['bo', 'spots', 'orders'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -19,17 +20,27 @@ const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
-
 const filter = ref('')
 const perPage = ref(10)
 const isModalNewPackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
-
 const isEdit = ref(false)
-
 const orderContracts = ref<FileList | null>()
 const orderInvoices = ref<FileList | null>()
+const toaster = useToaster()
+// Check if can have access
+if (authStore.user.appRole.name == UserRole.broadcast) {
+  toaster.clearAll()
+  toaster.show({
+    title: 'Désoler',
+    message: `Vous n'avez pas access à cette page!`,
+    color: 'danger',
+    icon: 'ph:check',
+    closable: true,
+  })
+  router.push('/bo/spots/diffusion-list')
+}
 
 watch(orderContracts, (value) => {
   console.log('orderContracts')
@@ -253,7 +264,6 @@ const {
   initialValues,
 })
 
-const toaster = useToaster()
 const success = ref(false)
 
 async function confirmOrder() {
@@ -264,11 +274,11 @@ async function confirmOrder() {
       id: currentPackage.value._id,
     }
   })
-  if (authStore.user?.appRole?.name == 'Sale') {
+  if (authStore.user?.appRole?.tag == UserRole.respSaleTag) {
     currentPackage.value.orderValidator = authStore.user._id
-  } else if (authStore.user.appRole?.name == 'Billing') {
+  } else if (authStore.user.appRole?.tag == UserRole.respBillingTag) {
     currentPackage.value.billValidator = authStore.user._id
-  } else if (authStore.user.appRole?.name == 'Admin') {
+  } else if (authStore.user.appRole?.name == UserRole.admin) {
     currentPackage.value.adminValidator = authStore.user._id
   }
 
@@ -770,6 +780,9 @@ const onSubmit = handleSubmit(
                     <BaseButtonAction
                       @click="confirmDeletePackage(item)"
                       class="mx-2"
+                      :disabled="
+                        authStore.user.appRole.name != UserRole.superAdmin
+                      "
                     >
                       <Icon name="lucide:trash" class="h-4 w-4 text-red-500"
                     /></BaseButtonAction>
@@ -932,11 +945,7 @@ const onSubmit = handleSubmit(
                         icon="ph:funnel"
                         :model-value="field.value"
                         :error="errorMessage"
-                        :disabled="
-                          isSubmitting ||
-                          (authStore.user?.appRole?.name != 'Admin' &&
-                            authStore.user?.appRole?.name != 'Billing')
-                        "
+                        :disabled="true"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
                       >
@@ -952,8 +961,8 @@ const onSubmit = handleSubmit(
                       v-model="orderContracts"
                       :disabled="
                         isSubmitting ||
-                        (authStore.user?.appRole?.name != 'Admin' &&
-                          authStore.user?.appRole?.name != 'Sale')
+                        (authStore.user?.appRole?.name != UserRole.superAdmin &&
+                          authStore.user?.appRole?.name != UserRole.sale)
                       "
                       shape="straight"
                       label="Slectionnez le contrat"
@@ -980,8 +989,9 @@ const onSubmit = handleSubmit(
                         :error="errorMessage"
                         :disabled="
                           isSubmitting ||
-                          (authStore.user?.appRole?.name != 'Admin' &&
-                            authStore.user?.appRole?.name != 'Billing')
+                          (authStore.user?.appRole?.name !=
+                            UserRole.superAdmin &&
+                            authStore.user?.appRole?.name != UserRole.billing)
                         "
                         @update:model-value="handleChange"
                         @blur="handleBlur"
@@ -1002,8 +1012,9 @@ const onSubmit = handleSubmit(
                         :error="errorMessage"
                         :disabled="
                           isSubmitting ||
-                          (authStore.user?.appRole?.name != 'Admin' &&
-                            authStore.user?.appRole?.name != 'Billing')
+                          (authStore.user?.appRole?.name !=
+                            UserRole.superAdmin &&
+                            authStore.user?.appRole?.name != UserRole.billing)
                         "
                         @update:model-value="handleChange"
                         @blur="handleBlur"
@@ -1024,8 +1035,9 @@ const onSubmit = handleSubmit(
                         :error="errorMessage"
                         :disabled="
                           isSubmitting ||
-                          (authStore.user?.appRole?.name != 'Admin' &&
-                            authStore.user?.appRole?.name != 'Billing')
+                          (authStore.user?.appRole?.name !=
+                            UserRole.superAdmin &&
+                            authStore.user?.appRole?.name != UserRole.billing)
                         "
                         @update:model-value="handleChange"
                         @blur="handleBlur"
@@ -1046,8 +1058,9 @@ const onSubmit = handleSubmit(
                         :error="errorMessage"
                         :disabled="
                           isSubmitting ||
-                          (authStore.user?.appRole?.name != 'Admin' &&
-                            authStore.user?.appRole?.name != 'Billing')
+                          (authStore.user?.appRole?.name !=
+                            UserRole.superAdmin &&
+                            authStore.user?.appRole?.name != UserRole.billing)
                         "
                         @update:model-value="handleChange"
                         @blur="handleBlur"
@@ -1058,9 +1071,8 @@ const onSubmit = handleSubmit(
                     <BaseInputFile
                       v-model="orderInvoices"
                       :disabled="
-                        isSubmitting ||
-                        (authStore.user?.appRole?.name != 'Admin' &&
-                          authStore.user?.appRole?.name != 'Billing')
+                        authStore.user?.appRole?.name != UserRole.superAdmin &&
+                        authStore.user?.appRole?.name != UserRole.billing
                       "
                       shape="straight"
                       label="Slectionnez la facture"
@@ -1085,7 +1097,7 @@ const onSubmit = handleSubmit(
                 class="!mx-2"
                 flavor="solid"
                 @click="isModalConfirmOrderOpen = true"
-                :disabled="authStore.user?.appRole?.name != 'Sale'"
+                :disabled="authStore.user?.appRole?.tag != UserRole.respSaleTag"
               >
                 <span class="text-bold text-muted-700">
                   OK du Service CCial</span
@@ -1095,7 +1107,9 @@ const onSubmit = handleSubmit(
                 :color="currentPackage?.billValidator ? 'success' : 'warning'"
                 flavor="solid"
                 @click="isModalConfirmOrderOpen = true"
-                :disabled="authStore.user?.appRole?.name != 'Billing'"
+                :disabled="
+                  authStore.user?.appRole?.tag != UserRole.respBillingTag
+                "
               >
                 <span class="text-bold text-muted-700">
                   OK du Sevice de Fact</span
@@ -1106,7 +1120,7 @@ const onSubmit = handleSubmit(
                 class="!mx-2"
                 flavor="solid"
                 @click="isModalConfirmOrderOpen = true"
-                :disabled="authStore.user?.appRole?.name != 'Admin'"
+                :disabled="authStore.user?.appRole?.name != UserRole.admin"
               >
                 <span class="text-bold text-muted-700"> OK du PDG/DG/DO</span>
               </BaseButton>

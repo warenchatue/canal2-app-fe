@@ -1,6 +1,6 @@
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
-  const perPage = parseInt((query.perPage as string) || '5', 10)
+  const perPage = parseInt((query.perPage as string) || '10', 10)
   const page = parseInt((query.page as string) || '1', 10)
   const filter = (query.filter as string) || ''
   const token = (query.token as string) || ''
@@ -42,7 +42,7 @@ function filterData(
   const filterRe = new RegExp(filter, 'i')
   return data
     .filter((item) => {
-      return [item.name, item.description].some((item) => item.match(filterRe))
+      return [item.name, item.tag].some((item) => item.match(filterRe))
     })
     .slice(offset, offset + perPage)
 }

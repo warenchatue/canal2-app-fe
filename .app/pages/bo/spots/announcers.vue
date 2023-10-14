@@ -2,29 +2,44 @@
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useFieldError, useForm } from 'vee-validate'
 import { z } from 'zod'
+import { UserRole } from '~/types/user'
 
 definePageMeta({
   title: 'Annonceurs',
   preview: {
     title: 'Annonceurs',
     description: 'Contribution and withdrawal',
-    categories: ['bo', 'spots','announcers'],
+    categories: ['bo', 'spots', 'announcers'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
   },
 })
 
+const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
-
 const filter = ref('')
 const perPage = ref(10)
 const isModalNewAnnouncerOpen = ref(false)
 const isModalDeleteAnnouncerOpen = ref(false)
 const isEdit = ref(false)
+
+const toaster = useToaster()
+// Check if can have access
+if (authStore.user.appRole.name == UserRole.broadcast) {
+  toaster.clearAll()
+  toaster.show({
+    title: 'Désoler',
+    message: `Vous n'avez pas access à cette page!`,
+    color: 'danger',
+    icon: 'ph:check',
+    closable: true,
+  })
+  router.push('/bo/spots/diffusion-list')
+}
 
 watch([filter, perPage], () => {
   router.push({
@@ -146,7 +161,6 @@ const {
   initialValues,
 })
 
-const toaster = useToaster()
 const success = ref(false)
 
 function editAnnouncer(announcer: any) {
@@ -346,6 +360,11 @@ const onSubmit = handleSubmit(
           @click=";(isModalNewAnnouncerOpen = true), (isEdit = false)"
           color="primary"
           class="w-full sm:w-48"
+          :disabled="
+            authStore.user.appRole.name != UserRole.sale &&
+            authStore.user.appRole.name != UserRole.mediaPlanner &&
+            authStore.user.appRole.name != UserRole.superAdmin
+          "
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
           <span>Nouvel Annonceur</span>
@@ -479,11 +498,21 @@ const onSubmit = handleSubmit(
                     >
                       <Icon name="lucide:eye" class="h-4 w-4"
                     /></BaseButtonAction>
-                    <BaseButtonAction @click="editAnnouncer(item)">
+                    <BaseButtonAction
+                      :disabled="
+                        authStore.user.appRole.name != UserRole.sale &&
+                        authStore.user.appRole.name != UserRole.mediaPlanner &&
+                        authStore.user.appRole.name != UserRole.superAdmin
+                      "
+                      @click="editAnnouncer(item)"
+                    >
                       <Icon name="lucide:edit" class="h-4 w-4"
                     /></BaseButtonAction>
                     <BaseButtonAction
                       @click="confirmDeleteAnnouncer(item)"
+                      :disabled="
+                        authStore.user.appRole.name != UserRole.superAdmin
+                      "
                       class="mx-2"
                     >
                       <Icon name="lucide:trash" class="h-4 w-4 text-red-500"
@@ -517,7 +546,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            {{  isEdit == true ? "Mise à jour": "Nouvel" }} Annonceur
+            {{ isEdit == true ? 'Mise à jour' : 'Nouvel' }} Annonceur
           </h3>
 
           <BaseButtonClose @click="isModalNewAnnouncerOpen = false" />

@@ -71,19 +71,14 @@ export default defineAppConfig({
         },
         items: [
           {
-            name: 'Dashboards',
-            icon: { name: 'ph:sidebar-duotone', class: 'w-5 h-5' },
+            name: 'Tableaux de bord',
+            icon: { name: 'ph:gauge-duotone', class: 'w-5 h-5' },
             activePath: '/dashboards',
             children: [
               {
                 name: 'Principal',
                 to: '/dashboards',
                 icon: { name: 'ph:chart-pie-slice-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Analytique',
-                to: '/dashboards/analytics',
-                icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
               },
             ],
           },
@@ -186,11 +181,11 @@ export default defineAppConfig({
                 to: '/bo/profile/profile-notifications',
                 icon: { name: 'ph:chat-duotone', class: 'w-4 h-4' },
               },
-              {
-                name: 'Taches',
-                to: '/bo/profile/tasks',
-                icon: { name: 'ph:chat-duotone', class: 'w-4 h-4' },
-              },
+              // {
+              //   name: 'Taches',
+              //   to: '/bo/profile/tasks',
+              //   icon: { name: 'ph:chat-duotone', class: 'w-4 h-4' },
+              // },
             ],
           },
           {

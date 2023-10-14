@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useFieldError, useForm } from 'vee-validate'
+import { UserRole } from '~/types/user'
 import { z } from 'zod'
 
 definePageMeta({
@@ -54,6 +55,7 @@ function editRole(role: any) {
   isEdit.value = true
   setFieldValue('role._id', role._id)
   setFieldValue('role.name', role.name)
+  setFieldValue('role.tag', role.tag)
   setFieldValue('role.description', role.description)
 }
 
@@ -106,6 +108,7 @@ async function deleteRole(role: any) {
 // This is the object that will contain the validation messages
 const VALIDATION_TEXT = {
   NAME_REQUIRED: "Name can't be empty",
+  TAG_REQUIRED: "Tag can't be empty",
 }
 
 // This is the Zod schema for the form input
@@ -115,6 +118,7 @@ const zodSchema = z
     role: z.object({
       _id: z.string().optional(),
       name: z.string().min(1, VALIDATION_TEXT.NAME_REQUIRED),
+      tag: z.string().min(1, VALIDATION_TEXT.TAG_REQUIRED),
       description: z.string().optional(),
     }),
   })
@@ -124,6 +128,14 @@ const zodSchema = z
         code: z.ZodIssueCode.custom,
         message: VALIDATION_TEXT.NAME_REQUIRED,
         path: ['role.name'],
+      })
+    }
+
+    if (!data.role.tag) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: VALIDATION_TEXT.TAG_REQUIRED,
+        path: ['role.tag'],
       })
     }
   })
@@ -137,6 +149,7 @@ const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
   role: {
     name: '',
+    tag: '',
     description: '',
   },
 }))
@@ -278,7 +291,7 @@ const onSubmit = handleSubmit(
       </template>
       <template #right>
         <BaseButton
-          @click=";(isModalNewRoleOpen = true), (isEdit = false)"
+          @click=";(isModalNewRoleOpen = true), (isEdit = false), resetForm()"
           color="primary"
           class="w-full sm:w-38"
         >
@@ -337,7 +350,7 @@ const onSubmit = handleSubmit(
                     {{ item.name }}
                   </BaseHeading>
                   <BaseParagraph size="xs" class="text-muted-400">
-                    {{ item.description }}
+                    {{ item.tag }} | {{ item.description }}
                   </BaseParagraph>
                 </div>
                 <div class="ms-auto">
@@ -431,6 +444,25 @@ const onSubmit = handleSubmit(
                     >
                       <BaseInput
                         label="Nom"
+                        icon="ph:user-duotone"
+                        placeholder=""
+                        :model-value="field.value"
+                        type="text"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+
+                  <div class="col-span-12 md:col-span-12">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="role.tag"
+                    >
+                      <BaseInput
+                        label="Tag"
                         icon="ph:user-duotone"
                         placeholder=""
                         :model-value="field.value"

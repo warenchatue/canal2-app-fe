@@ -3,6 +3,7 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useFieldError, useForm } from 'vee-validate'
 import { DatePicker } from 'v-calendar'
 import { z } from 'zod'
+import { UserRole } from '~/types/user'
 
 definePageMeta({
   title: 'Planning de diffusion',
@@ -379,7 +380,10 @@ const onSubmit = handleSubmit(
           <option :value="100">100 per page</option>
         </BaseSelect>
         <BaseButton
-          :disabled="authStore.user.appRole.name != 'Admin'"
+          :disabled="
+            authStore.user.appRole.name != UserRole.broadcast &&
+            authStore.user.appRole.name != UserRole.superAdmin
+          "
           @click="isModalNewTxnOpen = true"
           color="primary"
           class="w-full sm:w-48"
@@ -748,7 +752,10 @@ const onSubmit = handleSubmit(
                   <BaseButtonAction
                     @click.prevent="selectPlanning(item)"
                     muted
-                    :disabled="authStore.user.appRole.name != 'Admin'"
+                    :disabled="
+                      authStore.user.appRole.name != UserRole.broadcast &&
+                      authStore.user.appRole.name != UserRole.superAdmin
+                    "
                     :class="{
                       '!text-orange-400':
                         item.isManualPlay == false && item.isAutoPlay == false,

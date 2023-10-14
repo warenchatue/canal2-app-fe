@@ -49,6 +49,8 @@ function filterData(
   page: number,
   perPage: number,
 ) {
+  data = data.filter((item) => item.spot?.package?.planningValidator != null)
+
   const offset = (page - 1) * perPage
   if (!filter) {
     data.slice(offset, offset + perPage)

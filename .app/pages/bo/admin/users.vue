@@ -62,6 +62,9 @@ function toggleAllVisibleSelection() {
 
 const isModalNewUserOpen = ref(false)
 const isModalDeleteUserOpen = ref(false)
+const isModalUpdatePasswordOpen = ref(false)
+const newPassword = ref()
+const passwordError = ref<string | boolean | undefined>(false)
 const isEdit = ref(false)
 const { registerUser, updateUser } = useAuthStore()
 
@@ -89,6 +92,7 @@ const zodSchema = z
       appRole: z.object({
         _id: z.string(),
         name: z.string(),
+        tag: z.string(),
         flag: z.string().optional(),
         description: z.string(),
       }),
@@ -138,6 +142,7 @@ const initialValues = computed<FormInput>(() => ({
     appRole: {
       _id: '',
       name: '',
+      tag: '',
       description: '',
       flag: '',
     },
@@ -171,6 +176,7 @@ const currentUser = ref({})
 function editUser(user: any) {
   isModalNewUserOpen.value = true
   isEdit.value = true
+  currentUser.value = user
   setFieldValue('user._id', user._id)
   setFieldValue('user.firstName', user.firstName)
   setFieldValue('user.lastName', user.lastName)
@@ -182,10 +188,64 @@ function editUser(user: any) {
   setFieldValue('user.status', user.status)
 }
 
+function editUserPassword(user: any) {
+  isModalUpdatePasswordOpen.value = true
+  isEdit.value = false
+  currentUser.value = user
+  setFieldValue('user._id', user._id)
+  setFieldValue('user.firstName', user.firstName)
+  setFieldValue('user.lastName', user.lastName)
+}
+
 function confirmDeleteUser(user: any) {
   isModalDeleteUserOpen.value = true
   isEdit.value = false
   currentUser.value = user
+}
+
+async function updatePassword() {
+  if (newPassword.value.length === 0) {
+    passwordError.value = 'Le mot de passe ne peut etre vide'
+    return
+  }
+  const query2 = computed(() => {
+    return {
+      action: 'updatePassword',
+      token: token.value,
+      id: currentUser.value?._id,
+    }
+  })
+
+  const response = await useFetch('/api/users', {
+    method: 'put',
+    headers: { 'Content-Type': 'application/json' },
+    query: query2,
+    body: { email: currentUser.value?.email, password: newPassword },
+  })
+
+  if (response.data?.value?.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Mot de passe mis à jour !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalUpdatePasswordOpen.value = false
+    filter.value = 'user'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Oops',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
 }
 
 async function deleteUser(user: any) {
@@ -469,7 +529,7 @@ const onSubmit = handleSubmit(
                   {{ item.phone }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.appRole.name ?? 'Basic' }}
+                  {{ item.appRole.tag ?? 'Not specified' }}
                 </TairoTableCell>
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag
@@ -499,9 +559,12 @@ const onSubmit = handleSubmit(
                       <Icon name="lucide:edit" class="h-4 w-4"
                     /></BaseButtonAction>
                     <BaseButtonAction
-                      @click="confirmDeleteUser(item)"
+                      @click="editUserPassword(item)"
                       class="!mx-3"
                     >
+                      <Icon name="lucide:settings" class="h-4 w-4"
+                    /></BaseButtonAction>
+                    <BaseButtonAction @click="confirmDeleteUser(item)">
                       <Icon name="lucide:trash" class="h-4 w-4"
                     /></BaseButtonAction>
                   </div>
@@ -677,7 +740,7 @@ const onSubmit = handleSubmit(
                         :properties="{
                           value: '_id',
                           label: 'name',
-                          sublabel: 'description',
+                          sublabel: 'tag',
                           media: 'flag',
                         }"
                         :model-value="field.value"
@@ -721,6 +784,80 @@ const onSubmit = handleSubmit(
 
             <BaseButton color="primary" flavor="solid" @click="onSubmit">
               {{ isEdit == true ? 'Modifier' : 'Créer' }}
+            </BaseButton>
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal update user password -->
+    <TairoModal
+      :open="isModalUpdatePasswordOpen"
+      size="xl"
+      @close="isModalUpdatePasswordOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Mise à jour du Mot de passe
+          </h3>
+
+          <BaseButtonClose @click="isModalUpdatePasswordOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <BaseCard class="w-full">
+        <form
+          method="POST"
+          action=""
+          class="divide-muted-200 dark:divide-muted-700"
+        >
+          <div
+            shape="curved"
+            class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
+          >
+            <div class="mx-auto flex w-full flex-col">
+              <div>
+                <div class="grid grid-cols-12 gap-4">
+                  <div class="col-span-12 md:col-span-12">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="user.password"
+                    >
+                      <BaseInput
+                        label="Nouveau mot de passe"
+                        icon="ph:user-duotone"
+                        placeholder="*********************"
+                        v-model="newPassword"
+                        :error="passwordError"
+                        :disabled="isSubmitting"
+                      />
+                    </Field>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </BaseCard>
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalUpdatePasswordOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="updatePassword()"
+            >
+              Modifier
             </BaseButton>
           </div>
         </div>

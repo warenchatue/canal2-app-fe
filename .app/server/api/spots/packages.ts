@@ -48,7 +48,9 @@ function filterData(
 ) {
   const offset = (page - 1) * perPage
   if (isReport == true) {
+    let totalPending = 0
     data = data.map((item) => {
+      totalPending += item.invoice.pending
       const plannings = item.plannings.sort((a: any, b: any) => {
         return a.date < b.date ? -1 : 1
       })
@@ -77,6 +79,9 @@ function filterData(
       console.log(item)
       return item
     })
+    if (data.length > 0) {
+      data[0].globalPending = totalPending
+    }
   }
 
   if (!filter) {
