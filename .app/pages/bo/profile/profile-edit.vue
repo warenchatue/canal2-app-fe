@@ -4,13 +4,13 @@ definePageMeta({
   preview: {
     title: 'Edit profile 1',
     description: 'For editing a user profile',
-    categories: ['bo','profile', 'forms'],
+    categories: ['bo', 'profile', 'forms'],
     src: '/img/screens/layouts-subpages-profile-edit-1.png',
     srcDark: '/img/screens/layouts-subpages-profile-edit-1-dark.png',
     order: 76,
   },
 })
-
+const authStore = useAuthStore()
 const { data, pending, error, refresh } = await useFetch('/api/profile')
 </script>
 
@@ -21,16 +21,16 @@ const { data, pending, error, refresh } = await useFetch('/api/profile')
         <div class="flex w-full items-center gap-2">
           <BaseAvatar
             :src="data?.personalInfo.picture"
-            :badge-src="data?.personalInfo.badge"
+            :badge-src="'/img/icons/flags/cmr.svg'"
             size="md"
           />
           <div class="">
             <BaseHeading tag="h2" size="md" weight="medium" lead="none">
-              {{ data?.personalInfo.firstName }}
-              {{ data?.personalInfo.lastName }}
+              {{ authStore?.user.firstName }}
+              {{ authStore?.user?.lastName }}
             </BaseHeading>
             <BaseParagraph size="xs" class="text-muted-400">
-              {{ data?.personalInfo.role }}
+              {{ authStore?.user.appRole.tag }}
             </BaseParagraph>
           </div>
         </div>

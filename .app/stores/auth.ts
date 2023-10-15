@@ -7,6 +7,7 @@ const baseUser = {
   firstName: '',
   lastName: '',
   email: '',
+  phone: '',
   appRole: {},
   picture: '',
 }
@@ -61,6 +62,7 @@ export const useAuthStore = defineStore('auth', {
         this.user.firstName = response.user.firstName
         this.user.lastName = response.user.lastName
         this.user.email = response.user.email
+        this.user.phone = response.user.phone
         this.user.appRole = response.user.appRole
         this.user.picture = ''
         this.authenticated = true
@@ -123,6 +125,12 @@ export const useAuthStore = defineStore('auth', {
       console.log(response)
 
       if (data.value && isAdmin == true) {
+        return true
+      } else if (isAdmin == false) {
+        this.user.firstName = response.user.firstName
+        this.user.lastName = response.user.lastName
+        this.user.email = response.user.email
+        this.user.phone = response.user.phone
         return true
       } else {
         return false

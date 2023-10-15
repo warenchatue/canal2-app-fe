@@ -4,7 +4,7 @@ import { Field, useFieldError, useForm } from 'vee-validate'
 import { z } from 'zod'
 
 definePageMeta({
-  title: 'Edit Profile',
+  title: 'Mise à jour du Profile',
   preview: {
     title: 'Edit profile 1',
     description: 'For editing a user profile',
@@ -16,11 +16,13 @@ definePageMeta({
 })
 
 const autStore = useAuthStore()
+const appStore = useAppStore()
 // This is the object that will contain the validation messages
 const ONE_MB = 1000000
 const VALIDATION_TEXT = {
   FIRST_REQUIRED: "Your first name can't be empty",
-  LASTNAME_REQUIRED: "Your last name can't be empty",
+  LAST_NAME_REQUIRED: "Your last name can't be empty",
+  EMAIL_REQUIRED: "Your last name can't be empty",
   OPTION_REQUIRED: 'Please select an option',
   AVATAR_TOO_BIG: `Avatar size must be less than 1MB`,
 }
@@ -31,75 +33,34 @@ const zodSchema = z
   .object({
     avatar: z.custom<File>((v) => v instanceof File).nullable(),
     profile: z.object({
+      _id: z.string().optional(),
       firstName: z.string().min(1, VALIDATION_TEXT.FIRST_REQUIRED),
-      lastName: z.string().min(1, VALIDATION_TEXT.LASTNAME_REQUIRED),
+      lastName: z.string().min(1, VALIDATION_TEXT.LAST_NAME_REQUIRED),
+      email: z.string().min(1, VALIDATION_TEXT.EMAIL_REQUIRED),
       role: z.string().optional(),
-      location: z.string(),
-      bio: z.string(),
-    }),
-    info: z.object({
-      experience: z
-        .union([
-          z.literal('0-2 years'),
-          z.literal('2-5 years'),
-          z.literal('5-10 years'),
-          z.literal('10+ years'),
-        ])
-        .nullable(),
-      firstJob: z
+      location: z.string().optional(),
+      bio: z.string().optional(),
+      status: z.union([z.literal('active'), z.literal('inactive')]),
+      phone: z.string(),
+      country: z
         .object({
-          label: z.string(),
-          value: z.boolean(),
+          _id: z.string(),
+          abbr: z.string(),
+          name: z.string(),
+          flag: z.string().optional(),
         })
+        .optional()
         .nullable(),
-      flexible: z
-        .object({
-          label: z.string(),
-          value: z.boolean(),
-        })
-        .nullable(),
-      remote: z
-        .object({
-          label: z.string(),
-          value: z.boolean(),
-        })
-        .nullable(),
-    }),
-    social: z.object({
-      facebook: z.string(),
-      twitter: z.string(),
-      instagram: z.string(),
     }),
   })
   .superRefine((data, ctx) => {
     // This is a custom validation function that will be called
     // before the form is submitted
-    if (!data.info.experience) {
+    if (!data.profile.email) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: VALIDATION_TEXT.OPTION_REQUIRED,
-        path: ['info.experience'],
-      })
-    }
-    if (!data.info.firstJob) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: VALIDATION_TEXT.OPTION_REQUIRED,
-        path: ['info.firstJob'],
-      })
-    }
-    if (!data.info.flexible) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: VALIDATION_TEXT.OPTION_REQUIRED,
-        path: ['info.flexible'],
-      })
-    }
-    if (!data.info.remote) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: VALIDATION_TEXT.OPTION_REQUIRED,
-        path: ['info.remote'],
+        message: VALIDATION_TEXT.EMAIL_REQUIRED,
+        path: ['profile.email'],
       })
     }
     if (data.avatar && data.avatar.size > ONE_MB) {
@@ -119,40 +80,25 @@ const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
   avatar: null,
   profile: {
+    _id: autStore.user?._id || '',
     firstName: autStore.user?.firstName || '',
     lastName: autStore.user?.lastName || '',
+    email: autStore.user?.email || '',
+    phone: autStore.user?.phone || '',
     role: autStore.user?.appRole?.name || '',
+    country: autStore.user?.country,
+    status: autStore.user?.status || 'active',
     location: '',
     bio: '',
   },
-  info: {
-    experience: null,
-    firstJob: null,
-    flexible: null,
-    remote: null,
-  },
-  social: {
-    facebook: '',
-    twitter: '',
-    instagram: '',
-  },
 }))
 
-// This is the list of options for the select inputs
-const experience = ['0-2 years', '2-5 years', '5-10 years', '10+ years']
-const answers = [
-  {
-    label: 'Yes',
-    value: true,
-  },
-  {
-    label: 'No',
-    value: false,
-  },
-]
-
 // This is the computed value that will be used to display the current avatar
-const currentAvatar = computed(() => autStore.user?.photo)
+const currentAvatar = computed(
+  () => autStore.user?.photo ?? '/img/avatars/2.svg',
+)
+
+const { updateUser } = useAuthStore()
 
 const {
   handleSubmit,
@@ -182,11 +128,11 @@ watch(inputFile, (value) => {
 })
 
 // Ask the user for confirmation before leaving the page if the form has unsaved changes
-onBeforeRouteLeave(() => {
-  if (meta.value.dirty) {
-    return confirm('You have unsaved changes. Are you sure you want to leave?')
-  }
-})
+// onBeforeRouteLeave(() => {
+//   if (meta.value.dirty) {
+//     return confirm('You have unsaved changes. Are you sure you want to leave?')
+//   }
+// })
 
 const toaster = useToaster()
 
@@ -199,31 +145,42 @@ const onSubmit = handleSubmit(
     console.log('profile-edit-success', values)
 
     try {
-      // fake delay, this will make isSubmitting value to be true
-      await new Promise((resolve, reject) => {
-        if (values.profile.firstName === 'Maya') {
-          // simulate a backend error
-          setTimeout(
-            () => reject(new Error('Fake backend validation error')),
-            2000,
-          )
-        }
-        setTimeout(resolve, 4000)
-      })
+      const isSuccess = ref(false)
+      isSuccess.value = await updateUser(
+        {
+          ...values.profile,
+        },
+        false,
+      )
 
-      toaster.clearAll()
-      toaster.show({
-        title: 'Success',
-        message: `Your profile has been updated!`,
-        color: 'success',
-        icon: 'ph:check',
-        closable: true,
-      })
+      if (isSuccess.value) {
+        success.value = true
+        resetForm()
+        toaster.clearAll()
+        toaster.show({
+          title: 'Success',
+          message: `Profile mis à jour!`,
+          color: 'success',
+          icon: 'ph:user-circle-fill',
+          closable: true,
+        })
+        //refresh
+      } else {
+        toaster.clearAll()
+        toaster.show({
+          title: 'Error',
+          message: `An error occured!`,
+          color: 'warning',
+          icon: 'ph:check',
+          closable: true,
+        })
+      }
     } catch (error: any) {
+      console.log(error)
       // this will set the error on the form
       if (error.message === 'Fake backend validation error') {
         // @ts-expect-error - vee validate typing bug with nested keys
-        setFieldError('profile.firstName', 'This first name is not allowed')
+        setFieldError('user.name', 'This name is not allowed')
 
         document.documentElement.scrollTo({
           top: 0,
@@ -242,21 +199,10 @@ const onSubmit = handleSubmit(
       return
     }
 
-    // we can refresh the data from the server
-    // this will update the initial values and the current avatar
-    await refresh()
-
-    resetForm()
-
     document.documentElement.scrollTo({
       top: 0,
       behavior: 'smooth',
     })
-
-    success.value = true
-    setTimeout(() => {
-      success.value = false
-    }, 3000)
   },
   (error) => {
     // this callback is optional and called only if the form has errors
@@ -286,14 +232,14 @@ const onSubmit = handleSubmit(
             lead="normal"
             class="uppercase tracking-wider"
           >
-            INFO GÉNÉRALE
+            INFORMATIONS GÉNÉRALE
           </BaseHeading>
           <BaseText size="xs" class="text-muted-400">
             Modifier les informations générales de votre compte
           </BaseText>
         </div>
         <div class="flex items-center gap-2">
-          <BaseButton class="w-24" to="/layouts/profile">Cancel</BaseButton>
+          <BaseButton class="w-24" to="/bo/profile">Cancel</BaseButton>
           <BaseButton
             type="submit"
             color="primary"
@@ -319,7 +265,7 @@ const onSubmit = handleSubmit(
           </BaseMessage>
 
           <TairoFormGroup
-            label="Photo de profil"
+            label="Photo de profile"
             sublabel="C'est ainsi que les autres vous reconnaîtront"
           >
             <div
@@ -385,8 +331,8 @@ const onSubmit = handleSubmit(
           </TairoFormGroup>
 
           <TairoFormGroup
-            label="Profile Info"
-            sublabel="Others diserve to know you more"
+            label="Informations personnelles"
+            sublabel="Nom, email"
           >
             <div class="grid grid-cols-12 gap-4">
               <div class="col-span-12 sm:col-span-6">
@@ -423,18 +369,35 @@ const onSubmit = handleSubmit(
                   />
                 </Field>
               </div>
-              <div class="col-span-12">
+              <div class="col-span-12 sm:col-span-6">
                 <Field
                   v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                  name="profile.role"
+                  name="profile.email"
                 >
                   <BaseInput
                     :model-value="field.value"
                     :error="errorMessage"
                     :disabled="isSubmitting"
                     type="text"
-                    icon="ph:suitcase-duotone"
-                    placeholder="Job title"
+                    icon="ph:user-duotone"
+                    placeholder="Email"
+                    @update:model-value="handleChange"
+                    @blur="handleBlur"
+                  />
+                </Field>
+              </div>
+              <div class="col-span-12 sm:col-span-6">
+                <Field
+                  v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                  name="profile.phone"
+                >
+                  <BaseInput
+                    :model-value="field.value"
+                    :error="errorMessage"
+                    :disabled="isSubmitting"
+                    type="text"
+                    icon="ph:phone-duotone"
+                    placeholder="Phone"
                     @update:model-value="handleChange"
                     @blur="handleBlur"
                   />
@@ -443,15 +406,15 @@ const onSubmit = handleSubmit(
               <div class="col-span-12">
                 <Field
                   v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                  name="profile.location"
+                  name="profile.role"
                 >
                   <BaseInput
                     :model-value="field.value"
                     :error="errorMessage"
-                    :disabled="isSubmitting"
+                    :disabled="true"
                     type="text"
-                    icon="ph:map-pin-duotone"
-                    placeholder="Location"
+                    icon="ph:suitcase-duotone"
+                    placeholder="Job title"
                     @update:model-value="handleChange"
                     @blur="handleBlur"
                   />
@@ -467,7 +430,7 @@ const onSubmit = handleSubmit(
                     :error="errorMessage"
                     :disabled="isSubmitting"
                     rows="4"
-                    placeholder="About you / Short bio..."
+                    placeholder="A-propos / petite description."
                     @update:model-value="handleChange"
                     @blur="handleBlur"
                   />
@@ -476,187 +439,25 @@ const onSubmit = handleSubmit(
             </div>
           </TairoFormGroup>
 
-          <TairoFormGroup
-            label="Professional Info"
-            sublabel="This can help you to win some opportunities"
-          >
+          <TairoFormGroup label="Adresse" sublabel="Pays, ville">
             <div class="grid grid-cols-12 gap-4">
-              <div class="col-span-12 sm:col-span-6">
-                <Field
-                  v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                  name="info.experience"
-                >
-                  <BaseListbox
-                    :model-value="field.value"
-                    :error="errorMessage"
-                    :disabled="isSubmitting"
-                    :items="experience"
-                    placeholder="Experience"
-                    shape="rounded"
-                    @update:model-value="handleChange"
-                    @blur="handleBlur"
-                  />
-                </Field>
-              </div>
-              <div class="col-span-12 sm:col-span-6">
-                <Field
-                  v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                  name="info.firstJob"
-                >
-                  <BaseListbox
-                    :model-value="field.value"
-                    :error="errorMessage"
-                    :disabled="isSubmitting"
-                    :items="answers"
-                    :properties="{ label: 'label', value: 'value' }"
-                    placeholder="Is this your first job?"
-                    shape="rounded"
-                    @update:model-value="handleChange"
-                    @blur="handleBlur"
-                  />
-                </Field>
-              </div>
-              <div class="col-span-12 sm:col-span-6">
+              <div class="col-span-12 sm:col-span-12">
                 <Field
                   v-slot="{ field, errorMessage, handleChange, handleBlur }"
                   name="info.flexible"
                 >
                   <BaseListbox
+                    label="Pays"
+                    :items="appStore.countries"
+                    :properties="{
+                      value: '_id',
+                      label: 'name',
+                      sublabel: 'abbr',
+                      media: 'flag',
+                    }"
                     :model-value="field.value"
                     :error="errorMessage"
                     :disabled="isSubmitting"
-                    :items="answers"
-                    :properties="{ label: 'label', value: 'value' }"
-                    placeholder="Are you flexible?"
-                    shape="rounded"
-                    @update:model-value="handleChange"
-                    @blur="handleBlur"
-                  />
-                </Field>
-              </div>
-              <div class="col-span-12 sm:col-span-6">
-                <Field
-                  v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                  name="info.remote"
-                >
-                  <BaseListbox
-                    :model-value="field.value"
-                    :error="errorMessage"
-                    :disabled="isSubmitting"
-                    :items="answers"
-                    :properties="{ label: 'label', value: 'value' }"
-                    placeholder="Do you work remotely?"
-                    shape="rounded"
-                    @update:model-value="handleChange"
-                    @blur="handleBlur"
-                  />
-                </Field>
-              </div>
-            </div>
-          </TairoFormGroup>
-
-          <TairoFormGroup
-            label="Social Profiles"
-            sublabel="This can help others finding you on social media"
-          >
-            <div class="grid grid-cols-12 gap-4">
-              <div class="col-span-12 sm:col-span-6">
-                <Field
-                  v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                  name="social.facebook"
-                >
-                  <BaseInput
-                    :model-value="field.value"
-                    :error="errorMessage"
-                    :disabled="isSubmitting"
-                    type="text"
-                    icon="fa6-brands:facebook-f"
-                    placeholder="Facebook URL"
-                    @update:model-value="handleChange"
-                    @blur="handleBlur"
-                  />
-                </Field>
-              </div>
-              <div class="col-span-12 sm:col-span-6">
-                <Field
-                  v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                  name="social.twitter"
-                >
-                  <BaseInput
-                    :model-value="field.value"
-                    :error="errorMessage"
-                    :disabled="isSubmitting"
-                    type="text"
-                    icon="fa6-brands:twitter"
-                    placeholder="Twitter URL"
-                    @update:model-value="handleChange"
-                    @blur="handleBlur"
-                  />
-                </Field>
-              </div>
-              <div class="col-span-12 sm:col-span-6">
-                <Field
-                  v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                  name="social.dribbble"
-                >
-                  <BaseInput
-                    :model-value="field.value"
-                    :error="errorMessage"
-                    :disabled="isSubmitting"
-                    type="text"
-                    icon="fa6-brands:dribbble"
-                    placeholder="Dribbble URL"
-                    @update:model-value="handleChange"
-                    @blur="handleBlur"
-                  />
-                </Field>
-              </div>
-              <div class="col-span-12 sm:col-span-6">
-                <Field
-                  v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                  name="social.instagram"
-                >
-                  <BaseInput
-                    :model-value="field.value"
-                    :error="errorMessage"
-                    :disabled="isSubmitting"
-                    type="text"
-                    icon="fa6-brands:instagram"
-                    placeholder="Instagram URL"
-                    @update:model-value="handleChange"
-                    @blur="handleBlur"
-                  />
-                </Field>
-              </div>
-              <div class="col-span-12 sm:col-span-6">
-                <Field
-                  v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                  name="social.github"
-                >
-                  <BaseInput
-                    :model-value="field.value"
-                    :error="errorMessage"
-                    :disabled="isSubmitting"
-                    type="text"
-                    icon="fa6-brands:github"
-                    placeholder="Github URL"
-                    @update:model-value="handleChange"
-                    @blur="handleBlur"
-                  />
-                </Field>
-              </div>
-              <div class="col-span-12 sm:col-span-6">
-                <Field
-                  v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                  name="social.gitlab"
-                >
-                  <BaseInput
-                    :model-value="field.value"
-                    :error="errorMessage"
-                    :disabled="isSubmitting"
-                    type="text"
-                    icon="fa6-brands:gitlab"
-                    placeholder="Gitlab URL"
                     @update:model-value="handleChange"
                     @blur="handleBlur"
                   />

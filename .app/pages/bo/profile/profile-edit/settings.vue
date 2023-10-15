@@ -13,7 +13,7 @@ const VALIDATION_TEXT = {
 definePageMeta({
   title: 'Settings',
   preview: {
-    title: 'Edit profile 4',
+    title: 'Edit profile - password',
     description: 'For editing a user profile',
     categories: ['profile', 'profile-edit', 'forms'],
     src: '/img/screens/layouts-subpages-profile-edit-4.png',
@@ -33,10 +33,12 @@ const zodSchema = z
       enabled: z.boolean(),
       phoneNumber: z.string().optional(),
     }),
-    notifications: z.object({
-      enabled: z.boolean(),
-      marketing: z.boolean(),
-    }),
+    notifications: z
+      .object({
+        enabled: z.boolean(),
+        marketing: z.boolean(),
+      })
+      .optional(),
   })
   .superRefine((data, ctx) => {
     // This is a custom validation function that will be called
@@ -73,12 +75,13 @@ const zodSchema = z
 // Zod has a great infer method that will
 // infer the shape of the schema into a TypeScript type
 type FormInput = z.infer<typeof zodSchema>
-
+const authStore = useAuthStore()
+const token = useCookie('token')
 const { data, pending, error, refresh } = await useFetch('/api/profile')
 
 const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
-  currentPassword: 'password',
+  currentPassword: '',
   newPassword: '',
   confirmPassword: '',
   twoFactor: {
@@ -142,11 +145,11 @@ watch(
 )
 
 // Ask the user for confirmation before leaving the page if the form has unsaved changes
-onBeforeRouteLeave(() => {
-  if (meta.value.dirty) {
-    return confirm('You have unsaved changes. Are you sure you want to leave?')
-  }
-})
+// onBeforeRouteLeave(() => {
+//   if (meta.value.dirty) {
+//     return confirm('You have unsaved changes. Are you sure you want to leave?')
+//   }
+// })
 
 const toaster = useToaster()
 
@@ -156,29 +159,53 @@ const onSubmit = handleSubmit(
     success.value = false
 
     // here you have access to the validated form values
-    console.log('profile-settings-success', values)
+    console.log('profile-settings-password-success', values)
 
     try {
-      // fake delay, this will make isSubmitting value to be true
-      await new Promise((resolve, reject) => {
-        if (values.currentPassword === 'password') {
-          // simulate a backend error
-          setTimeout(
-            () => reject(new Error('Fake backend validation error')),
-            2000,
-          )
+      if (values.newPassword != values.confirmPassword) {
+        setFieldValue('confirmPassword', 'Passwords do not match')
+        return
+      }
+      const query2 = computed(() => {
+        return {
+          action: 'updateUserPassword',
+          token: token.value,
+          id: authStore.user?._id,
         }
-        setTimeout(resolve, 4000)
       })
 
-      toaster.clearAll()
-      toaster.show({
-        title: 'Success',
-        message: `Your profile has been updated!`,
-        color: 'success',
-        icon: 'ph:check',
-        closable: true,
+      const response = await useFetch('/api/users', {
+        method: 'put',
+        headers: { 'Content-Type': 'application/json' },
+        query: query2,
+        body: {
+          email: authStore.user?.email,
+          oldPassword: values.currentPassword,
+          password: values.newPassword,
+        },
       })
+
+      if (response.data?.value?.success) {
+        success.value = true
+        resetForm()
+        toaster.clearAll()
+        toaster.show({
+          title: 'Success',
+          message: `Mot de passe mis à jour !`,
+          color: 'success',
+          icon: 'ph:check',
+          closable: true,
+        })
+      } else {
+        toaster.clearAll()
+        toaster.show({
+          title: 'Oops',
+          message: `Une erreur est survenue !`,
+          color: 'danger',
+          icon: 'ph:check',
+          closable: true,
+        })
+      }
     } catch (error: any) {
       // this will set the error on the form
       if (error.message === 'Fake backend validation error') {
@@ -200,18 +227,10 @@ const onSubmit = handleSubmit(
       }
       return
     }
-
-    resetForm()
-
     document.documentElement.scrollTo({
       top: 0,
       behavior: 'smooth',
     })
-
-    success.value = true
-    setTimeout(() => {
-      success.value = false
-    }, 3000)
   },
   (error) => {
     // this callback is optional and called only if the form has errors
@@ -248,7 +267,7 @@ const onSubmit = handleSubmit(
           </BaseText>
         </div>
         <div class="flex items-center gap-2">
-          <BaseButton class="w-24" to="/layouts/profile">Annuler</BaseButton>
+          <BaseButton class="w-24" to="/bo/profile">Annuler</BaseButton>
           <BaseButton
             type="submit"
             color="primary"

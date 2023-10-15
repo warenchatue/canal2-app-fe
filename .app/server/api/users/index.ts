@@ -35,9 +35,20 @@ export default defineEventHandler(async (event) => {
     console.log(finalBody)
     const data = await updatePassword(finalBody, token)
     return { data: data, success: true }
+  } else if (action == 'updateUserPassword') {
+    const body = await readBody(event)
+    const finalBody = {
+      ...body,
+    }
+    console.log(finalBody)
+    const data = await updateUserPassword(finalBody, token)
+    return { data: data, success: typeof data === 'undefined' ? false : true }
   } else if (action == 'deleteUser') {
     const data = await deleteUser(id, token)
-    return { data: data, success: true }
+    return {
+      data: data,
+      success: typeof data === 'undefined' ? false : true,
+    }
   }
 })
 
@@ -94,6 +105,24 @@ async function updatePassword(body: User, token: string) {
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
     runtimeConfig.env.apiUrl + '/users/admin-password-reset',
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+      body: body,
+    },
+  ).catch((error) => console.log(error))
+  console.log(data)
+
+  return Promise.resolve(data)
+}
+
+async function updateUserPassword(body: User, token: string) {
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/users/user-password-reset',
     {
       method: 'PUT',
       headers: {
