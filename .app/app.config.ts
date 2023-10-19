@@ -71,12 +71,12 @@ export default defineAppConfig({
         },
         items: [
           {
-            name: 'Tableaux de bord',
-            icon: { name: 'ph:gauge-duotone', class: 'w-5 h-5' },
+            name: 'Accueil',
+            icon: { name: 'lucide:home', class: 'w-5 h-5' },
             activePath: '/dashboards',
             children: [
               {
-                name: 'Principal',
+                name: 'Tableau de bord',
                 to: '/dashboards',
                 icon: { name: 'ph:chart-pie-slice-duotone', class: 'w-4 h-4' },
               },

@@ -49,6 +49,8 @@ export default defineNuxtConfig({
     'nuxt-swiper',
     '@pinia/nuxt',
     '@pinia-plugin-persistedstate/nuxt',
+    // Simple usage
+    // '@nuxtjs/moment',
   ],
 
   imports: {

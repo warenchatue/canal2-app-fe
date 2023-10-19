@@ -714,7 +714,7 @@ const onSubmit = handleSubmit(
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseAvatar
-                      :src="item.announcer?.logo"
+                      :src="item.announcer?.logo ?? '/img/avatars/company.svg'"
                       :text="item.initials"
                       :class="getRandomColor()"
                     />
@@ -848,7 +848,7 @@ const onSubmit = handleSubmit(
                       name="spotPackage.label"
                     >
                       <BaseInput
-                        label="Libéllé"
+                        label="Mode de paiement"
                         icon="ph:user-duotone"
                         placeholder="ex: Bon de commande"
                         :model-value="field.value"

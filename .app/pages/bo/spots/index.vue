@@ -6,7 +6,7 @@ import 'v-calendar/dist/style.css'
 import '~/assets/css/vcalendar.css'
 
 definePageMeta({
-  title: 'Tableau de Bord PUBS',
+  title: 'Tableau de Bord PUB',
   preview: {
     title: 'Analytics dashboard',
     description: 'Analytic',

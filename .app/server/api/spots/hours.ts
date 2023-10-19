@@ -41,9 +41,7 @@ function filterData(
   if (!filter) {
     return data
       .sort(function (a, b) {
-        return parseInt(a.name.split(':')[0]) < parseInt(b.name.split(':')[0])
-          ? -1
-          : 1
+        return a.name < b.name ? -1 : 1
       })
       .slice(offset, offset + perPage)
   }
@@ -55,7 +53,7 @@ function filterData(
       )
     })
     .sort(function (a, b) {
-      return a.name.split(':')[0] < b.name.split(':')[0] ? -1 : 1
+      return a.name < b.name ? -1 : 1
     })
     .slice(offset, offset + perPage)
 }

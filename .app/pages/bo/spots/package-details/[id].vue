@@ -3,6 +3,7 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useFieldError, useForm } from 'vee-validate'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
+import moment from 'moment'
 
 definePageMeta({
   title: 'Spot - Annonceur',
@@ -44,6 +45,7 @@ const isModalPlanningOpen = ref(false)
 const isModalNewSpotPlanningOpen = ref(false)
 const isModalConfirmPlanningOpen = ref(false)
 const isEdit = ref(false)
+const isPrint = ref(false)
 const activeSpot = ref({ _id: '', product: '', tag: '', flag: '' })
 const currentSpot = ref({})
 const phoneNumber = ref('')
@@ -194,6 +196,22 @@ async function addSpotToPlanning() {
   isModalNewSpotPlanningOpen.value = false
 }
 
+function checkEmptyPlanning(h: any) {
+  if (isPrint.value == true) {
+    console.log(h.name)
+    var plannedSpots = data.value?.data?.plannings?.filter(
+      (p: any) => moment(p.date).format('HH:mm') == h.name,
+    )
+    if (plannedSpots.length == 0) {
+      return false
+    } else {
+      return true
+    }
+  } else {
+    return true
+  }
+}
+
 function checkSpot(d: number, hour: string) {
   const hourArray = hour.split(':')
   var date = new Date(
@@ -319,6 +337,18 @@ async function deleteSpot(spot: any) {
   }
 }
 
+function printPlanning() {
+  isPrint.value = true
+  setTimeout(() => {
+    var printContents = document.getElementById('planningPrint').innerHTML
+    var originalContents = document.body.innerHTML
+    document.body.innerHTML = printContents
+    window.print()
+    document.body.innerHTML = originalContents
+    location.reload()
+  }, 500)
+}
+
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
   return selected.value.length === data.value?.data?.spots?.length
@@ -384,16 +414,60 @@ async function confirmPlanning() {
     }
   })
 
+  let slug = ref(
+    `/uploads/signatures/${authStore.user._id}_${Math.floor(
+      Math.random() * 100,
+    )}.png`,
+  )
+  if (signatureFile.value != null) {
+    console.log(slug)
+    try {
+      const fd = new FormData()
+      fd.append('0', signatureFile.value)
+      const query = computed(() => {
+        return {
+          action: 'new-signature',
+          slug: slug.value,
+        }
+      })
+
+      const { data: uploadData, refresh } = await useFetch(
+        '/api/files/upload',
+        {
+          method: 'post',
+          query,
+          body: fd,
+        },
+      )
+      if (!uploadData.value?.success) {
+        slug.value = ''
+        toaster.clearAll()
+        toaster.show({
+          title: 'Oops',
+          message: `Une erreur est survenue lors de l'importation de la signature !`,
+          color: 'danger',
+          icon: 'ph:check',
+          closable: true,
+        })
+      }
+    } catch (error) {}
+  }
+
   const response = await useFetch('/api/spots/packages', {
     method: 'put',
     headers: { 'Content-Type': 'application/json' },
     query: query4,
-    body: { ...data.value.data, planningValidator: authStore.user._id },
+    body: {
+      ...data.value.data,
+      planningValidator: authStore.user._id,
+      planningValidatorSignature: slug.value,
+    },
   })
 
   if (response.data?.value?.success) {
     success.value = true
     data.value.data.planningValidator = authStore.user._id
+    data.value.data.planningValidatorSignature = slug.value
     toaster.clearAll()
     toaster.show({
       title: 'Success',
@@ -416,6 +490,15 @@ async function confirmPlanning() {
     })
   }
 }
+
+const currentAvatar = computed(() => '/img/avatars/10.svg')
+const signatureFile = ref<File | null>(null)
+const inputFileSignature = ref<FileList | null>(null)
+const signatureFilePreview = useNinjaFilePreview(() => signatureFile.value)
+watch(inputFileSignature, (value) => {
+  const file = value?.item(0) || null
+  signatureFile.value = file
+})
 
 // Zod has a great infer method that will
 // infer the shape of the schema into a TypeScript type
@@ -564,7 +647,7 @@ const onSubmit = handleSubmit(
     <div>
       <div class="flex w-full flex-col mb-10">
         <BaseAvatar
-          :src="data?.data?.announcer?.logo"
+          :src="data?.data?.announcer?.logo ?? '/img/avatars/company.svg'"
           :badge-src="data?.data?.announcer?.logo"
           size="2xl"
           class="mx-auto"
@@ -1160,6 +1243,9 @@ const onSubmit = handleSubmit(
                       >
                         <option value="SPOT">SPOT</option>
                         <option value="BA">Bande d'annonce</option>
+                        <option value="BA">Intervention Canal Matin</option>
+                        <option value="BA">Intervention Jambo</option>
+                        <option value="BA">Publi reportage</option>
                       </BaseSelect>
                     </Field>
                   </div>
@@ -1366,6 +1452,7 @@ const onSubmit = handleSubmit(
     </TairoModal>
 
     <!-- Modal Planning -->
+
     <TairoModal
       :open="isModalPlanningOpen"
       size="4xl"
@@ -1377,7 +1464,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Planning des Spots
+            PLANNING DE DIFFUSION
           </h3>
 
           <BaseButtonClose @click="isModalPlanningOpen = false" />
@@ -1385,173 +1472,264 @@ const onSubmit = handleSubmit(
       </template>
 
       <!-- Body -->
-      <div class="flex justify-between items-center p-2">
-        <BaseText size="base"
-          >Mois actuel:
-          <span class="text-primary-500"
-            >{{ formatter.format(activeDate) }}
-            {{ activeDate.getFullYear() }}</span
-          ></BaseText
+      <div id="planningPrint" class="overflow-auto">
+        <div
+          v-if="isPrint == true"
+          class="flex justify-between items-center px-5 border-b-2 py-1"
         >
-
-        <BaseText size="base"
-          >Total Commandés:
-          <span class="text-primary-500">{{ data?.data?.numberSpots }} </span>
-        </BaseText>
-
-        <BaseText size="base"
-          >Annonceur:
-          <span class="text-primary-500">{{
-            data?.data?.announcer?.name
-          }}</span>
-        </BaseText>
-
-        <BaseText size="base"
-          >Période:
-          <span class="text-primary-500">{{ data.data?.period }}</span>
-        </BaseText>
-
-        <div>
-          <BaseButton
-            @click="removeMonth()"
-            color="primary"
-            class="w-full sm:w-20"
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            <Icon name="lucide:chevron-left" class="h-6 w-6" />
-            <span></span>
-          </BaseButton>
-          <BaseButton
-            @click="addMonth()"
-            color="primary"
-            class="w-full sm:w-20 mx-2"
+            PLANNING DE DIFFUSION
+          </h3>
+          <div shape="straight" class="">
+            <img class="h-20 fit-content" src="/logos/c2.png" />
+          </div>
+        </div>
+        <div class="flex justify-between items-center p-2">
+          <BaseText size="base"
+            >Mois:
+            <span class="text-primary-500"
+              >{{ formatter.format(activeDate) }}
+              {{ activeDate.getFullYear() }}</span
+            ></BaseText
           >
-            <Icon name="lucide:chevron-right" class="h-6 w-6" />
-            <span></span>
-          </BaseButton>
+
+          <BaseText size="base"
+            >Total Commandés:
+            <span class="text-primary-500">{{ data?.data?.numberSpots }} </span>
+          </BaseText>
+
+          <BaseText size="base"
+            >Annonceur:
+            <span class="text-primary-500">{{
+              data?.data?.announcer?.name
+            }}</span>
+          </BaseText>
+
+          <BaseText size="base"
+            >Période:
+            <span class="text-primary-500">{{ data.data?.period }}</span>
+          </BaseText>
+
+          <div v-if="isPrint == false">
+            <BaseButton
+              @click="removeMonth()"
+              color="primary"
+              class="w-full sm:w-20"
+            >
+              <Icon name="lucide:chevron-left" class="h-6 w-6" />
+              <span></span>
+            </BaseButton>
+            <BaseButton
+              @click="addMonth()"
+              color="primary"
+              class="w-full sm:w-20 mx-2"
+            >
+              <Icon name="lucide:chevron-right" class="h-6 w-6" />
+              <span></span>
+            </BaseButton>
+          </div>
         </div>
-      </div>
-      <div class="grid grid-cols-12 gap-4 pb-5 px-2 h-[550px] overflow-auto">
-        <!-- Stat tile -->
-        <div class="col-span-6 md:col-span-1">
-          <BaseCard class="space-y-4 items-center">
-            <div class="border-b-2">
-              <BaseHeading
-                as="h4"
-                size="sm"
-                weight="light"
-                lead="tight"
-                class="text-muted-800 dark:text-white pb-4 pt-2 text-center"
-              >
-                <span>Jours</span>
-              </BaseHeading>
-            </div>
 
-            <div class="border-b-2">
-              <BaseHeading
-                as="h4"
-                size="sm"
-                weight="light"
-                lead="tight"
-                class="text-muted-800 dark:text-white pb-4 text-center"
-              >
-                <span>Dates</span>
-              </BaseHeading>
-            </div>
-
-            <div class="border-b-2">
-              <BaseHeading
-                as="h4"
-                size="sm"
-                weight="light"
-                lead="tight"
-                class="text-muted-800 dark:text-white pb-4 text-center"
-              >
-                <span>Horaires</span>
-              </BaseHeading>
-            </div>
-            <div v-for="h in hoursData.data" :key="h._id" class="border-b-2">
-              <BaseHeading
-                as="h4"
-                size="sm"
-                weight="light"
-                lead="tight"
-                class="text-muted-800 dark:text-white pb-4 text-center"
-              >
-                <span>{{ h.name }}</span>
-              </BaseHeading>
-            </div>
-          </BaseCard>
+        <div class="flex justify-start px-2 pb-2">
+          <div v-for="(product, i) in data.data.spots" :key="product._id">
+            <span class="px-5"
+              >Produit {{ i + 1 }}: {{ product.message }}; Type:
+              {{ product.type }}; Tag:
+              {{ product.tag }}
+            </span>
+            |
+          </div>
         </div>
-        <div class="col-span-6 md:col-span-11 overflow-x-auto">
-          <BaseCard class="space-y-4 items-center">
-            <div class="border-b-2 flex justify-start">
-              <BaseHeading
-                v-for="d in activeDays"
-                :key="d"
-                as="h4"
-                size="sm"
-                weight="light"
-                lead="tight"
-                class="text-muted-800 dark:text-white pb-4 pt-2 !w-10 flex justify-center border-r"
-              >
-                <span class="text-center px-auto pr-2"
-                  >{{ dayOfWeek(d)[0] }}
-                </span>
-              </BaseHeading>
-            </div>
-            <div class="border-b-2 flex justify-start py-0">
-              <BaseHeading
-                v-for="d in activeDays"
-                :key="d"
-                as="h4"
-                size="sm"
-                weight="light"
-                lead="tight"
-                class="text-muted-800 dark:text-white pb-4 !w-10 flex justify-center border-r"
-              >
-                <span class="text-center pr-2">{{ d }}</span>
-              </BaseHeading>
-            </div>
 
-            <div class="border-b-2 flex justify-start">
-              <BaseHeading
-                v-for="d in activeDays"
-                :key="d"
-                as="h4"
-                size="sm"
-                weight="light"
-                lead="tight"
-                class="text-muted-800 dark:text-white pb-4 !w-10 flex justify-center border-r"
-              >
-                <span class="text-center pr-2"> # </span>
-              </BaseHeading>
-            </div>
+        <div class="grid grid-cols-12 gap-2 pb-5 px-2 h-[550px]">
+          <!-- Stat tile -->
+          <div class="col-span-6 md:col-span-1">
+            <BaseCard class="space-y-2 items-center">
+              <div class="border-b-2">
+                <BaseHeading
+                  as="h4"
+                  size="sm"
+                  weight="light"
+                  lead="tight"
+                  class="text-muted-800 dark:text-white pb-2 pt-2 text-center"
+                >
+                  <span>Jours</span>
+                </BaseHeading>
+              </div>
 
-            <div v-for="h in hoursData.data" :key="h._id" class="">
+              <div class="border-b-2">
+                <BaseHeading
+                  as="h4"
+                  size="sm"
+                  weight="light"
+                  lead="tight"
+                  class="text-muted-800 dark:text-white pb-3 pt-2 text-center"
+                >
+                  <span class="py-auto">Dates</span>
+                </BaseHeading>
+              </div>
+
+              <div class="border-b-2">
+                <BaseHeading
+                  as="h4"
+                  size="sm"
+                  weight="light"
+                  lead="tight"
+                  class="text-muted-800 dark:text-white pb-2 pt-2 text-center"
+                >
+                  <span>Horaires</span>
+                </BaseHeading>
+              </div>
+              <div v-for="h in hoursData.data" :key="h._id">
+                <div v-if="checkEmptyPlanning(h)" class="border-b-2">
+                  <BaseHeading
+                    as="h4"
+                    size="sm"
+                    weight="light"
+                    lead="tight"
+                    class="text-muted-800 dark:text-white pb-2 pt-2 text-center"
+                  >
+                    <span>{{ h.name }}</span>
+                  </BaseHeading>
+                </div>
+              </div>
+            </BaseCard>
+          </div>
+          <div class="col-span-6 md:col-span-11">
+            <BaseCard class="space-y-0 items-center">
               <div class="border-b-2 flex justify-start">
-                <div
+                <BaseHeading
                   v-for="d in activeDays"
                   :key="d"
-                  class="text-muted-800 dark:text-white -mt-1 !w-10 flex justify-center items-center border-r"
+                  as="h4"
+                  size="sm"
+                  weight="light"
+                  lead="tight"
+                  class="text-muted-800 dark:text-white pb-2 pt-2 !w-10 flex justify-center border-r"
                 >
-                  <BaseButton
-                    @click="openSpotPlanningModal(d.toString(), h)"
-                    :color="checkSpot(d, h.code)[1]"
-                    class="!w-8 !h-[38px] rounded-full !p-1"
+                  <span class="text-center px-auto pr-2"
+                    >{{ dayOfWeek(d)[0] }}
+                  </span>
+                </BaseHeading>
+              </div>
+              <div class="border-b-2 flex justify-start py-0">
+                <BaseHeading
+                  v-for="d in activeDays"
+                  :key="d"
+                  as="h4"
+                  size="sm"
+                  weight="light"
+                  lead="tight"
+                  class="text-muted-800 dark:text-white pb-2 pt-1 !w-10 border-r flex justify-center"
+                >
+                  <span class="text-center py-2">{{ d }}</span>
+                </BaseHeading>
+              </div>
+
+              <div class="border-b-2 flex justify-start">
+                <BaseHeading
+                  v-for="d in activeDays"
+                  :key="d"
+                  as="h4"
+                  size="sm"
+                  weight="light"
+                  lead="tight"
+                  class="text-muted-800 dark:text-white pb-2 !w-10 flex justify-center border-r"
+                >
+                  <span class="text-center py-2"> # </span>
+                </BaseHeading>
+              </div>
+
+              <div v-for="h in hoursData.data" :key="h._id" class="">
+                <div
+                  v-if="checkEmptyPlanning(h)"
+                  class="border-b-2 flex justify-start"
+                >
+                  <div
+                    v-for="d in activeDays"
+                    :key="d"
+                    class="text-muted-800 dark:text-white -mt-1 !w-10 flex justify-center items-center border-r"
                   >
-                    <!-- <span
-                      v-if="dayOfWeek(d)"
-                      class="hover:text-primary-500/90 text-base"
-                      >+</span
-                    > -->
-                    <span class="hover:text-primary-500/90 text-base">{{
-                      checkSpot(d, h.code)[0]
-                    }}</span>
-                  </BaseButton>
+                    <BaseButton
+                      :title="dayOfWeek(d) + ' LE ' + d + ' A ' + h.name"
+                      @click="openSpotPlanningModal(d.toString(), h)"
+                      :color="checkSpot(d, h.code)[1]"
+                      class="!w-6 !h-[2.106em] rounded-full !px-1 !my-2"
+                    >
+                      <!-- <span
+                        v-if="dayOfWeek(d)"
+                        class="hover:text-primary-500/90 text-base"
+                        >+</span
+                      > -->
+                      <span class="hover:text-primary-500/90 text-base">{{
+                        checkSpot(d, h.code)[0]
+                      }}</span>
+                    </BaseButton>
+                  </div>
+                </div>
+              </div>
+            </BaseCard>
+            <div
+              v-if="isPrint == true || true"
+              class="flex justify-between py-4"
+            >
+              <div>
+                <p class="py-2">
+                  NB: (Difusé:
+                  <span class="px-1 text-primary-500"> SPOT </span>; En attente
+                  de diffusion:
+                  <span class="px-1 text-yellow-500"> SPOT </span>; Non difusé:
+                  <span class="px-1 text-red-500"> SPOT </span>)
+                </p>
+                <p class="pt-4">
+                  Ce document dûment signé et cacheté par le support tient lieu
+                  de justificatif.
+                </p>
+                <p>
+                  Douala le,
+                  {{ new Date(Date.now()).toLocaleDateString('fr-FR') }}
+                </p>
+              </div>
+              <div class="flex px-2">
+                <div shape="straight" class="">
+                  <BaseHeading
+                    as="h4"
+                    size="sm"
+                    weight="semibold"
+                    lead="tight"
+                    class="text-muted-800 mb-2 text-center dark:text-white"
+                  >
+                    VISA RC
+                  </BaseHeading>
+                  <img
+                    class="h-40 fit-content"
+                    :src="data.data.planningValidatorSignature"
+                  />
+                </div>
+                <div
+                  v-if="data.data.planningValidatorSignature"
+                  shape="straight"
+                  class="mx-2"
+                >
+                  <BaseHeading
+                    as="h4"
+                    size="sm"
+                    weight="semibold"
+                    lead="tight"
+                    class="text-muted-800 mb-2 text-center dark:text-white"
+                  >
+                    VISA MP
+                  </BaseHeading>
+                  <img
+                    class="h-40 fit-content"
+                    :src="data.data.planningValidatorSignature"
+                  />
                 </div>
               </div>
             </div>
-          </BaseCard>
+          </div>
         </div>
       </div>
       <template #footer>
@@ -1559,6 +1737,20 @@ const onSubmit = handleSubmit(
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
             <BaseButton @click="isModalPlanningOpen = false">Fermer</BaseButton>
+            <BaseButton @click="printPlanning()">
+              <Icon
+                name="lucide:printer"
+                class="pointer-events-none h-4 w-4 mx-2"
+              />
+              Imprimer le planning</BaseButton
+            >
+            <BaseButton @click="isModalPlanningOpen = false">
+              <Icon
+                name="lucide:printer"
+                class="pointer-events-none h-4 w-4 mx-2"
+              />
+              Imprimer le certificat de diffusion</BaseButton
+            >
             <BaseButton
               :color="data.data.planningValidator ? 'success' : 'warning'"
               flavor="solid"
@@ -1597,11 +1789,62 @@ const onSubmit = handleSubmit(
       <!-- Body -->
       <div class="p-4 md:p-6">
         <div class="mx-auto w-full max-w-xs text-center">
-          <h3
-            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
+          <h4
+            class="font-heading text-muted-800 text-lg font-medium leading-6 pb-2 dark:text-white"
           >
-            Voulez-vous confirmer ce planning ?
-          </h3>
+            Veuillez ajouter une signature
+          </h4>
+          <form
+            action=""
+            class="flex justify-center pb-2"
+            method="POST"
+            @submit.prevent=""
+          >
+            <BaseInputFileHeadless
+              accept="image/*"
+              v-model="inputFileSignature"
+              v-slot="{ open, remove, preview, files }"
+            >
+              <div class="relative h-40 w-40">
+                <img
+                  v-if="signatureFilePreview"
+                  :src="signatureFilePreview"
+                  alt="Upload preview"
+                  class="bg-muted-200 dark:bg-muted-700/60 h-40 w-40 rounded-lg object-cover object-center"
+                />
+
+                <img
+                  v-else
+                  :src="currentAvatar"
+                  alt="Upload preview"
+                  class="bg-muted-200 dark:bg-muted-700/60 h-40 w-40 rounded-lg object-cover object-center dark:invert"
+                />
+
+                <div
+                  v-if="signatureFilePreview"
+                  class="absolute bottom-0 end-0 z-20"
+                >
+                  <BaseButtonIcon
+                    size="sm"
+                    shape="full"
+                    @click="signatureFile = null"
+                    data-nui-tooltip="Remove image"
+                    class="scale-90"
+                  >
+                    <Icon name="lucide:x" class="h-4 w-4" />
+                  </BaseButtonIcon>
+                </div>
+
+                <div v-else class="absolute bottom-0 end-0 z-20">
+                  <div class="relative" data-nui-tooltip="Upload image">
+                    <BaseButtonIcon size="sm" shape="full" @click="open">
+                      <Icon name="lucide:plus" class="h-4 w-4" />
+                    </BaseButtonIcon>
+                  </div>
+                </div>
+              </div>
+            </BaseInputFileHeadless>
+          </form>
 
           <p
             class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"

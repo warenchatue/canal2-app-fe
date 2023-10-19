@@ -671,7 +671,7 @@ const onSubmit = handleSubmit(
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseAvatar
-                      :src="item.spot?.package?.announcer?.logo"
+                      :src="item.spot?.package?.announcer?.logo ?? '/img/avatars/company.svg'"
                       :text="item.initials"
                       :class="getRandomColor()"
                     />
@@ -794,7 +794,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Importer liste de diffusion
+            Import d'une playlist
           </h3>
 
           <BaseButtonClose @click="isModalNewTxnOpen = false" />

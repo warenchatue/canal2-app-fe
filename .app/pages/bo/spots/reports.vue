@@ -742,7 +742,7 @@ const onSubmit = handleSubmit(
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseAvatar
-                      :src="item.announcer?.logo"
+                      :src="item.announcer?.logo ?? '/img/avatars/company.svg'"
                       :text="item.initials"
                       :class="getRandomColor()"
                     />

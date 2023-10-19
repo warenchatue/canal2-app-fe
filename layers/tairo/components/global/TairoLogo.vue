@@ -4,7 +4,7 @@
   >
     <span
       class="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text pt-1 text-center text-2xl font-bold text-transparent"
-      >2PUB</span
+      >C2PUB</span
     >
   </div>
   <!-- <svg

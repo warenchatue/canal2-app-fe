@@ -71,10 +71,12 @@
     }
   },
   "dependencies": {
+    "@nuxtjs/moment": "^1.6.1",
     "@pinia/nuxt": "^0.4.11",
     "@types/formidable": "^3.4.0",
     "formidable": "^3.5.0",
     "h3-formidable": "^0.3.8",
+    "moment": "^2.29.4",
     "pinia": "^2.1.6"
   }
 }
