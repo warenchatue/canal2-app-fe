@@ -23,7 +23,7 @@ const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(25)
-const isModalNewTxnOpen = ref(false)
+const isModalImportPlaylistOpen = ref(false)
 const isModalConfirmDiffusionOpen = ref(false)
 const dates = ref({
   start: new Date(),
@@ -61,6 +61,13 @@ const { data, pending, error, refresh } = await useFetch(
     query,
   },
 )
+
+const inputPlayListFile = ref<FileList | null>(null)
+const payListFile = ref<File | null>(null)
+watch(inputPlayListFile, (value) => {
+  const file = value?.item(0) || null
+  payListFile.value = file
+})
 
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
@@ -129,6 +136,38 @@ async function confirmDiffusion(planning: any) {
       closable: true,
     })
   }
+}
+
+async function importPlayList() {
+  const slug = ref('')
+  try {
+    const fd = new FormData()
+    fd.append('0', payListFile.value)
+    const query = computed(() => {
+      return {
+        action: 'import-playlist',
+        slug: slug.value,
+      }
+    })
+
+    const { data: uploadData, refresh } = await useFetch('/api/files/upload', {
+      method: 'post',
+      query,
+      body: fd,
+    })
+    if (!uploadData.value?.success) {
+      slug.value = ''
+      toaster.clearAll()
+      toaster.show({
+        title: 'Oops',
+        message: `Une erreur est survenue lors de l'importation de la playlist !`,
+        color: 'danger',
+        icon: 'ph:check',
+        closable: true,
+      })
+    }
+  } catch (error) {}
+  isModalImportPlaylistOpen.value = false
 }
 
 // Ask the user for confirmation before leaving the page if the form has unsaved changes
@@ -384,12 +423,12 @@ const onSubmit = handleSubmit(
             authStore.user.appRole.name != UserRole.broadcast &&
             authStore.user.appRole.name != UserRole.superAdmin
           "
-          @click="isModalNewTxnOpen = true"
+          @click="isModalImportPlaylistOpen = true"
           color="primary"
           class="w-full sm:w-48"
         >
           <Icon name="lucide:import" class="h-4 w-4" />
-          <span>Importer diffusions</span>
+          <span>Importer playlist</span>
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">
@@ -671,7 +710,10 @@ const onSubmit = handleSubmit(
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseAvatar
-                      :src="item.spot?.package?.announcer?.logo ?? '/img/avatars/company.svg'"
+                      :src="
+                        item.spot?.package?.announcer?.logo ??
+                        '/img/avatars/company.svg'
+                      "
                       :text="item.initials"
                       :class="getRandomColor()"
                     />
@@ -784,9 +826,9 @@ const onSubmit = handleSubmit(
 
     <!-- Modal component -->
     <TairoModal
-      :open="isModalNewTxnOpen"
+      :open="isModalImportPlaylistOpen"
       size="xl"
-      @close="isModalNewTxnOpen = false"
+      @close="isModalImportPlaylistOpen = false"
     >
       <template #header>
         <!-- Header -->
@@ -797,7 +839,7 @@ const onSubmit = handleSubmit(
             Import d'une playlist
           </h3>
 
-          <BaseButtonClose @click="isModalNewTxnOpen = false" />
+          <BaseButtonClose @click="isModalImportPlaylistOpen = false" />
         </div>
       </template>
 
@@ -822,7 +864,7 @@ const onSubmit = handleSubmit(
                       name="montant"
                     >
                       <BaseInput
-                        label="Fichier"
+                        label="Message"
                         icon="ph:file"
                         placeholder=""
                         :model-value="field.value"
@@ -834,6 +876,13 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
+                  <div class="col-span-12 sm:col-span-6 mt-2">
+                    <BaseInputFile
+                      v-model="inputPlayListFile"
+                      shape="rounded"
+                      label="Fichier"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -844,12 +893,14 @@ const onSubmit = handleSubmit(
         <!-- Footer -->
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
-            <BaseButton @click="isModalNewTxnOpen = false">Annuler</BaseButton>
+            <BaseButton @click="isModalImportPlaylistOpen = false"
+              >Annuler</BaseButton
+            >
 
             <BaseButton
               color="primary"
               flavor="solid"
-              @click="isModalNewTxnOpen = false"
+              @click="importPlayList()"
             >
               Importer
             </BaseButton>

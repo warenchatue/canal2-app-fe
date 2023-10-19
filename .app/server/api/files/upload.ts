@@ -29,6 +29,33 @@ export default defineEventHandler(async (event) => {
       } catch (error) {
         return { success: false, count: 0 }
       }
+    } else if (action == 'import-playlist') {
+      let dirName = `${path.join('.app', 'public')}`
+
+      try {
+        let fileName = 'uploads/playlists/' + files[0].filename
+        let newPath = `${dirName}/${fileName}`
+
+        fs.writeFile(newPath, files[0].data, { flag: 'w' }, function (err) {
+          if (err) {
+            console.log(err)
+            return { success: false, count: 0 }
+          }
+          console.log(`${fileName} Successfully uploaded`)
+          const content = fs.readFileSync(dirName + '/' + fileName, 'utf8')
+          if (content) {
+            if (content.includes('572122324272')) {
+              console.log('Good 572122324272 exists')
+            } else {
+              console.log('Bad 572122324272 does not exists')
+            }
+          }
+
+          return { success: true, count: 1, fileName }
+        })
+      } catch (error) {
+        return { success: false, count: 0 }
+      }
     } else if (action == 'new-xx') {
       let dirName = `${path.join('.app', 'public', 'uploads', 'signatures')}`
 
