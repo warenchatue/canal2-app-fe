@@ -30,6 +30,13 @@ const dates = ref({
   end: new Date(),
 })
 
+const planningDates = ref({
+  start: new Date(),
+  end: new Date(),
+})
+
+// const masks = 'dd/mm/yyyy'
+
 watch([dates], () => {
   filter.value = dates.value.start.toDateString()
   console.log(filter.value)
@@ -139,23 +146,37 @@ async function confirmDiffusion(planning: any) {
 }
 
 async function importPlayList() {
-  const slug = ref('')
+  const slug = ref('null')
+  const token = useCookie('token')
   try {
     const fd = new FormData()
     fd.append('0', payListFile.value)
-    const query = computed(() => {
+    const query3 = computed(() => {
       return {
         action: 'import-playlist',
-        slug: slug.value,
+        startDate: encodeURIComponent(planningDates.value.start.toJSON()),
+        endDate: encodeURIComponent(planningDates.value.end.toJSON()),
+        token: token.value,
       }
     })
 
     const { data: uploadData, refresh } = await useFetch('/api/files/upload', {
-      method: 'post',
-      query,
+      method: 'POST',
+      query: query3,
       body: fd,
     })
-    if (!uploadData.value?.success) {
+    console.log(uploadData)
+    if (uploadData.value?.success == true) {
+      slug.value = ''
+      toaster.clearAll()
+      toaster.show({
+        title: 'Success',
+        message: `Vérification terminée !`,
+        color: 'success',
+        icon: 'ph:check',
+        closable: true,
+      })
+    } else {
       slug.value = ''
       toaster.clearAll()
       toaster.show({
@@ -875,6 +896,78 @@ const onSubmit = handleSubmit(
                         @blur="handleBlur"
                       />
                     </Field>
+                  </div>
+                  <div class="col-span-12 mx-2 mt-2">
+                    <DatePicker
+                      v-model.range="planningDates"
+                      :masks="masks"
+                      mode="date"
+                      hide-time-header
+                      trim-weeks
+                    >
+                      <template #default="{ inputValue, inputEvents }">
+                        <div class="flex w-full flex-col gap-4 sm:flex-row">
+                          <div class="relative grow">
+                            <Field
+                              v-slot="{
+                                field,
+                                errorMessage,
+                                handleChange,
+                                handleBlur,
+                              }"
+                              name="event.startDateTime"
+                            >
+                              <BaseInput
+                                shape="curved"
+                                label="Date debut"
+                                icon="ph:calendar-blank-duotone"
+                                :value="inputValue.start"
+                                v-on="inputEvents.start"
+                                :classes="{
+                                  input: '!h-11 !ps-11',
+                                  icon: '!h-11 !w-11',
+                                }"
+                                :model-value="field.value"
+                                :error="errorMessage"
+                                :disabled="isSubmitting"
+                                type="text"
+                                @update:model-value="handleChange"
+                                @blur="handleBlur"
+                              />
+                            </Field>
+                          </div>
+                          <div class="relative grow">
+                            <Field
+                              v-slot="{
+                                field,
+                                errorMessage,
+                                handleChange,
+                                handleBlur,
+                              }"
+                              name="event.endDateTime"
+                            >
+                              <BaseInput
+                                shape="curved"
+                                label="Date fin"
+                                icon="ph:calendar-blank-duotone"
+                                :value="inputValue.end"
+                                v-on="inputEvents.end"
+                                :classes="{
+                                  input: '!h-11 !ps-11',
+                                  icon: '!h-11 !w-11',
+                                }"
+                                :model-value="field.value"
+                                :error="errorMessage"
+                                :disabled="isSubmitting"
+                                type="text"
+                                @update:model-value="handleChange"
+                                @blur="handleBlur"
+                              />
+                            </Field>
+                          </div>
+                        </div>
+                      </template>
+                    </DatePicker>
                   </div>
                   <div class="col-span-12 sm:col-span-6 mt-2">
                     <BaseInputFile

@@ -4,7 +4,10 @@ import path from 'path'
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const action = (query.action as string) || ''
+  const token = (query.token as string) || ''
   const slug = (query.slug as string) || 'unnamed'
+  const startDate = decodeURIComponent((query.startDate as string) || '')
+  const endDate = decodeURIComponent((query.endDate as string) || '')
   const files = await readMultipartFormData(event)
   const fileUrls: string[] = []
 
@@ -16,13 +19,18 @@ export default defineEventHandler(async (event) => {
         let fileName = slug
         let newPath = `${dirName}/${fileName}`
 
-        fs.writeFile(newPath, files[0].data, { flag: 'w' }, function (err) {
-          if (err) {
-            console.log(err)
-            return { success: false, count: 0 }
-          }
-          console.log(`${fileName} Successfully uploaded`)
-        })
+        await fs.writeFile(
+          newPath,
+          files[0].data,
+          { flag: 'w' },
+          function (err) {
+            if (err) {
+              console.log(err)
+              return { success: false, count: 0 }
+            }
+            console.log(`${fileName} Successfully uploaded`)
+          },
+        )
 
         fileUrls.push(fileName)
         return { success: true, count: 1 }
@@ -36,25 +44,19 @@ export default defineEventHandler(async (event) => {
         let fileName = 'uploads/playlists/' + files[0].filename
         let newPath = `${dirName}/${fileName}`
 
-        fs.writeFile(newPath, files[0].data, { flag: 'w' }, function (err) {
-          if (err) {
-            console.log(err)
-            return { success: false, count: 0 }
-          }
-          console.log(`${fileName} Successfully uploaded`)
-          const content = fs.readFileSync(dirName + '/' + fileName, 'utf8')
-          if (content) {
-            if (content.includes('572122324272')) {
-              console.log('Good 572122324272 exists')
-            } else {
-              console.log('Bad 572122324272 does not exists')
-            }
-          }
+        const { success } = await newPlaylist(
+          dirName,
+          fileName,
+          startDate,
+          endDate,
+          newPath,
+          files,
+          token,
+        )
 
-          return { success: true, count: 1, fileName }
-        })
+        return { success }
       } catch (error) {
-        return { success: false, count: 0 }
+        return { status: 'OK', success: false, count: 0 }
       }
     } else if (action == 'new-xx') {
       let dirName = `${path.join('.app', 'public', 'uploads', 'signatures')}`
@@ -65,7 +67,6 @@ export default defineEventHandler(async (event) => {
             console.log(err)
           } else {
             console.log('New directory successfully created.')
-            //  files[0].type.split('/')[1]
             //logo
             let fileName = 'uploads/signatures/' + slug + '.png'
             let newPath = `${path.join('.app', 'public', fileName)}`
@@ -88,3 +89,92 @@ export default defineEventHandler(async (event) => {
     }
   }
 })
+
+async function newPlaylist(
+  dirName: string,
+  fileName: string,
+  startDate: string,
+  endDate: string,
+  newPath: string,
+  files: any,
+  token: string,
+) {
+  fs.writeFile(newPath, files[0].data, { flag: 'w' }, function (err) {
+    if (err) {
+      console.log(err)
+      return { success: false, count: 0 }
+    }
+    console.log(`${fileName} Successfully uploaded`)
+  })
+
+  // const content = fs.readFileSync(dirName + '/' + fileName, 'utf8')
+  const content = files[0].data.toString()
+  console.log(startDate)
+  console.log(endDate)
+  const planningsPlayed = []
+  const plannings = await findPlanningsNotPlay(startDate, endDate, token)
+  for (let index = 0; index < plannings.length; index++) {
+    const code = plannings[index]
+    const codeFinal = '[' + code + ']'
+    if (content) {
+      if (content.includes(codeFinal)) {
+        console.log(`Good ${code} exists`)
+        planningsPlayed.push(code)
+      } else {
+        console.log(`Bad ${code} does not exists`)
+      }
+    }
+  }
+  console.log(planningsPlayed)
+  const resp = await updateDiffusedByCodes(planningsPlayed, token)
+
+  return {
+    success: resp ? true : false,
+    count: 1,
+  }
+}
+
+async function findPlanningsNotPlay(
+  startDate: string,
+  endDate: string,
+  token: string,
+) {
+  console.log('findAll ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/plannings/notDiffused/code',
+    {
+      method: 'post',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+      body: {
+        beginDate: startDate.replaceAll('"', ''),
+        endDate: endDate.replaceAll('"', ''),
+      },
+    },
+  ).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
+}
+
+async function updateDiffusedByCodes(codes: string[], token: string) {
+  console.log('updateDiffusedByCodes ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/plannings/autoValidate/codes',
+    {
+      method: 'post',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+      body: {
+        codes,
+      },
+    },
+  ).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
+}
