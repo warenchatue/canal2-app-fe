@@ -62,7 +62,7 @@ const query = computed(() => {
   }
 })
 
-const { data, pending, error, refresh } = await useFetch('/api/spots/hours', {
+const { data, pending, error, refresh } = await useFetch('/api/pub/hours', {
   query,
 })
 
@@ -105,7 +105,7 @@ async function deleteHour(hour: any) {
     }
   })
 
-  const response = await useFetch('/api/spots/hours', {
+  const response = await useFetch('/api/pub/hours', {
     method: 'delete',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
@@ -238,7 +238,7 @@ const onSubmit = handleSubmit(
           }
         })
 
-        const response = await useFetch('/api/spots/hours', {
+        const response = await useFetch('/api/pub/hours', {
           method: 'put',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
@@ -257,7 +257,7 @@ const onSubmit = handleSubmit(
           }
         })
 
-        const response = await useFetch('/api/spots/hours', {
+        const response = await useFetch('/api/pub/hours', {
           method: 'post',
           headers: { 'Content-Type': 'application/json' },
           query: query2,

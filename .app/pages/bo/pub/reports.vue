@@ -64,12 +64,9 @@ const dates = ref({
   end: new Date(),
 })
 
-const { data, pending, error, refresh } = await useFetch(
-  '/api/spots/packages',
-  {
-    query,
-  },
-)
+const { data, pending, error, refresh } = await useFetch('/api/pub/packages', {
+  query,
+})
 
 function editPackage(spotPackage: any) {
   isModalNewPackageOpen.value = true
@@ -98,7 +95,7 @@ async function deletePackage(spotPackage: any) {
     }
   })
 
-  const response = await useFetch('/api/spots/packages', {
+  const response = await useFetch('/api/pub/packages', {
     method: 'delete',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
@@ -253,7 +250,7 @@ const onSubmit = handleSubmit(
           }
         })
 
-        const response = await useFetch('/api/spots/packages', {
+        const response = await useFetch('/api/pub/packages', {
           method: 'put',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
@@ -271,7 +268,7 @@ const onSubmit = handleSubmit(
           }
         })
 
-        const response = await useFetch('/api/spots/packages', {
+        const response = await useFetch('/api/pub/packages', {
           method: 'post',
           headers: { 'Content-Type': 'application/json' },
           query: query2,

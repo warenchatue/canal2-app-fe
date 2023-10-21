@@ -62,12 +62,9 @@ const query = computed(() => {
   }
 })
 
-const { data, pending, error, refresh } = await useFetch(
-  '/api/spots/plannings',
-  {
-    query,
-  },
-)
+const { data, pending, error, refresh } = await useFetch('/api/pub/plannings', {
+  query,
+})
 
 const inputPlayListFile = ref<FileList | null>(null)
 const payListFile = ref<File | null>(null)
@@ -113,7 +110,7 @@ async function confirmDiffusion(planning: any) {
     }
   })
 
-  const response = await useFetch('/api/spots/plannings', {
+  const response = await useFetch('/api/pub/plannings', {
     method: 'put',
     headers: { 'Content-Type': 'application/json' },
     query: query2,

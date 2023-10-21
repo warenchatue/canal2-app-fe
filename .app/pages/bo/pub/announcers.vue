@@ -61,7 +61,7 @@ const query = computed(() => {
 })
 
 const { data, pending, error, refresh } = await useFetch(
-  '/api/spots/announcers',
+  '/api/pub/announcers',
   {
     query,
   },
@@ -194,7 +194,7 @@ async function deleteAnnouncer(announcer: any) {
     }
   })
 
-  const response = await useFetch('/api/spots/announcers', {
+  const response = await useFetch('/api/pub/announcers', {
     method: 'delete',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
@@ -243,7 +243,7 @@ const onSubmit = handleSubmit(
           }
         })
 
-        const response = await useFetch('/api/spots/announcers', {
+        const response = await useFetch('/api/pub/announcers', {
           method: 'put',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
@@ -260,7 +260,7 @@ const onSubmit = handleSubmit(
           }
         })
 
-        const response = await useFetch('/api/spots/announcers', {
+        const response = await useFetch('/api/pub/announcers', {
           method: 'post',
           headers: { 'Content-Type': 'application/json' },
           query: query2,

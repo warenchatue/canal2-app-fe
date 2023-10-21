@@ -35,7 +35,7 @@ const queryHours = computed(() => {
   }
 })
 
-const { data: hoursData } = await useFetch('/api/spots/hours', {
+const { data: hoursData } = await useFetch('/api/pub/hours', {
   query: queryHours,
 })
 
@@ -137,7 +137,7 @@ async function addSpotToPlanning() {
   try {
     const isSuccess = ref(false)
     const response = await $fetch(
-      '/api/spots/plannings?action=createPlanning&token=' +
+      '/api/pub/plannings?action=createPlanning&token=' +
         token.value +
         '&packageId=' +
         data.value?.data?._id +
@@ -271,12 +271,9 @@ const query = computed(() => {
   }
 })
 
-const { data, pending, error, refresh } = await useFetch(
-  '/api/spots/packages',
-  {
-    query,
-  },
-)
+const { data, pending, error, refresh } = await useFetch('/api/pub/packages', {
+  query,
+})
 
 if (data.value) {
   console.log(data.value)
@@ -306,7 +303,7 @@ async function deleteSpot(spot: any) {
     }
   })
 
-  const response = await useFetch('/api/spots', {
+  const response = await useFetch('/api/pub', {
     method: 'delete',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
@@ -453,7 +450,7 @@ async function confirmPlanning() {
     } catch (error) {}
   }
 
-  const response = await useFetch('/api/spots/packages', {
+  const response = await useFetch('/api/pub/packages', {
     method: 'put',
     headers: { 'Content-Type': 'application/json' },
     query: query4,
@@ -553,7 +550,7 @@ const onSubmit = handleSubmit(
           }
         })
 
-        const response = await useFetch('/api/spots', {
+        const response = await useFetch('/api/pub', {
           method: 'put',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
@@ -570,7 +567,7 @@ const onSubmit = handleSubmit(
           }
         })
 
-        const response = await useFetch('/api/spots', {
+        const response = await useFetch('/api/pub', {
           method: 'post',
           headers: { 'Content-Type': 'application/json' },
           query: query2,

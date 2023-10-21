@@ -33,12 +33,9 @@ const query = computed(() => {
   }
 })
 
-const { data, pending, error, refresh } = await useFetch(
-  '/api/spots/plannings',
-  {
-    query,
-  },
-)
+const { data, pending, error, refresh } = await useFetch('/api/pub/plannings', {
+  query,
+})
 
 const query2 = computed(() => {
   return {
@@ -50,7 +47,7 @@ const query2 = computed(() => {
   }
 })
 
-const { data: announcersData } = await useFetch('/api/spots/announcers', {
+const { data: announcersData } = await useFetch('/api/pub/announcers', {
   query: query2,
 })
 

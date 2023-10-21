@@ -71,14 +71,11 @@ const query = computed(() => {
   }
 })
 
-const { data, pending, error, refresh } = await useFetch(
-  '/api/spots/packages',
-  {
-    query,
-  },
-)
+const { data, pending, error, refresh } = await useFetch('/api/pub/packages', {
+  query,
+})
 
-const { data: announcers } = await useFetch('/api/spots/announcers', {
+const { data: announcers } = await useFetch('/api/pub/announcers', {
   query,
 })
 function editPackage(spotPackage: any) {
@@ -116,7 +113,7 @@ async function deletePackage(spotPackage: any) {
     }
   })
 
-  const response = await useFetch('/api/spots/packages', {
+  const response = await useFetch('/api/pub/packages', {
     method: 'delete',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
@@ -282,7 +279,7 @@ async function confirmOrder() {
     currentPackage.value.adminValidator = authStore.user._id
   }
 
-  const response = await useFetch('/api/spots/packages', {
+  const response = await useFetch('/api/pub/packages', {
     method: 'put',
     headers: { 'Content-Type': 'application/json' },
     query: query4,
@@ -333,7 +330,7 @@ const onSubmit = handleSubmit(
           }
         })
 
-        const response = await useFetch('/api/spots/packages', {
+        const response = await useFetch('/api/pub/packages', {
           method: 'put',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
@@ -351,7 +348,7 @@ const onSubmit = handleSubmit(
           }
         })
 
-        const response = await useFetch('/api/spots/packages', {
+        const response = await useFetch('/api/pub/packages', {
           method: 'post',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
@@ -769,7 +766,7 @@ const onSubmit = handleSubmit(
                   <div class="flex">
                     <BaseButtonAction
                       class="mx-2"
-                      :to="'/bo/spots/package-details/' + item._id"
+                      :to="'/bo/pub/package-details/' + item._id"
                       muted
                     >
                       <Icon name="lucide:settings" class="h-4 w-4"
