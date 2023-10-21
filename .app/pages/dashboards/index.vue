@@ -65,7 +65,7 @@ const auth = useAuthStore()
               <BaseAvatar
                 src="/img/avatars/2.svg"
                 size="xl"
-                badge-src="/img/icons/flags/united-states-of-america.svg"
+                badge-src="/img/icons/flags/cmr.svg"
               />
               <div class="text-center md:text-left">
                 <BaseHeading

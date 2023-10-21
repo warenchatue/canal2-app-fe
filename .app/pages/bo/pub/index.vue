@@ -40,6 +40,20 @@ const { data, pending, error, refresh } = await useFetch(
   },
 )
 
+const query2 = computed(() => {
+  return {
+    filter: filter.value,
+    perPage: perPage.value,
+    page: page.value,
+    action: 'findAll',
+    token: token.value,
+  }
+})
+
+const { data: announcersData } = await useFetch('/api/spots/announcers', {
+  query: query2,
+})
+
 const lineSpots = reactive(useLineSpots())
 const radialGoal = reactive(useRadialGoal())
 const radialGrowth = reactive(useRadialGrowth())
@@ -659,7 +673,7 @@ function useBarSalesProfit() {
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>0</span>
+                <span>{{ announcersData?.total }}</span>
               </BaseHeading>
             </div>
             <div

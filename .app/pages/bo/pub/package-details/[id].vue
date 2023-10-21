@@ -1483,7 +1483,7 @@ const onSubmit = handleSubmit(
             PLANNING DE DIFFUSION
           </h3>
           <div shape="straight" class="">
-            <img class="h-20 fit-content" src="/logos/c2.png" />
+            <img class="h-20 fit-content" src="/uploads/logos/c2.png" />
           </div>
         </div>
         <div class="flex justify-between items-center p-2">

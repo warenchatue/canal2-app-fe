@@ -86,36 +86,41 @@ export default defineAppConfig({
           {
             name: 'Pub',
             icon: { name: 'ph:target-duotone', class: 'w-5 h-5' },
-            activePath: '/bo/spots',
+            activePath: '/bo/pub',
             children: [
               {
                 name: 'Tableau de bord',
-                to: '/bo/spots',
+                to: '/bo/pub',
                 icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Raports',
-                to: '/bo/spots/reports',
+                to: '/bo/pub/reports',
                 icon: { name: 'lucide:file', class: 'w-4 h-4' },
               },
               {
                 name: 'Planning de diffusion',
-                to: '/bo/spots/diffusion-list',
+                to: '/bo/pub/diffusion-list',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Commandes',
-                to: '/bo/spots/orders',
+                to: '/bo/pub/orders',
+                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Produits',
+                to: '/bo/pub/orders',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Annonceurs',
-                to: '/bo/spots/announcers',
+                to: '/bo/pub/announcers',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Horaires',
-                to: '/bo/spots/hours',
+                to: '/bo/pub/hours',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
             ],
@@ -150,8 +155,16 @@ export default defineAppConfig({
           // },
 
           {
+            name: 'SAV',
+            icon: { name: 'ph:chat-duotone', class: 'w-5 h-5' },
+            isAdmin: true,
+            activePath: '/bo/sav',
+            children: [],
+          },
+
+          {
             name: 'Admin',
-            icon: { name: 'ph:nut-duotone', class: 'w-5 h-5' },
+            icon: { name: 'lucide:settings', class: 'w-5 h-5' },
             isAdmin: true,
             activePath: '/bo/admin',
             children: [
