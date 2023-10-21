@@ -26,8 +26,6 @@ const isModalNewPackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
 const isEdit = ref(false)
-const orderContracts = ref<FileList | null>()
-const orderInvoices = ref<FileList | null>()
 const toaster = useToaster()
 // Check if can have access
 if (authStore.user.appRole.name == UserRole.broadcast) {
@@ -42,14 +40,20 @@ if (authStore.user.appRole.name == UserRole.broadcast) {
   router.push('/bo/spots/diffusion-list')
 }
 
-watch(orderContracts, (value) => {
-  console.log('orderContracts')
-  console.log(orderContracts.value)
+const inputOrderContracts = ref<FileList | null>()
+const orderContractFile = ref<File | null>(null)
+const inputOrderInvoices = ref<FileList | null>()
+const orderInvoiceFile = ref<File | null>(null)
+watch(inputOrderContracts, (value) => {
+  console.log('orderContract')
+  const file = value?.item(0) || null
+  orderContractFile.value = file
 })
 
-watch(orderInvoices, (value) => {
-  console.log('orderInvoices')
-  console.log(orderInvoices.value)
+watch(inputOrderInvoices, (value) => {
+  console.log('orderInvoice')
+  const file = value?.item(0) || null
+  orderInvoiceFile.value = file
 })
 
 watch([filter, perPage], () => {
@@ -318,9 +322,84 @@ const onSubmit = handleSubmit(
 
     // here you have access to the validated form values
     console.log('package-create-success', values)
+    const contractUrl =
+      isEdit.value == true ? ref(currentPackage.contractUrl ?? '') : ref('')
+    const invoiceUrl =
+      isEdit.value == true ? ref(currentPackage.invoice?.url ?? '') : ref('')
 
     try {
       const isSuccess = ref(false)
+
+      // upload contract file
+      if (orderContractFile.value != null) {
+        const fd = new FormData()
+        fd.append('0', orderContractFile.value)
+        const query3 = computed(() => {
+          return {
+            action: 'new-single-file',
+            dir: 'uploads/ordersFiles/contracts',
+            token: token.value,
+          }
+        })
+
+        const { data: uploadData, refresh } = await useFetch(
+          '/api/files/upload',
+          {
+            method: 'POST',
+            query: query3,
+            body: fd,
+          },
+        )
+        console.log(uploadData)
+        if (uploadData.value?.success == false) {
+          contractUrl.value = ''
+          toaster.show({
+            title: 'Oops',
+            message: `Une erreur est survenue lors de l'importation de des fichiers !`,
+            color: 'danger',
+            icon: 'ph:check',
+            closable: true,
+          })
+        } else {
+          contractUrl.value = uploadData.value.fileName
+        }
+      }
+
+      // upload invoice file
+      if (orderInvoiceFile.value != null) {
+        const fd = new FormData()
+        fd.append('0', orderInvoiceFile.value)
+        const query3 = computed(() => {
+          return {
+            action: 'new-single-file',
+            dir: 'uploads/ordersFiles/invoices',
+            token: token.value,
+          }
+        })
+
+        const { data: uploadData, refresh } = await useFetch(
+          '/api/files/upload',
+          {
+            method: 'POST',
+            query: query3,
+            body: fd,
+          },
+        )
+        console.log(uploadData)
+        if (uploadData.value?.success == false) {
+          invoiceUrl.value = ''
+          toaster.show({
+            title: 'Oops',
+            message: `Une erreur est survenue lors de l'importation de des fichiers !`,
+            color: 'danger',
+            icon: 'ph:check',
+            closable: true,
+          })
+        } else {
+          invoiceUrl.value = uploadData.value.fileName
+        }
+      }
+
       if (isEdit.value == true) {
         const query2 = computed(() => {
           return {
@@ -337,6 +416,8 @@ const onSubmit = handleSubmit(
           body: {
             ...values.spotPackage,
             announcer: values.spotPackage?.announcer?._id,
+            invoice: { ...values.spotPackage?.invoice, url: invoiceUrl.value },
+            contractUrl,
           },
         })
         isSuccess.value = response.data.value?.success
@@ -356,6 +437,8 @@ const onSubmit = handleSubmit(
             ...values.spotPackage,
             announcer: values.spotPackage?.announcer?._id,
             _id: undefined,
+            invoice: { ...values.spotPackage?.invoice, url: invoiceUrl.value },
+            contractUrl,
           },
         })
         isSuccess.value = response.data.value?.success
@@ -674,6 +757,7 @@ const onSubmit = handleSubmit(
                 <TairoTableHeading uppercase spaced>Produits</TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>Période</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Docs</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
               </template>
@@ -739,6 +823,22 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{ item.period }}
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  <a
+                    v-if="item.contractUrl"
+                    class="mx-1 text-white bg-muted-600 p-2 rounded"
+                    :href="'/' + item.contractUrl"
+                    target="_blank"
+                    >C</a
+                  >
+                  <a
+                    v-if="item.invoice.url"
+                      class="mx-1 text-white bg-muted-600 p-2 rounded"
+                    :href="'/' + item.invoice.url"
+                    target="_blank"
+                    >F</a
+                  >
                 </TairoTableCell>
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag
@@ -955,7 +1055,7 @@ const onSubmit = handleSubmit(
                   </div>
                   <div class="ltablet:col-span-12 col-span-12 lg:col-span-12">
                     <BaseInputFile
-                      v-model="orderContracts"
+                      v-model="inputOrderContracts"
                       :disabled="
                         isSubmitting ||
                         (authStore.user?.appRole?.name != UserRole.superAdmin &&
@@ -1066,7 +1166,7 @@ const onSubmit = handleSubmit(
                   </div>
                   <div class="ltablet:col-span-12 col-span-12 lg:col-span-12">
                     <BaseInputFile
-                      v-model="orderInvoices"
+                      v-model="inputOrderInvoices"
                       :disabled="
                         authStore.user?.appRole?.name != UserRole.superAdmin &&
                         authStore.user?.appRole?.name != UserRole.billing

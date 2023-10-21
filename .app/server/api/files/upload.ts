@@ -6,6 +6,7 @@ export default defineEventHandler(async (event) => {
   const action = (query.action as string) || ''
   const token = (query.token as string) || ''
   const slug = (query.slug as string) || 'unnamed'
+  const dir = (query.dir as string) || 'unnamed'
   const startDate = decodeURIComponent((query.startDate as string) || '')
   const endDate = decodeURIComponent((query.endDate as string) || '')
   const files = await readMultipartFormData(event)
@@ -58,31 +59,27 @@ export default defineEventHandler(async (event) => {
       } catch (error) {
         return { status: 'OK', success: false, count: 0 }
       }
-    } else if (action == 'new-xx') {
-      let dirName = `${path.join('.app', 'public', 'uploads', 'signatures')}`
-
+    } else if (action == 'new-single-file') {
       try {
-        fs.mkdir(dirName, function (err) {
-          if (err) {
-            console.log(err)
-          } else {
-            console.log('New directory successfully created.')
-            //logo
-            let fileName = 'uploads/signatures/' + slug + '.png'
-            let newPath = `${path.join('.app', 'public', fileName)}`
-
-            fs.writeFile(newPath, files[0].data, { flag: 'w' }, function (err) {
+        const dirName = `${path.join('.app', 'public')}`
+        const code = makeId(10)
+        if (files.length != 0) {
+          let fileName = dir + '/' + code + '.pdf'
+          let newPath = `${dirName}/${fileName}`
+          await fs.writeFile(
+            newPath,
+            files[0].data,
+            { flag: 'w' },
+            await function (err) {
               if (err) {
                 console.log(err)
-                return { success: false, count: 0 }
+                return { success: false, count: 0, fileName: '' }
               }
               console.log(`${fileName} Successfully uploaded`)
-            })
-
-            fileUrls.push(fileName)
-          }
-        })
-        return { success: true, count: 2 }
+            },
+          )
+          return { success: true, count: 1, fileName }
+        }
       } catch (error) {
         return { success: false, count: 0 }
       }
@@ -177,4 +174,16 @@ async function updateDiffusedByCodes(codes: string[], token: string) {
   ).catch((error) => console.log(error))
   console.log(data)
   return Promise.resolve(data)
+}
+
+function makeId(length: number) {
+  let result = ''
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  const charactersLength = characters.length
+  let counter = 0
+  while (counter < length) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength))
+    counter += 1
+  }
+  return result
 }

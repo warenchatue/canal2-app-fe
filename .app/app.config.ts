@@ -108,11 +108,11 @@ export default defineAppConfig({
                 to: '/bo/pub/orders',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
-              {
-                name: 'Produits',
-                to: '/bo/pub/orders',
-                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
-              },
+              // {
+              //   name: 'Produits',
+              //   to: '/bo/pub/orders',
+              //   icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
+              // },
               {
                 name: 'Annonceurs',
                 to: '/bo/pub/announcers',
