@@ -20,7 +20,7 @@ export const useAppStore = defineStore('app', {
     me() {},
     async setRoles() {
       const token = useCookie('token')
-      const perPage = ref(20)
+      const perPage = ref(100)
       const { data }: any = await useFetch('/api/users/roles', {
         method: 'get',
         headers: { 'Content-Type': 'application/json' },

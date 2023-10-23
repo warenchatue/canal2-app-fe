@@ -94,7 +94,6 @@ const onSubmit = handleSubmit(async (values) => {
         query: query,
       })
       if (data.value) {
-      
       }
       errorMessage = false
       toaster.clearAll()
@@ -107,9 +106,8 @@ const onSubmit = handleSubmit(async (values) => {
       })
 
       //Set countries and roles
-      app.setCountries()
-      app.setRoles()
-
+      await app.setCountries()
+      await app.setRoles()
 
       router.push('/dashboards')
     }
@@ -265,7 +263,7 @@ const onSubmit = handleSubmit(async (values) => {
           </BaseButton>
 
           <!--No account link-->
-          <p
+          <!-- <p
             class="text-muted-400 mt-4 flex justify-between font-sans text-xs leading-5"
           >
             <span>Don't have an account?</span>
@@ -275,11 +273,12 @@ const onSubmit = handleSubmit(async (values) => {
             >
               Create Account
             </NuxtLink>
-          </p>
+          </p> -->
         </div>
         <div class="text-center">
           <BaseText size="xs" class="text-muted-400">
-            © {{ new Date().getFullYear() }} Digital Innova. All rights reserved.
+            © {{ new Date().getFullYear() }} Digital Innova. All rights
+            reserved.
           </BaseText>
         </div>
       </div>

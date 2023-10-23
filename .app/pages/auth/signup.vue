@@ -91,7 +91,7 @@ const onSubmit = handleSubmit(async (values) => {
         password: values.password,
         email: values.email,
       },
-      false
+      false,
     )
     if (authenticated) {
       toaster.clearAll()
@@ -106,8 +106,8 @@ const onSubmit = handleSubmit(async (values) => {
       router.push('/select-org')
 
       //Set countries and roles
-      app.setCountries()
-      app.setRoles()
+      await app.setCountries()
+      await app.setRoles()
     }
   } catch (error: any) {
     // handle error

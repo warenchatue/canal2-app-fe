@@ -75,12 +75,19 @@ const query = computed(() => {
   }
 })
 
-const { data, pending, error, refresh } = await useFetch('/api/pub/packages', {
+const { data, pending } = await useFetch('/api/pub/packages', {
   query,
 })
 
 const { data: announcers } = await useFetch('/api/pub/announcers', {
   query,
+})
+
+const { data: allUsers } = await useFetch('/api/users', {
+  query,
+})
+const commercials = allUsers.value?.data.filter((e: any) => {
+  return e.appRole.name == UserRole.sale
 })
 function editPackage(spotPackage: any) {
   isModalNewPackageOpen.value = true
@@ -92,6 +99,7 @@ function editPackage(spotPackage: any) {
   setFieldValue('spotPackage.numberProducts', spotPackage.numberProducts)
   setFieldValue('spotPackage.period', spotPackage.period)
   setFieldValue('spotPackage.announcer', spotPackage.announcer)
+  setFieldValue('spotPackage.commercial', spotPackage.manager)
   setFieldValue('spotPackage.status', spotPackage.status)
   setFieldValue('spotPackage.invoice.amount', spotPackage.invoice.amount)
   setFieldValue('spotPackage.invoice.label', spotPackage.invoice.label)
@@ -205,7 +213,16 @@ const zodSchema = z
           _id: z.string(),
           email: z.string(),
           name: z.string(),
-          flag: z.string().optional(),
+          photo: z.string().optional(),
+        })
+        .optional()
+        .nullable(),
+      commercial: z
+        .object({
+          _id: z.string(),
+          email: z.string(),
+          lastName: z.string(),
+          photo: z.string().optional(),
         })
         .optional()
         .nullable(),
@@ -246,6 +263,12 @@ const initialValues = computed<FormInput>(() => ({
       email: '',
       name: '',
       flag: '',
+    },
+    commercial: {
+      _id: authStore.user._id ?? '',
+      email: authStore.user.email ?? '',
+      lastName: authStore.user.firstName + ' ' + authStore.user.lastName,
+      photo: '',
     },
   },
 }))
@@ -416,6 +439,7 @@ const onSubmit = handleSubmit(
           body: {
             ...values.spotPackage,
             announcer: values.spotPackage?.announcer?._id,
+            manager: values.spotPackage?.commercial?._id,
             invoice: { ...values.spotPackage?.invoice, url: invoiceUrl.value },
             contractUrl,
           },
@@ -436,6 +460,7 @@ const onSubmit = handleSubmit(
           body: {
             ...values.spotPackage,
             announcer: values.spotPackage?.announcer?._id,
+            manager: values.spotPackage?.commercial?._id,
             _id: undefined,
             invoice: { ...values.spotPackage?.invoice, url: invoiceUrl.value },
             contractUrl,
@@ -834,7 +859,7 @@ const onSubmit = handleSubmit(
                   >
                   <a
                     v-if="item.invoice.url"
-                      class="mx-1 text-white bg-muted-600 p-2 rounded"
+                    class="mx-1 text-white bg-muted-600 p-2 rounded"
                     :href="'/' + item.invoice.url"
                     target="_blank"
                     >F</a
@@ -1035,6 +1060,28 @@ const onSubmit = handleSubmit(
                   <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="spotPackage.commercial"
+                    >
+                      <BaseListbox
+                        label="Commercial en charge"
+                        :items="commercials"
+                        :properties="{
+                          value: '_id',
+                          label: 'lastName',
+                          sublabel: 'email',
+                          media: 'photo',
+                        }"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="spotPackage.status"
                     >
                       <BaseSelect
@@ -1053,7 +1100,7 @@ const onSubmit = handleSubmit(
                       </BaseSelect>
                     </Field>
                   </div>
-                  <div class="ltablet:col-span-12 col-span-12 lg:col-span-12">
+                  <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
                     <BaseInputFile
                       v-model="inputOrderContracts"
                       :disabled="

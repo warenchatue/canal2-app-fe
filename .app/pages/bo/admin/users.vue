@@ -724,8 +724,8 @@ const onSubmit = handleSubmit(
                         @update:model-value="handleChange"
                         @blur="handleBlur"
                       >
-                        <option value="personal">Compte Individuel</option>
-                        <option value="corporate">Compte Business</option>
+                        <option value="personal">Compte Basique</option>
+                        <option value="corporate">Compte Admin</option>
                       </BaseSelect>
                     </Field>
                   </div>

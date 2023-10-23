@@ -794,7 +794,8 @@ const onSubmit = handleSubmit(
                   {{ item.label }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.creator.firstName }} {{ item.creator.lastName }}
+                  {{ item.manager?.firstName ?? item.creator?.firstName }}
+                  {{ item.manager?.lastName ?? item.creator?.lastName }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{
