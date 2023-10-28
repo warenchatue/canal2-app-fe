@@ -54,7 +54,7 @@ function filterData(
 async function findOne(id: string, token: string) {
   console.log('findOne ' + token)
   const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/spots/' + id, {
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/products/' + id, {
     method: 'get',
     headers: {
       Authorization: 'Bearer ' + token,
@@ -68,7 +68,7 @@ async function findOne(id: string, token: string) {
 async function findAll(token: string) {
   console.log('findAll ' + token)
   const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/spots', {
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/products', {
     method: 'get',
     headers: {
       Authorization: 'Bearer ' + token,
@@ -82,7 +82,7 @@ async function findAll(token: string) {
 async function createSpot(body: any, token: string) {
   console.log('createSpot ' + token)
   const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/spots', {
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/products', {
     method: 'post',
     headers: {
       Authorization: 'Bearer ' + token,
@@ -97,7 +97,7 @@ async function createSpot(body: any, token: string) {
 async function updateSpot(id: string, body: any, token: string) {
   console.log('updateSpot ' + token)
   const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/spots/' + id, {
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/products/' + id, {
     method: 'PUT',
     headers: {
       Authorization: 'Bearer ' + token,
@@ -112,7 +112,7 @@ async function updateSpot(id: string, body: any, token: string) {
 async function deleteSpot(id: string, token: string) {
   console.log('deleteSpot ' + token)
   const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/spots/' + id, {
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/products/' + id, {
     method: 'DELETE',
     headers: {
       Authorization: 'Bearer ' + token,

@@ -59,6 +59,37 @@ export default defineEventHandler(async (event) => {
       } catch (error) {
         return { status: 'OK', success: false, count: 0 }
       }
+    } else if (action == 'import-product-file') {
+      try {
+        const dirName = `${path.join('.app', 'public')}`
+        const code = makeId(5)
+        if (files.length != 0) {
+          let fileName =
+            dir +
+            '/' +
+            files[0].filename +
+            '-' +
+            code +
+            '.' +
+            files[0].type.split('/')[1]
+          let newPath = `${dirName}/${fileName}`
+          await fs.writeFile(
+            newPath,
+            files[0].data,
+            { flag: 'w' },
+            await function (err) {
+              if (err) {
+                console.log(err)
+                return { success: false, count: 0, fileName: '' }
+              }
+              console.log(`${fileName} Successfully uploaded`)
+            },
+          )
+          return { success: true, count: 1, fileName }
+        }
+      } catch (error) {
+        return { success: false, count: 0 }
+      }
     } else if (action == 'new-single-file') {
       try {
         const dirName = `${path.join('.app', 'public')}`

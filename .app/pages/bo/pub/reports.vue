@@ -720,20 +720,20 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  <p v-if="item.spots.length > 0">
-                    1- {{ item.spots[0].product }}
+                  <p v-if="item.products.length > 0">
+                    1- {{ item.products[0].product }}
                   </p>
-                  <p v-if="item.spots.length > 1">
-                    2- {{ item.spots[1].product }}
+                  <p v-if="item.products.length > 1">
+                    2- {{ item.products[1].product }}
                   </p>
-                  <p v-if="item.spots.length > 2">
-                    3- {{ item.spots[2].product }}
+                  <p v-if="item.products.length > 2">
+                    3- {{ item.products[2].product }}
                   </p>
-                  <p v-if="item.spots.length > 3">
-                    4- {{ item.spots[3].product }}
+                  <p v-if="item.products.length > 3">
+                    4- {{ item.products[3].product }}
                   </p>
-                  <p v-if="item.spots.length > 4">
-                    5- {{ item.spots[4].product }}
+                  <p v-if="item.products.length > 4">
+                    5- {{ item.products[4].product }}
                   </p>
                 </TairoTableCell>
                 <TairoTableCell spaced>
@@ -754,20 +754,20 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  <p v-if="item.spots.length > 0">
-                    1- {{ item.spots[0].type }}
+                  <p v-if="item.products.length > 0">
+                    1- {{ item.products[0].type }}
                   </p>
-                  <p v-if="item.spots.length > 1">
-                    2- {{ item.spots[1].type }}
+                  <p v-if="item.products.length > 1">
+                    2- {{ item.products[1].type }}
                   </p>
-                  <p v-if="item.spots.length > 2">
-                    3- {{ item.spots[2].type }}
+                  <p v-if="item.products.length > 2">
+                    3- {{ item.products[2].type }}
                   </p>
-                  <p v-if="item.spots.length > 3">
-                    4- {{ item.spots[3].type }}
+                  <p v-if="item.products.length > 3">
+                    4- {{ item.products[3].type }}
                   </p>
-                  <p v-if="item.spots.length > 4">
-                    5- {{ item.spots[4].type }}
+                  <p v-if="item.products.length > 4">
+                    5- {{ item.products[4].type }}
                   </p>
                 </TairoTableCell>
                 <TairoTableCell light spaced>

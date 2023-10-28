@@ -10,7 +10,7 @@ definePageMeta({
   preview: {
     title: 'Planning de diffusion',
     description: '',
-    categories: ['bo', 'spots', 'diffusion-list'],
+    categories: ['bo', 'pub', 'diffusion-list'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -140,6 +140,30 @@ async function confirmDiffusion(planning: any) {
       closable: true,
     })
   }
+}
+
+function downloadProductFile(uri: string, item: any) {
+  const link = document.createElement('a')
+  link.href = '/' + uri
+  const fileElements = item.product?.file.split('.')
+  link.download =
+    item.product.message + '.' + fileElements[fileElements.length - 1]
+  link.click()
+  document.body.removeChild(link)
+  // fetch('/'+uri)
+  //   .then((response) => response.blob())
+  //   .then((blobresp) => {
+  //     var url = window.URL.createObjectURL(blobresp)
+  //     var link = document.createElement('a')
+  //     const fileElements = item.product?.file.split('.')
+  //     link.download =
+  //       item.product.message + '.' + fileElements[fileElements.length - 1]
+  //     link.href = url
+  //     document.body.appendChild(link)
+  //     link.click()
+  //     document.body.removeChild(link)
+  //     // delete link
+  //   })
 }
 
 async function importPlayList() {
@@ -461,7 +485,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Spots Diffusés</span>
+                <span>Total Diffusés</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -502,7 +526,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Spots non diffusés</span>
+                <span>Total non diffusés</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -543,7 +567,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Spots en attente</span>
+                <span>Total en attente</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -584,7 +608,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Spots du jour</span>
+                <span>Total du jour</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -667,6 +691,7 @@ const onSubmit = handleSubmit(
                   >Titre du message</TairoTableHeading
                 >
                 <TairoTableHeading uppercase spaced>Durée</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Fichier</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
               </template>
@@ -729,7 +754,7 @@ const onSubmit = handleSubmit(
                   <div class="flex items-center">
                     <BaseAvatar
                       :src="
-                        item.spot?.package?.announcer?.logo ??
+                        item.product?.package?.announcer?.logo ??
                         '/img/avatars/company.svg'
                       "
                       :text="item.initials"
@@ -737,10 +762,10 @@ const onSubmit = handleSubmit(
                     />
                     <div class="ms-3 leading-none">
                       <h4 class="font-sans text-sm font-medium">
-                        {{ item.spot?.package?.announcer?.name }}
+                        {{ item.product?.package?.announcer?.name }}
                       </h4>
                       <p class="text-muted-400 font-sans text-xs">
-                        {{ item.spot?.package?.announcer?.email }}
+                        {{ item.product?.package?.announcer?.email }}
                       </p>
                     </div>
                   </div>
@@ -751,7 +776,7 @@ const onSubmit = handleSubmit(
                     <span
                       class="text-muted-600 dark:text-muted-300 font-sans text-base"
                     >
-                      {{ item.spot.product }}
+                      {{ item.product.product }}
                     </span>
                   </div>
                 </TairoTableCell>
@@ -760,7 +785,7 @@ const onSubmit = handleSubmit(
                     <span
                       class="text-muted-600 dark:text-muted-300 font-sans text-base"
                     >
-                      {{ item.spot.message }} [{{ item.code }}]
+                      {{ item.product.message }} [{{ item.code }}]
                     </span>
                   </div>
                 </TairoTableCell>
@@ -769,8 +794,30 @@ const onSubmit = handleSubmit(
                     <span
                       class="text-muted-600 dark:text-muted-300 font-sans text-base"
                     >
-                      {{ item.spot.duration ?? '50s' }}
+                      {{ item.product.duration ?? '50s' }}
                     </span>
+                  </div>
+                </TairoTableCell>
+                <TairoTableCell spaced>
+                  <div class="flex">
+                    <a
+                      v-if="item.product?.file"
+                      class="text-white bg-muted-600 px-2 py-1 rounded"
+                      :href="'/' + item.product?.file"
+                      target="_blank"
+                    >
+                      <Icon name="lucide:eye" class="h-4 w-4"
+                    /></a>
+
+                    <BaseButtonAction
+                      v-if="item.product?.file"
+                      class="mx-4"
+                      @click.prevent="
+                        downloadProductFile(item.product?.file, item)
+                      "
+                    >
+                      <Icon name="lucide:download" class="h-4 w-4" />
+                    </BaseButtonAction>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced class="capitalize">
@@ -1027,7 +1074,7 @@ const onSubmit = handleSubmit(
           >
             Voulez-vous confirmer la diffusion de
             <span class="text-primary-500">{{
-              currentPlanning?.spot?.message
+              currentPlanning?.product?.message
             }}</span>
             à
             <span class="text-primary-500">{{

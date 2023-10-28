@@ -49,7 +49,7 @@ function filterData(
   page: number,
   perPage: number,
 ) {
-  data = data.filter((item) => item.spot?.package?.planningValidator != null)
+  data = data.filter((item) => item.product?.order?.planningValidator != null)
 
   const offset = (page - 1) * perPage
   if (!filter) {
@@ -59,8 +59,8 @@ function filterData(
   const filteredData = data.filter((item) => {
     return [
       new Date(item.date).toDateString(),
-      item.spot?.product,
-      item.spot?.package?.announcer?.name,
+      item.product?.product,
+      item.product?.order?.announcer?.name,
     ].some((item) => item.match(filterRe))
   })
 

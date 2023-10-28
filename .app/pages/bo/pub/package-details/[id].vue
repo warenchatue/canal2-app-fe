@@ -6,11 +6,11 @@ import { UserRole } from '~/types/user'
 import moment from 'moment'
 
 definePageMeta({
-  title: 'Spot - Annonceur',
+  title: 'Produits - Annonceur',
   preview: {
-    title: 'Spot - Annonceur',
+    title: 'Produits - Annonceur',
     description: 'Contribution and withdrawal',
-    categories: ['bo', 'spots', 'orders'],
+    categories: ['bo', 'pub', 'orders'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -44,10 +44,12 @@ const isModalDeleteSpotOpen = ref(false)
 const isModalPlanningOpen = ref(false)
 const isModalNewSpotPlanningOpen = ref(false)
 const isModalConfirmPlanningOpen = ref(false)
+const isModalUploadProductFileOpen = ref(false)
 const isEdit = ref(false)
-const isPrint = ref(false)
-const activeSpot = ref({ _id: '', product: '', tag: '', flag: '' })
-const currentSpot = ref({})
+const isPrintPlanning = ref(false)
+const isPrintCertificate = ref(false)
+const activeProduct = ref({ _id: '', product: '', tag: '', flag: '' })
+const currentProduct = ref({})
 const phoneNumber = ref('')
 const formatter = new Intl.DateTimeFormat('fr', { month: 'long' })
 const activeDate = ref(new Date())
@@ -114,7 +116,7 @@ function openSpotPlanningModal(day: string, hour: any) {
   isModalNewSpotPlanningOpen.value = true
 }
 async function addSpotToPlanning() {
-  console.log('Adding spot to the planning')
+  console.log('Adding product to the planning')
   const hourArray = activeHour.value?.code.split(':')
   var date = new Date(
     activeDate.value.getFullYear(),
@@ -127,7 +129,7 @@ async function addSpotToPlanning() {
   console.log(date.toISOString())
 
   const spotPlanning = {
-    spot: activeSpot.value._id,
+    product: activeProduct.value._id,
     hour: activeHour.value._id,
     date: date.toISOString(),
     isManualPlay: false,
@@ -163,8 +165,8 @@ async function addSpotToPlanning() {
         title: 'Success',
         message:
           isEdit.value == false
-            ? `Spot ajouté au planning !`
-            : `Spot mis à jour`,
+            ? `Produit ajouté au planning !`
+            : `Produit mis à jour`,
         color: 'success',
         icon: 'ph:check',
         closable: true,
@@ -197,8 +199,7 @@ async function addSpotToPlanning() {
 }
 
 function checkEmptyPlanning(h: any) {
-  if (isPrint.value == true) {
-    console.log(h.name)
+  if (isPrintPlanning.value == true || isPrintCertificate.value == true) {
     var plannedSpots = data.value?.data?.plannings?.filter(
       (p: any) => moment(p.date).format('HH:mm') == h.name,
     )
@@ -231,24 +232,31 @@ function checkSpot(d: number, hour: string) {
   } else {
     const dateNow = new Date().toLocaleString('fr-FR')
     var dateP = new Date(plannedSpots[0].date).toLocaleString('fr-FR')
-    console.log(plannedSpots[0])
+    // console.log(plannedSpots[0])
+    // When printing
+    if (isPrintPlanning.value == true) {
+      return [plannedSpots[0].product.tag, 'warning']
+    }
 
     if (
       dateP < dateNow &&
       plannedSpots[0].isManualPlay == false &&
-      plannedSpots[0].isAutoPlay == false
+      plannedSpots[0].isAutoPlay == false &&
+      isPrintCertificate.value == false
     ) {
-      return [plannedSpots[0].spot.tag, 'danger']
+      return [plannedSpots[0].product.tag, 'danger']
     } else if (
       dateP < dateNow &&
       (plannedSpots[0].isManualPlay == true ||
         plannedSpots[0].isAutoPlay == true)
     ) {
-      return [plannedSpots[0].spot.tag, 'primary']
-    } else if (dateP > dateNow) {
-      console.log(dateP)
-      console.log(dateNow)
-      return [plannedSpots[0].spot.tag, 'warning']
+      return [plannedSpots[0].product.tag, 'primary']
+    } else if (dateP > dateNow && isPrintCertificate.value == false) {
+      // console.log(dateP)
+      // console.log(dateNow)
+      return [plannedSpots[0].product.tag, 'warning']
+    } else {
+      return ['+', 'default']
     }
   }
 }
@@ -279,27 +287,28 @@ if (data.value) {
   console.log(data.value)
 }
 
-function editSpot(spot: any) {
+function editSpot(product: any) {
   isModalNewSpotOpen.value = true
   isEdit.value = true
-  setFieldValue('spot._id', spot._id)
-  setFieldValue('spot.product', spot.product)
-  setFieldValue('spot.message', spot.message)
-  setFieldValue('spot.package', spot.package)
+  setFieldValue('product._id', product._id)
+  setFieldValue('product.product', product.product)
+  setFieldValue('product.message', product.message)
+  setFieldValue('product.duration', product.duration)
+  setFieldValue('product.order', product.order)
 }
 
-function confirmDeleteSpot(spot: any) {
+function confirmDeleteSpot(product: any) {
   isModalDeleteSpotOpen.value = true
   isEdit.value = false
-  currentSpot.value = spot
+  currentProduct.value = product
 }
 
-async function deleteSpot(spot: any) {
+async function deleteSpot(product: any) {
   const query2 = computed(() => {
     return {
       action: 'delete',
       token: token.value,
-      id: spot._id,
+      id: product._id,
     }
   })
 
@@ -314,13 +323,13 @@ async function deleteSpot(spot: any) {
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Spot supprimé !`,
+      message: `Produit supprimé !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
     })
     isModalDeleteSpotOpen.value = false
-    filter.value = 'spot'
+    filter.value = 'product'
     filter.value = ''
   } else {
     toaster.clearAll()
@@ -334,8 +343,14 @@ async function deleteSpot(spot: any) {
   }
 }
 
-function printPlanning() {
-  isPrint.value = true
+function printPlanning(typeDoc: string) {
+  console.log(typeDoc)
+  if (typeDoc == 'planning') {
+    isPrintPlanning.value = true
+  } else if (typeDoc == 'certificate') {
+    isPrintCertificate.value = true
+  }
+
   setTimeout(() => {
     var printContents = document.getElementById('planningPrint').innerHTML
     var originalContents = document.body.innerHTML
@@ -346,22 +361,99 @@ function printPlanning() {
   }, 500)
 }
 
+function openProductFileModal(item: any) {
+  currentProduct.value = item
+  isModalUploadProductFileOpen.value = true
+}
+
+async function importProductFile() {
+  const slug = ref('null')
+  try {
+    const fd = new FormData()
+    fd.append('0', productFile.value)
+    const query3 = computed(() => {
+      return {
+        action: 'import-product-file',
+        token: token.value,
+        dir: 'uploads/productsFiles',
+      }
+    })
+
+    const { data: uploadData, refresh } = await useFetch('/api/files/upload', {
+      method: 'POST',
+      query: query3,
+      body: fd,
+    })
+    console.log(uploadData)
+    if (uploadData.value?.success == true) {
+      const query4 = computed(() => {
+        return {
+          action: 'updateSpot',
+          token: token.value,
+          id: currentProduct.value._id,
+        }
+      })
+
+      const response = await useFetch('/api/pub', {
+        method: 'put',
+        headers: { 'Content-Type': 'application/json' },
+        query: query4,
+        body: {
+          ...currentProduct.value,
+          file: uploadData.value?.fileName,
+        },
+      })
+      if (response.data.value?.success) {
+        toaster.clearAll()
+        toaster.show({
+          title: 'Success',
+          message: `Mise à jour terminé !`,
+          color: 'success',
+          icon: 'ph:check',
+          closable: true,
+        })
+        location.reload()
+      } else {
+        toaster.clearAll()
+        toaster.show({
+          title: 'Oops',
+          message: `Une erreur est survenue lors de la mise à jour du produit !`,
+          color: 'danger',
+          icon: 'ph:check',
+          closable: true,
+        })
+      }
+    } else {
+      slug.value = ''
+      toaster.clearAll()
+      toaster.show({
+        title: 'Oops',
+        message: `Une erreur est survenue lors de l'importation du fichier !`,
+        color: 'danger',
+        icon: 'ph:check',
+        closable: true,
+      })
+    }
+  } catch (error) {}
+  isModalUploadProductFileOpen.value = false
+}
+
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
-  return selected.value.length === data.value?.data?.spots?.length
+  return selected.value.length === data.value?.data?.products?.length
 })
 
 function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
     selected.value = []
   } else {
-    selected.value = data.value?.data?.spots?.map((item) => item.id) ?? []
+    selected.value = data.value?.data?.products?.map((item) => item.id) ?? []
   }
 }
 
 const activeOperation = ref('1')
 const selectedSpot = computed(() => {
-  return data.value?.data?.spots.find(
+  return data.value?.data?.products.find(
     (item) => item.id === activeOperation.value,
   )
 })
@@ -383,21 +475,22 @@ const VALIDATION_TEXT = {
 // It's used to define the shape that the form data will have
 const zodSchema = z
   .object({
-    spot: z.object({
+    product: z.object({
       _id: z.string().optional(),
       product: z.string().min(1, VALIDATION_TEXT.LABEL_REQUIRED),
       message: z.string().optional(),
+      duration: z.string().optional(),
       tag: z.string().optional(),
       type: z.union([z.literal('SPOT'), z.literal('BA')]).optional(),
-      package: z.string().optional(),
+      order: z.string().optional(),
     }),
   })
   .superRefine((data, ctx) => {
-    if (!data.spot.product) {
+    if (!data.product.product) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: VALIDATION_TEXT.LABEL_REQUIRED,
-        path: ['spot.product'],
+        path: ['product.product'],
       })
     }
   })
@@ -497,6 +590,14 @@ watch(inputFileSignature, (value) => {
   signatureFile.value = file
 })
 
+const productFile = ref<File | null>(null)
+const inputFileProduct = ref<FileList | null>(null)
+const ProductFilePreview = useNinjaFilePreview(() => productFile.value)
+watch(inputFileProduct, (value) => {
+  const file = value?.item(0) || null
+  productFile.value = file
+})
+
 // Zod has a great infer method that will
 // infer the shape of the schema into a TypeScript type
 type FormInput = z.infer<typeof zodSchema>
@@ -504,12 +605,13 @@ type FormInput = z.infer<typeof zodSchema>
 const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
   logo: null,
-  spot: {
+  product: {
     product: '',
     message: '',
     type: 'SPOT',
+    duration: '0',
     tag: '',
-    package: '',
+    order: '',
   },
 }))
 
@@ -546,7 +648,7 @@ const onSubmit = handleSubmit(
           return {
             action: 'updateSpot',
             token: token.value,
-            id: values.spot._id,
+            id: values.product._id,
           }
         })
 
@@ -555,7 +657,7 @@ const onSubmit = handleSubmit(
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.spot,
+            ...values.product,
           },
         })
         isSuccess.value = response.data.value?.success
@@ -572,8 +674,8 @@ const onSubmit = handleSubmit(
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.spot,
-            package: data.value?.data?._id,
+            ...values.product,
+            order: data.value?.data?._id,
             _id: undefined,
           },
         })
@@ -686,7 +788,7 @@ const onSubmit = handleSubmit(
         <BaseInput
           v-model="filter"
           icon="lucide:search"
-          placeholder="Filtre spot..."
+          placeholder="Filtre produit..."
           :classes="{
             wrapper: 'w-full sm:w-auto',
           }"
@@ -727,7 +829,7 @@ const onSubmit = handleSubmit(
           <span>Nouveau Produit</span>
         </BaseButton>
         <BaseButton
-          @click="router.push('/bo/spots/package-details/' + data.data?._id)"
+          @click="router.push('/bo/pub/package-details/' + data.data?._id)"
           color="primary"
           class="w-full sm:w-8"
         >
@@ -901,7 +1003,7 @@ const onSubmit = handleSubmit(
         </div>
       </div>
       <div>
-        <div v-if="!pending && data?.data?.spots?.length === 0">
+        <div v-if="!pending && data?.data?.products?.length === 0">
           <BasePlaceholderPage
             title="No matching results"
             subtitle="Looks like we couldn't find any matching results for your search terms. Try other search terms."
@@ -950,9 +1052,9 @@ const onSubmit = handleSubmit(
 
                 <TairoTableHeading uppercase spaced>Type</TairoTableHeading>
 
-                <TairoTableHeading uppercase spaced>Durée</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Durée(S)</TairoTableHeading>
 
-                <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Fichier</TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
               </template>
@@ -972,7 +1074,10 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
               </TairoTableRow>
 
-              <TairoTableRow v-for="item in data?.data?.spots" :key="item.id">
+              <TairoTableRow
+                v-for="item in data?.data?.products"
+                :key="item.id"
+              >
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseCheckbox
@@ -1033,6 +1138,7 @@ const onSubmit = handleSubmit(
                     </BaseTag>
                   </div>
                 </TairoTableCell>
+
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
@@ -1040,29 +1146,15 @@ const onSubmit = handleSubmit(
                     </span>
                   </div>
                 </TairoTableCell>
-                <TairoTableCell spaced class="capitalize">
-                  <BaseTag
-                    v-if="item.isPlay === true"
-                    color="success"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
+                <TairoTableCell light spaced>
+                  <a
+                    v-if="item.file"
+                    class="mx-1 text-white bg-muted-600 p-2 rounded"
+                    :href="'/' + item.file"
+                    target="_blank"
+                    >Visualiser</a
                   >
-                    Diffusé
-                  </BaseTag>
-                  <BaseTag
-                    v-else-if="item.isPlay === false"
-                    color="warning"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    Non Diffusé
-                  </BaseTag>
                 </TairoTableCell>
-
                 <TairoTableCell spaced>
                   <div class="flex">
                     <BaseButtonAction
@@ -1071,8 +1163,8 @@ const onSubmit = handleSubmit(
                         authStore.user.appRole.name != UserRole.broadcast &&
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
+                      @click="openProductFileModal(item)"
                       class="mx-2"
-                      to=""
                       muted
                     >
                       <Icon name="lucide:upload" class="h-4 w-4"
@@ -1105,7 +1197,7 @@ const onSubmit = handleSubmit(
           </div>
           <div class="mt-6">
             <BasePagination
-              :total-items="data?.spots?.length ?? 0"
+              :total-items="data?.products?.length ?? 0"
               :item-per-page="perPage"
               :current-page="page"
               shape="curved"
@@ -1152,7 +1244,7 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spot.product"
+                      name="product.product"
                     >
                       <BaseInput
                         label="Produit *"
@@ -1169,7 +1261,7 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spot.message"
+                      name="product.message"
                     >
                       <BaseInput
                         label="Message"
@@ -1183,54 +1275,13 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                </div>
-                <div class="grid grid-cols-12 gap-4 mt-4">
-                  <div class="col-span-12 md:col-span-6">
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spot.tag"
-                    >
-                      <BaseInput
-                        label="Tag"
-                        icon="ph:chat-duotone"
-                        placeholder="A"
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <!-- <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spot.announcer"
-                    >
-                      <BaseListbox
-                        label="Annonceur"
-                        :items="announcers?.data"
-                        :properties="{
-                          value: '_id',
-                          label: 'name',
-                          sublabel: 'email',
-                          media: 'flag',
-                        }"
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div> -->
-                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spot.type"
+                      name="product.type"
                     >
                       <BaseSelect
-                        label="Type *"
+                        label="Type de produit *"
                         icon="ph:funnel"
                         :model-value="field.value"
                         :error="errorMessage"
@@ -1244,6 +1295,42 @@ const onSubmit = handleSubmit(
                         <option value="BA">Intervention Jambo</option>
                         <option value="BA">Publi reportage</option>
                       </BaseSelect>
+                    </Field>
+                  </div>
+                </div>
+                <div class="grid grid-cols-12 gap-4 mt-4">
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="product.tag"
+                    >
+                      <BaseInput
+                        label="Tag"
+                        icon="ph:chat-duotone"
+                        placeholder="A"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="product.duration"
+                    >
+                      <BaseInput
+                        label="Durée(seconde)"
+                        icon="ph:chat-duotone"
+                        placeholder="50"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
                     </Field>
                   </div>
                 </div>
@@ -1278,7 +1365,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Suppression d'un spot
+            Suppression d'un produit
           </h3>
 
           <BaseButtonClose @click="isModalDeleteSpotOpen = false" />
@@ -1292,7 +1379,7 @@ const onSubmit = handleSubmit(
             class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
           >
             Supprimer
-            <span class="text-red-500">{{ currentSpot?.product }}</span> ?
+            <span class="text-red-500">{{ currentProduct?.product }}</span> ?
           </h3>
 
           <p
@@ -1314,7 +1401,7 @@ const onSubmit = handleSubmit(
             <BaseButton
               color="primary"
               flavor="solid"
-              @click="deleteSpot(currentSpot)"
+              @click="deleteSpot(currentProduct)"
               >Suppimer</BaseButton
             >
           </div>
@@ -1322,7 +1409,7 @@ const onSubmit = handleSubmit(
       </template>
     </TairoModal>
 
-    <!-- Modal Spot -->
+    <!-- Modal Product -->
     <TairoModal
       :open="isModalNewSpotPlanningOpen"
       size="xl"
@@ -1334,7 +1421,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Choix du SPOT
+            Choix du Produit
           </h3>
 
           <BaseButtonClose @click="isModalNewSpotPlanningOpen = false" />
@@ -1374,18 +1461,18 @@ const onSubmit = handleSubmit(
                           handleChange,
                           handleBlur,
                         }"
-                        name="planning.spot"
+                        name="planning.product"
                       >
                         <BaseListbox
                           label="Spot"
-                          :items="data?.data?.spots"
+                          :items="data?.data?.products"
                           :properties="{
                             value: '_id',
                             label: 'product',
                             sublabel: 'tag',
                             media: 'flag',
                           }"
-                          v-model="activeSpot"
+                          v-model="activeProduct"
                           :error="errorMessage"
                           :disabled="isSubmitting"
                           @update:model-value="handleChange"
@@ -1396,7 +1483,7 @@ const onSubmit = handleSubmit(
                   </div>
 
                   <div
-                    v-if="activeSpot._id != ''"
+                    v-if="activeProduct._id != ''"
                     class="grid grid-cols-12 gap-4 mt-4"
                   >
                     <div class="col-span-12 md:col-span-12">
@@ -1471,13 +1558,17 @@ const onSubmit = handleSubmit(
       <!-- Body -->
       <div id="planningPrint" class="overflow-auto">
         <div
-          v-if="isPrint == true"
+          v-if="isPrintPlanning == true || isPrintCertificate == true"
           class="flex justify-between items-center px-5 border-b-2 py-1"
         >
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            PLANNING DE DIFFUSION
+            {{
+              isPrintPlanning == true
+                ? 'PLANNING DE DIFFUSION'
+                : 'CERTIFICAT DE DIFFUSION'
+            }}
           </h3>
           <div shape="straight" class="">
             <img class="h-20 fit-content" src="/uploads/logos/c2.png" />
@@ -1509,7 +1600,7 @@ const onSubmit = handleSubmit(
             <span class="text-primary-500">{{ data.data?.period }}</span>
           </BaseText>
 
-          <div v-if="isPrint == false">
+          <div v-if="isPrintPlanning == false && isPrintCertificate == false">
             <BaseButton
               @click="removeMonth()"
               color="primary"
@@ -1530,7 +1621,7 @@ const onSubmit = handleSubmit(
         </div>
 
         <div class="flex justify-start px-2 pb-2">
-          <div v-for="(product, i) in data.data.spots" :key="product._id">
+          <div v-for="(product, i) in data.data.products" :key="product._id">
             <span class="px-5"
               >Produit {{ i + 1 }}: {{ product.message }}; Type:
               {{ product.type }}; Tag:
@@ -1668,10 +1759,7 @@ const onSubmit = handleSubmit(
                 </div>
               </div>
             </BaseCard>
-            <div
-              v-if="isPrint == true || true"
-              class="flex justify-between py-4"
-            >
+            <div v-if="true" class="flex justify-between py-4">
               <div>
                 <p class="py-2">
                   NB: (Difusé:
@@ -1734,14 +1822,14 @@ const onSubmit = handleSubmit(
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
             <BaseButton @click="isModalPlanningOpen = false">Fermer</BaseButton>
-            <BaseButton @click="printPlanning()">
+            <BaseButton @click="printPlanning('planning')">
               <Icon
                 name="lucide:printer"
                 class="pointer-events-none h-4 w-4 mx-2"
               />
               Imprimer le planning</BaseButton
             >
-            <BaseButton @click="isModalPlanningOpen = false">
+            <BaseButton @click="printPlanning('certificate')">
               <Icon
                 name="lucide:printer"
                 class="pointer-events-none h-4 w-4 mx-2"
@@ -1870,6 +1958,64 @@ const onSubmit = handleSubmit(
       </template>
     </TairoModal>
 
+    <!-- Modal upload product file -->
+    <TairoModal
+      :open="isModalUploadProductFileOpen"
+      size="sm"
+      @close="isModalUploadProductFileOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Upload du fichier produit
+          </h3>
+
+          <BaseButtonClose @click="isModalUploadProductFileOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full text-center">
+          <form action="" class="pb-2" method="POST" @submit.prevent="">
+            <BaseInputFile
+              accept=".jpg, .png, .mp4, .avi"
+              v-model="inputFileProduct"
+              shape="rounded"
+              label="Fichier"
+            />
+          </form>
+
+          <p
+            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est reversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalUploadProductFileOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="importProductFile()"
+              >Valider</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
     <!-- Current user -->
     <div
       class="ltablet:w-[310px] dark:bg-muted-800 fixed end-0 top-0 z-50 h-full w-[390px] bg-white transition-transform duration-300"
@@ -1961,7 +2107,7 @@ const onSubmit = handleSubmit(
             <div class="mt-6">
               <BaseButton shape="curved" class="w-full">
                 <span>
-                  Consulter le planning du spot
+                  Consulter le planning du produit
                   {{ selectedSpot?.product }}
                 </span>
               </BaseButton>
