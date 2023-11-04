@@ -47,6 +47,9 @@ function filterData(
   isReport = false,
 ) {
   const offset = (page - 1) * perPage
+  data = data.sort((a: any, b: any) => {
+    return a.createdAt < b.createdAt ? 1 : -1
+  })
   if (isReport == true) {
     let totalPending = 0
     data = data.map((item) => {

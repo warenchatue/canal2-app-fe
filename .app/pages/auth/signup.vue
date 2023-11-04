@@ -234,7 +234,7 @@ const onSubmit = handleSubmit(async (values) => {
           >
             <div class="text-center">
               <BaseHeading as="h2" size="3xl" weight="medium">
-                Bienvenue sur Dinno Fund
+                Bienvenue sur C2PUB
               </BaseHeading>
               <BaseParagraph size="sm" class="text-muted-400 mb-6">
                 Commençons par la création de votre compte

@@ -16,13 +16,14 @@
             lead="tight"
             class="text-muted-800 mx-auto mb-4 max-w-xl dark:text-white"
           >
-           Plateforme de financement
+            Plateforme de financement
           </BaseHeading>
           <BaseParagraph
             size="lg"
             class="text-muted-500 dark:text-muted-100 ptablet:max-w-lg ptablet:mx-auto mb-4 max-w-2xl"
           >
-            Notre plateforme s'adapte à tout type de besoin et vous permet de soutenir  vos activités te financer vos projets humanitaires
+            Notre plateforme s'adapte à tout type de besoin et vous permet de
+            soutenir vos activités te financer vos projets humanitaires
           </BaseParagraph>
           <div
             class="ptablet:max-w-md ptablet:mx-auto mt-6 grid scale-90 grid-cols-3"

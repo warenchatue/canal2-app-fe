@@ -754,7 +754,7 @@ const onSubmit = handleSubmit(
                   <div class="flex items-center">
                     <BaseAvatar
                       :src="
-                        item.product?.package?.announcer?.logo ??
+                        item.product?.order?.announcer?.logo ??
                         '/img/avatars/company.svg'
                       "
                       :text="item.initials"
@@ -762,10 +762,10 @@ const onSubmit = handleSubmit(
                     />
                     <div class="ms-3 leading-none">
                       <h4 class="font-sans text-sm font-medium">
-                        {{ item.product?.package?.announcer?.name }}
+                        {{ item.product?.order?.announcer?.name }}
                       </h4>
                       <p class="text-muted-400 font-sans text-xs">
-                        {{ item.product?.package?.announcer?.email }}
+                        {{ item.product?.order?.announcer?.email }}
                       </p>
                     </div>
                   </div>

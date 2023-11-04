@@ -15,7 +15,7 @@ ENABLE_DOCUMENTATION=false
 # It enables edition via https://nuxt.studio/
 ENABLE_DOCUMENTATION_STUDIO=false
 
-NUXT_ENV_APP_ENV=local
+NUXT_ENV_APP_ENV=production
 
 NUXT_ENV_API_URL=http://localhost:8700
 
