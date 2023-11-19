@@ -218,7 +218,7 @@ const auth = useAuthStore()
             </div>
             <div class="mb-2 space-y-5">
               <div
-                v-for="member in data.data"
+                v-for="member in data?.data"
                 :key="member._id"
                 class="flex items-center gap-3"
               >

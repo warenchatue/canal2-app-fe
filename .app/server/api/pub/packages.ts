@@ -13,8 +13,8 @@ export default defineEventHandler(async (event) => {
   } else if (action == 'findAll') {
     const response = await findAll(token)
     return {
-      total: response.metaData.totalItems,
-      metaData: response.metaData,
+      total: response.metaData.totalItems ?? 0,
+      metaData: response.metaData ?? {},
       data: filterData(response.data, filter, page, perPage),
     }
   } else if (action == 'findAllReport') {

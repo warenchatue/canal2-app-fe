@@ -94,34 +94,88 @@ export default defineAppConfig({
                 icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Raports',
-                to: '/bo/pub/reports',
-                icon: { name: 'lucide:file', class: 'w-4 h-4' },
-              },
-              {
                 name: 'Planning de diffusion',
                 to: '/bo/pub/diffusion-list',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Commandes',
+                name: 'Packages',
                 to: '/bo/pub/orders',
-                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
-              },
-              // {
-              //   name: 'Produits',
-              //   to: '/bo/pub/orders',
-              //   icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
-              // },
-              {
-                name: 'Annonceurs',
-                to: '/bo/pub/announcers',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Horaires',
                 to: '/bo/pub/hours',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
+              },
+            ],
+          },
+          {
+            name: 'Ventes',
+            icon: { name: 'ph:target-duotone', class: 'w-5 h-5' },
+            activePath: '/bo/sales',
+            children: [
+              {
+                name: 'Tableau de bord',
+                to: '/bo/sales',
+                icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Raports',
+                to: '/bo/sales/reports',
+                icon: { name: 'lucide:file', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Devis',
+                to: '/bo/sales/quotes',
+                icon: { name: 'lucide:file', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Factures',
+                to: '/bo/sales/orders',
+                icon: { name: 'lucide:file', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Annonceurs',
+                icon: { name: 'ph:users-duotone', class: 'w-5 h-5' },
+                to: '/bo/sales/announcers',
+              },
+              {
+                name: 'Articles',
+                to: '/bo/sales/orders',
+                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: "Variante d'articles",
+                to: '/bo/sales/orders',
+                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
+              },
+            ],
+          },
+          {
+            name: 'Finances',
+            icon: { name: 'ph:money-duotone', class: 'w-5 h-5' },
+            activePath: '/bo/accountancy',
+            children: [
+              {
+                name: 'Tableau de bord',
+                to: '/bo/accountancy',
+                icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Reductions',
+                to: '/bo/accountancy/reports',
+                icon: { name: 'lucide:file', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Taxes',
+                to: '/bo/accountancy/orders',
+                icon: { name: 'lucide:file', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Comptes',
+                to: '/bo/accountancy/orders',
+                icon: { name: 'lucide:file', class: 'w-4 h-4' },
               },
             ],
           },
@@ -155,19 +209,39 @@ export default defineAppConfig({
           // },
 
           {
-            name: 'SAV',
+            name: 'Messagerie',
             icon: { name: 'ph:chat-duotone', class: 'w-5 h-5' },
             isAdmin: true,
             activePath: '/bo/sav',
-            children: [],
+            children: [
+              {
+                name: 'Tableau de bord',
+                to: '/bo/pub',
+                icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Rappels',
+                to: '/bo/pub/reports',
+                icon: { name: 'ph:chat-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Conversations',
+                to: '/bo/pub/reports',
+                icon: { name: 'ph:chat-duotone', class: 'w-4 h-4' },
+              },
+            ],
           },
-
           {
             name: 'Admin',
             icon: { name: 'lucide:settings', class: 'w-5 h-5' },
             isAdmin: true,
             activePath: '/bo/admin',
             children: [
+              {
+                name: 'Entreprises',
+                to: '/bo/admin/users',
+                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
+              },
               {
                 name: 'Utilisateurs',
                 to: '/bo/admin/users',
