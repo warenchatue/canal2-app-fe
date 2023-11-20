@@ -104,17 +104,17 @@ function useGaugePersonal() {
           lead="tight"
           class="text-muted-800 xs:!text-4xl mx-auto mb-4 max-w-4xl dark:text-white"
         >
-          Bienvenue sur le conducteur publicitaire de
+          Bienvenue sur la plateforme
           <span
             class="text-primary-500 font-hairline underline decoration-dotted underline-offset-4"
-            >Canal2 International
+            >TV+ Enterprise Solution
           </span>
         </BaseHeading>
         <BaseParagraph
           size="lg"
           class="text-muted-500 dark:text-muted-100 mx-auto mb-4 max-w-2xl"
         >
-          C2PUB
+          TV+ES
         </BaseParagraph>
         <div class="flex items-center justify-center">
           <BaseButton

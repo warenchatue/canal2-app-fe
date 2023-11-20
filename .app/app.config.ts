@@ -127,12 +127,12 @@ export default defineAppConfig({
               },
               {
                 name: 'Devis',
-                to: '/bo/sales/quotes',
+                to: '/bo/sales/orders',
                 icon: { name: 'lucide:file', class: 'w-4 h-4' },
               },
               {
                 name: 'Factures',
-                to: '/bo/sales/orders',
+                to: '/bo/sales/invoices',
                 icon: { name: 'lucide:file', class: 'w-4 h-4' },
               },
               {
@@ -142,12 +142,12 @@ export default defineAppConfig({
               },
               {
                 name: 'Articles',
-                to: '/bo/sales/orders',
+                to: '/bo/sales/articles',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
                 name: "Variante d'articles",
-                to: '/bo/sales/orders',
+                to: '/bo/sales/articles-categories',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
             ],

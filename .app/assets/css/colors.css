@@ -1,17 +1,33 @@
 :root {
   /* violet from tailwind as r g b */
-  --color-primary-50: 245 243 255; /* #f5f3ff */
-  --color-primary-100: 237 233 254; /* #ede9fe */
-  --color-primary-200: 221 214 254; /* #ddd6fe */
-  --color-primary-300: 196 181 253; /* #c4b5fd */
-  --color-primary-400: 167 139 250; /* #a78bfa */
-  --color-primary-500: 139 92 246; /* #a855f7 */
-  --color-primary-600: 124 58 237; /* #9333ea */
-  --color-primary-700: 109 40 217; /* #7e22ce */
-  --color-primary-800: 91 33 182; /* #6b21a8 */
-  --color-primary-900: 76 29 149; /* #581c87 */
-  --color-primary-950: 46 16 101; /* #3b0764 */
+  /* --color-primary-50: 245 243 255; #f5f3ff */
+  /* --color-primary-100: 237 233 254; #ede9fe */
+  /* --color-primary-200: 221 214 254; #ddd6fe */
+  /* --color-primary-300: 196 181 253; #c4b5fd */
+  /* --color-primary-400: 167 139 250; #a78bfa */
+  /* --color-primary-500: 139 92 246; #a855f7 */
+  /* --color-primary-600: 124 58 237; #9333ea */
+  /* --color-primary-700: 109 40 217; #7e22ce */
+  /* --color-primary-800: 91 33 182; #6b21a8 */
+  /* --color-primary-900: 76 29 149; #581c87 */
+  /* --color-primary-950: 46 16 101; #3b0764 */
 
+  /* emerald from tailwind as r g b */
+  --color-primary-50: 236 253 248;
+  --color-primary-100: 209 250 237;
+  --color-primary-200: 167 243 219;
+  --color-primary-300: 110 231 193;
+  --color-primary-400: 52 211 162;
+  --color-primary-500: 16 185 133;
+  --color-primary-600: 5 150 105;
+  --color-primary-700: 4 120 84;
+  --color-primary-800: 6 95 67;
+  --color-primary-900: 6 78 56;
+  --color-primary-950: 2 44 31;
+
+
+
+  
   /* slate from tailwind as r g b */
   --color-muted-50: 248 250 252; /* #f8fafc */
   --color-muted-100: 241 245 249; /* #f1f5f9 */

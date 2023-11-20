@@ -5,10 +5,10 @@ import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Commandes',
+  title: 'Devis',
   preview: {
-    title: 'Commandes',
-    description: 'Contribution and withdrawal',
+    title: 'Devis',
+    description: 'Devis | Commandes',
     categories: ['bo', 'spots', 'orders'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
@@ -31,7 +31,7 @@ const toaster = useToaster()
 if (authStore.user.appRole?.name == UserRole.broadcast) {
   toaster.clearAll()
   toaster.show({
-    title: 'Désoler',
+    title: 'Désolé',
     message: `Vous n'avez pas access à cette page!`,
     color: 'danger',
     icon: 'ph:check',
@@ -557,10 +557,10 @@ const onSubmit = handleSubmit(
         <BaseButton
           color="primary"
           class="w-full sm:w-52"
-          @click=";(isModalNewPackageOpen = true), (isEdit = false)"
+          to="/bo/sales/orders/new-order"
         >
           <Icon name="ph:plus" class="h-4 w-4" />
-          <span>Nouvelle commande</span>
+          <span>Nouvau devis</span>
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">

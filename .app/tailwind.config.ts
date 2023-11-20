@@ -21,7 +21,7 @@ export default withShurikenUI({
     extend: {
       // Custom colors
       colors: {
-        // primary: colors.red,
+        // primary:colors.amber,
         // muted: colors.stone,
         // info: colors.sky,
         // success: colors.teal,

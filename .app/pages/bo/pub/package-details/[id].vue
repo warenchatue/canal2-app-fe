@@ -231,27 +231,37 @@ function checkSpot(d: number, hour: string) {
     return ['+', 'default']
   } else {
     const dateNow = new Date().toLocaleString('fr-FR')
+    const dateNowTime = new Date().getTime()
     var dateP = new Date(plannedSpots[0].date).toLocaleString('fr-FR')
+    var datePTime = new Date(plannedSpots[0].date).getTime()
     // console.log(plannedSpots[0])
-    // When printing
     if (isPrintPlanning.value == true) {
       return [plannedSpots[0].product.tag, 'warning']
     }
 
+    console.log(dateP)
+    console.log(dateNow)
+    console.log('')
+    if (datePTime < dateNowTime) {
+      console.log('danger')
+    } else {
+      console.log('pas danger')
+    }
+
     if (
-      dateP < dateNow &&
+      datePTime < dateNowTime &&
       plannedSpots[0].isManualPlay == false &&
       plannedSpots[0].isAutoPlay == false &&
       isPrintCertificate.value == false
     ) {
       return [plannedSpots[0].product.tag, 'danger']
     } else if (
-      dateP < dateNow &&
+      datePTime < dateNowTime &&
       (plannedSpots[0].isManualPlay == true ||
         plannedSpots[0].isAutoPlay == true)
     ) {
       return [plannedSpots[0].product.tag, 'primary']
-    } else if (dateP > dateNow && isPrintCertificate.value == false) {
+    } else if (datePTime > dateNowTime && isPrintCertificate.value == false) {
       // console.log(dateP)
       // console.log(dateNow)
       return [plannedSpots[0].product.tag, 'warning']
