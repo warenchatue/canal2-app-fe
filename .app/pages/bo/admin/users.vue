@@ -529,7 +529,7 @@ const onSubmit = handleSubmit(
                   {{ item.phone }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.appRole.tag ?? 'Not specified' }}
+                  {{ item.appRole?.tag ?? 'Not specified' }}
                 </TairoTableCell>
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag

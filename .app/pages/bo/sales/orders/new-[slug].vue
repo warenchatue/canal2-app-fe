@@ -90,6 +90,10 @@ const { data: announcers } = await useFetch('/api/pub/announcers', {
   query,
 })
 
+const { data: articles } = await useFetch('/api/sales/articles', {
+  query,
+})
+
 const { data: allUsers } = await useFetch('/api/users', {
   query,
 })
@@ -1221,19 +1225,19 @@ const onSubmit = handleSubmit(
                                     handleChange,
                                     handleBlur,
                                   }"
-                                  name="spotPackage.commercial"
+                                  name="order.article"
                                 >
                                   <BaseListbox
                                     label=""
-                                    :items="commercials"
+                                    :items="articles.data"
                                     :classes="{
                                       wrapper: 'w-32',
                                     }"
                                     :properties="{
                                       value: '_id',
-                                      label: 'lastName',
-                                      sublabel: 'email',
-                                      media: 'photo',
+                                      label: 'name',
+                                      sublabel: 'code',
+                                      media: '',
                                     }"
                                     v-model="curOrderItem.article"
                                     :error="errorMessage"

@@ -5,11 +5,11 @@ import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Articles',
+  title: 'Taxes',
   preview: {
-    title: 'Articles',
-    description: 'Gestion des articles',
-    categories: ['bo', 'articles'],
+    title: 'Taxes',
+    description: 'Gestion des Taxes',
+    categories: ['bo', 'Taxes'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -61,7 +61,7 @@ const query = computed(() => {
 })
 
 const { data, pending, error, refresh } = await useFetch(
-  '/api/sales/articles',
+  '/api/accountancy/taxes',
   {
     query,
   },
@@ -186,7 +186,7 @@ async function deleteArticle(article: any) {
     }
   })
 
-  const response = await useFetch('/api/sales/articles', {
+  const response = await useFetch('/api/accountancy/taxes', {
     method: 'delete',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
@@ -235,7 +235,7 @@ const onSubmit = handleSubmit(
           }
         })
 
-        const response = await useFetch('/api/sales/articles', {
+        const response = await useFetch('/api/accountancy/taxes', {
           method: 'put',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
@@ -253,7 +253,7 @@ const onSubmit = handleSubmit(
           }
         })
 
-        const response = await useFetch('/api/sales/articles', {
+        const response = await useFetch('/api/accountancy/taxes', {
           method: 'post',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
