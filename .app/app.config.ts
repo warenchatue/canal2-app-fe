@@ -174,7 +174,7 @@ export default defineAppConfig({
               },
               {
                 name: 'Comptes',
-                to: '/bo/accountancy/orders',
+                to: '/bo/accountancy/accounts',
                 icon: { name: 'lucide:file', class: 'w-4 h-4' },
               },
             ],

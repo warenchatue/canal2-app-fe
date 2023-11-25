@@ -66,7 +66,6 @@ const isModalUpdatePasswordOpen = ref(false)
 const newPassword = ref()
 const passwordError = ref<string | boolean | undefined>(false)
 const isEdit = ref(false)
-const { registerOrg, updateOrg } = useAuthStore()
 
 // This is the object that will contain the validation messages
 const ONE_MB = 1000000
@@ -195,7 +194,7 @@ async function deleteOrg(org: any) {
     }
   })
 
-  const response = await useFetch('/api/orgs', {
+  const response = await useFetch('/api/admin/orgs', {
     method: 'delete',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
@@ -206,13 +205,13 @@ async function deleteOrg(org: any) {
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Utilisateur supprimé !`,
+      message: `Organisation supprimée !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
     })
     isModalDeleteOrgOpen.value = false
-    filter.value = 'role'
+    filter.value = 'org'
     filter.value = ''
   } else {
     toaster.clearAll()
