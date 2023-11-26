@@ -6,7 +6,7 @@ import 'v-calendar/dist/style.css'
 import '~/assets/css/vcalendar.css'
 
 definePageMeta({
-  title: 'Tableau de Bord PUB',
+  title: 'Tableau de bord PUB',
   preview: {
     title: 'Analytics dashboard',
     description: 'Analytic',
@@ -47,7 +47,7 @@ const query2 = computed(() => {
   }
 })
 
-const { data: announcersData } = await useFetch('/api/pub/announcers', {
+const { data: announcersData } = await useFetch('/api/sales/announcers', {
   query: query2,
 })
 

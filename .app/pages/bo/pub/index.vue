@@ -47,7 +47,7 @@ const query2 = computed(() => {
   }
 })
 
-const { data: announcersData } = await useFetch('/api/pub/announcers', {
+const { data: announcersData } = await useFetch('/api/sales/announcers', {
   query: query2,
 })
 

@@ -79,7 +79,7 @@ const { data, pending } = await useFetch('/api/pub/packages', {
   query,
 })
 
-const { data: announcers } = await useFetch('/api/pub/announcers', {
+const { data: announcers } = await useFetch('/api/sales/announcers', {
   query,
 })
 

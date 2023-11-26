@@ -64,7 +64,7 @@ function filterData(
         const d1 = new Date(plannings[0].date ?? '')
         const diff = Math.abs(d2 - d1)
         const durationDays = Math.ceil(diff / (1000 * 60 * 60 * 24))
-        const totalDiffused = plannings.filter((e) => {
+        const totalDiffused = plannings.filter((e: any) => {
           return e.isManualPlay == true || e.isAutoPlay == true
         }).length
         item.durationDays = durationDays + 1

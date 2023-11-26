@@ -157,16 +157,6 @@ export default defineAppConfig({
             icon: { name: 'ph:money-duotone', class: 'w-5 h-5' },
             activePath: '/bo/accountancy',
             children: [
-              // {
-              //   name: 'Tableau de bord',
-              //   to: '/bo/accountancy',
-              //   icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
-              // },
-              {
-                name: 'Reductions',
-                to: '/bo/accountancy/reports',
-                icon: { name: 'lucide:file', class: 'w-4 h-4' },
-              },
               {
                 name: 'Taxes',
                 to: '/bo/accountancy/taxes',
@@ -238,7 +228,7 @@ export default defineAppConfig({
             activePath: '/bo/admin',
             children: [
               {
-                name: 'Entreprises',
+                name: 'Organisations',
                 to: '/bo/admin/orgs',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
@@ -268,11 +258,6 @@ export default defineAppConfig({
                 to: '/bo/profile/profile-notifications',
                 icon: { name: 'ph:chat-duotone', class: 'w-4 h-4' },
               },
-              // {
-              //   name: 'Taches',
-              //   to: '/bo/profile/tasks',
-              //   icon: { name: 'ph:chat-duotone', class: 'w-4 h-4' },
-              // },
             ],
           },
           {

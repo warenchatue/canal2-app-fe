@@ -4,16 +4,6 @@ import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
-const route = useRoute()
-const router = useRouter()
-const toaster = useToaster()
-const pageType = computed(() => route.params.slug)
-let pageTitle = ''
-if (pageType.value == 'order') {
-  pageTitle = 'Nouveau devis'
-} else if (pageType.value == 'order') {
-  pageTitle = 'Nouvelle facture'
-}
 definePageMeta({
   title: 'Devis & Factures',
   preview: {
@@ -26,14 +16,20 @@ definePageMeta({
   },
 })
 
+const route = useRoute()
+const router = useRouter()
+const toaster = useToaster()
 const authStore = useAuthStore()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(10)
-const isModalNewPackageOpen = ref(false)
+const isEdit = ref(false)
+const currentOrderInvoice = ref({})
+const token = useCookie('token')
+
 const isModalDeletePackageOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
-const isEdit = ref(false)
+const currentOrg = ref({})
 // Check if can have access
 if (authStore.user.appRole?.name == UserRole.broadcast) {
   toaster.clearAll()
@@ -71,7 +67,52 @@ watch([filter, perPage], () => {
   })
 })
 
-const token = useCookie('token')
+const pageType = computed(() => route.params.type)
+const pageValue = computed(() => route.params.value)
+const pageId = computed(() => route.params.id)
+
+let pageTitle = ''
+if (pageType.value == 'new') {
+  if (pageValue.value == 'order') {
+    pageTitle = 'Nouveau Devis'
+  } else if (pageValue.value == 'invoice') {
+    pageTitle = 'Nouvelle Facture'
+  }
+}
+if (pageType.value == 'view') {
+  if (pageValue.value == 'order') {
+    pageTitle = 'Consultation Devis'
+  } else if (pageValue.value == 'invoice') {
+    pageTitle = 'Consultation Facture'
+  }
+} else if (pageType.value == 'edit') {
+  isEdit.value = true
+  const query = computed(() => {
+    return {
+      filter: filter.value,
+      perPage: perPage.value,
+      page: page.value,
+      action: 'findOne',
+      id: pageId.value,
+      token: token.value,
+    }
+  })
+  if (pageValue.value == 'order') {
+    pageTitle = 'Mise à jour Devis'
+    const { data: singleOrder } = await useFetch('/api/sales/orders', {
+      query,
+    })
+    console.log('singleOrder')
+    console.log(singleOrder.value)
+    if (singleOrder.value?.success) {
+      currentOrderInvoice.value = singleOrder.value?.data
+      editOrderInvoiceFile(currentOrderInvoice.value)
+    }
+  } else if (pageValue.value == 'invoice') {
+    pageTitle = 'Mise à jour Facture'
+  }
+}
+
 const query = computed(() => {
   return {
     filter: filter.value,
@@ -82,15 +123,27 @@ const query = computed(() => {
   }
 })
 
-const { data, pending } = await useFetch('/api/pub/packages', {
+const { data } = await useFetch('/api/pub/packages', {
   query,
 })
 
-const { data: announcers } = await useFetch('/api/pub/announcers', {
+const { data: announcers } = await useFetch('/api/sales/announcers', {
   query,
 })
 
 const { data: articles } = await useFetch('/api/sales/articles', {
+  query,
+})
+
+const { data: orgs } = await useFetch('/api/admin/orgs', {
+  query,
+})
+
+const { data: taxes } = await useFetch('/api/accountancy/taxes', {
+  query,
+})
+
+const { data: accounts } = await useFetch('/api/accountancy/accounts', {
   query,
 })
 
@@ -100,26 +153,6 @@ const { data: allUsers } = await useFetch('/api/users', {
 const commercials = allUsers.value?.data.filter((e: any) => {
   return e.appRole?.name == UserRole.sale
 })
-function editPackage(spotPackage: any) {
-  isModalNewPackageOpen.value = true
-  isEdit.value = true
-  currentPackage.value = spotPackage
-  setFieldValue('spotPackage._id', spotPackage._id)
-  setFieldValue('spotPackage.label', spotPackage.label)
-  setFieldValue('spotPackage.numberSpots', spotPackage.numberSpots)
-  setFieldValue('spotPackage.numberProducts', spotPackage.numberProducts)
-  setFieldValue('spotPackage.period', spotPackage.period)
-  setFieldValue('spotPackage.announcer', spotPackage.announcer)
-  setFieldValue('spotPackage.commercial', spotPackage.manager)
-  setFieldValue('spotPackage.status', spotPackage.status)
-  setFieldValue('spotPackage.invoice.amount', spotPackage.invoice.amount)
-  setFieldValue('spotPackage.invoice.label', spotPackage.invoice.label)
-  setFieldValue('spotPackage.invoice.pending', spotPackage.invoice.pending)
-  setFieldValue(
-    'spotPackage.invoice.totalSpotsPaid',
-    spotPackage.invoice.totalSpotsPaid,
-  )
-}
 
 function confirmDeletePackage(spotPackage: any) {
   isModalDeletePackageOpen.value = true
@@ -132,7 +165,7 @@ async function deletePackage(spotPackage: any) {
     return {
       action: 'delete',
       token: token.value,
-      id: spotPackage._id,
+      id: order._id,
     }
   })
 
@@ -195,11 +228,11 @@ const VALIDATION_TEXT = {
 // It's used to define the shape that the form data will have
 const zodSchema = z
   .object({
-    spotPackage: z.object({
+    order: z.object({
       _id: z.string().optional(),
       label: z.string().min(1, VALIDATION_TEXT.LABEL_REQUIRED),
-      numberSpots: z.number(),
-      numberProducts: z.number(),
+      amount: z.number(),
+      pending: z.number(),
       status: z
         .union([
           z.literal('onHold'),
@@ -208,17 +241,6 @@ const zodSchema = z
           z.literal('closed'),
         ])
         .optional(),
-      period: z.string(),
-      invoice: z
-        .object({
-          label: z.string(),
-          amount: z.number(),
-          pending: z.number(),
-          totalSpotsPaid: z.number(),
-          url: z.string(),
-        })
-        .optional()
-        .nullable(),
       announcer: z
         .object({
           _id: z.string(),
@@ -240,11 +262,11 @@ const zodSchema = z
     }),
   })
   .superRefine((data, ctx) => {
-    if (!data.spotPackage.label) {
+    if (!data.order.label) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: VALIDATION_TEXT.LABEL_REQUIRED,
-        path: ['spotPackage.label'],
+        path: ['order.label'],
       })
     }
   })
@@ -256,19 +278,11 @@ type FormInput = z.infer<typeof zodSchema>
 const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
   avatar: null,
-  spotPackage: {
+  order: {
     label: '',
-    numberSpots: 0,
-    numberProducts: 0,
-    period: '',
+    amount: 0,
+    pending: 0,
     status: 'onHold',
-    invoice: {
-      label: '',
-      amount: 0,
-      pending: 0,
-      totalSpotsPaid: 0,
-      url: '',
-    },
     announcer: {
       _id: '',
       email: '',
@@ -301,10 +315,21 @@ const {
 
 const success = ref(false)
 
+function editOrderInvoiceFile(currentOrderInvoice: any) {
+  setTimeout(() => {
+    setFieldValue('order._id', currentOrderInvoice._id)
+    setFieldValue('order.label', currentOrderInvoice.label)
+    setFieldValue('order.announcer', currentOrderInvoice.announcer)
+    setFieldValue('order.commercial', currentOrderInvoice.manager)
+    setFieldValue('order.status', currentOrderInvoice.status)
+    orderData.value = currentOrderInvoice.items
+  }, 500)
+}
+
 async function confirmOrder() {
   const query4 = computed(() => {
     return {
-      action: 'updatePackage',
+      action: 'updateOrder',
       token: token.value,
       id: currentPackage.value._id,
     }
@@ -317,7 +342,7 @@ async function confirmOrder() {
     currentPackage.value.adminValidator = authStore.user._id
   }
 
-  const response = await useFetch('/api/pub/packages', {
+  const response = await useFetch('/api/sales/orders', {
     method: 'put',
     headers: { 'Content-Type': 'application/json' },
     query: query4,
@@ -385,7 +410,7 @@ const totalData = computed(() => {
   }, 0)
 
   const vatValue = orderData.value.reduce((acc, item) => {
-    return acc + item.quantity * item.rate * (item.taxes[0].text / 100 ?? 0)
+    return acc + item.quantity * item.rate * (item.taxes[0].value / 100 ?? 0)
   }, 0)
   const total = subtotal - discount + vatValue
 
@@ -409,31 +434,13 @@ const totalData = computed(() => {
   ]
 })
 
-const taxes = [
-  {
-    id: 1,
-    name: 'TVA',
-    text: 19.25,
-  },
-  {
-    id: 2,
-    name: 'TSP',
-    text: 3,
-  },
-  {
-    id: 3,
-    name: 'IR',
-    text: 33,
-  },
-]
-
 // This is where you would send the form data to the server
 const onSubmit = handleSubmit(
   async (values) => {
     success.value = false
 
     // here you have access to the validated form values
-    console.log('package-create-success', values)
+    console.log('order-create-success', values)
     const contractUrl =
       isEdit.value == true ? ref(currentPackage.contractUrl ?? '') : ref('')
     const invoiceUrl =
@@ -442,135 +449,150 @@ const onSubmit = handleSubmit(
     try {
       const isSuccess = ref(false)
 
-      // upload contract file
-      if (orderContractFile.value != null) {
-        const fd = new FormData()
-        fd.append('0', orderContractFile.value)
-        const query3 = computed(() => {
-          return {
-            action: 'new-single-file',
-            dir: 'uploads/ordersFiles/contracts',
-            token: token.value,
-          }
-        })
-
-        const { data: uploadData, refresh } = await useFetch(
-          '/api/files/upload',
-          {
-            method: 'POST',
-            query: query3,
-            body: fd,
-          },
-        )
-        console.log(uploadData)
-        if (uploadData.value?.success == false) {
-          contractUrl.value = ''
-          toaster.show({
-            title: 'Oops',
-            message: `Une erreur est survenue lors de l'importation de des fichiers !`,
-            color: 'danger',
-            icon: 'ph:check',
-            closable: true,
+      if (pageValue.value == 'order') {
+        // upload contract file
+        if (orderContractFile.value != null) {
+          const fd = new FormData()
+          fd.append('0', orderContractFile.value)
+          const query3 = computed(() => {
+            return {
+              action: 'new-single-file',
+              dir: 'uploads/ordersFiles/contracts',
+              token: token.value,
+            }
           })
-        } else {
-          contractUrl.value = uploadData.value.fileName
+
+          const { data: uploadData, refresh } = await useFetch(
+            '/api/files/upload',
+            {
+              method: 'POST',
+              query: query3,
+              body: fd,
+            },
+          )
+          console.log(uploadData)
+          if (uploadData.value?.success == false) {
+            contractUrl.value = ''
+            toaster.show({
+              title: 'Oops',
+              message: `Une erreur est survenue lors de l'importation de des fichiers !`,
+              color: 'danger',
+              icon: 'ph:check',
+              closable: true,
+            })
+          } else {
+            contractUrl.value = uploadData.value.fileName
+          }
         }
       }
 
-      // upload invoice file
-      if (orderInvoiceFile.value != null) {
-        const fd = new FormData()
-        fd.append('0', orderInvoiceFile.value)
-        const query3 = computed(() => {
-          return {
-            action: 'new-single-file',
-            dir: 'uploads/ordersFiles/invoices',
-            token: token.value,
-          }
-        })
-
-        const { data: uploadData, refresh } = await useFetch(
-          '/api/files/upload',
-          {
-            method: 'POST',
-            query: query3,
-            body: fd,
-          },
-        )
-        console.log(uploadData)
-        if (uploadData.value?.success == false) {
-          invoiceUrl.value = ''
-          toaster.show({
-            title: 'Oops',
-            message: `Une erreur est survenue lors de l'importation de des fichiers !`,
-            color: 'danger',
-            icon: 'ph:check',
-            closable: true,
+      if (pageValue.value == 'order') {
+        if (isEdit.value == true) {
+          const query2 = computed(() => {
+            return {
+              action: 'updateOrder',
+              token: token.value,
+              id: values.order._id,
+            }
           })
+
+          const response = await useFetch('/api/sales/orders', {
+            method: 'put',
+            headers: { 'Content-Type': 'application/json' },
+            query: query2,
+            body: {
+              ...values.order,
+              announcer: values.order?.announcer?._id,
+              manager: values.order?.commercial?._id,
+              contractUrl,
+              items: orderData.value,
+            },
+          })
+          isSuccess.value = response.data.value?.success
         } else {
-          invoiceUrl.value = uploadData.value.fileName
+          const query2 = computed(() => {
+            return {
+              action: 'createOrder',
+              token: token.value,
+            }
+          })
+
+          const response = await useFetch('/api/sales/orders', {
+            method: 'post',
+            headers: { 'Content-Type': 'application/json' },
+            query: query2,
+            body: {
+              ...values.order,
+              announcer: values.order?.announcer?._id,
+              manager: values.order?.commercial?._id,
+              _id: undefined,
+              contractUrl,
+              items: orderData.value,
+            },
+          })
+          isSuccess.value = response.data.value?.success
+        }
+      } else if (pageValue.value == 'invoice') {
+        if (isEdit.value == true) {
+          const query2 = computed(() => {
+            return {
+              action: 'updateInvoice',
+              token: token.value,
+              id: values.order._id,
+            }
+          })
+
+          const response = await useFetch('/api/sales/invoices', {
+            method: 'put',
+            headers: { 'Content-Type': 'application/json' },
+            query: query2,
+            body: {
+              ...values.order,
+              announcer: values.order?.announcer?._id,
+              manager: values.order?.commercial?._id,
+              order: values.order?.order?._id ?? undefined,
+            },
+          })
+          isSuccess.value = response.data.value?.success
+        } else {
+          const query2 = computed(() => {
+            return {
+              action: 'createInvoice',
+              token: token.value,
+            }
+          })
+
+          const response = await useFetch('/api/sales/invoices', {
+            method: 'post',
+            headers: { 'Content-Type': 'application/json' },
+            query: query2,
+            body: {
+              ...values.order,
+              announcer: values.order?.announcer?._id,
+              manager: values.order?.commercial?._id,
+              _id: undefined,
+              order: values.order?.order?._id ?? undefined,
+            },
+          })
+          isSuccess.value = response.data.value?.success
         }
       }
 
-      if (isEdit.value == true) {
-        const query2 = computed(() => {
-          return {
-            action: 'updatePackage',
-            token: token.value,
-            id: values.spotPackage._id,
-          }
-        })
-
-        const response = await useFetch('/api/pub/packages', {
-          method: 'put',
-          headers: { 'Content-Type': 'application/json' },
-          query: query2,
-          body: {
-            ...values.spotPackage,
-            announcer: values.spotPackage?.announcer?._id,
-            manager: values.spotPackage?.commercial?._id,
-            invoice: { ...values.spotPackage?.invoice, url: invoiceUrl.value },
-            contractUrl,
-          },
-        })
-        isSuccess.value = response.data.value?.success
-      } else {
-        const query2 = computed(() => {
-          return {
-            action: 'createPackage',
-            token: token.value,
-          }
-        })
-
-        const response = await useFetch('/api/pub/packages', {
-          method: 'post',
-          headers: { 'Content-Type': 'application/json' },
-          query: query2,
-          body: {
-            ...values.spotPackage,
-            announcer: values.spotPackage?.announcer?._id,
-            manager: values.spotPackage?.commercial?._id,
-            _id: undefined,
-            invoice: { ...values.spotPackage?.invoice, url: invoiceUrl.value },
-            contractUrl,
-          },
-        })
-        isSuccess.value = response.data.value?.success
-      }
       if (isSuccess) {
         success.value = true
         toaster.clearAll()
         toaster.show({
           title: 'Success',
           message:
-            isEdit.value == false ? `Package créé !` : `Package mis à jour`,
+            isEdit.value == false
+              ? `Création réussie !`
+              : `Mise à jour réussie`,
           color: 'success',
           icon: 'ph:check',
           closable: true,
         })
-        isModalNewPackageOpen.value = false
         resetForm()
-        filter.value = 'spotPackage'
+        filter.value = 'order'
         filter.value = ''
       } else {
         toaster.clearAll()
@@ -606,7 +628,7 @@ const onSubmit = handleSubmit(
     success.value = false
 
     // here you have access to the error
-    console.log('payment-create-error', error)
+    console.log('order-create-error', error)
 
     // you can use it to scroll to the first error
     document.documentElement.scrollTo({
@@ -626,30 +648,52 @@ const onSubmit = handleSubmit(
           size="xl"
           weight="medium"
           lead="tight"
-          class="text-muted-500 dark:text-muted-200"
+          class="text-primary-500 dark:text-primary-500"
         >
           {{ pageTitle }}
         </BaseHeading>
       </template>
       <template #right>
-        <BaseSelect
-          v-model="perPage"
-          label=""
-          :classes="{
-            wrapper: 'w-full sm:w-40',
-          }"
+        <BaseHeading
+          as="h4"
+          size="md"
+          weight="medium"
+          lead="tight"
+          class="text-muted-500 dark:text-muted-200"
         >
-          <option :value="10">Canal2</option>
-          <option :value="25">Sweet FM</option>
-          <option :value="50">Regie2</option>
-        </BaseSelect>
-        <BaseButton
-          color="primary"
-          class="w-full sm:w-52"
-          @click=";(isModalNewPackageOpen = true), (isEdit = false)"
-        >
+          Entreprise :
+        </BaseHeading>
+        <div class="text-muted-800 dark:text-muted-100 font-medium !w-64">
+          <BaseListbox
+            label=""
+            :items="orgs.data"
+            :classes="{
+              wrapper: '!w-64',
+            }"
+            :properties="{
+              value: '_id',
+              label: 'name',
+              sublabel: 'email',
+              media: '',
+            }"
+            v-model="currentOrg"
+            :error="errorMessage"
+            :disabled="isSubmitting"
+            @update:model-value="handleChange"
+            @blur="handleBlur"
+          />
+        </div>
+        <BaseButton color="primary" class="w-full sm:w-40" @click="onSubmit">
           <Icon name="ph:pen" class="h-4 w-4" />
           <span>Enregistrer</span>
+        </BaseButton>
+        <BaseButton
+          color="warning"
+          class="w-full sm:w-40"
+          @click="isEdit = false"
+        >
+          <Icon name="ph:check" class="h-4 w-4" />
+          <span>Valider</span>
         </BaseButton>
       </template>
       <form method="POST" action="" @submit.prevent="onSubmit">
@@ -657,37 +701,19 @@ const onSubmit = handleSubmit(
           <div class="mb-4 flex items-center justify-between">
             <div>
               <BaseHeading as="h2" size="xl" weight="medium" lead="none">
-                {{ pageType == 'order' ? 'Devis' : 'Facture' }} #ox-81469
+                {{ pageValue == 'order' ? 'Devis' : 'Facture' }} Brouillon
               </BaseHeading>
             </div>
             <div class="flex items-center justify-end gap-3">
               <BaseButtonIcon
                 condensed
                 shape="full"
-                data-tooltip="Edit invoice"
+                data-tooltip="Prévisualiser"
               >
-                <Icon name="ph:pencil-duotone" class="h-4 w-4" />
+                <Icon name="ph:eye-duotone" class="h-4 w-4" />
               </BaseButtonIcon>
-              <BaseButtonIcon
-                condensed
-                shape="full"
-                data-tooltip="Send by email"
-              >
-                <Icon name="ph:envelope-duotone" class="h-4 w-4" />
-              </BaseButtonIcon>
-              <BaseButtonIcon
-                condensed
-                shape="full"
-                data-tooltip="Print invoice"
-              >
+              <BaseButtonIcon condensed shape="full" data-tooltip="Imprimer">
                 <Icon name="ph:printer-duotone" class="h-4 w-4" />
-              </BaseButtonIcon>
-              <BaseButtonIcon
-                condensed
-                shape="full"
-                data-tooltip="Download as PDF"
-              >
-                <Icon name="ph:download-duotone" class="h-4 w-4" />
               </BaseButtonIcon>
             </div>
           </div>
@@ -712,7 +738,7 @@ const onSubmit = handleSubmit(
                         >
                         </BaseHeading>
                         <BaseParagraph size="xs" class="text-muted-400">
-                          Canal2 International
+                          <!-- {{ currentOrg?.name }} -->
                         </BaseParagraph>
                       </div>
                     </div>
@@ -723,15 +749,14 @@ const onSubmit = handleSubmit(
                         <p
                           class="text-muted-700 dark:text-muted-100 text-sm font-normal"
                         >
-                          Canal2 International
+                          {{ currentOrg?.name }}
                         </p>
                         <p class="text-xs">
-                          Siege social avenue de l'independance au rond poind du
-                          cinquantenaire à youpwe
+                          {{ currentOrg?.address }}
                         </p>
-                        <p class="text-xs">Douala BP.</p>
+                        <p class="text-xs">{{ currentOrg?.country?.name }}</p>
                         <p class="text-xs">
-                          Couriel:dircom@canal2international.net
+                          {{ currentOrg?.email }}
                         </p>
                       </div>
                     </div>
@@ -863,11 +888,6 @@ const onSubmit = handleSubmit(
                   >
                     <div class="mx-auto flex w-full flex-col">
                       <div>
-                        <p
-                          class="font-alt text-muted-500 dark:text-muted-200 text-lg leading-5"
-                        >
-                          Devis en brouillon
-                        </p>
                         <div class="grid grid-cols-12 gap-4">
                           <div
                             class="ltablet:col-span-6 col-span-12 lg:col-span-6"
@@ -879,7 +899,7 @@ const onSubmit = handleSubmit(
                                 handleChange,
                                 handleBlur,
                               }"
-                              name="spotPackage.announcer"
+                              name="order.announcer"
                             >
                               <BaseListbox
                                 label="Annonceur"
@@ -906,7 +926,7 @@ const onSubmit = handleSubmit(
                                 handleChange,
                                 handleBlur,
                               }"
-                              name="spotPackage.label"
+                              name="order.label"
                             >
                               <BaseInput
                                 label="Mode de paiement"
@@ -929,7 +949,7 @@ const onSubmit = handleSubmit(
                                 handleChange,
                                 handleBlur,
                               }"
-                              name="spotPackage.period"
+                              name="order.period"
                             >
                               <BaseInput
                                 label="Conditions de reglements"
@@ -954,7 +974,7 @@ const onSubmit = handleSubmit(
                                 handleChange,
                                 handleBlur,
                               }"
-                              name="spotPackage.commercial"
+                              name="order.commercial"
                             >
                               <BaseListbox
                                 label="vendeur"
@@ -981,7 +1001,7 @@ const onSubmit = handleSubmit(
                                 handleChange,
                                 handleBlur,
                               }"
-                              name="spotPackage.label"
+                              name="order.label"
                             >
                               <BaseInput
                                 label="Equipe commerciale"
@@ -1005,7 +1025,7 @@ const onSubmit = handleSubmit(
                                 handleChange,
                                 handleBlur,
                               }"
-                              name="spotPackage.status"
+                              name="order.status"
                             >
                               <BaseSelect
                                 label="Statut *"
@@ -1182,7 +1202,7 @@ const onSubmit = handleSubmit(
                             <td
                               class="text-muted-400 hidden px-3 py-4 text-right text-sm sm:table-cell"
                             >
-                              {{ item.taxes[0]?.title }}
+                              {{ item.taxes[0]?.code }}
                             </td>
                             <td
                               class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right text-sm sm:pe-6 md:pe-0"
@@ -1266,20 +1286,45 @@ const onSubmit = handleSubmit(
                             <td
                               class="hidden px-3 py-4 text-right text-sm sm:table-cell"
                             >
-                              <div class="flex justify-end">
-                                <BaseInput
-                                  v-model="curOrderItem.account"
-                                  type="text"
-                                  :classes="{
-                                    wrapper: 'w-16',
-                                  }"
-                                />
+                              <div class="flex justify-center">
+                                <div
+                                  class="text-muted-800 dark:text-muted-100 font-medium"
+                                >
+                                  <Field
+                                    v-slot="{
+                                      field,
+                                      errorMessage,
+                                      handleChange,
+                                      handleBlur,
+                                    }"
+                                    name="order.account"
+                                  >
+                                    <BaseListbox
+                                      label=""
+                                      :items="accounts.data"
+                                      :classes="{
+                                        wrapper: 'w-16',
+                                      }"
+                                      :properties="{
+                                        value: '_id',
+                                        label: 'code',
+                                        sublabel: 'label',
+                                        media: '',
+                                      }"
+                                      v-model="curOrderItem.article"
+                                      :error="errorMessage"
+                                      :disabled="isSubmitting"
+                                      @update:model-value="handleChange"
+                                      @blur="handleBlur"
+                                    />
+                                  </Field>
+                                </div>
                               </div>
                             </td>
                             <td
                               class="hidden px-3 py-4 text-right text-sm sm:table-cell"
                             >
-                              <div class="flex justify-end">
+                              <div class="flex justify-center">
                                 <BaseInput
                                   v-model.number="curOrderItem.quantity"
                                   type="number"
@@ -1301,7 +1346,7 @@ const onSubmit = handleSubmit(
                               />
                             </td>
                             <td
-                              class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right text-sm sm:pe-6 md:pe-0"
+                              class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-center text-sm sm:pe-6 md:pe-0"
                             >
                               <BaseInput
                                 v-model.number="curOrderItem.rate"
@@ -1312,7 +1357,7 @@ const onSubmit = handleSubmit(
                               />
                             </td>
                             <td
-                              class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right text-sm sm:pe-6 md:pe-0"
+                              class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-center text-sm sm:pe-6 md:pe-0"
                             >
                               <BaseInput
                                 v-model.number="curOrderItem.discount"
@@ -1323,21 +1368,21 @@ const onSubmit = handleSubmit(
                               />
                             </td>
                             <td
-                              class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right text-sm sm:pe-6 md:pe-0"
+                              class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-center text-sm sm:pe-6 md:pe-0"
                             >
                               <BaseListbox
                                 v-model="curOrderItem.taxes"
                                 label=""
-                                :items="taxes"
+                                :items="taxes.data"
                                 placeholder=""
                                 :multiple-label="
                               (value: any[], labelProperty?: string) => { 
                                 if (value.length === 0) { return 'Vide'; } else if (value.length > 1) { return `${value.length} elements`; } 
                                 return labelProperty ? String(value?.[0]?.[labelProperty]) :  String(value?.[0])+' : '+String(value?.[1]); }"
                                 :properties="{
-                                  value: 'id',
-                                  label: 'name',
-                                  sublabel: 'text',
+                                  value: '_id',
+                                  label: 'code',
+                                  sublabel: 'value',
                                 }"
                                 multiple
                               />

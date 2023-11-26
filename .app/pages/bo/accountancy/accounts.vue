@@ -5,11 +5,11 @@ import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Accountes',
+  title: 'Comptes',
   preview: {
-    title: 'Accountes',
-    description: 'Gestion des Accountes',
-    categories: ['bo', 'Accountes'],
+    title: 'Comptes',
+    description: 'Gestion des Comptes',
+    categories: ['bo', 'accountancy'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -61,7 +61,7 @@ const query = computed(() => {
 })
 
 const { data, pending, error, refresh } = await useFetch(
-  '/api/accountancy/taxes',
+  '/api/accountancy/accounts',
   {
     query,
   },
@@ -123,7 +123,7 @@ const initialValues = computed<FormInput>(() => ({
     code: '',
     label: '',
     description: '',
-    position: '',
+    position: 'c',
   },
 }))
 
@@ -185,7 +185,7 @@ async function deleteAccount(tax: any) {
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Accounte supprimée !`,
+      message: `Compte supprimée !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
@@ -319,7 +319,7 @@ const onSubmit = handleSubmit(
         <BaseInput
           v-model="filter"
           icon="lucide:search"
-          placeholder="Filtrer opera..."
+          placeholder="Filtrer comptes..."
           :classes="{
             wrapper: 'w-full sm:w-auto',
           }"
@@ -349,7 +349,7 @@ const onSubmit = handleSubmit(
           "
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
-          <span>Nouvelle Accounte</span>
+          <span>Nouveau Compte</span>
         </BaseButton>
       </template>
 
@@ -393,9 +393,13 @@ const onSubmit = handleSubmit(
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Code </TairoTableHeading>
 
-                <TairoTableHeading uppercase spaced> Libellé </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>
+                  Libellé
+                </TairoTableHeading>
 
-                <TairoTableHeading uppercase spaced> Position </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>
+                  Position
+                </TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>
                   Description
@@ -506,7 +510,7 @@ const onSubmit = handleSubmit(
       </div>
     </TairoContentWrapper>
 
-    <!-- Modal new Accounte -->
+    <!-- Modal new Account -->
     <TairoModal
       :open="isModalNewAccountOpen"
       size="xl"
@@ -518,7 +522,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            {{ isEdit == true ? 'Mise à jour' : 'Nouvelle' }} Accounte
+            {{ isEdit == true ? 'Mise à jour' : 'Nouveau' }} Compte
           </h3>
 
           <BaseButtonClose @click="isModalNewAccountOpen = false" />
@@ -561,10 +565,10 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="account.name"
+                      name="account.label"
                     >
                       <BaseInput
-                        label="Nom"
+                        label="Libellé"
                         icon="ph:file-duotone"
                         placeholder=""
                         :model-value="field.value"
@@ -575,22 +579,23 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                  <div class="col-span-12 md:col-span-12">
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="account.value"
+                      name="account.position"
                     >
-                      <BaseInput
-                        label="Valeur"
-                        icon="ph:file-duotone"
-                        placeholder=""
-                        type="number"
+                      <BaseSelect
+                        label="Position *"
+                        icon="ph:funnel"
                         :model-value="field.value"
                         :error="errorMessage"
                         :disabled="isSubmitting"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
-                      />
+                      >
+                        <option value="d">Debit</option>
+                        <option value="c">Credit</option>
+                      </BaseSelect>
                     </Field>
                   </div>
                   <div class="col-span-12 md:col-span-12">
@@ -695,7 +700,7 @@ const onSubmit = handleSubmit(
     >
       <div class="flex h-16 w-full items-center justify-between px-8">
         <BaseHeading tag="h3" size="lg" class="text-muted-800 dark:text-white">
-          <span>Détails Accounte</span>
+          <span>Détails Comptes</span>
         </BaseHeading>
         <BaseButtonIcon small @click="expanded = true">
           <Icon name="lucide:arrow-right" class="pointer-events-none h-4 w-4" />
