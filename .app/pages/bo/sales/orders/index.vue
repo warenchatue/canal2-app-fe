@@ -147,8 +147,6 @@ const zodSchema = z
     spotPackage: z.object({
       _id: z.string().optional(),
       label: z.string().min(1, VALIDATION_TEXT.LABEL_REQUIRED),
-      numberSpots: z.number(),
-      numberProducts: z.number(),
       status: z
         .union([
           z.literal('onHold'),
@@ -207,8 +205,6 @@ const initialValues = computed<FormInput>(() => ({
   avatar: null,
   spotPackage: {
     label: '',
-    numberSpots: 0,
-    numberProducts: 0,
     period: '',
     status: 'onHold',
     invoice: {

@@ -762,10 +762,10 @@ const onSubmit = handleSubmit(
                     />
                     <div class="ms-3 leading-none">
                       <h4 class="font-sans text-sm font-medium">
-                        {{ item.product?.order?.announcer?.name }}
+                        {{ item.product?.package?.order?.announcer?.name }}
                       </h4>
                       <p class="text-muted-400 font-sans text-xs">
-                        {{ item.product?.order?.announcer?.email }}
+                        {{ item.product?.package?.order?.announcer?.email }}
                       </p>
                     </div>
                   </div>

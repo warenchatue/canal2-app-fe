@@ -5,9 +5,9 @@ import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Commandes',
+  title: 'Packages',
   preview: {
-    title: 'Commandes',
+    title: 'Packages',
     description: 'Contribution and withdrawal',
     categories: ['bo', 'spots', 'orders'],
     src: '/img/screens/layouts-table-list-1.png',
@@ -89,39 +89,29 @@ const { data: allUsers } = await useFetch('/api/users', {
 const commercials = allUsers.value?.data.filter((e: any) => {
   return e.appRole?.name == UserRole.sale
 })
-function editPackage(spotPackage: any) {
+function editPackage(orderPackage: any) {
   isModalNewPackageOpen.value = true
   isEdit.value = true
-  currentPackage.value = spotPackage
-  setFieldValue('spotPackage._id', spotPackage._id)
-  setFieldValue('spotPackage.label', spotPackage.label)
-  setFieldValue('spotPackage.numberSpots', spotPackage.numberSpots)
-  setFieldValue('spotPackage.numberProducts', spotPackage.numberProducts)
-  setFieldValue('spotPackage.period', spotPackage.period)
-  setFieldValue('spotPackage.announcer', spotPackage.announcer)
-  setFieldValue('spotPackage.commercial', spotPackage.manager)
-  setFieldValue('spotPackage.status', spotPackage.status)
-  setFieldValue('spotPackage.invoice.amount', spotPackage.invoice.amount)
-  setFieldValue('spotPackage.invoice.label', spotPackage.invoice.label)
-  setFieldValue('spotPackage.invoice.pending', spotPackage.invoice.pending)
-  setFieldValue(
-    'spotPackage.invoice.totalSpotsPaid',
-    spotPackage.invoice.totalSpotsPaid,
-  )
+  currentPackage.value = orderPackage
+  setFieldValue('orderPackage._id', orderPackage._id)
+  setFieldValue('orderPackage.label', orderPackage.label)
+  setFieldValue('orderPackage.code', orderPackage.code)
+  setFieldValue('orderPackage.numberProducts', orderPackage.numberProducts)
+  setFieldValue('orderPackage.period', orderPackage.period)
 }
 
-function confirmDeletePackage(spotPackage: any) {
+function confirmDeletePackage(orderPackage: any) {
   isModalDeletePackageOpen.value = true
   isEdit.value = false
-  currentPackage.value = spotPackage
+  currentPackage.value = orderPackage
 }
 
-async function deletePackage(spotPackage: any) {
+async function deletePackage(orderPackage: any) {
   const query2 = computed(() => {
     return {
       action: 'delete',
       token: token.value,
-      id: spotPackage._id,
+      id: orderPackage._id,
     }
   })
 
@@ -142,7 +132,7 @@ async function deletePackage(spotPackage: any) {
       closable: true,
     })
     isModalDeletePackageOpen.value = false
-    filter.value = 'spotPackage'
+    filter.value = 'orderPackage'
     filter.value = ''
   } else {
     toaster.clearAll()
@@ -184,11 +174,12 @@ const VALIDATION_TEXT = {
 // It's used to define the shape that the form data will have
 const zodSchema = z
   .object({
-    spotPackage: z.object({
+    orderPackage: z.object({
       _id: z.string().optional(),
-      label: z.string().min(1, VALIDATION_TEXT.LABEL_REQUIRED),
-      numberSpots: z.number(),
-      numberProducts: z.number(),
+      code: z.string().optional(),
+      label: z.string().optional(),
+      numberProducts: z.number().optional(),
+      quantities: z.number().optional(),
       status: z
         .union([
           z.literal('onHold'),
@@ -198,44 +189,16 @@ const zodSchema = z
         ])
         .optional(),
       period: z.string(),
-      invoice: z
-        .object({
-          label: z.string(),
-          amount: z.number(),
-          pending: z.number(),
-          totalSpotsPaid: z.number(),
-          url: z.string(),
-        })
-        .optional()
-        .nullable(),
-      announcer: z
-        .object({
-          _id: z.string(),
-          email: z.string(),
-          name: z.string(),
-          photo: z.string().optional(),
-        })
-        .optional()
-        .nullable(),
-      commercial: z
-        .object({
-          _id: z.string(),
-          email: z.string(),
-          lastName: z.string(),
-          photo: z.string().optional(),
-        })
-        .optional()
-        .nullable(),
     }),
   })
   .superRefine((data, ctx) => {
-    if (!data.spotPackage.label) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: VALIDATION_TEXT.LABEL_REQUIRED,
-        path: ['spotPackage.label'],
-      })
-    }
+    // if (!data.orderPackage.label) {
+    //   ctx.addIssue({
+    //     code: z.ZodIssueCode.custom,
+    //     message: VALIDATION_TEXT.LABEL_REQUIRED,
+    //     path: ['orderPackage.label'],
+    //   })
+    // }
   })
 
 // Zod has a great infer method that will
@@ -245,31 +208,13 @@ type FormInput = z.infer<typeof zodSchema>
 const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
   avatar: null,
-  spotPackage: {
+  orderPackage: {
     label: '',
-    numberSpots: 0,
+    code: '',
+    quantities: 0,
     numberProducts: 0,
     period: '',
     status: 'onHold',
-    invoice: {
-      label: '',
-      amount: 0,
-      pending: 0,
-      totalSpotsPaid: 0,
-      url: '',
-    },
-    announcer: {
-      _id: '',
-      email: '',
-      name: '',
-      flag: '',
-    },
-    commercial: {
-      _id: authStore.user._id ?? '',
-      email: authStore.user.email ?? '',
-      lastName: authStore.user.firstName + ' ' + authStore.user.lastName,
-      photo: '',
-    },
   },
 }))
 
@@ -353,82 +298,12 @@ const onSubmit = handleSubmit(
     try {
       const isSuccess = ref(false)
 
-      // upload contract file
-      if (orderContractFile.value != null) {
-        const fd = new FormData()
-        fd.append('0', orderContractFile.value)
-        const query3 = computed(() => {
-          return {
-            action: 'new-single-file',
-            dir: 'uploads/ordersFiles/contracts',
-            token: token.value,
-          }
-        })
-
-        const { data: uploadData, refresh } = await useFetch(
-          '/api/files/upload',
-          {
-            method: 'POST',
-            query: query3,
-            body: fd,
-          },
-        )
-        console.log(uploadData)
-        if (uploadData.value?.success == false) {
-          contractUrl.value = ''
-          toaster.show({
-            title: 'Oops',
-            message: `Une erreur est survenue lors de l'importation de des fichiers !`,
-            color: 'danger',
-            icon: 'ph:check',
-            closable: true,
-          })
-        } else {
-          contractUrl.value = uploadData.value.fileName
-        }
-      }
-
-      // upload invoice file
-      if (orderInvoiceFile.value != null) {
-        const fd = new FormData()
-        fd.append('0', orderInvoiceFile.value)
-        const query3 = computed(() => {
-          return {
-            action: 'new-single-file',
-            dir: 'uploads/ordersFiles/invoices',
-            token: token.value,
-          }
-        })
-
-        const { data: uploadData, refresh } = await useFetch(
-          '/api/files/upload',
-          {
-            method: 'POST',
-            query: query3,
-            body: fd,
-          },
-        )
-        console.log(uploadData)
-        if (uploadData.value?.success == false) {
-          invoiceUrl.value = ''
-          toaster.show({
-            title: 'Oops',
-            message: `Une erreur est survenue lors de l'importation de des fichiers !`,
-            color: 'danger',
-            icon: 'ph:check',
-            closable: true,
-          })
-        } else {
-          invoiceUrl.value = uploadData.value.fileName
-        }
-      }
-
       if (isEdit.value == true) {
         const query2 = computed(() => {
           return {
             action: 'updatePackage',
             token: token.value,
-            id: values.spotPackage._id,
+            id: values.orderPackage._id,
           }
         })
 
@@ -437,11 +312,7 @@ const onSubmit = handleSubmit(
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.spotPackage,
-            announcer: values.spotPackage?.announcer?._id,
-            manager: values.spotPackage?.commercial?._id,
-            invoice: { ...values.spotPackage?.invoice, url: invoiceUrl.value },
-            contractUrl,
+            ...values.orderPackage,
           },
         })
         isSuccess.value = response.data.value?.success
@@ -458,12 +329,8 @@ const onSubmit = handleSubmit(
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.spotPackage,
-            announcer: values.spotPackage?.announcer?._id,
-            manager: values.spotPackage?.commercial?._id,
+            ...values.orderPackage,
             _id: undefined,
-            invoice: { ...values.spotPackage?.invoice, url: invoiceUrl.value },
-            contractUrl,
           },
         })
         isSuccess.value = response.data.value?.success
@@ -474,14 +341,14 @@ const onSubmit = handleSubmit(
         toaster.show({
           title: 'Success',
           message:
-            isEdit.value == false ? `Package créé !` : `Package mis à jour`,
+            isEdit.value == false ? `Package crée !` : `Package mis à jour`,
           color: 'success',
           icon: 'ph:check',
           closable: true,
         })
         isModalNewPackageOpen.value = false
         resetForm()
-        filter.value = 'spotPackage'
+        filter.value = 'orderPackage'
         filter.value = ''
       } else {
         toaster.clearAll()
@@ -517,7 +384,7 @@ const onSubmit = handleSubmit(
     success.value = false
 
     // here you have access to the error
-    console.log('payment-create-error', error)
+    console.log('package-create-error', error)
 
     // you can use it to scroll to the first error
     document.documentElement.scrollTo({
@@ -557,10 +424,11 @@ const onSubmit = handleSubmit(
         <BaseButton
           color="primary"
           class="w-full sm:w-52"
+          disabled
           @click=";(isModalNewPackageOpen = true), (isEdit = false)"
         >
           <Icon name="ph:plus" class="h-4 w-4" />
-          <span>Nouvelle commande</span>
+          <span>Nouveau Package</span>
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">
@@ -820,25 +688,27 @@ const onSubmit = handleSubmit(
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseAvatar
-                      :src="item.announcer?.logo ?? '/img/avatars/company.svg'"
+                      :src="
+                        item.order.announcer?.logo ?? '/img/avatars/company.svg'
+                      "
                       :text="item.initials"
                       :class="getRandomColor()"
                     />
                     <div class="ms-3 leading-none">
                       <h4 class="font-sans text-sm font-medium">
-                        {{ item.announcer?.name }}
+                        {{ item.order.announcer?.name }}
                       </h4>
                       <p class="text-muted-400 font-sans text-xs">
-                        {{ item.announcer?.email }}
+                        {{ item.order.announcer?.email }}
                       </p>
                     </div>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.label }}
+                  {{ item.order.label }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.numberSpots }} spots
+                  {{ item.quantities }} spots
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{ item.numberPlay ?? 0 }} spots
@@ -853,14 +723,14 @@ const onSubmit = handleSubmit(
                   <a
                     v-if="item.contractUrl"
                     class="mx-1 text-white bg-muted-600 p-2 rounded"
-                    :href="'/' + item.contractUrl"
+                    :href="'/' + item?.contractUrl"
                     target="_blank"
                     >C</a
                   >
                   <a
-                    v-if="item.invoice.url"
+                    v-if="item.invoice?.url"
                     class="mx-1 text-white bg-muted-600 p-2 rounded"
-                    :href="'/' + item.invoice.url"
+                    :href="'/' + item.invoice?.url"
                     target="_blank"
                     >F</a
                   >
@@ -937,7 +807,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            {{ isEdit == true ? 'Editer' : 'Nouvelle' }} commande
+            {{ isEdit == true ? 'Editer' : 'Nouveau' }} Package
           </h3>
 
           <BaseButtonClose @click="isModalNewPackageOpen = false" />
@@ -967,12 +837,13 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.label"
+                      name="orderPackage.code"
                     >
                       <BaseInput
-                        label="Mode de paiement"
-                        icon="ph:user-duotone"
-                        placeholder="ex: Bon de commande"
+                        disabled
+                        label="Code"
+                        icon="ph:file-duotone"
+                        placeholder="ex: CDE_10X"
                         :model-value="field.value"
                         :error="errorMessage"
                         :disabled="isSubmitting"
@@ -984,7 +855,7 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.numberProducts"
+                      name="orderPackage.numberProducts"
                     >
                       <BaseInput
                         label="Nombre de produits"
@@ -999,14 +870,13 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-
                   <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.numberSpots"
+                      name="orderPackage.quantities"
                     >
                       <BaseInput
-                        label="Nombre de spots"
+                        label="Quantité totale"
                         icon="ph:file-duotone"
                         type="number"
                         placeholder=""
@@ -1021,7 +891,7 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.period"
+                      name="orderPackage.period"
                     >
                       <BaseInput
                         label="Periode"
@@ -1038,51 +908,7 @@ const onSubmit = handleSubmit(
                   <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.announcer"
-                    >
-                      <BaseListbox
-                        label="Annonceur"
-                        :items="announcers?.data"
-                        :properties="{
-                          value: '_id',
-                          label: 'name',
-                          sublabel: 'email',
-                          media: 'flag',
-                        }"
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.commercial"
-                    >
-                      <BaseListbox
-                        label="Commercial en charge"
-                        :items="commercials"
-                        :properties="{
-                          value: '_id',
-                          label: 'lastName',
-                          sublabel: 'email',
-                          media: 'photo',
-                        }"
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.status"
+                      name="orderPackage.status"
                     >
                       <BaseSelect
                         label="Statut *"
@@ -1100,18 +926,6 @@ const onSubmit = handleSubmit(
                       </BaseSelect>
                     </Field>
                   </div>
-                  <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
-                    <BaseInputFile
-                      v-model="inputOrderContracts"
-                      :disabled="
-                        isSubmitting ||
-                        (authStore.user?.appRole?.name != UserRole.superAdmin &&
-                          authStore.user?.appRole?.name != UserRole.sale)
-                      "
-                      shape="straight"
-                      label="Slectionnez le contrat"
-                    />
-                  </div>
                 </div>
                 <p
                   class="font-alt text-muted-500 mt-5 dark:text-muted-200 text-lg leading-5"
@@ -1122,7 +936,7 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.invoice.label"
+                      name="orderPackage.invoice.label"
                     >
                       <BaseInput
                         label="Libelé facture"
@@ -1145,7 +959,7 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.invoice.amount"
+                      name="orderPackage.invoice.amount"
                     >
                       <BaseInput
                         label="Montant total Facture"
@@ -1168,7 +982,7 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.invoice.pending"
+                      name="orderPackage.invoice.pending"
                     >
                       <BaseInput
                         label="Montant restant à payé"
@@ -1191,7 +1005,7 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.invoice.totalSpotsPaid"
+                      name="orderPackage.invoice.totalSpotsPaid"
                     >
                       <BaseInput
                         label="Nombre de spots payés"
@@ -1210,17 +1024,6 @@ const onSubmit = handleSubmit(
                         @blur="handleBlur"
                       />
                     </Field>
-                  </div>
-                  <div class="ltablet:col-span-12 col-span-12 lg:col-span-12">
-                    <BaseInputFile
-                      v-model="inputOrderInvoices"
-                      :disabled="
-                        authStore.user?.appRole?.name != UserRole.superAdmin &&
-                        authStore.user?.appRole?.name != UserRole.billing
-                      "
-                      shape="straight"
-                      label="Slectionnez la facture"
-                    />
                   </div>
                 </div>
               </div>
@@ -1245,18 +1048,6 @@ const onSubmit = handleSubmit(
               >
                 <span class="text-bold text-muted-700">
                   OK du Service CCial</span
-                >
-              </BaseButton>
-              <BaseButton
-                :color="currentPackage?.billValidator ? 'success' : 'warning'"
-                flavor="solid"
-                @click="isModalConfirmOrderOpen = true"
-                :disabled="
-                  authStore.user?.appRole?.tag != UserRole.respBillingTag
-                "
-              >
-                <span class="text-bold text-muted-700">
-                  OK du Sevice de Fact</span
                 >
               </BaseButton>
               <BaseButton

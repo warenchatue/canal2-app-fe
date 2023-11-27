@@ -73,9 +73,6 @@ function editPackage(spotPackage: any) {
   isEdit.value = true
   setFieldValue('spotPackage._id', spotPackage._id)
   setFieldValue('spotPackage.label', spotPackage.label)
-  setFieldValue('spotPackage.numberSpots', spotPackage.numberSpots)
-  setFieldValue('spotPackage.numberProducts', spotPackage.numberProducts)
-  setFieldValue('spotPackage.period', spotPackage.period)
   setFieldValue('spotPackage.announcer', spotPackage.announcer)
   setFieldValue('spotPackage.status', spotPackage.status)
 }
@@ -158,8 +155,6 @@ const zodSchema = z
       _id: z.string().optional(),
       label: z.string().min(1, VALIDATION_TEXT.LABEL_REQUIRED),
       totalAmount: z.number(),
-      numberSpots: z.number(),
-      numberProducts: z.number(),
       status: z
         .union([
           z.literal('onHold'),
@@ -200,8 +195,6 @@ const initialValues = computed<FormInput>(() => ({
   spotPackage: {
     label: '',
     totalAmount: 0,
-    numberSpots: 0,
-    numberProducts: 0,
     period: '',
     status: 'onHold',
     announcer: {
@@ -468,7 +461,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data.metaData?.totalItems }}</span>
+                <span>{{ data?.metaData?.totalItems }}</span>
               </BaseHeading>
             </div>
             <div
@@ -491,7 +484,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Spots</span>
+                <span>Quantité totale</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -509,7 +502,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data.metaData?.totalAnnouncers }}</span>
+                <span>{{ data?.metaData?.totalAnnouncers }}</span>
               </BaseHeading>
             </div>
             <div
@@ -550,7 +543,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data.metaData?.totalSpots }}</span>
+                <span>{{ data?.metaData?.totalSpots }}</span>
               </BaseHeading>
             </div>
             <div
@@ -594,7 +587,7 @@ const onSubmit = handleSubmit(
                 <span>
                   {{
                     new Intl.NumberFormat().format(
-                      data.data[0]?.globalPending ?? 0,
+                      data?.data[0]?.globalPending ?? 0,
                     )
                   }}
                   XAF</span
@@ -739,16 +732,16 @@ const onSubmit = handleSubmit(
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseAvatar
-                      :src="item.announcer?.logo ?? '/img/avatars/company.svg'"
+                      :src="item.order.announcer?.logo ?? '/img/avatars/company.svg'"
                       :text="item.initials"
                       :class="getRandomColor()"
                     />
                     <div class="ms-3 leading-none">
                       <h4 class="font-sans text-sm font-medium">
-                        {{ item.announcer?.name }}
+                        {{ item.order.announcer?.name }}
                       </h4>
                       <p class="text-muted-400 font-sans text-xs">
-                        {{ item.announcer?.email }}
+                        {{ item.order.announcer?.email }}
                       </p>
                     </div>
                   </div>
@@ -785,7 +778,7 @@ const onSubmit = handleSubmit(
                   <span class="text-base"> {{ item.numberProducts }}</span>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  <span class="text-base"> {{ item.numberSpots }}</span>
+                  <span class="text-base"> {{ item.quantities }}</span>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   <span class="text-base"> {{ item.totalDiffused }}</span>
@@ -794,8 +787,8 @@ const onSubmit = handleSubmit(
                   {{ item.label }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.manager?.firstName ?? item.creator?.firstName }}
-                  {{ item.manager?.lastName ?? item.creator?.lastName }}
+                  {{ item.order.manager?.firstName ?? item.creator?.firstName }}
+                  {{ item.order.manager?.lastName ?? item.creator?.lastName }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{

@@ -24,12 +24,14 @@ const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(10)
 const isEdit = ref(false)
+const isPrint = ref(false)
 const currentOrderInvoice = ref({})
 const token = useCookie('token')
-
+const isModalCreatePackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
 const currentOrg = ref({})
+const selectedOrder = ref({})
 // Check if can have access
 if (authStore.user.appRole?.name == UserRole.broadcast) {
   toaster.clearAll()
@@ -57,6 +59,12 @@ watch(inputOrderInvoices, (value) => {
   console.log('orderInvoice')
   const file = value?.item(0) || null
   orderInvoiceFile.value = file
+})
+
+watch(selectedOrder, (value) => {
+  setTimeout(() => {
+    editOrderInvoiceFile(value)
+  }, 500)
 })
 
 watch([filter, perPage], () => {
@@ -127,6 +135,10 @@ const { data } = await useFetch('/api/pub/packages', {
   query,
 })
 
+const { data: allOrders } = await useFetch('/api/sales/orders', {
+  query,
+})
+
 const { data: announcers } = await useFetch('/api/sales/announcers', {
   query,
 })
@@ -154,10 +166,29 @@ const commercials = allUsers.value?.data.filter((e: any) => {
   return e.appRole?.name == UserRole.sale
 })
 
-function confirmDeletePackage(spotPackage: any) {
+function printOrder() {
+  isPrint.value = true
+  setTimeout(() => {
+    var printContents = document.getElementById('print-invoice').innerHTML
+    var originalContents = document.body.innerHTML
+    document.body.innerHTML = printContents
+    window.print()
+    document.body.innerHTML = originalContents
+    location.reload()
+  }, 800)
+}
+
+function confirmDeleteOrder(order: any) {
   isModalDeletePackageOpen.value = true
   isEdit.value = false
-  currentPackage.value = spotPackage
+  currentPackage.value = order
+}
+
+function viewOrder() {
+  setTimeout(() => {
+    isPrint.value = !isPrint.value
+    editOrderInvoiceFile(currentOrderInvoice.value)
+  }, 200)
 }
 
 async function deletePackage(spotPackage: any) {
@@ -232,6 +263,7 @@ const zodSchema = z
       _id: z.string().optional(),
       label: z.string().min(1, VALIDATION_TEXT.LABEL_REQUIRED),
       amount: z.number(),
+      paymentCondition: z.string().optional(),
       pending: z.number(),
       status: z
         .union([
@@ -322,31 +354,27 @@ function editOrderInvoiceFile(currentOrderInvoice: any) {
     setFieldValue('order.announcer', currentOrderInvoice.announcer)
     setFieldValue('order.commercial', currentOrderInvoice.manager)
     setFieldValue('order.status', currentOrderInvoice.status)
+    setFieldValue(
+      'order.paymentCondition',
+      currentOrderInvoice.paymentCondition,
+    )
+    currentOrg.value = currentOrderInvoice.org
     orderData.value = currentOrderInvoice.items
   }, 500)
 }
-
-async function confirmOrder() {
+async function createPackage() {
   const query4 = computed(() => {
     return {
-      action: 'updateOrder',
+      action: 'createPackage',
       token: token.value,
-      id: currentPackage.value._id,
     }
   })
-  if (authStore.user?.appRole?.tag == UserRole.respSaleTag) {
-    currentPackage.value.orderValidator = authStore.user._id
-  } else if (authStore.user.appRole?.tag == UserRole.respBillingTag) {
-    currentPackage.value.billValidator = authStore.user._id
-  } else if (authStore.user.appRole?.name == UserRole.admin) {
-    currentPackage.value.adminValidator = authStore.user._id
-  }
 
-  const response = await useFetch('/api/sales/orders', {
-    method: 'put',
+  const response = await useFetch('/api/pub/packages', {
+    method: 'post',
     headers: { 'Content-Type': 'application/json' },
     query: query4,
-    body: { ...currentPackage.value },
+    body: { order: currentOrderInvoice.value._id },
   })
 
   if (response.data?.value?.success) {
@@ -354,7 +382,90 @@ async function confirmOrder() {
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Commande confirmée !`,
+      message: `Package créer !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    await addPackageOrder(response.data?.value?.data._id)
+    isModalCreatePackageOpen.value = false
+    filter.value = 'package'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Oops',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+}
+async function addPackageOrder(id: string) {
+  const query4 = computed(() => {
+    return {
+      action: 'updateOrder',
+      token: token.value,
+      id: currentOrderInvoice.value._id,
+    }
+  })
+  const response = await useFetch('/api/sales/orders', {
+    method: 'put',
+    headers: { 'Content-Type': 'application/json' },
+    query: query4,
+    body: { ...currentOrderInvoice.value, package: id },
+  })
+
+  if (response.data?.value?.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: 'Devis mis à jour !',
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalConfirmOrderOpen.value = false
+    filter.value = 'order'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Oops',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+}
+
+async function confirmOrder() {
+  const query4 = computed(() => {
+    return {
+      action: 'updateOrder',
+      token: token.value,
+      id: currentOrderInvoice.value._id,
+    }
+  })
+  currentOrderInvoice.value.validator = authStore.user._id
+
+  const response = await useFetch('/api/sales/orders', {
+    method: 'put',
+    headers: { 'Content-Type': 'application/json' },
+    query: query4,
+    body: { ...currentOrderInvoice.value },
+  })
+
+  if (response.data?.value?.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message:
+        pageValue.value == 'order' ? `Devis confirmé !` : `Facture confirmée !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
@@ -504,6 +615,7 @@ const onSubmit = handleSubmit(
               ...values.order,
               announcer: values.order?.announcer?._id,
               manager: values.order?.commercial?._id,
+              org: currentOrg.value,
               contractUrl,
               items: orderData.value,
             },
@@ -525,6 +637,7 @@ const onSubmit = handleSubmit(
               ...values.order,
               announcer: values.order?.announcer?._id,
               manager: values.order?.commercial?._id,
+              org: currentOrg.value,
               _id: undefined,
               contractUrl,
               items: orderData.value,
@@ -550,7 +663,7 @@ const onSubmit = handleSubmit(
               ...values.order,
               announcer: values.order?.announcer?._id,
               manager: values.order?.commercial?._id,
-              order: values.order?.order?._id ?? undefined,
+              order: selectedOrder?._id ?? undefined,
             },
           })
           isSuccess.value = response.data.value?.success
@@ -571,7 +684,7 @@ const onSubmit = handleSubmit(
               announcer: values.order?.announcer?._id,
               manager: values.order?.commercial?._id,
               _id: undefined,
-              order: values.order?.order?._id ?? undefined,
+              order: selectedOrder?._id ?? undefined,
             },
           })
           isSuccess.value = response.data.value?.success
@@ -655,8 +768,8 @@ const onSubmit = handleSubmit(
       </template>
       <template #right>
         <BaseHeading
-          as="h4"
-          size="md"
+          as="h5"
+          size="sm"
           weight="medium"
           lead="tight"
           class="text-muted-500 dark:text-muted-200"
@@ -668,7 +781,7 @@ const onSubmit = handleSubmit(
             label=""
             :items="orgs.data"
             :classes="{
-              wrapper: '!w-64',
+              wrapper: '!w-60',
             }"
             :properties="{
               value: '_id',
@@ -683,14 +796,48 @@ const onSubmit = handleSubmit(
             @blur="handleBlur"
           />
         </div>
-        <BaseButton color="primary" class="w-full sm:w-40" @click="onSubmit">
+        <BaseButton
+          v-if="pageType == 'new'"
+          color="primary"
+          class="w-full sm:w-40"
+          @click="onSubmit"
+        >
           <Icon name="ph:pen" class="h-4 w-4" />
-          <span>Enregistrer</span>
+          <span>Créer</span>
         </BaseButton>
         <BaseButton
+          v-if="pageType == 'edit'"
+          color="primary"
+          class="w-full sm:w-32"
+          @click="onSubmit"
+        >
+          <Icon name="ph:pen" @click="onSubmit" class="h-4 w-4" />
+          <span>Sauvegarder</span>
+        </BaseButton>
+        <BaseButton
+          v-if="isEdit && currentOrderInvoice?.package"
+          color="info"
+          class="w-full sm:w-32"
+          :to="'/bo/pub/package-details/' + currentOrderInvoice.package._id"
+        >
+          <Icon name="ph:file" class="h-4 w-4" />
+          <span>Planning</span>
+        </BaseButton>
+        <BaseButton
+          v-if="isEdit && !currentOrderInvoice?.package"
+          color="info"
+          class="w-full sm:w-32"
+          @click="isModalCreatePackageOpen = true"
+        >
+          <Icon name="ph:file" class="h-4 w-4" />
+          <span>Planning</span>
+        </BaseButton>
+        <BaseButton
+          v-if="isEdit"
+          :disabled="currentOrderInvoice.validator ? true : false"
           color="warning"
-          class="w-full sm:w-40"
-          @click="isEdit = false"
+          class="w-full sm:w-32"
+          @click="isModalConfirmOrderOpen = true"
         >
           <Icon name="ph:check" class="h-4 w-4" />
           <span>Valider</span>
@@ -701,34 +848,108 @@ const onSubmit = handleSubmit(
           <div class="mb-4 flex items-center justify-between">
             <div>
               <BaseHeading as="h2" size="xl" weight="medium" lead="none">
-                {{ pageValue == 'order' ? 'Devis' : 'Facture' }} Brouillon
+                {{ pageValue == 'order' ? 'Devis' : 'Facture' }}
+                {{ currentOrderInvoice.validator ? 'Confirmé' : 'Brouillon' }}
               </BaseHeading>
             </div>
             <div class="flex items-center justify-end gap-3">
               <BaseButtonIcon
+                @click="viewOrder()"
                 condensed
                 shape="full"
                 data-tooltip="Prévisualiser"
               >
                 <Icon name="ph:eye-duotone" class="h-4 w-4" />
               </BaseButtonIcon>
-              <BaseButtonIcon condensed shape="full" data-tooltip="Imprimer">
+              <BaseButtonIcon
+                condensed
+                shape="full"
+                @click="printOrder()"
+                data-tooltip="Imprimer"
+              >
                 <Icon name="ph:printer-duotone" class="h-4 w-4" />
               </BaseButtonIcon>
             </div>
           </div>
-          <div>
+          <div id="print-invoice">
             <BaseCard>
               <div class="overflow-hidden font-sans">
-                <div>
-                  <div
-                    class="border-muted-200 dark:border-muted-700 flex flex-col justify-between gap-y-4 border-b px-8 py-4 sm:flex-row sm:items-center"
-                  >
-                    <div class="flex items-center gap-4">
-                      <img
-                        class="h-32 fit-content"
-                        src="/uploads/logos/c2.png"
-                      />
+                <div
+                  v-if="isPrint"
+                  class="border-muted-200 dark:border-muted-700 flex justify-between gap-y-4 border-b px-8 py-4 items-center"
+                >
+                  <div class="flex items-center gap-4">
+                    <img class="h-32 fit-content" src="/uploads/logos/c2.png" />
+                    <div class="">
+                      <BaseHeading
+                        as="h3"
+                        size="md"
+                        weight="medium"
+                        lead="none"
+                      >
+                      </BaseHeading>
+                      <BaseParagraph size="xs" class="text-muted-400">
+                        <!-- {{ currentOrg?.name }} -->
+                      </BaseParagraph>
+                    </div>
+                  </div>
+                  <div class="flex justify-end">
+                    <div
+                      class="text-muted-500 dark:text-muted-400 text-sm font-light"
+                    >
+                      <p
+                        class="text-muted-700 dark:text-muted-100 text-right text-sm font-normal"
+                      >
+                        {{ currentOrg?.name }}
+                      </p>
+                      <p class="text-xs text-right">
+                        {{ currentOrg?.address }}
+                      </p>
+                      <p class="text-xs text-right">
+                        {{ currentOrg?.country?.name }}
+                      </p>
+                      <p class="text-xs text-right">
+                        {{ currentOrg?.email }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  v-if="isPrint"
+                  class="border-muted-200 dark:border-muted-700 flex justify-between gap-y-2 border-b p-4 items-center"
+                >
+                  <div class="flex items-center gap-4">
+                    <div class="">
+                      <BaseHeading
+                        as="h1"
+                        size="xl"
+                        weight="medium"
+                        lead="none"
+                      >
+                        {{ pageValue == 'order' ? 'Devis' : 'Facture' }} No:
+                      </BaseHeading>
+                    </div>
+                  </div>
+                  <div class="flex gap-12">
+                    <div
+                      class="text-muted-500 dark:text-muted-400 text-sm font-light"
+                    >
+                      <p
+                        class="text-muted-700 dark:text-muted-100 text-sm font-normal"
+                      >
+                        {{ currentOrderInvoice?.code }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  v-if="isPrint"
+                  class="border-muted-200 dark:border-muted-700 flex justify-between gap-y-8 border-b p-8 items-center"
+                >
+                  <div>
+                    <div class="flex items-center gap-3">
                       <div class="">
                         <BaseHeading
                           as="h3"
@@ -736,121 +957,13 @@ const onSubmit = handleSubmit(
                           weight="medium"
                           lead="none"
                         >
+                          Devis pour
                         </BaseHeading>
-                        <BaseParagraph size="xs" class="text-muted-400">
-                          <!-- {{ currentOrg?.name }} -->
+                        <BaseParagraph size="sm" class="text-muted-400">
+                          {{ currentOrderInvoice?.announcer?.name }}
                         </BaseParagraph>
                       </div>
                     </div>
-                    <div class="flex gap-12">
-                      <div
-                        class="text-muted-500 dark:text-muted-400 text-sm font-light"
-                      >
-                        <p
-                          class="text-muted-700 dark:text-muted-100 text-sm font-normal"
-                        >
-                          {{ currentOrg?.name }}
-                        </p>
-                        <p class="text-xs">
-                          {{ currentOrg?.address }}
-                        </p>
-                        <p class="text-xs">{{ currentOrg?.country?.name }}</p>
-                        <p class="text-xs">
-                          {{ currentOrg?.email }}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div
-                    class="border-muted-200 dark:border-muted-700 flex flex-col justify-between gap-y-2 border-b p-4 sm:flex-row sm:items-center"
-                  >
-                    <div class="flex items-center gap-4">
-                      <div class="">
-                        <BaseHeading
-                          as="h1"
-                          size="xl"
-                          weight="medium"
-                          lead="none"
-                        >
-                          Devis No:
-                        </BaseHeading>
-                      </div>
-                    </div>
-                    <div class="flex gap-12">
-                      <div
-                        class="text-muted-500 dark:text-muted-400 text-sm font-light"
-                      >
-                        <p
-                          class="text-muted-700 dark:text-muted-100 text-sm font-normal"
-                        >
-                          DEV/2023/0314
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div
-                    class="border-muted-200 dark:border-muted-700 flex flex-col justify-between gap-y-8 border-b p-8 sm:flex-row sm:items-center"
-                  >
-                    <div>
-                      <div class="flex items-center gap-3">
-                        <div class="">
-                          <BaseHeading
-                            as="h3"
-                            size="md"
-                            weight="medium"
-                            lead="none"
-                          >
-                            Devis pour
-                          </BaseHeading>
-                          <BaseParagraph size="sm" class="text-muted-400">
-                            Digital Innova
-                          </BaseParagraph>
-                        </div>
-                      </div>
-                      <div class="flex gap-2 mt-5">
-                        <div
-                          class="text-muted-500 dark:text-muted-400 text-sm font-light"
-                        >
-                          <p
-                            class="text-muted-700 dark:text-muted-100 text-xs font-normal"
-                          >
-                            Addresse
-                          </p>
-
-                          <p
-                            class="text-muted-700 dark:text-muted-100 mt-2 text-xs font-normal"
-                          >
-                            Mobile :
-                          </p>
-                          <p
-                            class="text-muted-700 dark:text-muted-100 mt-2 text-xs font-normal"
-                          >
-                            Courriel :
-                          </p>
-
-                          <p
-                            class="text-muted-700 dark:text-muted-100 mt-2 text-xs font-normal"
-                          >
-                            R/C :
-                          </p>
-                          <p
-                            class="text-muted-700 dark:text-muted-100 mt-2 text-xs font-normal"
-                          >
-                            N. Contribuable :
-                          </p>
-                        </div>
-                        <div
-                          class="text-muted-500 dark:text-muted-400 text-sm font-light"
-                        >
-                          <p class="text-xs">Douala</p>
-                          <p class="mt-2 text-xs">694682713</p>
-                          <p class="mt-2 text-xs">contact@digitalinnova.tech</p>
-                          <p class="mt-2 text-xs">TEKRERKEJRKJR</p>
-                          <p class="mt-2 text-xs">MBSDLSKLD</p>
-                        </div>
-                      </div>
-                    </div>
-
                     <div class="flex gap-2 mt-5">
                       <div
                         class="text-muted-500 dark:text-muted-400 text-sm font-light"
@@ -858,383 +971,524 @@ const onSubmit = handleSubmit(
                         <p
                           class="text-muted-700 dark:text-muted-100 text-xs font-normal"
                         >
-                          Date De Devis
+                          Addresse
                         </p>
 
                         <p
                           class="text-muted-700 dark:text-muted-100 mt-2 text-xs font-normal"
                         >
-                          Description :
+                          Mobile :
                         </p>
                         <p
                           class="text-muted-700 dark:text-muted-100 mt-2 text-xs font-normal"
                         >
-                          Date Echéance :
+                          Courriel :
+                        </p>
+
+                        <p
+                          class="text-muted-700 dark:text-muted-100 mt-2 text-xs font-normal"
+                        >
+                          R/C :
+                        </p>
+                        <p
+                          class="text-muted-700 dark:text-muted-100 mt-2 text-xs font-normal"
+                        >
+                          N. Contribuable :
                         </p>
                       </div>
                       <div
                         class="text-muted-500 dark:text-muted-400 text-sm font-light"
                       >
-                        <p class="text-xs">19/11/2023</p>
-                        <p class="mt-2 text-xs">BC NN.</p>
-                        <p class="mt-2 text-xs">29/11/2023</p>
+                        <p class="text-xs">
+                          {{
+                            currentOrderInvoice?.announcer?.country?.name ??
+                            'Douala'
+                          }}
+                        </p>
+                        <p class="mt-2 text-xs">
+                          {{ currentOrderInvoice?.announcer?.phone }}
+                        </p>
+                        <p class="mt-2 text-xs">
+                          {{ currentOrderInvoice?.announcer?.email }}
+                        </p>
+                        <p class="mt-2 text-xs">
+                          {{ currentOrderInvoice?.announcer?.rc }}
+                        </p>
+                        <p class="mt-2 text-xs">
+                          {{ currentOrderInvoice?.announcer?.nc }}
+                        </p>
                       </div>
                     </div>
                   </div>
-                  <!--  -->
-                  <div
-                    shape="curved"
-                    class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
-                  >
-                    <div class="mx-auto flex w-full flex-col">
-                      <div>
-                        <div class="grid grid-cols-12 gap-4">
-                          <div
-                            class="ltablet:col-span-6 col-span-12 lg:col-span-6"
-                          >
-                            <Field
-                              v-slot="{
-                                field,
-                                errorMessage,
-                                handleChange,
-                                handleBlur,
-                              }"
-                              name="order.announcer"
-                            >
-                              <BaseListbox
-                                label="Annonceur"
-                                :items="announcers?.data"
-                                :properties="{
-                                  value: '_id',
-                                  label: 'name',
-                                  sublabel: 'email',
-                                  media: 'flag',
-                                }"
-                                :model-value="field.value"
-                                :error="errorMessage"
-                                :disabled="isSubmitting"
-                                @update:model-value="handleChange"
-                                @blur="handleBlur"
-                              />
-                            </Field>
-                          </div>
-                          <div class="col-span-12 md:col-span-6">
-                            <Field
-                              v-slot="{
-                                field,
-                                errorMessage,
-                                handleChange,
-                                handleBlur,
-                              }"
-                              name="order.label"
-                            >
-                              <BaseInput
-                                label="Mode de paiement"
-                                icon="ph:money-duotone"
-                                placeholder="ex: Bon de commande"
-                                :model-value="field.value"
-                                :error="errorMessage"
-                                :disabled="isSubmitting"
-                                @update:model-value="handleChange"
-                                @blur="handleBlur"
-                              />
-                            </Field>
-                          </div>
 
-                          <div class="col-span-12 md:col-span-6">
-                            <Field
-                              v-slot="{
-                                field,
-                                errorMessage,
-                                handleChange,
-                                handleBlur,
-                              }"
-                              name="order.period"
-                            >
-                              <BaseInput
-                                label="Conditions de reglements"
-                                icon="ph:file-duotone"
-                                placeholder="Ex: 100% 30 jours de reception"
-                                :model-value="field.value"
-                                :error="errorMessage"
-                                :disabled="isSubmitting"
-                                @update:model-value="handleChange"
-                                @blur="handleBlur"
-                              />
-                            </Field>
-                          </div>
+                  <div class="flex gap-2 mt-5">
+                    <div
+                      class="text-muted-500 dark:text-muted-400 text-sm font-light"
+                    >
+                      <p
+                        class="text-muted-700 dark:text-muted-100 text-xs font-normal"
+                      >
+                        Date De Devis
+                      </p>
 
-                          <div
-                            class="ltablet:col-span-6 col-span-12 lg:col-span-6"
+                      <p
+                        class="text-muted-700 dark:text-muted-100 mt-2 text-xs font-normal"
+                      >
+                        Description :
+                      </p>
+                      <p
+                        class="text-muted-700 dark:text-muted-100 mt-2 text-xs font-normal"
+                      >
+                        Date Echéance :
+                      </p>
+                    </div>
+                    <div
+                      class="text-muted-500 dark:text-muted-400 text-sm font-light"
+                    >
+                      <p class="text-xs">
+                        {{
+                          new Date(
+                            currentOrderInvoice?.createdAt,
+                          ).toLocaleDateString('fr-FR')
+                        }}
+                      </p>
+                      <p class="mt-2 text-xs">
+                        {{ currentOrderInvoice?.label }}
+                      </p>
+                      <p class="mt-2 text-xs">29/11/2023</p>
+                    </div>
+                  </div>
+                </div>
+                <!--  -->
+                <div
+                  v-if="!isPrint"
+                  shape="curved"
+                  class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
+                >
+                  <div class="mx-auto flex w-full flex-col">
+                    <div>
+                      <div class="grid grid-cols-12 gap-4">
+                        <div
+                          v-if="pageValue == 'invoice'"
+                          class="ltablet:col-span-6 col-span-12 lg:col-span-6"
+                        >
+                          <BaseListbox
+                            label="Devis"
+                            :items="allOrders?.data"
+                            :properties="{
+                              value: '_id',
+                              label: 'code',
+                              sublabel: 'label',
+                            }"
+                            v-model="selectedOrder"
+                            :error="errorMessage"
+                            :disabled="isSubmitting"
+                          />
+                        </div>
+                        <div
+                          class="ltablet:col-span-6 col-span-12 lg:col-span-6"
+                        >
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="order.announcer"
                           >
-                            <Field
-                              v-slot="{
-                                field,
-                                errorMessage,
-                                handleChange,
-                                handleBlur,
+                            <BaseListbox
+                              label="Annonceur"
+                              :items="announcers?.data"
+                              :properties="{
+                                value: '_id',
+                                label: 'name',
+                                sublabel: 'email',
+                                media: 'flag',
                               }"
-                              name="order.commercial"
-                            >
-                              <BaseListbox
-                                label="vendeur"
-                                :items="commercials"
-                                :properties="{
-                                  value: '_id',
-                                  label: 'lastName',
-                                  sublabel: 'email',
-                                  media: 'photo',
-                                }"
-                                :model-value="field.value"
-                                :error="errorMessage"
-                                :disabled="isSubmitting"
-                                @update:model-value="handleChange"
-                                @blur="handleBlur"
-                              />
-                            </Field>
-                          </div>
-                          <div class="col-span-12 md:col-span-6">
-                            <Field
-                              v-slot="{
-                                field,
-                                errorMessage,
-                                handleChange,
-                                handleBlur,
-                              }"
-                              name="order.label"
-                            >
-                              <BaseInput
-                                label="Equipe commerciale"
-                                icon="ph:user-duotone"
-                                placeholder="ex: Douala"
-                                :model-value="field.value"
-                                :error="errorMessage"
-                                :disabled="isSubmitting"
-                                @update:model-value="handleChange"
-                                @blur="handleBlur"
-                              />
-                            </Field>
-                          </div>
-                          <div
-                            class="ltablet:col-span-6 col-span-12 lg:col-span-6"
-                          >
-                            <Field
-                              v-slot="{
-                                field,
-                                errorMessage,
-                                handleChange,
-                                handleBlur,
-                              }"
-                              name="order.status"
-                            >
-                              <BaseSelect
-                                label="Statut *"
-                                icon="ph:funnel"
-                                :model-value="field.value"
-                                :error="errorMessage"
-                                :disabled="true"
-                                @update:model-value="handleChange"
-                                @blur="handleBlur"
-                              >
-                                <option value="onHold">
-                                  En attente de validation
-                                </option>
-                                <option value="confirmed">Validéé</option>
-                                <option value="completed">Soldée</option>
-                                <option value="closed">Cloturées</option>
-                              </BaseSelect>
-                            </Field>
-                          </div>
-                          <div
-                            class="ltablet:col-span-12 col-span-12 lg:col-span-6"
-                          >
-                            <BaseInputFile
-                              v-model="inputOrderContracts"
-                              :disabled="
-                                isSubmitting ||
-                                (authStore.user?.appRole?.name !=
-                                  UserRole.superAdmin &&
-                                  authStore.user?.appRole?.name !=
-                                    UserRole.sale)
-                              "
-                              shape="straight"
-                              label="Slectionnez le contrat"
+                              :model-value="field.value"
+                              :error="errorMessage"
+                              :disabled="isSubmitting"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
                             />
-                          </div>
+                          </Field>
+                        </div>
+                        <div class="col-span-12 md:col-span-6">
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="order.label"
+                          >
+                            <BaseInput
+                              label="Mode de paiement"
+                              icon="ph:money-duotone"
+                              placeholder="ex: Bon de commande"
+                              :model-value="field.value"
+                              :error="errorMessage"
+                              :disabled="isSubmitting"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
+                            />
+                          </Field>
+                        </div>
+
+                        <div class="col-span-12 md:col-span-6">
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="order.paymentCondition"
+                          >
+                            <BaseInput
+                              label="Conditions de reglements"
+                              icon="ph:file-duotone"
+                              placeholder="Ex: 100% 30 jours de reception"
+                              :model-value="field.value"
+                              :error="errorMessage"
+                              :disabled="isSubmitting"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
+                            />
+                          </Field>
+                        </div>
+
+                        <div
+                          class="ltablet:col-span-6 col-span-12 lg:col-span-6"
+                        >
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="order.commercial"
+                          >
+                            <BaseListbox
+                              label="vendeur"
+                              :items="commercials"
+                              :properties="{
+                                value: '_id',
+                                label: 'lastName',
+                                sublabel: 'email',
+                                media: 'photo',
+                              }"
+                              :model-value="field.value"
+                              :error="errorMessage"
+                              :disabled="isSubmitting"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
+                            />
+                          </Field>
+                        </div>
+                        <div class="col-span-12 md:col-span-6">
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="order.label"
+                          >
+                            <BaseInput
+                              label="Equipe commerciale"
+                              icon="ph:user-duotone"
+                              placeholder="ex: Douala"
+                              :model-value="field.value"
+                              :error="errorMessage"
+                              :disabled="isSubmitting"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
+                            />
+                          </Field>
+                        </div>
+                        <div
+                          class="ltablet:col-span-6 col-span-12 lg:col-span-6"
+                        >
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="order.status"
+                          >
+                            <BaseSelect
+                              label="Statut *"
+                              icon="ph:funnel"
+                              :model-value="field.value"
+                              :error="errorMessage"
+                              :disabled="true"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
+                            >
+                              <option value="onHold">
+                                En attente de validation
+                              </option>
+                              <option value="confirmed">Validéé</option>
+                              <option value="completed">Soldée</option>
+                              <option value="closed">Cloturées</option>
+                            </BaseSelect>
+                          </Field>
+                        </div>
+                        <div
+                          class="ltablet:col-span-12 col-span-12 lg:col-span-6"
+                        >
+                          <BaseInputFile
+                            v-model="inputOrderContracts"
+                            :disabled="
+                              isSubmitting ||
+                              (authStore.user?.appRole?.name !=
+                                UserRole.superAdmin &&
+                                authStore.user?.appRole?.name != UserRole.sale)
+                            "
+                            shape="straight"
+                            label="Slectionnez le contrat"
+                          />
                         </div>
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  <div class="px-2 py-8 sm:p-4">
-                    <div class="flex flex-col px-2 overflow-auto">
-                      <table
-                        class="divide-muted-200 dark:divide-muted-700 min-w-full divide-y"
-                      >
-                        <thead class="font-sans">
-                          <tr>
-                            <th
-                              scope="col"
-                              class="text-muted-400 py-3.5 pe-3 ps-4 text-left text-xs font-medium uppercase sm:ps-6 md:ps-0"
-                            >
-                              <Icon name="lucide:settings" class="h-4 w-4" />
-                            </th>
-                            <th
-                              scope="col"
-                              class="text-muted-400 py-3.5 pe-3 ps-4 text-left text-xs font-medium uppercase sm:ps-6 md:ps-0"
-                            >
-                              #
-                            </th>
-                            <th
-                              scope="col"
-                              class="text-muted-400 py-3.5 pe-3 ps-4 text-left text-xs font-medium uppercase sm:ps-6 md:ps-0"
-                            >
-                              Article
-                            </th>
-                            <th
-                              scope="col"
-                              class="text-muted-400 py-3.5 pe-3 ps-4 text-left text-xs font-medium uppercase sm:ps-6 md:ps-0"
-                            >
-                              Description
-                            </th>
-                            <th
-                              scope="col"
-                              class="text-muted-400 py-3.5 pe-3 ps-4 text-left text-xs font-medium uppercase sm:ps-6 md:ps-0"
-                            >
-                              Compte
-                            </th>
-                            <th
-                              scope="col"
-                              class="text-muted-400 hidden px-3 py-3.5 text-right text-xs font-medium uppercase sm:table-cell"
-                            >
-                              Quantité
-                            </th>
-                            <th
-                              scope="col"
-                              class="text-muted-400 hidden px-3 py-3.5 text-right text-xs font-medium uppercase sm:table-cell"
-                            >
-                              U.M
-                            </th>
-                            <th
-                              scope="col"
-                              class="text-muted-400 hidden px-3 py-3.5 text-right text-xs font-medium uppercase sm:table-cell"
-                            >
-                              Prix Unitaire
-                            </th>
-                            <th
-                              scope="col"
-                              class="text-muted-400 hidden px-3 py-3.5 text-right text-xs font-medium uppercase sm:table-cell"
-                            >
-                              Remise(%)
-                            </th>
-                            <th
-                              scope="col"
-                              class="text-muted-400 hidden px-3 py-3.5 text-right text-xs font-medium uppercase sm:table-cell"
-                            >
-                              Taxes
-                            </th>
-                            <th
-                              scope="col"
-                              class="text-muted-400 py-3.5 pe-4 ps-3 text-right text-xs font-medium uppercase sm:pe-6 md:pe-0"
-                            >
-                              Montant
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody class="font-sans">
-                          <tr
-                            v-for="(item, i) in orderData"
-                            :key="i"
-                            class="border-muted-200 dark:border-muted-700 border-b"
+                <div class="px-2 py-8 sm:p-4">
+                  <div class="flex flex-col px-2 overflow-auto">
+                    <table
+                      class="divide-muted-200 dark:divide-muted-700 min-w-full divide-y"
+                    >
+                      <thead class="font-sans">
+                        <tr>
+                          <th
+                            v-if="!isPrint"
+                            scope="col"
+                            class="text-muted-400 py-3.5 pe-3 ps-4 text-left text-xs font-medium uppercase sm:ps-6 md:ps-0"
                           >
-                            <td class="py-4 pe-3 ps-4 text-sm sm:ps-6 md:ps-0">
-                              <div
-                                class="text-muted-800 dark:text-muted-100 font-medium"
-                              >
-                                <BaseButtonAction @click="deleteOrderItem(i)">
-                                  <Icon
-                                    name="lucide:trash"
-                                    class="h-4 w-4 text-red-500"
-                                  />
-                                </BaseButtonAction>
-                              </div>
-                            </td>
-                            <td
-                              class="text-muted-500 dark:text-muted-400 hidden px-3 py-4 text-left text-sm sm:table-cell"
-                            >
-                              {{ item.id + 1 }}
-                            </td>
-                            <td
-                              class="text-muted-500 dark:text-muted-400 hidden px-3 py-4 text-left text-sm sm:table-cell"
-                            >
-                              {{ item.article.firstName }}
-                            </td>
-                            <td
-                              class="text-muted-500 dark:text-muted-400 hidden px-3 py-4 text-left text-sm sm:table-cell"
-                            >
-                              {{ item.description }}
-                            </td>
-                            <td
-                              class="hidden px-3 py-4 text-right text-sm sm:table-cell"
-                            >
-                              7011
-                            </td>
-                            <td
-                              class="text-muted-400 hidden px-3 py-4 text-right text-sm sm:table-cell"
-                            >
-                              {{ item.quantity }}
-                            </td>
-                            <td
-                              class="text-muted-400 hidden px-3 py-4 text-right text-sm sm:table-cell"
-                            >
-                              {{ item.unit }}
-                            </td>
-                            <td
-                              class="text-muted-400 hidden px-3 py-4 text-right text-sm sm:table-cell"
-                            >
-                              {{ item.rate }}
-                            </td>
-                            <td
-                              class="text-muted-400 hidden px-3 py-4 text-right text-sm sm:table-cell"
-                            >
-                              {{ item.discount }}
-                            </td>
-                            <td
-                              class="text-muted-400 hidden px-3 py-4 text-right text-sm sm:table-cell"
-                            >
-                              {{ item.taxes[0]?.code }}
-                            </td>
-                            <td
-                              class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right text-sm sm:pe-6 md:pe-0"
-                            >
-                              {{
-                                new Intl.NumberFormat('fr-FR').format(
-                                  item.rate * item.quantity,
-                                )
-                              }}
-                            </td>
-                          </tr>
-                          <!--  -->
-                          <tr
-                            class="border-muted-200 dark:border-muted-700 border-b"
+                            <Icon name="lucide:settings" class="h-4 w-4" />
+                          </th>
+                          <th
+                            scope="col"
+                            class="text-muted-400 py-3.5 pe-3 ps-4 text-left text-xs font-medium uppercase sm:ps-6 md:ps-0"
                           >
-                            <td class="py-4 pe-3 ps-4 text-sm sm:ps-6 md:ps-0">
-                              <div
-                                class="text-muted-800 dark:text-muted-100 font-medium"
+                            #
+                          </th>
+                          <th
+                            scope="col"
+                            class="text-muted-400 py-3.5 pe-3 ps-4 text-left text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                          >
+                            Article
+                          </th>
+                          <th
+                            scope="col"
+                            class="text-muted-400 py-3.5 pe-3 ps-4 text-left text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                          >
+                            Description
+                          </th>
+                          <th
+                            v-if="!isPrint"
+                            scope="col"
+                            class="text-muted-400 py-3.5 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                          >
+                            Compte
+                          </th>
+                          <th
+                            scope="col"
+                            class="text-muted-400 px-3 py-3.5 text-right text-xs font-medium uppercase sm:table-cell"
+                          >
+                            Quantité
+                          </th>
+                          <th
+                            scope="col"
+                            class="text-muted-400 px-3 py-3.5 text-center text-xs font-medium uppercase sm:table-cell"
+                          >
+                            U.M
+                          </th>
+                          <th
+                            scope="col"
+                            class="text-muted-400 px-3 py-3.5 text-right text-xs font-medium uppercase sm:table-cell"
+                          >
+                            Prix Unitaire
+                          </th>
+                          <th
+                            scope="col"
+                            class="text-muted-400 px-3 py-3.5 text-right text-xs font-medium uppercase sm:table-cell"
+                          >
+                            Remise(%)
+                          </th>
+                          <th
+                            scope="col"
+                            class="text-muted-400 px-3 py-3.5 text-center text-xs font-medium uppercase sm:table-cell"
+                          >
+                            Taxes
+                          </th>
+                          <th
+                            scope="col"
+                            class="text-muted-400 py-3.5 pe-4 ps-3 text-right text-xs font-medium uppercase sm:pe-6 md:pe-0"
+                          >
+                            Montant
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody class="font-sans">
+                        <tr
+                          v-for="(item, i) in orderData"
+                          :key="i"
+                          class="border-muted-200 dark:border-muted-700 border-b"
+                        >
+                          <td
+                            v-if="!isPrint"
+                            class="py-4 pe-3 ps-4 text-sm sm:ps-6 md:ps-0"
+                          >
+                            <div
+                              class="text-muted-800 dark:text-muted-100 font-medium"
+                            >
+                              <BaseButtonAction @click="deleteOrderItem(i)">
+                                <Icon
+                                  name="lucide:trash"
+                                  class="h-4 w-4 text-red-500"
+                                />
+                              </BaseButtonAction>
+                            </div>
+                          </td>
+                          <td
+                            class="text-muted-500 dark:text-muted-400 px-3 py-4 text-left text-sm sm:table-cell"
+                          >
+                            {{ item.id + 1 }}
+                          </td>
+                          <td
+                            class="text-muted-500 dark:text-muted-400 px-3 py-4 text-left text-sm sm:table-cell"
+                          >
+                            {{ item.article.name }}
+                          </td>
+                          <td
+                            class="text-muted-500 dark:text-muted-400 px-3 py-4 text-left text-sm sm:table-cell"
+                          >
+                            {{ item.description }}
+                          </td>
+                          <td
+                            v-if="!isPrint"
+                            class="px-3 py-4 text-center text-sm sm:table-cell"
+                          >
+                            7011
+                          </td>
+                          <td
+                            class="text-muted-400 px-1 py-4 text-center text-sm sm:table-cell"
+                          >
+                            {{ item.quantity }}
+                          </td>
+                          <td
+                            class="text-muted-400 px-3 py-4 text-center text-sm sm:table-cell"
+                          >
+                            {{ item.unit }}
+                          </td>
+                          <td
+                            class="text-muted-400 px-3 py-4 text-center text-sm sm:table-cell"
+                          >
+                            {{ item.rate }}
+                          </td>
+                          <td
+                            class="text-muted-400 px-3 py-4 text-center text-sm sm:table-cell"
+                          >
+                            {{ item.discount }}
+                          </td>
+                          <td
+                            class="text-muted-400 px-3 py-4 text-center text-sm sm:table-cell"
+                          >
+                            {{ item.taxes[0]?.code }}
+                          </td>
+                          <td
+                            class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right text-sm sm:pe-6 md:pe-0"
+                          >
+                            {{
+                              new Intl.NumberFormat('fr-FR').format(
+                                item.rate * item.quantity,
+                              )
+                            }}
+                          </td>
+                        </tr>
+                        <!--  -->
+                        <tr
+                          v-if="!isPrint"
+                          class="border-muted-200 dark:border-muted-700 border-b"
+                        >
+                          <td class="py-4 pe-3 ps-4 text-sm sm:ps-6 md:ps-0">
+                            <div
+                              class="text-muted-800 dark:text-muted-100 font-medium"
+                            >
+                              <BaseButtonAction @click="addOrderItem()">
+                                <Icon name="lucide:plus" class="h-4 w-4" />
+                              </BaseButtonAction>
+                            </div>
+                          </td>
+                          <td class="py-4 pe-3 ps-4 text-sm sm:ps-6 md:ps-0">
+                            <div
+                              class="text-muted-800 dark:text-muted-100 font-medium"
+                            >
+                              {{ orderData.length + 1 }}
+                            </div>
+                          </td>
+                          <td class="py-4 pe-3 ps-4 text-sm sm:ps-6 md:ps-0">
+                            <div
+                              class="text-muted-800 dark:text-muted-100 font-medium"
+                            >
+                              <Field
+                                v-slot="{
+                                  field,
+                                  errorMessage,
+                                  handleChange,
+                                  handleBlur,
+                                }"
+                                name="order.article"
                               >
-                                <BaseButtonAction @click="addOrderItem()">
-                                  <Icon name="lucide:plus" class="h-4 w-4" />
-                                </BaseButtonAction>
-                              </div>
-                            </td>
-                            <td class="py-4 pe-3 ps-4 text-sm sm:ps-6 md:ps-0">
-                              <div
-                                class="text-muted-800 dark:text-muted-100 font-medium"
-                              >
-                                {{ orderData.length + 1 }}
-                              </div>
-                            </td>
-                            <td class="py-4 pe-3 ps-4 text-sm sm:ps-6 md:ps-0">
+                                <BaseListbox
+                                  label=""
+                                  :items="articles.data"
+                                  :classes="{
+                                    wrapper: 'w-32',
+                                  }"
+                                  :properties="{
+                                    value: '_id',
+                                    label: 'name',
+                                    sublabel: 'code',
+                                    media: '',
+                                  }"
+                                  v-model="curOrderItem.article"
+                                  :error="errorMessage"
+                                  :disabled="isSubmitting"
+                                  @update:model-value="handleChange"
+                                  @blur="handleBlur"
+                                />
+                              </Field>
+                            </div>
+                          </td>
+                          <td
+                            class="text-muted-500 dark:text-muted-400 hidden px-3 py-4 text-right text-sm sm:table-cell"
+                          >
+                            <BaseTextarea
+                              v-model="curOrderItem.description"
+                              label=""
+                              shape="rounded"
+                              placeholder="..."
+                              rows="1"
+                              :classes="{
+                                wrapper: 'w-32',
+                              }"
+                              autogrow
+                            />
+                          </td>
+                          <td
+                            class="hidden px-3 py-4 text-right text-sm sm:table-cell"
+                          >
+                            <div class="flex justify-center">
                               <div
                                 class="text-muted-800 dark:text-muted-100 font-medium"
                               >
@@ -1245,18 +1499,18 @@ const onSubmit = handleSubmit(
                                     handleChange,
                                     handleBlur,
                                   }"
-                                  name="order.article"
+                                  name="order.account"
                                 >
                                   <BaseListbox
                                     label=""
-                                    :items="articles.data"
+                                    :items="accounts.data"
                                     :classes="{
-                                      wrapper: 'w-32',
+                                      wrapper: 'w-16',
                                     }"
                                     :properties="{
                                       value: '_id',
-                                      label: 'name',
-                                      sublabel: 'code',
+                                      label: 'code',
+                                      sublabel: 'label',
                                       media: '',
                                     }"
                                     v-model="curOrderItem.article"
@@ -1267,141 +1521,89 @@ const onSubmit = handleSubmit(
                                   />
                                 </Field>
                               </div>
-                            </td>
-                            <td
-                              class="text-muted-500 dark:text-muted-400 hidden px-3 py-4 text-right text-sm sm:table-cell"
-                            >
-                              <BaseTextarea
-                                v-model="curOrderItem.description"
-                                label=""
-                                shape="rounded"
-                                placeholder="..."
-                                rows="1"
-                                :classes="{
-                                  wrapper: 'w-32',
-                                }"
-                                autogrow
-                              />
-                            </td>
-                            <td
-                              class="hidden px-3 py-4 text-right text-sm sm:table-cell"
-                            >
-                              <div class="flex justify-center">
-                                <div
-                                  class="text-muted-800 dark:text-muted-100 font-medium"
-                                >
-                                  <Field
-                                    v-slot="{
-                                      field,
-                                      errorMessage,
-                                      handleChange,
-                                      handleBlur,
-                                    }"
-                                    name="order.account"
-                                  >
-                                    <BaseListbox
-                                      label=""
-                                      :items="accounts.data"
-                                      :classes="{
-                                        wrapper: 'w-16',
-                                      }"
-                                      :properties="{
-                                        value: '_id',
-                                        label: 'code',
-                                        sublabel: 'label',
-                                        media: '',
-                                      }"
-                                      v-model="curOrderItem.article"
-                                      :error="errorMessage"
-                                      :disabled="isSubmitting"
-                                      @update:model-value="handleChange"
-                                      @blur="handleBlur"
-                                    />
-                                  </Field>
-                                </div>
-                              </div>
-                            </td>
-                            <td
-                              class="hidden px-3 py-4 text-right text-sm sm:table-cell"
-                            >
-                              <div class="flex justify-center">
-                                <BaseInput
-                                  v-model.number="curOrderItem.quantity"
-                                  type="number"
-                                  :classes="{
-                                    wrapper: 'w-16',
-                                  }"
-                                />
-                              </div>
-                            </td>
-                            <td
-                              class="text-muted-400 hidden px-3 py-4 text-right text-sm sm:table-cell"
-                            >
+                            </div>
+                          </td>
+                          <td
+                            class="hidden px-3 py-4 text-right text-sm sm:table-cell"
+                          >
+                            <div class="flex justify-center">
                               <BaseInput
-                                v-model="curOrderItem.unit"
-                                type="text"
-                                :classes="{
-                                  wrapper: 'w-20 text-xs',
-                                }"
-                              />
-                            </td>
-                            <td
-                              class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-center text-sm sm:pe-6 md:pe-0"
-                            >
-                              <BaseInput
-                                v-model.number="curOrderItem.rate"
-                                type="number"
-                                :classes="{
-                                  wrapper: 'w-24',
-                                }"
-                              />
-                            </td>
-                            <td
-                              class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-center text-sm sm:pe-6 md:pe-0"
-                            >
-                              <BaseInput
-                                v-model.number="curOrderItem.discount"
+                                v-model.number="curOrderItem.quantity"
                                 type="number"
                                 :classes="{
                                   wrapper: 'w-16',
                                 }"
                               />
-                            </td>
-                            <td
-                              class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-center text-sm sm:pe-6 md:pe-0"
-                            >
-                              <BaseListbox
-                                v-model="curOrderItem.taxes"
-                                label=""
-                                :items="taxes.data"
-                                placeholder=""
-                                :multiple-label="
+                            </div>
+                          </td>
+                          <td
+                            class="text-muted-400 hidden px-3 py-4 text-right text-sm sm:table-cell"
+                          >
+                            <BaseInput
+                              v-model="curOrderItem.unit"
+                              type="text"
+                              :classes="{
+                                wrapper: 'w-20 text-xs',
+                              }"
+                            />
+                          </td>
+                          <td
+                            class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-center text-sm sm:pe-6 md:pe-0"
+                          >
+                            <BaseInput
+                              v-model.number="curOrderItem.rate"
+                              type="number"
+                              :classes="{
+                                wrapper: 'w-24',
+                              }"
+                            />
+                          </td>
+                          <td
+                            class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-center text-sm sm:pe-6 md:pe-0"
+                          >
+                            <BaseInput
+                              v-model.number="curOrderItem.discount"
+                              type="number"
+                              :classes="{
+                                wrapper: 'w-16',
+                              }"
+                            />
+                          </td>
+                          <td
+                            class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-center text-sm sm:pe-6 md:pe-0"
+                          >
+                            <BaseListbox
+                              v-model="curOrderItem.taxes"
+                              label=""
+                              :items="taxes.data"
+                              placeholder=""
+                              :multiple-label="
                               (value: any[], labelProperty?: string) => { 
                                 if (value.length === 0) { return 'Vide'; } else if (value.length > 1) { return `${value.length} elements`; } 
                                 return labelProperty ? String(value?.[0]?.[labelProperty]) :  String(value?.[0])+' : '+String(value?.[1]); }"
-                                :properties="{
-                                  value: '_id',
-                                  label: 'code',
-                                  sublabel: 'value',
-                                }"
-                                multiple
-                              />
-                              <div></div>
-                            </td>
-                            <td
-                              class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right text-sm sm:pe-6 md:pe-0"
-                            >
-                              {{
-                                new Intl.NumberFormat('fr-FR').format(
-                                  curOrderItem.rate * curOrderItem.quantity,
-                                )
-                              }}
-                            </td>
-                          </tr>
-                        </tbody>
-                        <tfoot>
-                          <tr v-for="item in totalData" :key="item.label">
-                            <!-- <div class="flex justify-end gap-2 mt-5">
+                              :properties="{
+                                value: '_id',
+                                label: 'code',
+                                sublabel: 'value',
+                              }"
+                              multiple
+                            />
+                            <div></div>
+                          </td>
+                          <td
+                            class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right text-sm sm:pe-6 md:pe-0"
+                          >
+                            {{
+                              new Intl.NumberFormat('fr-FR').format(
+                                curOrderItem.rate * curOrderItem.quantity,
+                              )
+                            }}
+                          </td>
+                        </tr>
+                      </tbody>
+                      <tfoot>
+                        <tr v-for="item in totalData" :key="item.label">
+                          <!-- <div class="flex justify-end gap-2 mt-5">
                               <div
                                 class="text-muted-500 dark:text-muted-400 text-sm font-light"
                               >
@@ -1417,64 +1619,63 @@ const onSubmit = handleSubmit(
                                 <p class="text-xs">Douala</p>
                               </div>
                             </div> -->
-                            <th
-                              scope="row"
-                              colspan="10"
-                              class="text-muted-400 hidden pe-3 ps-6 pt-6 text-right text-sm font-light sm:table-cell md:ps-0"
-                            >
-                              {{ item.label }}
-                            </th>
-                            <th
-                              scope="row"
-                              class="text-muted-500 pe-3 ps-4 pt-6 text-left text-sm font-light sm:hidden"
-                            >
-                              {{ item.label }}
-                            </th>
-                            <td
-                              class="pe-4 ps-3 pt-6 text-right sm:pe-6 md:pe-0 !w-32"
-                              :class="
-                                item.label === 'Net à payer'
-                                  ? 'font-semibold text-base text-muted-800 dark:text-muted-100'
-                                  : 'text-sm text-muted-500 dark:text-muted-200/70'
-                              "
-                            >
-                              <span class="!w-32">
-                                {{
-                                  new Intl.NumberFormat('fr-FR').format(
-                                    item.value,
-                                  )
-                                }}
-                                XAF
-                              </span>
-                            </td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
+                          <th
+                            scope="row"
+                            colspan="10"
+                            class="text-muted-400 hidden pe-3 ps-6 pt-6 text-right text-sm font-light sm:table-cell md:ps-0"
+                          >
+                            {{ item.label }}
+                          </th>
+                          <th
+                            scope="row"
+                            class="text-muted-500 pe-3 ps-4 pt-6 text-left text-sm font-light sm:hidden"
+                          >
+                            {{ item.label }}
+                          </th>
+                          <td
+                            class="pe-4 ps-3 pt-6 text-right sm:pe-6 md:pe-0 !w-32"
+                            :class="
+                              item.label === 'Net à payer'
+                                ? 'font-semibold text-base text-muted-800 dark:text-muted-100'
+                                : 'text-sm text-muted-500 dark:text-muted-200/70'
+                            "
+                          >
+                            <span class="!w-32">
+                              {{
+                                new Intl.NumberFormat('fr-FR').format(
+                                  item.value,
+                                )
+                              }}
+                              XAF
+                            </span>
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
                   </div>
+                </div>
 
-                  <div class="mt-8 p-8">
-                    <div
-                      class="border-muted-200 dark:border-muted-700 border-t pt-8"
-                    >
-                      <div class="text-muted-400">
-                        <BaseParagraph size="xs">
-                          Payment terms are 14 days. Please be aware that
-                          according to the Late Payment of company Debts Acts,
-                          freelancers are entitled to claim a 00.00 late fee
-                          upon non-payment of debts after this time, at which
-                          point a new invoice will be submitted with the
-                          addition of this fee.
-                        </BaseParagraph>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="mt-2 p-8 flex justify-end">
+                <div class="mt-8 p-8">
+                  <div
+                    class="border-muted-200 dark:border-muted-700 border-t pt-8"
+                  >
                     <div class="text-muted-400">
                       <BaseParagraph size="xs">
-                        The sales department
+                        Payment terms are 14 days. Please be aware that
+                        according to the Late Payment of company Debts Acts,
+                        freelancers are entitled to claim a 00.00 late fee upon
+                        non-payment of debts after this time, at which point a
+                        new invoice will be submitted with the addition of this
+                        fee.
                       </BaseParagraph>
                     </div>
+                  </div>
+                </div>
+                <div class="mt-2 p-8 flex justify-end">
+                  <div class="text-muted-400">
+                    <BaseParagraph size="xs">
+                      The sales department
+                    </BaseParagraph>
                   </div>
                 </div>
               </div>
@@ -1552,7 +1753,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Confirmation de la commande
+            Confirmation du devis
           </h3>
 
           <BaseButtonClose @click="isModalConfirmOrderOpen = false" />
@@ -1565,11 +1766,13 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
           >
-            Voulez-vous confirmer la commande
-            <span class="text-primary-500">{{ currentPackage.label }}</span>
+            Voulez-vous confirmer le devis
+            <span class="text-primary-500">{{
+              currentOrderInvoice.label
+            }}</span>
             de
             <span class="text-primary-500"
-              >{{ currentPackage?.announcer?.name }}
+              >{{ currentOrderInvoice?.announcer?.name }}
             </span>
             ?
           </h3>
@@ -1591,6 +1794,66 @@ const onSubmit = handleSubmit(
             >
 
             <BaseButton color="primary" flavor="solid" @click="confirmOrder()"
+              >Valider</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal create package -->
+    <TairoModal
+      :open="isModalCreatePackageOpen"
+      size="sm"
+      @close="isModalCreatePackageOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Création du package
+          </h3>
+
+          <BaseButtonClose @click="isModalCreatePackageOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <h3
+            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
+          >
+            Voulez-vous créer le package pour le devis
+            <span class="text-primary-500">{{
+              currentOrderInvoice.label
+            }}</span>
+            de
+            <span class="text-primary-500"
+              >{{ currentOrderInvoice?.announcer?.name }}
+            </span>
+            ?
+          </h3>
+
+          <p
+            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est reversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalCreatePackageOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton color="primary" flavor="solid" @click="createPackage()"
               >Valider</BaseButton
             >
           </div>

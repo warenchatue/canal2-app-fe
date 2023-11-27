@@ -304,7 +304,7 @@ function editSpot(product: any) {
   setFieldValue('product.product', product.product)
   setFieldValue('product.message', product.message)
   setFieldValue('product.duration', product.duration)
-  setFieldValue('product.order', product.order)
+  setFieldValue('product.package', product.package)
 }
 
 function confirmDeleteSpot(product: any) {
@@ -559,19 +559,19 @@ async function confirmPlanning() {
     query: query4,
     body: {
       ...data.value.data,
-      planningValidator: authStore.user._id,
-      planningValidatorSignature: slug.value,
+      validator: authStore.user._id,
+      validatorSignature: slug.value,
     },
   })
 
   if (response.data?.value?.success) {
     success.value = true
-    data.value.data.planningValidator = authStore.user._id
-    data.value.data.planningValidatorSignature = slug.value
+    data.value.data.validator = authStore.user._id
+    data.value.data.validatorSignature = slug.value
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Plannning confirmé !`,
+      message: `Planning confirmé !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
@@ -685,7 +685,7 @@ const onSubmit = handleSubmit(
           query: query2,
           body: {
             ...values.product,
-            order: data.value?.data?._id,
+            package: data.value?.data?._id,
             _id: undefined,
           },
         })
@@ -763,7 +763,7 @@ const onSubmit = handleSubmit(
         />
         <div class="mx-auto w-full max-w-4xl text-center">
           <BaseHeading tag="h2" size="xl" weight="medium" class="mt-4">
-            {{ data?.data?.announcer?.name }}
+            {{ data?.data?.order?.announcer?.name }}
           </BaseHeading>
           <div
             class="divide-muted-200 dark:divide-muted-800 flex items-center justify-center divide-x"
@@ -771,7 +771,7 @@ const onSubmit = handleSubmit(
             <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
               <Icon name="ph:globe" class="h-5 w-5" />
               <BaseText size="sm"
-                >Email: {{ data?.data?.announcer.email }}</BaseText
+                >Email: {{ data?.data?.order?.announcer.email }}</BaseText
               >
             </div>
 
@@ -787,7 +787,9 @@ const onSubmit = handleSubmit(
 
             <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
               <Icon name="ph:phone" class="h-5 w-5" />
-              <BaseText size="sm">{{ data?.data?.announcer.phone }}</BaseText>
+              <BaseText size="sm">{{
+                data?.data?.order.announcer.phone
+              }}</BaseText>
             </div>
           </div>
         </div>
@@ -876,7 +878,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.data?.numberSpots }}</span>
+                <span>{{ data?.data?.quantities }}</span>
               </BaseHeading>
             </div>
             <div
@@ -1595,7 +1597,7 @@ const onSubmit = handleSubmit(
 
           <BaseText size="base"
             >Total Commandés:
-            <span class="text-primary-500">{{ data?.data?.numberSpots }} </span>
+            <span class="text-primary-500">{{ data?.data?.quantities }} </span>
           </BaseText>
 
           <BaseText size="base"
@@ -1800,11 +1802,11 @@ const onSubmit = handleSubmit(
                   </BaseHeading>
                   <img
                     class="h-40 fit-content"
-                    :src="data.data.planningValidatorSignature"
+                    :src="data.data.validatorSignature"
                   />
                 </div>
                 <div
-                  v-if="data.data.planningValidatorSignature"
+                  v-if="data.data.validatorSignature"
                   shape="straight"
                   class="mx-2"
                 >

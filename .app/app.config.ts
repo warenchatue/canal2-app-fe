@@ -94,13 +94,13 @@ export default defineAppConfig({
                 icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Planning de diffusion',
+                name: 'Conducteur publicitaire',
                 to: '/bo/pub/diffusion-list',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Packages',
-                to: '/bo/pub/orders',
+                to: '/bo/pub/packages',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {

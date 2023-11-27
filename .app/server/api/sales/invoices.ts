@@ -1,3 +1,5 @@
+import makeId from "~/server/utils"
+
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const perPage = parseInt((query.perPage as string) || '5', 10)
@@ -89,7 +91,10 @@ async function createInvoice(body: any, token: string) {
       Authorization: 'Bearer ' + token,
       'Content-type': 'application/json',
     },
-    body: body,
+    body: {
+      ...body,
+      code: 'FACT' + '/' + new Date().getFullYear() + '/' + makeId(4),
+    },
   }).catch((error) => console.log(error))
   console.log(data)
   return Promise.resolve(data)

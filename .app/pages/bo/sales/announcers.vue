@@ -102,6 +102,8 @@ const zodSchema = z
       _id: z.string().optional(),
       name: z.string().min(1, VALIDATION_TEXT.NAME_REQUIRED),
       email: z.string(),
+      rc: z.string(),
+      nc: z.string(),
       status: z.union([z.literal('active'), z.literal('trashed')]).optional(),
       phone: z.string(),
       country: z
@@ -136,6 +138,8 @@ const initialValues = computed<FormInput>(() => ({
     name: '',
     email: '',
     phone: '',
+    rc: '',
+    nc: '',
     status: 'active',
     country: {
       _id: '',
@@ -415,12 +419,8 @@ const onSubmit = handleSubmit(
 
                 <TairoTableHeading uppercase spaced> Tel </TairoTableHeading>
 
-                <TairoTableHeading uppercase spaced>
-                  Total commandés
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Total diffusés
-                </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> R/C </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> N/C </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
               </template>
 
@@ -478,12 +478,12 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs"> 1400 </span>
+                    <span class="text-muted-400 font-sans text-xs">  {{ item.rc }} </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs"> 1395 </span>
+                    <span class="text-muted-400 font-sans text-xs">  {{ item.nc }} </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
@@ -610,6 +610,40 @@ const onSubmit = handleSubmit(
                       <BaseInput
                         label="Numéro de téléphone"
                         icon="ph:phone-duotone"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="announcer.rc"
+                    >
+                      <BaseInput
+                        label="Registre de commerce"
+                        icon="ph:file-duotone"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="announcer.nc"
+                    >
+                      <BaseInput
+                        label="Numéro de contribuable"
+                        icon="ph:file-duotone"
                         placeholder=""
                         :model-value="field.value"
                         :error="errorMessage"

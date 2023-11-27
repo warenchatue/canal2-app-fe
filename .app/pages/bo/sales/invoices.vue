@@ -5,10 +5,10 @@ import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Devis',
+  title: 'Factures',
   preview: {
-    title: 'Devis',
-    description: 'Devis | Commandes',
+    title: 'Factures',
+    description: 'Factures | Commandes',
     categories: ['bo', 'spots', 'orders'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
@@ -59,7 +59,7 @@ const query = computed(() => {
   }
 })
 
-const { data, pending } = await useFetch('/api/sales/orders', {
+const { data, pending } = await useFetch('/api/sales/invoices', {
   query,
 })
 
@@ -79,9 +79,6 @@ function editPackage(spotPackage: any) {
   currentPackage.value = spotPackage
   setFieldValue('spotPackage._id', spotPackage._id)
   setFieldValue('spotPackage.label', spotPackage.label)
-  setFieldValue('spotPackage.numberSpots', spotPackage.numberSpots)
-  setFieldValue('spotPackage.numberProducts', spotPackage.numberProducts)
-  setFieldValue('spotPackage.period', spotPackage.period)
   setFieldValue('spotPackage.announcer', spotPackage.announcer)
   setFieldValue('spotPackage.commercial', spotPackage.manager)
   setFieldValue('spotPackage.status', spotPackage.status)
@@ -94,22 +91,22 @@ function editPackage(spotPackage: any) {
   )
 }
 
-function confirmDeletePackage(spotPackage: any) {
+function confirmDeletePackage(invoice: any) {
   isModalDeletePackageOpen.value = true
   isEdit.value = false
-  currentPackage.value = spotPackage
+  currentPackage.value = invoice
 }
 
-async function deletePackage(spotPackage: any) {
+async function deletePackage(invoice: any) {
   const query2 = computed(() => {
     return {
       action: 'delete',
       token: token.value,
-      id: spotPackage._id,
+      id: invoice._id,
     }
   })
 
-  const response = await useFetch('/api/pub/packages', {
+  const response = await useFetch('/api/sales/invoices', {
     method: 'delete',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
@@ -120,13 +117,13 @@ async function deletePackage(spotPackage: any) {
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Package supprimé !`,
+      message: `Facture supprimée !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
     })
     isModalDeletePackageOpen.value = false
-    filter.value = 'spotPackage'
+    filter.value = 'invoice'
     filter.value = ''
   } else {
     toaster.clearAll()
@@ -171,8 +168,6 @@ const zodSchema = z
     spotPackage: z.object({
       _id: z.string().optional(),
       label: z.string().min(1, VALIDATION_TEXT.LABEL_REQUIRED),
-      numberSpots: z.number(),
-      numberProducts: z.number(),
       status: z
         .union([
           z.literal('onHold'),
@@ -231,8 +226,6 @@ const initialValues = computed<FormInput>(() => ({
   avatar: null,
   spotPackage: {
     label: '',
-    numberSpots: 0,
-    numberProducts: 0,
     period: '',
     status: 'onHold',
     invoice: {
@@ -519,7 +512,7 @@ const onSubmit = handleSubmit(
         <BaseInput
           v-model="filter"
           icon="lucide:search"
-          placeholder="Filtrer package..."
+          placeholder="Filtrer facture..."
           :classes="{
             wrapper: 'w-full sm:w-auto',
           }"
@@ -541,10 +534,10 @@ const onSubmit = handleSubmit(
         <BaseButton
           color="primary"
           class="w-full sm:w-52"
-          to="/bo/sales/orders/new-order-0"
+          to="/bo/sales/orders/new-invoice-0"
         >
           <Icon name="ph:plus" class="h-4 w-4" />
-          <span>Nouvau devis</span>
+          <span>Nouvelle facture</span>
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">
@@ -600,7 +593,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Annonceurs</span>
+                <span>Soldés</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -641,7 +634,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Spots</span>
+                <span>En attente</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -682,14 +675,14 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Produits</span>
+                <span>Annonceurs</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
                 class="bg-primary-100 text-primary-500 dark:bg-primary-500/20 dark:text-primary-400 dark:border-primary-500 dark:border-2"
                 shape="full"
               >
-                <Icon name="ph:file" class="h-5 w-5" />
+                <Icon name="ph:user" class="h-5 w-5" />
               </BaseIconBox>
             </div>
             <div class="mb-2">
@@ -820,9 +813,9 @@ const onSubmit = handleSubmit(
                     >C</a
                   >
                   <a
-                    v-if="item.invoice.url"
+                    v-if="item.invoice?.url"
                     class="mx-1 text-white bg-muted-600 p-2 rounded"
-                    :href="'/' + item.invoice.url"
+                    :href="'/' + item.invoice?.url"
                     target="_blank"
                     >F</a
                   >
@@ -965,7 +958,7 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.numberSpots"
+                      name="spotPackage.quantities"
                     >
                       <BaseInput
                         label="Nombre de spots"
@@ -1252,7 +1245,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Suppression d'un package
+            Suppression d'une facture
           </h3>
 
           <BaseButtonClose @click="isModalDeletePackageOpen = false" />

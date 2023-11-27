@@ -1,3 +1,5 @@
+import makeId from '~/server/utils'
+
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const perPage = parseInt((query.perPage as string) || '5', 10)
@@ -53,7 +55,7 @@ function filterData(
   if (isReport == true) {
     let totalPending = 0
     data = data.map((item) => {
-      totalPending += item.invoice.pending
+      totalPending += item.invoice?.pending ?? 0
       const plannings = item.plannings.sort((a: any, b: any) => {
         return a.date < b.date ? -1 : 1
       })
@@ -168,16 +170,4 @@ async function deletePackage(id: string, token: string) {
   }).catch((error) => console.log(error))
   console.log(data)
   return Promise.resolve(data)
-}
-
-function makeId(length: number) {
-  let result = ''
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#!&'
-  const charactersLength = characters.length
-  let counter = 0
-  while (counter < length) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength))
-    counter += 1
-  }
-  return result
 }

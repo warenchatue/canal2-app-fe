@@ -49,7 +49,7 @@ function filterData(
   page: number,
   perPage: number,
 ) {
-  data = data.filter((item) => item.product?.order?.planningValidator != null)
+  data = data.filter((item) => item.product?.package?.validator != null)
 
   const offset = (page - 1) * perPage
   if (!filter) {
