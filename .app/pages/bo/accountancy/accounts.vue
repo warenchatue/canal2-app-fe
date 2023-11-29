@@ -165,7 +165,7 @@ function confirmDeleteAccount(tax: any) {
   currentAccount.value = tax
 }
 
-async function deleteAccount(tax: any) {
+async function deleteAccount(account: any) {
   const query2 = computed(() => {
     return {
       action: 'delete',
@@ -174,7 +174,7 @@ async function deleteAccount(tax: any) {
     }
   })
 
-  const response = await useFetch('/api/accountancy/taxes', {
+  const response = await useFetch('/api/accountancy/accounts', {
     method: 'delete',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
@@ -185,13 +185,13 @@ async function deleteAccount(tax: any) {
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Compte supprimée !`,
+      message: `Compte supprimé !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
     })
     isModalDeleteAccountOpen.value = false
-    filter.value = 'tax'
+    filter.value = 'account'
     filter.value = ''
   } else {
     toaster.clearAll()
@@ -210,7 +210,7 @@ const onSubmit = handleSubmit(
   async (values) => {
     success.value = false
     // here you have access to the validated form values
-    console.log('tax-create-success', values)
+    console.log('accounnt-create-success', values)
 
     try {
       const isSuccess = ref(false)
@@ -649,7 +649,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Suppression d'un tax
+            Suppression d'un compte
           </h3>
 
           <BaseButtonClose @click="isModalDeleteAccountOpen = false" />

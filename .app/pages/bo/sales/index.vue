@@ -6,7 +6,7 @@ import 'v-calendar/dist/style.css'
 import '~/assets/css/vcalendar.css'
 
 definePageMeta({
-  title: 'Tableau de bord PUB',
+  title: 'Tableau de bord Ventes',
   preview: {
     title: 'Analytics dashboard',
     description: 'Analytic',
@@ -530,7 +530,7 @@ function useBarSalesProfit() {
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total diffusés</span>
+                <span>Total devis</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -570,7 +570,7 @@ function useBarSalesProfit() {
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Non diffusés</span>
+                <span>Total factures</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -611,7 +611,7 @@ function useBarSalesProfit() {
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Commandes</span>
+                <span>Total Annonceurs</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -652,7 +652,7 @@ function useBarSalesProfit() {
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Annonceurs</span>
+                <span>Total Articles</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -690,7 +690,7 @@ function useBarSalesProfit() {
               <div>
                 <span class="text-muted-400 font-sans text-xs">Ce mois</span>
                 <p class="text-primary-500 font-sans text-lg font-medium">
-                  {{ data.metaData?.resumeValues[1] ?? 0 }} spots diffusés
+                  {{ data.metaData?.resumeValues[1] ?? 0 }} XAF
                 </p>
               </div>
               <div>
@@ -700,7 +700,7 @@ function useBarSalesProfit() {
                 <p
                   class="text-muted-800 dark:text-muted-100 font-sans text-lg font-medium"
                 >
-                  {{ data.metaData?.resumeValues[0] ?? 0 }} spots diffusés
+                  {{ data.metaData?.resumeValues[0] ?? 0 }} XAF
                 </p>
               </div>
             </div>

@@ -748,7 +748,15 @@ const onSubmit = handleSubmit(
                 <TairoTableHeading uppercase spaced>
                   Annonceur
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Libellé</TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>
+                  Societé
+                </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>
+                  Vendeur
+                </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Total </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Dû </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Docs</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
@@ -802,7 +810,20 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.label }}
+                  {{ new Date(item.createdAt).toLocaleDateString('fr-FR') }}
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ item.org.name }}
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ item.manager?.lastName }}
+                  {{ item.manager?.firstName }}
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ 0 }}
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ 0 }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   <a
@@ -846,12 +867,14 @@ const onSubmit = handleSubmit(
                   <div class="flex">
                     <BaseButtonAction
                       class="mx-2"
-                      :to="'/bo/pub/package-details/' + item._id"
+                      :to="'/bo/sales/orders/view-invoice-' + item._id"
                       muted
                     >
-                      <Icon name="lucide:settings" class="h-4 w-4"
+                      <Icon name="lucide:eye" class="h-4 w-4"
                     /></BaseButtonAction>
-                    <BaseButtonAction @click="editPackage(item)">
+                    <BaseButtonAction
+                      :to="'/bo/sales/orders/edit-invoice-' + item._id"
+                    >
                       <Icon name="lucide:edit" class="h-4 w-4"
                     /></BaseButtonAction>
                     <BaseButtonAction
@@ -879,359 +902,6 @@ const onSubmit = handleSubmit(
         </div>
       </div>
     </TairoContentWrapper>
-
-    <!-- Modal new Package -->
-    <TairoModal
-      :open="isModalNewPackageOpen"
-      size="3xl"
-      @close="isModalNewPackageOpen = false"
-    >
-      <template #header>
-        <!-- Header -->
-        <div class="flex w-full items-center justify-between p-4 md:p-6">
-          <h3
-            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
-          >
-            {{ isEdit == true ? 'Editer' : 'Nouvelle' }} commande
-          </h3>
-
-          <BaseButtonClose @click="isModalNewPackageOpen = false" />
-        </div>
-      </template>
-
-      <!-- Body -->
-      <BaseCard class="w-full">
-        <form
-          method="POST"
-          action=""
-          class="divide-muted-200 dark:divide-muted-700"
-          @submit.prevent="onSubmit"
-        >
-          <div
-            shape="curved"
-            class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
-          >
-            <div class="mx-auto flex w-full flex-col">
-              <div>
-                <p
-                  class="font-alt text-muted-500 dark:text-muted-200 text-lg leading-5"
-                >
-                  Information sur la commande
-                </p>
-                <div class="grid grid-cols-12 gap-4">
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.label"
-                    >
-                      <BaseInput
-                        label="Mode de paiement"
-                        icon="ph:user-duotone"
-                        placeholder="ex: Bon de commande"
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.numberProducts"
-                    >
-                      <BaseInput
-                        label="Nombre de produits"
-                        icon="ph:file-duotone"
-                        type="number"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.quantities"
-                    >
-                      <BaseInput
-                        label="Nombre de spots"
-                        icon="ph:file-duotone"
-                        type="number"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.period"
-                    >
-                      <BaseInput
-                        label="Periode"
-                        icon="ph:file-duotone"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.announcer"
-                    >
-                      <BaseListbox
-                        label="Annonceur"
-                        :items="announcers?.data"
-                        :properties="{
-                          value: '_id',
-                          label: 'name',
-                          sublabel: 'email',
-                          media: 'flag',
-                        }"
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.commercial"
-                    >
-                      <BaseListbox
-                        label="Commercial en charge"
-                        :items="commercials"
-                        :properties="{
-                          value: '_id',
-                          label: 'lastName',
-                          sublabel: 'email',
-                          media: 'photo',
-                        }"
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.status"
-                    >
-                      <BaseSelect
-                        label="Statut *"
-                        icon="ph:funnel"
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="true"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      >
-                        <option value="onHold">En attente de validation</option>
-                        <option value="confirmed">Validéé</option>
-                        <option value="completed">Soldée</option>
-                        <option value="closed">Cloturées</option>
-                      </BaseSelect>
-                    </Field>
-                  </div>
-                  <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
-                    <BaseInputFile
-                      v-model="inputOrderContracts"
-                      :disabled="
-                        isSubmitting ||
-                        (authStore.user?.appRole?.name != UserRole.superAdmin &&
-                          authStore.user?.appRole?.name != UserRole.sale)
-                      "
-                      shape="straight"
-                      label="Slectionnez le contrat"
-                    />
-                  </div>
-                </div>
-                <p
-                  class="font-alt text-muted-500 mt-5 dark:text-muted-200 text-lg leading-5"
-                >
-                  Information sur la facture
-                </p>
-                <div class="grid grid-cols-12 gap-4 mt-4">
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.invoice.label"
-                    >
-                      <BaseInput
-                        label="Libelé facture"
-                        icon="ph:chat-duotone"
-                        type="text"
-                        placeholder="ex: Fact N_ XXXXX"
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="
-                          isSubmitting ||
-                          (authStore.user?.appRole?.name !=
-                            UserRole.superAdmin &&
-                            authStore.user?.appRole?.name != UserRole.billing)
-                        "
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.invoice.amount"
-                    >
-                      <BaseInput
-                        label="Montant total Facture"
-                        icon="ph:file-duotone"
-                        type="number"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="
-                          isSubmitting ||
-                          (authStore.user?.appRole?.name !=
-                            UserRole.superAdmin &&
-                            authStore.user?.appRole?.name != UserRole.billing)
-                        "
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.invoice.pending"
-                    >
-                      <BaseInput
-                        label="Montant restant à payé"
-                        icon="ph:file-duotone"
-                        type="number"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="
-                          isSubmitting ||
-                          (authStore.user?.appRole?.name !=
-                            UserRole.superAdmin &&
-                            authStore.user?.appRole?.name != UserRole.billing)
-                        "
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.invoice.totalSpotsPaid"
-                    >
-                      <BaseInput
-                        label="Nombre de spots payés"
-                        icon="ph:file-duotone"
-                        type="number"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="
-                          isSubmitting ||
-                          (authStore.user?.appRole?.name !=
-                            UserRole.superAdmin &&
-                            authStore.user?.appRole?.name != UserRole.billing)
-                        "
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="ltablet:col-span-12 col-span-12 lg:col-span-12">
-                    <BaseInputFile
-                      v-model="inputOrderInvoices"
-                      :disabled="
-                        authStore.user?.appRole?.name != UserRole.superAdmin &&
-                        authStore.user?.appRole?.name != UserRole.billing
-                      "
-                      shape="straight"
-                      label="Slectionnez la facture"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </form>
-      </BaseCard>
-      <template #footer>
-        <!-- Footer -->
-        <div class="p-4 md:p-6">
-          <div class="flex gap-x-2">
-            <BaseButton @click="isModalNewPackageOpen = false"
-              >Annuler</BaseButton
-            >
-            <div v-if="isEdit == true" class="flex">
-              <BaseButton
-                :color="currentPackage?.orderValidator ? 'success' : 'warning'"
-                class="!mx-2"
-                flavor="solid"
-                @click="isModalConfirmOrderOpen = true"
-                :disabled="authStore.user?.appRole?.tag != UserRole.respSaleTag"
-              >
-                <span class="text-bold text-muted-700">
-                  OK du Service CCial</span
-                >
-              </BaseButton>
-              <BaseButton
-                :color="currentPackage?.billValidator ? 'success' : 'warning'"
-                flavor="solid"
-                @click="isModalConfirmOrderOpen = true"
-                :disabled="
-                  authStore.user?.appRole?.tag != UserRole.respBillingTag
-                "
-              >
-                <span class="text-bold text-muted-700">
-                  OK du Sevice de Fact</span
-                >
-              </BaseButton>
-              <BaseButton
-                :color="currentPackage?.adminValidator ? 'success' : 'warning'"
-                class="!mx-2"
-                flavor="solid"
-                @click="isModalConfirmOrderOpen = true"
-                :disabled="authStore.user?.appRole?.name != UserRole.admin"
-              >
-                <span class="text-bold text-muted-700"> OK du PDG/DG/DO</span>
-              </BaseButton>
-            </div>
-
-            <BaseButton color="primary" flavor="solid" @click="onSubmit">
-              {{ isEdit == true ? 'Modifier' : 'Créer' }}
-            </BaseButton>
-          </div>
-        </div>
-      </template>
-    </TairoModal>
 
     <!-- Modal delete -->
     <TairoModal

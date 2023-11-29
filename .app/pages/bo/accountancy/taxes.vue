@@ -654,7 +654,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Suppression d'un tax
+            Suppression d'une taxe
           </h3>
 
           <BaseButtonClose @click="isModalDeleteTaxOpen = false" />

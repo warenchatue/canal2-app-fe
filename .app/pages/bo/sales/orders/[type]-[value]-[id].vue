@@ -31,6 +31,7 @@ const isModalCreatePackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
 const currentOrg = ref({})
+const packageId = ref('')
 const selectedOrder = ref({})
 // Check if can have access
 if (authStore.user.appRole?.name == UserRole.broadcast) {
@@ -61,12 +62,6 @@ watch(inputOrderInvoices, (value) => {
   orderInvoiceFile.value = file
 })
 
-watch(selectedOrder, (value) => {
-  setTimeout(() => {
-    editOrderInvoiceFile(value)
-  }, 500)
-})
-
 watch([filter, perPage], () => {
   router.push({
     query: {
@@ -74,52 +69,6 @@ watch([filter, perPage], () => {
     },
   })
 })
-
-const pageType = computed(() => route.params.type)
-const pageValue = computed(() => route.params.value)
-const pageId = computed(() => route.params.id)
-
-let pageTitle = ''
-if (pageType.value == 'new') {
-  if (pageValue.value == 'order') {
-    pageTitle = 'Nouveau Devis'
-  } else if (pageValue.value == 'invoice') {
-    pageTitle = 'Nouvelle Facture'
-  }
-}
-if (pageType.value == 'view') {
-  if (pageValue.value == 'order') {
-    pageTitle = 'Consultation Devis'
-  } else if (pageValue.value == 'invoice') {
-    pageTitle = 'Consultation Facture'
-  }
-} else if (pageType.value == 'edit') {
-  isEdit.value = true
-  const query = computed(() => {
-    return {
-      filter: filter.value,
-      perPage: perPage.value,
-      page: page.value,
-      action: 'findOne',
-      id: pageId.value,
-      token: token.value,
-    }
-  })
-  if (pageValue.value == 'order') {
-    pageTitle = 'Mise à jour Devis'
-    const { data: singleOrder } = await useFetch('/api/sales/orders', {
-      query,
-    })
-    console.log('singleOrder')
-    console.log(singleOrder.value)
-    if (singleOrder.value?.success) {
-      currentOrderInvoice.value = singleOrder.value?.data
-      editOrderInvoiceFile(currentOrderInvoice.value)
-    }
-  } else if (pageValue.value == 'invoice') {
-    pageTitle = 'Mise à jour Facture'
-  }
-}
 
 const query = computed(() => {
   return {
@@ -166,6 +115,67 @@ const commercials = allUsers.value?.data.filter((e: any) => {
   return e.appRole?.name == UserRole.sale
 })
 
+const pageType = computed(() => route.params.type)
+const pageValue = computed(() => route.params.value)
+const pageId = computed(() => route.params.id)
+
+let pageTitle = ''
+if (pageType.value == 'new') {
+  if (pageValue.value == 'order') {
+    pageTitle = 'Nouveau Devis'
+  } else if (pageValue.value == 'invoice') {
+    pageTitle = 'Nouvelle Facture'
+  }
+}
+if (pageType.value == 'view') {
+  if (pageValue.value == 'order') {
+    pageTitle = 'Consultation Devis'
+  } else if (pageValue.value == 'invoice') {
+    pageTitle = 'Consultation Facture'
+  }
+} else if (pageType.value == 'edit') {
+  isEdit.value = true
+  const query = computed(() => {
+    return {
+      filter: filter.value,
+      perPage: perPage.value,
+      page: page.value,
+      action: 'findOne',
+      id: pageId.value,
+      token: token.value,
+    }
+  })
+  if (pageValue.value == 'order') {
+    pageTitle = 'Mise à jour Devis'
+    const { data: singleOrder } = await useFetch('/api/sales/orders', {
+      query,
+    })
+    if (singleOrder.value?.success) {
+      currentOrderInvoice.value = singleOrder.value?.data
+      packageId.value = currentOrderInvoice.value.package?._id ?? undefined
+      editOrderInvoiceFile(currentOrderInvoice.value)
+    }
+  } else if (pageValue.value == 'invoice') {
+    pageTitle = 'Mise à jour Facture'
+    const { data: singleOrder } = await useFetch('/api/sales/invoices', {
+      query,
+    })
+    if (singleOrder.value?.success) {
+      currentOrderInvoice.value = singleOrder.value?.data
+      packageId.value =
+        currentOrderInvoice.value.order.package?._id ?? undefined
+      selectedOrder.value = currentOrderInvoice.value.order
+      editOrderInvoiceFile(currentOrderInvoice.value)
+    }
+  }
+}
+
+watch(selectedOrder, (value) => {
+  setTimeout(() => {
+    editOrderInvoiceFile(value)
+  }, 1000)
+})
+
 function printOrder() {
   isPrint.value = true
   setTimeout(() => {
@@ -175,7 +185,7 @@ function printOrder() {
     window.print()
     document.body.innerHTML = originalContents
     location.reload()
-  }, 800)
+  }, 1000)
 }
 
 function confirmDeleteOrder(order: any) {
@@ -188,7 +198,7 @@ function viewOrder() {
   setTimeout(() => {
     isPrint.value = !isPrint.value
     editOrderInvoiceFile(currentOrderInvoice.value)
-  }, 200)
+  }, 1000)
 }
 
 async function deletePackage(spotPackage: any) {
@@ -360,7 +370,7 @@ function editOrderInvoiceFile(currentOrderInvoice: any) {
     )
     currentOrg.value = currentOrderInvoice.org
     orderData.value = currentOrderInvoice.items
-  }, 500)
+  }, 1000)
 }
 async function createPackage() {
   const query4 = computed(() => {
@@ -445,19 +455,22 @@ async function addPackageOrder(id: string) {
 async function confirmOrder() {
   const query4 = computed(() => {
     return {
-      action: 'updateOrder',
+      action: pageValue.value == 'order' ? 'updateOrder' : 'updateInvoice',
       token: token.value,
       id: currentOrderInvoice.value._id,
     }
   })
   currentOrderInvoice.value.validator = authStore.user._id
 
-  const response = await useFetch('/api/sales/orders', {
-    method: 'put',
-    headers: { 'Content-Type': 'application/json' },
-    query: query4,
-    body: { ...currentOrderInvoice.value },
-  })
+  const response = await useFetch(
+    pageValue.value == 'order' ? '/api/sales/orders' : '/api/sales/invoices',
+    {
+      method: 'put',
+      headers: { 'Content-Type': 'application/json' },
+      query: query4,
+      body: { ...currentOrderInvoice.value },
+    },
+  )
 
   if (response.data?.value?.success) {
     success.value = true
@@ -551,11 +564,11 @@ const onSubmit = handleSubmit(
     success.value = false
 
     // here you have access to the validated form values
-    console.log('order-create-success', values)
+    console.log('order-invoie-create-success', values)
     const contractUrl =
-      isEdit.value == true ? ref(currentPackage.contractUrl ?? '') : ref('')
-    const invoiceUrl =
-      isEdit.value == true ? ref(currentPackage.invoice?.url ?? '') : ref('')
+      isEdit.value == true
+        ? ref(currentOrderInvoice?.contractUrl ?? '')
+        : ref('')
 
     try {
       const isSuccess = ref(false)
@@ -663,7 +676,9 @@ const onSubmit = handleSubmit(
               ...values.order,
               announcer: values.order?.announcer?._id,
               manager: values.order?.commercial?._id,
-              order: selectedOrder?._id ?? undefined,
+              order: selectedOrder.value?._id ?? undefined,
+              org: currentOrg.value,
+              items: orderData.value,
             },
           })
           isSuccess.value = response.data.value?.success
@@ -684,7 +699,9 @@ const onSubmit = handleSubmit(
               announcer: values.order?.announcer?._id,
               manager: values.order?.commercial?._id,
               _id: undefined,
-              order: selectedOrder?._id ?? undefined,
+              order: selectedOrder.value?._id ?? undefined,
+              org: currentOrg.value,
+              items: orderData.value,
             },
           })
           isSuccess.value = response.data.value?.success
@@ -704,7 +721,7 @@ const onSubmit = handleSubmit(
           icon: 'ph:check',
           closable: true,
         })
-        resetForm()
+        // resetForm()
         filter.value = 'order'
         filter.value = ''
       } else {
@@ -815,16 +832,16 @@ const onSubmit = handleSubmit(
           <span>Sauvegarder</span>
         </BaseButton>
         <BaseButton
-          v-if="isEdit && currentOrderInvoice?.package"
+          v-if="isEdit && packageId"
           color="info"
           class="w-full sm:w-32"
-          :to="'/bo/pub/package-details/' + currentOrderInvoice.package._id"
+          :to="'/bo/pub/package-details/' + packageId"
         >
           <Icon name="ph:file" class="h-4 w-4" />
           <span>Planning</span>
         </BaseButton>
         <BaseButton
-          v-if="isEdit && !currentOrderInvoice?.package"
+          v-if="isEdit && !packageId"
           color="info"
           class="w-full sm:w-32"
           @click="isModalCreatePackageOpen = true"
@@ -849,7 +866,13 @@ const onSubmit = handleSubmit(
             <div>
               <BaseHeading as="h2" size="xl" weight="medium" lead="none">
                 {{ pageValue == 'order' ? 'Devis' : 'Facture' }}
-                {{ currentOrderInvoice.validator ? 'Confirmé' : 'Brouillon' }}
+                {{
+                  currentOrderInvoice.validator
+                    ? pageValue == 'order'
+                      ? 'Confirmé'
+                      : 'Confirmée'
+                    : 'Brouillon'
+                }}
               </BaseHeading>
             </div>
             <div class="flex items-center justify-end gap-3">
@@ -1082,7 +1105,7 @@ const onSubmit = handleSubmit(
                             }"
                             v-model="selectedOrder"
                             :error="errorMessage"
-                            :disabled="isSubmitting"
+                            :disabled="isSubmitting || isEdit"
                           />
                         </div>
                         <div
@@ -1753,7 +1776,8 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Confirmation du devis
+            Confirmation
+            {{ pageValue == 'order' ? 'du devis' : 'de la facture' }}
           </h3>
 
           <BaseButtonClose @click="isModalConfirmOrderOpen = false" />
@@ -1766,7 +1790,8 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
           >
-            Voulez-vous confirmer le devis
+            Voulez-vous confirmer
+            {{ pageValue == 'order' ? 'le devis' : 'la facture' }}
             <span class="text-primary-500">{{
               currentOrderInvoice.label
             }}</span>

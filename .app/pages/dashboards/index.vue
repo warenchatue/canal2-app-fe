@@ -156,7 +156,7 @@ const auth = useAuthStore()
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>Les Evènements système</span>
+                <span>Liste des évènements</span>
               </BaseHeading>
               <NuxtLink
                 to="#"
@@ -167,28 +167,6 @@ const auth = useAuthStore()
             </div>
             <DemoProjectListCompact />
           </BaseCard>
-          <!-- Chart -->
-          <BaseCard class="p-6">
-            <div class="mb-6 flex items-center justify-between">
-              <BaseHeading
-                as="h3"
-                size="md"
-                weight="semibold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>Mes actions</span>
-              </BaseHeading>
-              <NuxtLink
-                to="#"
-                class="bg-muted-100 hover:bg-muted-200 dark:bg-muted-700 dark:hover:bg-muted-900 text-primary-500 rounded-lg px-4 py-2 font-sans text-sm font-medium underline-offset-4 transition-colors duration-300 hover:underline"
-              >
-                Tous consulter
-              </NuxtLink>
-            </div>
-            <DemoProjectListCompact />
-          </BaseCard>
-          <!-- Chart -->
         </div>
       </div>
       <!--Grid column-->

@@ -679,7 +679,15 @@ const onSubmit = handleSubmit(
                 <TairoTableHeading uppercase spaced>
                   Annonceur
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Libellé</TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>
+                  Societé
+                </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>
+                  Vendeur
+                </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Total </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Dû </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Docs</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
@@ -733,7 +741,20 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.label }}
+                  {{ new Date(item.createdAt).toLocaleDateString('fr-FR') }}
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ item.org.name }}
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ item.manager?.lastName }}
+                  {{ item.manager?.firstName }}
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ 0 }}
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ 0 }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   <a
