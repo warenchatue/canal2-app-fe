@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useForm } from 'vee-validate'
+import { DatePicker } from 'v-calendar'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
@@ -30,9 +31,15 @@ const token = useCookie('token')
 const isModalCreatePackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
+const isModalCreatePaymentOpen = ref(false)
 const currentOrg = ref({})
 const packageId = ref('')
 const selectedOrder = ref({})
+const totalAmount = ref(0)
+const dates = ref({
+  start: new Date(),
+  end: new Date(),
+})
 // Check if can have access
 if (authStore.user.appRole?.name == UserRole.broadcast) {
   toaster.clearAll()
@@ -241,6 +248,50 @@ async function deletePackage(spotPackage: any) {
   }
 }
 
+async function addInvoicePayment() {
+  const query2 = computed(() => {
+    return {
+      action: 'addInvoicePayment',
+      token: token.value,
+      id: currentOrderInvoice.value._id,
+    }
+  })
+
+  const response = await useFetch('/api/sales/invoices', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    query: query2,
+    body: {
+      ...curInvoicePaymentForm.value,
+      org: currentOrg?.value?._id,
+    },
+  })
+
+  if (response.data?.value?.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Paiment créer !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalCreatePaymentOpen.value = false
+    filter.value = 'payment'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Oops',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+}
+
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
   return selected.value.length === data.value?.data.length
@@ -274,6 +325,7 @@ const zodSchema = z
       label: z.string().min(1, VALIDATION_TEXT.LABEL_REQUIRED),
       amount: z.number(),
       paymentCondition: z.string().optional(),
+      team: z.string().optional(),
       pending: z.number(),
       status: z
         .union([
@@ -523,6 +575,14 @@ const curOrderItem = ref({
   amount: 0,
 })
 
+const curInvoicePaymentForm = ref({
+  account: '',
+  label: '',
+  amount: 0,
+  date: '',
+  currency: '',
+})
+
 const vatRate = 0.1
 const totalData = computed(() => {
   const subtotal = orderData.value.reduce((acc, item) => {
@@ -533,8 +593,31 @@ const totalData = computed(() => {
     return acc + (item.quantity * item.rate * item.discount) / 100
   }, 0)
 
-  const vatValue = orderData.value.reduce((acc, item) => {
-    return acc + item.quantity * item.rate * (item.taxes[0].value / 100 ?? 0)
+  const vatValue = orderData.value.reduce((acc, item: any) => {
+    const baseAmount =
+      item.quantity * item.rate * (1 - item.discount / 100 ?? 0)
+    let tspAmount = 0
+    let tvaAmount = 0
+    let totalTaxes = 0
+    const tsp = item.taxes.filter((el: any) => el.code == 'TSP')
+    if (tsp.length == 1) {
+      tspAmount = baseAmount * (tsp[0].value / 100 ?? 0)
+      totalTaxes += tspAmount
+    }
+
+    const tva = item.taxes.filter((el: any) => el.code == 'TVA')
+    if (tva.length == 1) {
+      tvaAmount = (baseAmount + tspAmount) * (tva[0].value / 100 ?? 0)
+      totalTaxes += tvaAmount
+    }
+
+    const otherTaxes = item.taxes.filter(
+      (el: any) => el.code != 'TSP' && el.code != 'TVA',
+    )
+    for (let index = 0; index < otherTaxes.length; index++) {
+      totalTaxes += baseAmount * (otherTaxes[index].value / 100 ?? 0)
+    }
+    return acc + totalTaxes
   }, 0)
   const total = subtotal - discount + vatValue
 
@@ -564,7 +647,7 @@ const onSubmit = handleSubmit(
     success.value = false
 
     // here you have access to the validated form values
-    console.log('order-invoie-create-success', values)
+    console.log('order-invoice-create-success', values)
     const contractUrl =
       isEdit.value == true
         ? ref(currentOrderInvoice?.contractUrl ?? '')
@@ -631,6 +714,10 @@ const onSubmit = handleSubmit(
               org: currentOrg.value,
               contractUrl,
               items: orderData.value,
+              amount:
+                totalData.value.length > 0
+                  ? totalData.value[totalData.value.length - 1].value
+                  : 0,
             },
           })
           isSuccess.value = response.data.value?.success
@@ -654,11 +741,16 @@ const onSubmit = handleSubmit(
               _id: undefined,
               contractUrl,
               items: orderData.value,
+              amount:
+                totalData.value.length > 0
+                  ? totalData.value[totalData.value.length - 1].value
+                  : 0,
             },
           })
           isSuccess.value = response.data.value?.success
         }
       } else if (pageValue.value == 'invoice') {
+        let totalPaid = 0
         if (isEdit.value == true) {
           const query2 = computed(() => {
             return {
@@ -679,6 +771,11 @@ const onSubmit = handleSubmit(
               order: selectedOrder.value?._id ?? undefined,
               org: currentOrg.value,
               items: orderData.value,
+              paid: totalPaid,
+              amount:
+                totalData.value.length > 0
+                  ? totalData.value[totalData.value.length - 1].value
+                  : 0,
             },
           })
           isSuccess.value = response.data.value?.success
@@ -702,6 +799,11 @@ const onSubmit = handleSubmit(
               order: selectedOrder.value?._id ?? undefined,
               org: currentOrg.value,
               items: orderData.value,
+              paid: totalPaid,
+              amount:
+                totalData.value.length > 0
+                  ? totalData.value[totalData.value.length - 1].value
+                  : 0,
             },
           })
           isSuccess.value = response.data.value?.success
@@ -873,9 +975,19 @@ const onSubmit = handleSubmit(
                       : 'Confirmée'
                     : 'Brouillon'
                 }}
+                {{ isEdit ? ' - ' + currentOrderInvoice?.code : '' }}
               </BaseHeading>
             </div>
             <div class="flex items-center justify-end gap-3">
+              <BaseButtonIcon
+                v-if="pageValue == 'invoice'"
+                @click="isModalCreatePaymentOpen = true"
+                condensed
+                shape="full"
+                data-tooltip="Ajouter un règlement"
+              >
+                <Icon name="ph:money-duotone" class="h-4 w-4" />
+              </BaseButtonIcon>
               <BaseButtonIcon
                 @click="viewOrder()"
                 condensed
@@ -1220,7 +1332,7 @@ const onSubmit = handleSubmit(
                               handleChange,
                               handleBlur,
                             }"
-                            name="order.label"
+                            name="order.team"
                           >
                             <BaseInput
                               label="Equipe commerciale"
@@ -1390,7 +1502,7 @@ const onSubmit = handleSubmit(
                           <td
                             class="text-muted-500 dark:text-muted-400 px-3 py-4 text-left text-sm sm:table-cell"
                           >
-                            {{ item.article.name }}
+                            {{ item.article.code }}
                           </td>
                           <td
                             class="text-muted-500 dark:text-muted-400 px-3 py-4 text-left text-sm sm:table-cell"
@@ -1421,12 +1533,19 @@ const onSubmit = handleSubmit(
                           <td
                             class="text-muted-400 px-3 py-4 text-center text-sm sm:table-cell"
                           >
-                            {{ item.discount }}
+                            {{ item.discount }} %
                           </td>
                           <td
                             class="text-muted-400 px-3 py-4 text-center text-sm sm:table-cell"
                           >
-                            {{ item.taxes[0]?.code }}
+                            <p v-if="item.taxes.length > 0">
+                              {{ item.taxes[0]?.code }} :
+                              {{ item.taxes[0]?.value }} %
+                            </p>
+                            <p v-if="item.taxes.length > 1">
+                              {{ item.taxes[1]?.code }} :
+                              {{ item.taxes[1]?.value }} %
+                            </p>
                           </td>
                           <td
                             class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right text-sm sm:pe-6 md:pe-0"
@@ -1482,7 +1601,6 @@ const onSubmit = handleSubmit(
                                     value: '_id',
                                     label: 'name',
                                     sublabel: 'code',
-                                    media: '',
                                   }"
                                   v-model="curOrderItem.article"
                                   :error="errorMessage"
@@ -1536,7 +1654,7 @@ const onSubmit = handleSubmit(
                                       sublabel: 'label',
                                       media: '',
                                     }"
-                                    v-model="curOrderItem.article"
+                                    v-model="curOrderItem.account"
                                     :error="errorMessage"
                                     :disabled="isSubmitting"
                                     @update:model-value="handleChange"
@@ -1679,17 +1797,20 @@ const onSubmit = handleSubmit(
                 </div>
 
                 <div class="mt-8 p-8">
+                  <BaseParagraph size="xs">
+                    Termes de paiement :
+                    {{ currentOrderInvoice?.paymentCondition }}
+                  </BaseParagraph>
                   <div
                     class="border-muted-200 dark:border-muted-700 border-t pt-8"
                   >
                     <div class="text-muted-400">
                       <BaseParagraph size="xs">
-                        Payment terms are 14 days. Please be aware that
-                        according to the Late Payment of company Debts Acts,
-                        freelancers are entitled to claim a 00.00 late fee upon
-                        non-payment of debts after this time, at which point a
-                        new invoice will be submitted with the addition of this
-                        fee.
+                        Termes de paiement :
+                        {{ currentOrderInvoice?.paymentCondition }}
+                      </BaseParagraph>
+                      <BaseParagraph size="xs">
+                        Commentaire : {{ currentOrderInvoice?.label }}
                       </BaseParagraph>
                     </div>
                   </div>
@@ -1881,6 +2002,188 @@ const onSubmit = handleSubmit(
             <BaseButton color="primary" flavor="solid" @click="createPackage()"
               >Valider</BaseButton
             >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal create payment -->
+    <TairoModal
+      :open="isModalCreatePaymentOpen"
+      size="xl"
+      @close="isModalCreatePaymentOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Nouveau paiement
+          </h3>
+
+          <BaseButtonClose @click="isModalCreatePaymentOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <BaseCard class="w-full">
+        <div class="divide-muted-200 dark:divide-muted-700">
+          <div
+            shape="curved"
+            class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
+          >
+            <div class="mx-auto flex w-full flex-col">
+              <div>
+                <div>
+                  <div class="grid grid-cols-12 gap-4">
+                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
+                      <BaseListbox
+                        label="Journal des reglements"
+                        :items="accounts?.data"
+                        :properties="{
+                          value: '_id',
+                          label: 'label',
+                          sublabel: 'code',
+                        }"
+                        v-model="curInvoicePaymentForm.account"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </div>
+                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
+                      <DatePicker
+                        v-model.range="dates"
+                        :masks="masks"
+                        :min-date="new Date()"
+                        mode="date"
+                        hide-time-header
+                        trim-weeks
+                      >
+                        <template #default="{ inputValue, inputEvents }">
+                          <div class="flex w-full flex-col gap-4 sm:flex-row">
+                            <div class="relative grow">
+                              <Field
+                                v-slot="{
+                                  field,
+                                  errorMessage,
+                                  handleChange,
+                                  handleBlur,
+                                }"
+                                name="event.startDateTime"
+                              >
+                                <BaseInput
+                                  shape="rounded"
+                                  label="Date de l'operation"
+                                  icon="ph:calendar-blank-duotone"
+                                  :value="inputValue.start"
+                                  v-on="inputEvents.start"
+                                  :classes="{
+                                    input: '!h-11 !ps-11',
+                                    icon: '!h-11 !w-11',
+                                  }"
+                                  :model-value="field.value"
+                                  :error="errorMessage"
+                                  :disabled="isSubmitting"
+                                  type="text"
+                                  @update:model-value="handleChange"
+                                  @blur="handleBlur"
+                                />
+                              </Field>
+                            </div>
+                          </div>
+                        </template>
+                      </DatePicker>
+                    </div>
+                  </div>
+                  <div class="col-span-12 sm:col-span-6 mt-2">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="operation.label"
+                    >
+                      <BaseInput
+                        label="Libéllé"
+                        icon="ph:note"
+                        placeholder="Ex: virement"
+                        v-model="curInvoicePaymentForm.label"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        type="text"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <!-- <div class="grid grid-cols-12 gap-4 mt-2">
+                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
+                      <Field
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
+                        name="operation.currency"
+                      >
+                        <BaseListbox
+                          label="Devise"
+                          :items="currenciesData?.data"
+                          :properties="{
+                            value: '_id',
+                            label: 'name',
+                            sublabel: 'rate',
+                            media: '',
+                          }"
+                         v-model="curInvoicePaymentForm.currency"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+                  </div> -->
+                  <div class="col-span-12 sm:col-span-6 mt-2">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="operation.amount"
+                    >
+                      <BaseInput
+                        label="Montant"
+                        icon="ph:money"
+                        placeholder="Ex: 500 000 000"
+                        v-model="curInvoicePaymentForm.amount"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        type="number"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </BaseCard>
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalCreatePaymentOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="addInvoicePayment()"
+            >
+              Créer
+            </BaseButton>
           </div>
         </div>
       </template>

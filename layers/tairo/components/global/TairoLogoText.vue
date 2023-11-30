@@ -2,7 +2,7 @@
   <div
     class="from-primary-800 to-primary-900 bg-gradient-to-r bg-clip-text text-3xl font-bold text-transparent"
   >
-    C2PUB
+    TV+ES
   </div>
   <!-- <svg
     xmlns="http://www.w3.org/2000/svg"

@@ -28,7 +28,11 @@ const isModalConfirmOrderOpen = ref(false)
 const isEdit = ref(false)
 const toaster = useToaster()
 // Check if can have access
-if (authStore.user.appRole?.name == UserRole.broadcast) {
+if (
+  authStore.user.appRole?.name != UserRole.sale &&
+  authStore.user.appRole?.name != UserRole.admin &&
+  authStore.user.appRole?.name != UserRole.superAdmin
+) {
   toaster.clearAll()
   toaster.show({
     title: 'Désolé',
@@ -751,7 +755,8 @@ const onSubmit = handleSubmit(
                   {{ item.manager?.firstName }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ 0 }}
+                  {{ new Intl.NumberFormat().format(item.amount ?? 0) }}
+                  XAF
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{ 0 }}

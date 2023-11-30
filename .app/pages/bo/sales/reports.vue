@@ -732,7 +732,9 @@ const onSubmit = handleSubmit(
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseAvatar
-                      :src="item.order.announcer?.logo ?? '/img/avatars/company.svg'"
+                      :src="
+                        item.order.announcer?.logo ?? '/img/avatars/company.svg'
+                      "
                       :text="item.initials"
                       :class="getRandomColor()"
                     />
@@ -797,17 +799,14 @@ const onSubmit = handleSubmit(
                   XAF
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{
-                    new Intl.NumberFormat().format(
-                      (item.invoice?.amount ?? 0) -
-                        (item.invoice?.pending ?? 0),
-                    )
-                  }}
+                  {{ new Intl.NumberFormat().format(item.invoice?.paid ?? 0) }}
                   XAF
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{
-                    new Intl.NumberFormat().format(item.invoice?.pending ?? 0)
+                    new Intl.NumberFormat().format(
+                      (item.invoice?.amount ?? 0) - (item.invoice?.paid ?? 0),
+                    )
                   }}
                   XAF
                 </TairoTableCell>

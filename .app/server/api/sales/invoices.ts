@@ -1,4 +1,4 @@
-import makeId from "~/server/utils"
+import makeId from '~/server/utils'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -27,6 +27,10 @@ export default defineEventHandler(async (event) => {
   } else if (action == 'updateInvoice') {
     const body = await readBody(event)
     const data = await updateInvoice(id, body, token)
+    return { data: data, success: true }
+  } else if (action == 'addInvoicePayment') {
+    const body = await readBody(event)
+    const data = await addInvoicePayment(id, body, token)
     return { data: data, success: true }
   } else if (action == 'delete') {
     const data = await deleteInvoice(id, token)
@@ -111,6 +115,24 @@ async function updateInvoice(id: string, body: any, token: string) {
     },
     body: body,
   }).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
+}
+
+async function addInvoicePayment(id: string, body: any, token: string) {
+  console.log('addInvoicePayment ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/invoices/' + id + '/addPayment',
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+      body: body,
+    },
+  ).catch((error) => console.log(error))
   console.log(data)
   return Promise.resolve(data)
 }

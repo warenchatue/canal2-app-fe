@@ -38,7 +38,7 @@ export default defineNuxtConfig({
      * or to add custom meta tags to improve referencing.
      * @see https://github.com/harlan-zw/nuxt-seo-kit
      */
-    'nuxt-seo-kit',
+    // 'nuxt-seo-kit',
   ],
   modules: [
     /**
@@ -83,7 +83,7 @@ export default defineNuxtConfig({
       mapboxToken: process.env.NUXT_PUBLIC_MAPBOX_TOKEN,
       // nuxt-seo-kit config
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL,
-      siteName: '2SPOT by Digital Innova',
+      siteName: 'TV+ES by Digital Innova',
       siteDescription: 'Schedule platform',
       language: 'fr',
     },

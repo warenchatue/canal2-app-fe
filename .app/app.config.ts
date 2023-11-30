@@ -14,7 +14,7 @@ export default defineAppConfig({
     defaultShapes: {},
   },
   tairo: {
-    title: 'C2PUB',
+    title: 'TV+ES',
     sidebar: {},
     collapse: {
       toolbar: {
@@ -153,7 +153,7 @@ export default defineAppConfig({
             ],
           },
           {
-            name: 'Finances',
+            name: 'Comptabilité',
             icon: { name: 'ph:money-duotone', class: 'w-5 h-5' },
             activePath: '/bo/accountancy',
             children: [

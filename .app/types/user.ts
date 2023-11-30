@@ -16,6 +16,8 @@ export enum UserRole {
   respBroadcastTag = 'resp-Diffusion',
   admin = 'Admin',
   adminTag = 'admin',
+  accountancy = 'Accountancy',
+  accountancyTag = 'accountancy',
   pdgTag = 'pdg',
   dgTag = 'dg',
   doTag = 'do',

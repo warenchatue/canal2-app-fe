@@ -28,7 +28,12 @@ const isModalConfirmOrderOpen = ref(false)
 const isEdit = ref(false)
 const toaster = useToaster()
 // Check if can have access
-if (authStore.user.appRole?.name == UserRole.broadcast) {
+if (
+  authStore.user.appRole?.name != UserRole.billing &&
+  authStore.user.appRole?.name != UserRole.admin &&
+  authStore.user.appRole?.name != UserRole.accountancy &&
+  authStore.user.appRole?.name != UserRole.superAdmin
+) {
   toaster.clearAll()
   toaster.show({
     title: 'Désolé',
@@ -37,7 +42,7 @@ if (authStore.user.appRole?.name == UserRole.broadcast) {
     icon: 'ph:check',
     closable: true,
   })
-  router.push('/bo/spots/diffusion-list')
+  router.push('/bo/dashboards')
 }
 
 watch([filter, perPage], () => {
@@ -820,25 +825,22 @@ const onSubmit = handleSubmit(
                   {{ item.manager?.firstName }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ 0 }}
+                  {{ new Intl.NumberFormat().format(item.amount ?? 0) }}
+                  XAF
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ 0 }}
+                  {{
+                    new Intl.NumberFormat().format(item.amount - item.paid ?? 0)
+                  }}
+                  XAF
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   <a
                     v-if="item.contractUrl"
                     class="mx-1 text-white bg-muted-600 p-2 rounded"
-                    :href="'/' + item.contractUrl"
+                    :href="'/' + item.order.contractUrl"
                     target="_blank"
                     >C</a
-                  >
-                  <a
-                    v-if="item.invoice?.url"
-                    class="mx-1 text-white bg-muted-600 p-2 rounded"
-                    :href="'/' + item.invoice?.url"
-                    target="_blank"
-                    >F</a
                   >
                 </TairoTableCell>
                 <TairoTableCell spaced class="capitalize">
