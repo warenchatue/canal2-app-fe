@@ -5,9 +5,9 @@ import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Packages',
+  title: 'Campagnes Publicitaires',
   preview: {
-    title: 'Packages',
+    title: 'Campagnes Publicitaires',
     description: 'Contribution and withdrawal',
     categories: ['bo', 'spots', 'orders'],
     src: '/img/screens/layouts-table-list-1.png',
@@ -126,7 +126,7 @@ async function deletePackage(orderPackage: any) {
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Package supprimé !`,
+      message: `Campagne supprimé !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
@@ -341,7 +341,7 @@ const onSubmit = handleSubmit(
         toaster.show({
           title: 'Success',
           message:
-            isEdit.value == false ? `Package crée !` : `Package mis à jour`,
+            isEdit.value == false ? `Campagne crée !` : `Campagne mise à jour`,
           color: 'success',
           icon: 'ph:check',
           closable: true,
@@ -428,7 +428,7 @@ const onSubmit = handleSubmit(
           @click=";(isModalNewPackageOpen = true), (isEdit = false)"
         >
           <Icon name="ph:plus" class="h-4 w-4" />
-          <span>Nouveau Package</span>
+          <span>Nouvelle campagne</span>
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">
@@ -467,7 +467,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+7.8%</span>
+              <span>+0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hause</span>
             </div>
@@ -508,7 +508,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-danger-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>-2.7%</span>
+              <span>-0%</span>
               <Icon name="lucide:trending-down" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en baisse</span>
             </div>
@@ -549,7 +549,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+4.5%</span>
+              <span>+0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -590,7 +590,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+4.5%</span>
+              <span>+0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -635,7 +635,7 @@ const onSubmit = handleSubmit(
                     />
                   </div>
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Code</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Nom</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>
                   Annonceur
                 </TairoTableHeading>
@@ -683,7 +683,7 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.code }}
+                  {{ item.label }}
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
@@ -807,7 +807,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            {{ isEdit == true ? 'Editer' : 'Nouveau' }} Package
+            {{ isEdit == true ? 'Editer' : 'Nouveau' }} Campagne
           </h3>
 
           <BaseButtonClose @click="isModalNewPackageOpen = false" />
@@ -828,22 +828,16 @@ const onSubmit = handleSubmit(
           >
             <div class="mx-auto flex w-full flex-col">
               <div>
-                <p
-                  class="font-alt text-muted-500 dark:text-muted-200 text-lg leading-5"
-                >
-                  Information sur la commande
-                </p>
                 <div class="grid grid-cols-12 gap-4">
                   <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="orderPackage.code"
+                      name="orderPackage.label"
                     >
                       <BaseInput
-                        disabled
-                        label="Code"
+                        label="Nom"
                         icon="ph:file-duotone"
-                        placeholder="ex: CDE_10X"
+                        placeholder="ex: SPOT"
                         :model-value="field.value"
                         :error="errorMessage"
                         :disabled="isSubmitting"
@@ -924,105 +918,6 @@ const onSubmit = handleSubmit(
                         <option value="completed">Soldée</option>
                         <option value="closed">Cloturées</option>
                       </BaseSelect>
-                    </Field>
-                  </div>
-                </div>
-                <p
-                  class="font-alt text-muted-500 mt-5 dark:text-muted-200 text-lg leading-5"
-                >
-                  Information sur la facture
-                </p>
-                <div class="grid grid-cols-12 gap-4 mt-4">
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="orderPackage.invoice.label"
-                    >
-                      <BaseInput
-                        label="Libelé facture"
-                        icon="ph:chat-duotone"
-                        type="text"
-                        placeholder="ex: Fact N_ XXXXX"
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="
-                          isSubmitting ||
-                          (authStore.user?.appRole?.name !=
-                            UserRole.superAdmin &&
-                            authStore.user?.appRole?.name != UserRole.billing)
-                        "
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="orderPackage.invoice.amount"
-                    >
-                      <BaseInput
-                        label="Montant total Facture"
-                        icon="ph:file-duotone"
-                        type="number"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="
-                          isSubmitting ||
-                          (authStore.user?.appRole?.name !=
-                            UserRole.superAdmin &&
-                            authStore.user?.appRole?.name != UserRole.billing)
-                        "
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="orderPackage.invoice.pending"
-                    >
-                      <BaseInput
-                        label="Montant restant à payé"
-                        icon="ph:file-duotone"
-                        type="number"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="
-                          isSubmitting ||
-                          (authStore.user?.appRole?.name !=
-                            UserRole.superAdmin &&
-                            authStore.user?.appRole?.name != UserRole.billing)
-                        "
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="orderPackage.invoice.totalSpotsPaid"
-                    >
-                      <BaseInput
-                        label="Nombre de spots payés"
-                        icon="ph:file-duotone"
-                        type="number"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="
-                          isSubmitting ||
-                          (authStore.user?.appRole?.name !=
-                            UserRole.superAdmin &&
-                            authStore.user?.appRole?.name != UserRole.billing)
-                        "
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
                     </Field>
                   </div>
                 </div>

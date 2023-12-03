@@ -327,15 +327,24 @@ const onSubmit = handleSubmit(
                 <BaseAvatar :src="'/img/avatars/8.svg'" size="sm" />
                 <div>
                   <BaseText
-                    v-if="item.type == 'newOrder'"
+                    v-if="item.type == 'newOrder' || item.type == 'newInvoice'"
                     size="sm"
                     lead="tight"
                   >
                     <span class="text-muted-800 dark:text-muted-100"
                       >{{ item.data.memberName }}&nbsp;</span
                     >
-                    <span class="text-muted-500 dark:text-muted-400"
-                      >a créer une nouvelle commande, code&nbsp;
+
+                    <span
+                      v-if="item.type == 'newOrder'"
+                      class="text-muted-500 dark:text-muted-400"
+                      >a créer un nouveau devis, code&nbsp;
+                    </span>
+
+                    <span
+                      v-if="item.type == 'newInvoice'"
+                      class="text-muted-500 dark:text-muted-400"
+                      >a créer une nouvelle facture, code&nbsp;
                     </span>
 
                     <NuxtLink

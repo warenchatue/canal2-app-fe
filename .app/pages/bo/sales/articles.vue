@@ -38,7 +38,7 @@ if (authStore.user.appRole.name == UserRole.broadcast) {
     icon: 'ph:check',
     closable: true,
   })
-  router.push('/bo/spots/diffusion-list')
+  router.back()
 }
 
 watch([filter, perPage], () => {
@@ -356,7 +356,7 @@ const onSubmit = handleSubmit(
           class="w-full sm:w-48"
           :disabled="
             authStore.user.appRole.name != UserRole.sale &&
-            authStore.user.appRole.name != UserRole.mediaPlanner &&
+            authStore.user.appRole.name != UserRole.billing &&
             authStore.user.appRole.name != UserRole.superAdmin
           "
         >
@@ -487,7 +487,7 @@ const onSubmit = handleSubmit(
                     <BaseButtonAction
                       :disabled="
                         authStore.user.appRole.name != UserRole.sale &&
-                        authStore.user.appRole.name != UserRole.mediaPlanner &&
+                        authStore.user.appRole.name != UserRole.billing &&
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
                       @click="editArticle(item)"

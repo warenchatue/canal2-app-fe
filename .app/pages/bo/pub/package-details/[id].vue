@@ -492,7 +492,7 @@ const zodSchema = z
       duration: z.string().optional(),
       tag: z.string().optional(),
       type: z.union([z.literal('SPOT'), z.literal('BA')]).optional(),
-      order: z.string().optional(),
+      package: z.string().optional(),
     }),
   })
   .superRefine((data, ctx) => {
@@ -860,7 +860,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Spots Commandés</span>
+                <span>Total Commandés</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -884,7 +884,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+7.8%</span>
+              <span>+0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -901,7 +901,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Spots diffusés</span>
+                <span>Total diffusés</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -925,7 +925,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-danger-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>-2.7%</span>
+              <span>-0%</span>
               <Icon name="lucide:trending-down" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en baisse</span>
             </div>
@@ -942,7 +942,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Spots en attentes</span>
+                <span>Total attentes</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -960,13 +960,13 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>4</span>
+                <span>0</span>
               </BaseHeading>
             </div>
             <div
               class="text-danger-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>2.7%</span>
+              <span>0%</span>
               <Icon name="lucide:trending-down" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en baisse</span>
             </div>
@@ -983,7 +983,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Spots non diffusés</span>
+                <span>Total non diffusés</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -1001,13 +1001,13 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>1</span>
+                <span>0</span>
               </BaseHeading>
             </div>
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+4.5%</span>
+              <span>+0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -1548,15 +1548,17 @@ const onSubmit = handleSubmit(
     </TairoModal>
 
     <!-- Modal Planning -->
-
     <TairoModal
       :open="isModalPlanningOpen"
       size="4xl"
+      :classes="{
+        wrapper: 'h-full overflow-y-auto',
+      }"
       @close="isModalPlanningOpen = false"
     >
       <template #header>
         <!-- Header -->
-        <div class="flex w-full items-center justify-between p-4 md:p-6">
+        <div class="flex w-full items-center justify-between px-4 md:px-6 py-2">
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
@@ -1571,10 +1573,14 @@ const onSubmit = handleSubmit(
       <div id="planningPrint" class="overflow-auto">
         <div
           v-if="isPrintPlanning == true || isPrintCertificate == true"
-          class="flex justify-between items-center px-5 border-b-2 py-1"
+          class="items-center border-b-2 py-1"
         >
+          <div shape="straight" class="">
+            <img class="h-32 fit-content" src="/uploads/logos/c2.png" />
+          </div>
+          <div shape="straight" class="border border-t-1"></div>
           <h3
-            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+            class="font-heading text-muted-900 text-lg font-medium py-2 leading-6 dark:text-white"
           >
             {{
               isPrintPlanning == true
@@ -1582,13 +1588,20 @@ const onSubmit = handleSubmit(
                 : 'CERTIFICAT DE DIFFUSION'
             }}
           </h3>
-          <div shape="straight" class="">
-            <img class="h-20 fit-content" src="/uploads/logos/c2.png" />
-          </div>
         </div>
         <div class="flex justify-between items-center p-2">
           <BaseText size="base"
-            >Mois:
+            >Annonceur :
+            <span class="text-primary-500">{{
+              data?.data?.order?.announcer?.name
+            }}</span>
+          </BaseText>
+          <BaseText size="base"
+            >Produit :
+            <span class="text-primary-500">{{ data?.data?.label ?? '-' }}</span>
+          </BaseText>
+          <BaseText size="base"
+            >Mois :
             <span class="text-primary-500"
               >{{ formatter.format(activeDate) }}
               {{ activeDate.getFullYear() }}</span
@@ -1596,19 +1609,12 @@ const onSubmit = handleSubmit(
           >
 
           <BaseText size="base"
-            >Total Commandés:
+            >Total Commandés :
             <span class="text-primary-500">{{ data?.data?.quantities }} </span>
           </BaseText>
 
           <BaseText size="base"
-            >Annonceur:
-            <span class="text-primary-500">{{
-              data?.data?.announcer?.name
-            }}</span>
-          </BaseText>
-
-          <BaseText size="base"
-            >Période:
+            >Période :
             <span class="text-primary-500">{{ data.data?.period }}</span>
           </BaseText>
 
@@ -1633,11 +1639,10 @@ const onSubmit = handleSubmit(
         </div>
 
         <div class="flex justify-start px-2 pb-2">
+          LEGENDE :
           <div v-for="(product, i) in data.data.products" :key="product._id">
-            <span class="px-5"
-              >Produit {{ i + 1 }}: {{ product.message }}; Type:
-              {{ product.type }}; Tag:
-              {{ product.tag }}
+            <span class="px-2">
+              {{ product.tag }} : {{ product.type }} {{ product.message }}
             </span>
             |
           </div>
@@ -1772,7 +1777,7 @@ const onSubmit = handleSubmit(
               </div>
             </BaseCard>
             <div v-if="true" class="flex justify-between py-4">
-              <div>
+              <div class="text-sm">
                 <p class="py-2">
                   NB: (Difusé:
                   <span class="px-1 text-primary-500"> SPOT </span>; En attente
@@ -1780,7 +1785,7 @@ const onSubmit = handleSubmit(
                   <span class="px-1 text-yellow-500"> SPOT </span>; Non difusé:
                   <span class="px-1 text-red-500"> SPOT </span>)
                 </p>
-                <p class="pt-4">
+                <p class="pt-2">
                   Ce document dûment signé et cacheté par le support tient lieu
                   de justificatif.
                 </p>
@@ -1790,7 +1795,7 @@ const onSubmit = handleSubmit(
                 </p>
               </div>
               <div class="flex px-2">
-                <div shape="straight" class="">
+                <div shape="straight" class="pr-10">
                   <BaseHeading
                     as="h4"
                     size="sm"
@@ -1801,7 +1806,11 @@ const onSubmit = handleSubmit(
                     VISA RC
                   </BaseHeading>
                   <img
-                    class="h-40 fit-content"
+                    v-if="
+                      data.data.validatorSignature &&
+                      (isPrintPlanning || isPrintCertificate)
+                    "
+                    class="h-28 fit-content"
                     :src="data.data.validatorSignature"
                   />
                 </div>
@@ -1820,7 +1829,11 @@ const onSubmit = handleSubmit(
                     VISA MP
                   </BaseHeading>
                   <img
-                    class="h-40 fit-content"
+                    v-if="
+                      data.data.validatorSignature &&
+                      (isPrintPlanning || isPrintCertificate)
+                    "
+                    class="h-28 fit-content"
                     :src="data.data.planningValidatorSignature"
                   />
                 </div>
@@ -1849,7 +1862,7 @@ const onSubmit = handleSubmit(
               Imprimer le certificat de diffusion</BaseButton
             >
             <BaseButton
-              :color="data.data.planningValidator ? 'success' : 'warning'"
+              :color="data.data?.validator ? 'success' : 'warning'"
               flavor="solid"
               :disabled="
                 authStore.user?.appRole?.name != UserRole.superAdmin &&
@@ -1857,7 +1870,9 @@ const onSubmit = handleSubmit(
               "
               @click="isModalConfirmPlanningOpen = true"
             >
-              Valider le planning
+              {{
+                data.data?.validator ? 'Planning validé' : 'Valider le planning'
+              }}
             </BaseButton>
           </div>
         </div>

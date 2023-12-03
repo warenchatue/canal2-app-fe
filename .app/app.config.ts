@@ -94,12 +94,12 @@ export default defineAppConfig({
                 icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Conducteur publicitaire',
+                name: 'Conducteur PUB',
                 to: '/bo/pub/diffusion-list',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Packages',
+                name: 'Campagnes PUB',
                 to: '/bo/pub/packages',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
@@ -160,12 +160,22 @@ export default defineAppConfig({
               {
                 name: 'Taxes',
                 to: '/bo/accountancy/taxes',
-                icon: { name: 'lucide:file', class: 'w-4 h-4' },
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Comptes',
                 to: '/bo/accountancy/accounts',
-                icon: { name: 'lucide:file', class: 'w-4 h-4' },
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Modes de reglement',
+                to: '/bo/accountancy/payment-methods',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Conditions de paiement',
+                to: '/bo/accountancy/payment-conditions',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
             ],
           },

@@ -10,7 +10,7 @@ const { close } = usePanels()
       <h2
         class="font-heading text-muted-700 text-lg font-semibold dark:text-white"
       >
-        Select language
+        Selectionnez la langue
       </h2>
       <button
         type="button"
@@ -30,7 +30,6 @@ const { close } = usePanels()
               type="radio"
               name="language_selection"
               class="peer absolute start-0 top-0 z-20 h-full w-full cursor-pointer opacity-0"
-              checked
             />
             <div
               class="border-muted-200 peer-checked:border-primary-500 dark:border-muted-600 flex h-14 w-14 items-center justify-center rounded-full border-2 shadow-lg transition-all duration-300"
@@ -55,6 +54,7 @@ const { close } = usePanels()
               type="radio"
               name="language_selection"
               class="peer absolute start-0 top-0 z-20 h-full w-full cursor-pointer opacity-0"
+              checked
             />
             <div
               class="border-muted-200 peer-checked:border-primary-500 dark:border-muted-600 flex h-14 w-14 items-center justify-center rounded-full border-2 shadow-lg transition-all duration-300"

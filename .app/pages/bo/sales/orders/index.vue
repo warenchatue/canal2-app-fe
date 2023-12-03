@@ -30,6 +30,7 @@ const toaster = useToaster()
 // Check if can have access
 if (
   authStore.user.appRole?.name != UserRole.sale &&
+  authStore.user.appRole?.name != UserRole.billing &&
   authStore.user.appRole?.name != UserRole.admin &&
   authStore.user.appRole?.name != UserRole.superAdmin
 ) {
@@ -41,7 +42,7 @@ if (
     icon: 'ph:check',
     closable: true,
   })
-  router.push('/bo/spots/diffusion-list')
+  router.back()
 }
 
 watch([filter, perPage], () => {
@@ -511,7 +512,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+7.8%</span>
+              <span>+0.0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hause</span>
             </div>
@@ -552,7 +553,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-danger-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>-2.7%</span>
+              <span>-0.0%</span>
               <Icon name="lucide:trending-down" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en baisse</span>
             </div>
@@ -593,7 +594,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+4.5%</span>
+              <span>+0.0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -634,7 +635,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+4.5%</span>
+              <span>+0.0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -755,12 +756,12 @@ const onSubmit = handleSubmit(
                   {{ item.manager?.firstName }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ new Intl.NumberFormat().format(item.amount ?? 0) }}
+                  {{
+                    new Intl.NumberFormat().format(Math.ceil(item.amount ?? 0))
+                  }}
                   XAF
                 </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{ 0 }}
-                </TairoTableCell>
+                <TairoTableCell light spaced> 0 XAF </TairoTableCell>
                 <TairoTableCell light spaced>
                   <a
                     v-if="item.contractUrl"

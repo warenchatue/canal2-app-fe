@@ -42,7 +42,7 @@ if (
     icon: 'ph:check',
     closable: true,
   })
-  router.push('/bo/dashboards')
+  router.push('/dashboards')
 }
 
 watch([filter, perPage], () => {
@@ -555,7 +555,7 @@ const onSubmit = handleSubmit(
                 size="sm"
                 weight="medium"
                 lead="tight"
-                class="text-muted-500 dark:text-muted-400"
+                class="text-muted-700 dark:text-muted-400"
               >
                 <span>Total</span>
               </BaseHeading>
@@ -581,7 +581,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+7.8%</span>
+              <span>+0.0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hause</span>
             </div>
@@ -596,7 +596,7 @@ const onSubmit = handleSubmit(
                 size="sm"
                 weight="medium"
                 lead="tight"
-                class="text-muted-500 dark:text-muted-400"
+                class="text-muted-700 dark:text-muted-400"
               >
                 <span>Soldés</span>
               </BaseHeading>
@@ -622,7 +622,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-danger-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>-2.7%</span>
+              <span>-0.0%</span>
               <Icon name="lucide:trending-down" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en baisse</span>
             </div>
@@ -637,7 +637,7 @@ const onSubmit = handleSubmit(
                 size="sm"
                 weight="medium"
                 lead="tight"
-                class="text-muted-500 dark:text-muted-400"
+                class="text-muted-700 dark:text-muted-400"
               >
                 <span>En attente</span>
               </BaseHeading>
@@ -663,7 +663,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+4.5%</span>
+              <span>+0.0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -678,7 +678,7 @@ const onSubmit = handleSubmit(
                 size="sm"
                 weight="medium"
                 lead="tight"
-                class="text-muted-500 dark:text-muted-400"
+                class="text-muted-700 dark:text-muted-400"
               >
                 <span>Annonceurs</span>
               </BaseHeading>
@@ -704,7 +704,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+4.5%</span>
+              <span>+0.0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -825,12 +825,18 @@ const onSubmit = handleSubmit(
                   {{ item.manager?.firstName }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ new Intl.NumberFormat().format(item.amount ?? 0) }}
+                  {{
+                    new Intl.NumberFormat().format(Math.ceil(item.amount ?? 0))
+                  }}
                   XAF
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{
-                    new Intl.NumberFormat().format(item.amount - item.paid ?? 0)
+                    new Intl.NumberFormat().format(
+                      Math.ceil(item.amount - item.paid ?? 0) > 0
+                        ? Math.ceil(item.amount - item.paid ?? 0)
+                        : 0,
+                    )
                   }}
                   XAF
                 </TairoTableCell>
@@ -935,7 +941,7 @@ const onSubmit = handleSubmit(
           </h3>
 
           <p
-            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+            class="font-alt text-muted-700 dark:text-muted-400 text-sm leading-5"
           >
             Cette action est irreversible
           </p>
@@ -996,7 +1002,7 @@ const onSubmit = handleSubmit(
           </h3>
 
           <p
-            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+            class="font-alt text-muted-700 dark:text-muted-400 text-sm leading-5"
           >
             Cette action est reversible
           </p>

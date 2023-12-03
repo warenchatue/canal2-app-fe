@@ -10,7 +10,7 @@ const { open } = usePanels()
   >
     <img
       class="h-7 w-7 rounded-full"
-      src="/img/icons/flags/united-states-of-america.svg"
+      src="/img/icons/flags/france.svg"
       alt="flag icon"
     />
   </button>

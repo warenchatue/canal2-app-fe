@@ -32,13 +32,13 @@ const toaster = useToaster()
 if (authStore.user.appRole.name == UserRole.broadcast) {
   toaster.clearAll()
   toaster.show({
-    title: 'Désoler',
+    title: 'Désolé',
     message: `Vous n'avez pas access à cette page!`,
     color: 'danger',
     icon: 'ph:check',
     closable: true,
   })
-  router.push('/bo/spots/diffusion-list')
+  router.back()
 }
 
 watch([filter, perPage], () => {
@@ -366,7 +366,7 @@ const onSubmit = handleSubmit(
           class="w-full sm:w-48"
           :disabled="
             authStore.user.appRole.name != UserRole.sale &&
-            authStore.user.appRole.name != UserRole.mediaPlanner &&
+            authStore.user.appRole.name != UserRole.billing &&
             authStore.user.appRole.name != UserRole.superAdmin
           "
         >
@@ -478,12 +478,16 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">  {{ item.rc }} </span>
+                    <span class="text-muted-400 font-sans text-xs">
+                      {{ item.rc }}
+                    </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">  {{ item.nc }} </span>
+                    <span class="text-muted-400 font-sans text-xs">
+                      {{ item.nc }}
+                    </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
@@ -501,7 +505,7 @@ const onSubmit = handleSubmit(
                     <BaseButtonAction
                       :disabled="
                         authStore.user.appRole.name != UserRole.sale &&
-                        authStore.user.appRole.name != UserRole.mediaPlanner &&
+                        authStore.user.appRole.name != UserRole.billing &&
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
                       @click="editAnnouncer(item)"

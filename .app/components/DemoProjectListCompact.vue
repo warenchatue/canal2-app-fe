@@ -54,15 +54,19 @@ const { data, pending, error, refresh } = await useFetch(
           class="text-muted-800 dark:text-white"
         >
           <BaseText
-            v-if="notification.type == 'newOrder'"
+            v-if="notification.type == 'newOrder' || notification.type == 'newInvoice'"
             size="sm"
             lead="tight"
           >
             <span class="text-muted-800 dark:text-muted-100"
               >{{ notification.data.memberName }}&nbsp;</span
             >
-            <span class="text-muted-500 dark:text-muted-400"
-              >a créer une nouvelle commande, code&nbsp;
+            <span v-if="notification.type == 'newOrder'" class="text-muted-500 dark:text-muted-400"
+              >a créer un nouveau devis, code&nbsp;
+            </span>
+
+             <span v-if="notification.type == 'newInvoice'" class="text-muted-500 dark:text-muted-400"
+              >a créer une nouvelle facture, code&nbsp;
             </span>
 
             <NuxtLink
