@@ -14,7 +14,7 @@ export default defineAppConfig({
     defaultShapes: {},
   },
   tairo: {
-    title: 'TV+ES',
+    title: 'DinoEs',
     sidebar: {},
     collapse: {
       toolbar: {

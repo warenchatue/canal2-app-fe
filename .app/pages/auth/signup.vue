@@ -234,7 +234,7 @@ const onSubmit = handleSubmit(async (values) => {
           >
             <div class="text-center">
               <BaseHeading as="h2" size="3xl" weight="medium">
-                Bienvenue sur TV+ES
+                Bienvenue sur DinoEs
               </BaseHeading>
               <BaseParagraph size="sm" class="text-muted-400 mb-6">
                 Commençons par la création de votre compte

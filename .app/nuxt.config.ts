@@ -83,7 +83,7 @@ export default defineNuxtConfig({
       mapboxToken: process.env.NUXT_PUBLIC_MAPBOX_TOKEN,
       // nuxt-seo-kit config
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL,
-      siteName: 'TV+ES by Digital Innova',
+      siteName: 'DinoEs by Digital Innova',
       siteDescription: 'Schedule platform',
       language: 'fr',
     },

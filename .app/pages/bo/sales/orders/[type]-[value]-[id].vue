@@ -1917,12 +1917,12 @@ const onSubmit = handleSubmit(
                             </div>
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-center text-sm sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-center text-xs sm:table-cell"
                           >
                             {{ i + 1 }}
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-center text-sm sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-center text-xs sm:table-cell"
                           >
                             {{
                               new Date(item.createdAt).toLocaleDateString(
@@ -1931,7 +1931,7 @@ const onSubmit = handleSubmit(
                             }}
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-center text-sm sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-center text-xs sm:table-cell"
                           >
                             {{
                               new Intl.NumberFormat('fr-FR').format(item.amount)
@@ -1939,7 +1939,7 @@ const onSubmit = handleSubmit(
                             XAF
                           </td>
                           <td
-                            class="px-3 py-4 text-center text-sm sm:table-cell"
+                            class="px-3 py-4 text-center text-xs sm:table-cell"
                           >
                             {{ item.code ?? '-' }}
                           </td>

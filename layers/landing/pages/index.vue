@@ -1,9 +1,9 @@
 <script setup lang="ts">
 definePageMeta({
-  title: 'TV+ES',
+  title: 'DInoES',
   description: 'Système de plannification des spots publicitaires',
   breadcrumb: {
-    label: 'TV+ES',
+    label: 'DInoES',
   },
   layout: 'empty',
 })

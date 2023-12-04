@@ -107,14 +107,14 @@ function useGaugePersonal() {
           Bienvenue sur la plateforme
           <span
             class="text-primary-500 font-hairline underline decoration-dotted underline-offset-4"
-            >TV+ Enterprise Solution
+            >Digital Innova Enterprise Solution
           </span>
         </BaseHeading>
         <BaseParagraph
           size="lg"
           class="text-muted-500 dark:text-muted-100 mx-auto mb-4 max-w-2xl"
         >
-          TV+ES
+          DInoES
         </BaseParagraph>
         <div class="flex items-center justify-center">
           <BaseButton
