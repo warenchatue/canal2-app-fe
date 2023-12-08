@@ -25,21 +25,20 @@ const filter = ref('')
 const perPage = ref(25)
 const isModalImportPlaylistOpen = ref(false)
 const isModalConfirmDiffusionOpen = ref(false)
-const dates = ref({
-  start: new Date(),
-  end: new Date(),
-})
 
-const planningDates = ref({
+const initialDates = {
   start: new Date(),
   end: new Date(),
-})
+}
+
+const dates = ref({})
+
+const planningDates = ref(initialDates)
 
 // const masks = 'dd/mm/yyyy'
 
 watch([dates], () => {
   filter.value = dates.value.start.toDateString()
-  console.log(filter.value)
 })
 
 watch([filter, perPage], () => {
@@ -49,6 +48,11 @@ watch([filter, perPage], () => {
     },
   })
 })
+
+if (filter.value == '') {
+  dates.value = initialDates
+  filter.value = ''
+}
 
 const app = useAppStore()
 const token = useCookie('token')
@@ -83,6 +87,22 @@ function toggleAllVisibleSelection() {
     selected.value = []
   } else {
     selected.value = data.value?.data.map((item) => item.id) ?? []
+  }
+}
+
+const { text, copy, copied, isSupported } = useClipboard()
+const toaster = useToaster()
+const handleClipboard = (textLink: string) => {
+  copy(textLink)
+  if (copied) {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: textLink + ` copié !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
   }
 }
 
@@ -301,8 +321,6 @@ const {
   validationSchema,
   initialValues,
 })
-
-const toaster = useToaster()
 
 // This is where you would send the form data to the server
 const onSubmit = handleSubmit(
@@ -782,11 +800,22 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   <div class="flex items-center">
-                    <span
-                      class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                    <BaseText
+                      size="sm"
+                      class="hover:cursor-pointer"
+                      @click="
+                        handleClipboard(
+                          item.product.message + '[' + item.code + ']',
+                        )
+                      "
                     >
-                      {{ item.product.message }} [{{ item.code }}]
-                    </span>
+                      <span
+                        class="text-muted-600 dark:text-muted-300 font-sans text-base px-1"
+                      >
+                        {{ item.product.message }} [{{ item.code }}]
+                      </span></BaseText
+                    >
+                    <Icon name="ph:link-duotone" class="h-5 w-5" />
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>

@@ -28,16 +28,19 @@ const isModalConfirmOrderOpen = ref(false)
 const isEdit = ref(false)
 const toaster = useToaster()
 // Check if can have access
-if (authStore.user.appRole?.name == UserRole.broadcast) {
+if (
+  authStore.user.appRole.name != UserRole.mediaPlanner &&
+  authStore.user.appRole.name != UserRole.superAdmin
+) {
   toaster.clearAll()
   toaster.show({
-    title: 'Désoler',
+    title: 'Désolé',
     message: `Vous n'avez pas access à cette page!`,
     color: 'danger',
     icon: 'ph:check',
     closable: true,
   })
-  router.push('/bo/spots/diffusion-list')
+  router.back()
 }
 
 const inputOrderContracts = ref<FileList | null>()

@@ -40,7 +40,13 @@ const dates = ref({
   end: new Date(),
 })
 // Check if can have access
-if (authStore.user.appRole?.name == UserRole.broadcast) {
+if (
+  authStore.user.appRole?.name != UserRole.sale &&
+  authStore.user.appRole?.name != UserRole.billing &&
+  authStore.user.appRole?.name != UserRole.admin &&
+  authStore.user.appRole?.name != UserRole.accountancy &&
+  authStore.user.appRole?.name != UserRole.superAdmin
+) {
   toaster.clearAll()
   toaster.show({
     title: 'Désolé',
@@ -49,7 +55,7 @@ if (authStore.user.appRole?.name == UserRole.broadcast) {
     icon: 'ph:check',
     closable: true,
   })
-  router.push('/bo/spots/diffusion-list')
+  router.back()
 }
 
 const inputOrderContracts = ref<FileList | null>()
@@ -697,6 +703,7 @@ const onSubmit = handleSubmit(
 
     try {
       const isSuccess = ref(false)
+      const orderInvoiceId = ref(undefined)
 
       if (pageValue.value == 'order') {
         // upload contract file
@@ -765,6 +772,7 @@ const onSubmit = handleSubmit(
             },
           })
           isSuccess.value = response.data.value?.success
+          orderInvoiceId.value = response.data.value?.data._id
         } else {
           const query2 = computed(() => {
             return {
@@ -794,6 +802,7 @@ const onSubmit = handleSubmit(
             },
           })
           isSuccess.value = response.data.value?.success
+          orderInvoiceId.value = response.data.value?.data._id
         }
       } else if (pageValue.value == 'invoice') {
         let totalPaid = 0
@@ -827,6 +836,7 @@ const onSubmit = handleSubmit(
             },
           })
           isSuccess.value = response.data.value?.success
+          orderInvoiceId.value = response.data.value?.data._id
         } else {
           const query2 = computed(() => {
             return {
@@ -857,6 +867,7 @@ const onSubmit = handleSubmit(
             },
           })
           isSuccess.value = response.data.value?.success
+          orderInvoiceId.value = response.data.value?.data._id
         }
       }
 
@@ -873,10 +884,15 @@ const onSubmit = handleSubmit(
           icon: 'ph:check',
           closable: true,
         })
-        // resetForm()
-        filter.value = 'order'
-        filter.value = ''
-        location.reload()
+        if (isEdit.value == true) {
+          location.reload()
+        } else {
+          if (pageValue.value == 'order') {
+            router.push('/bo/sales/orders/edit-order-' + orderInvoiceId.value)
+          } else {
+            router.push('/bo/sales/orders/edit-invoice-' + orderInvoiceId.value)
+          }
+        }
       } else {
         toaster.clearAll()
         toaster.show({
@@ -1067,7 +1083,7 @@ const onSubmit = handleSubmit(
               <div class="overflow-hidden font-sans">
                 <div
                   v-if="isPrint"
-                  class="border-muted-200 dark:border-muted-700 flex justify-between gap-y-4 border-b px-8 py-4 items-center"
+                  class="border-muted-200 dark:border-muted-700 flex justify-between gap-y-4 px-8 pt-4 items-center"
                 >
                   <div class="flex items-center gap-4">
                     <img class="h-32 fit-content" src="/uploads/logos/c2.png" />
@@ -1106,10 +1122,10 @@ const onSubmit = handleSubmit(
                   </div>
                 </div>
 
-                <div class="px-6">
+                <div class="px-4">
                   <div
                     v-if="isPrint"
-                    class="border-muted-200 dark:border-muted-700 bg-primary-500/20 flex justify-between gap-y-2 border-b p-4 items-center"
+                    class="border-muted-200 dark:border-muted-700 bg-primary-500/20 flex justify-between gap-y-2 p-4 items-center"
                   >
                     <div class="flex items-center gap-4">
                       <div class="">
@@ -1139,7 +1155,7 @@ const onSubmit = handleSubmit(
 
                 <div
                   v-if="isPrint"
-                  class="border-muted-200 dark:border-muted-700 flex justify-between gap-y-8 border-b p-8 items-center"
+                  class="border-muted-200 dark:border-muted-700 flex justify-between gap-y-8 px-6 py-4 items-center"
                 >
                   <div>
                     <div class="flex items-center gap-3">
@@ -1160,7 +1176,7 @@ const onSubmit = handleSubmit(
                         </BaseParagraph>
                       </div>
                     </div>
-                    <div class="flex gap-2 mt-5">
+                    <div class="flex gap-2 mt-2">
                       <div
                         class="text-muted-500 dark:text-muted-400 text-sm font-light"
                       >
@@ -1171,23 +1187,23 @@ const onSubmit = handleSubmit(
                         </p>
 
                         <p
-                          class="text-muted-700 dark:text-muted-100 mt-2 text-xs font-normal"
+                          class="text-muted-700 dark:text-muted-100 mt-1 text-xs font-normal"
                         >
                           Mobile :
                         </p>
                         <p
-                          class="text-muted-700 dark:text-muted-100 mt-2 text-xs font-normal"
+                          class="text-muted-700 dark:text-muted-100 mt-1 text-xs font-normal"
                         >
                           Courriel :
                         </p>
 
                         <p
-                          class="text-muted-700 dark:text-muted-100 mt-2 text-xs font-normal"
+                          class="text-muted-700 dark:text-muted-100 mt-1 text-xs font-normal"
                         >
                           R/C :
                         </p>
                         <p
-                          class="text-muted-700 dark:text-muted-100 mt-2 text-xs font-normal"
+                          class="text-muted-700 dark:text-muted-100 mt-1 text-xs font-normal"
                         >
                           N. Contribuable :
                         </p>
@@ -1201,23 +1217,23 @@ const onSubmit = handleSubmit(
                             'Douala'
                           }}
                         </p>
-                        <p class="mt-2 text-xs">
+                        <p class="mt-1 text-xs">
                           {{ currentOrderInvoice?.announcer?.phone }}
                         </p>
-                        <p class="mt-2 text-xs">
+                        <p class="mt-1 text-xs">
                           {{ currentOrderInvoice?.announcer?.email }}
                         </p>
-                        <p class="mt-2 text-xs">
+                        <p class="mt-1 text-xs">
                           {{ currentOrderInvoice?.announcer?.rc }}
                         </p>
-                        <p class="mt-2 text-xs">
+                        <p class="mt-1 text-xs">
                           {{ currentOrderInvoice?.announcer?.nc }}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div class="flex gap-2 bg-primary-500/20 p-2 mt-5">
+                  <div class="flex gap-2 bg-primary-500/20 p-2 mt-2">
                     <div
                       class="text-muted-500 dark:text-muted-400 text-sm font-light"
                     >
@@ -1228,12 +1244,12 @@ const onSubmit = handleSubmit(
                       </p>
 
                       <p
-                        class="text-muted-700 dark:text-muted-100 mt-3 text-xs font-normal"
+                        class="text-muted-700 dark:text-muted-100 mt-2 text-xs font-normal"
                       >
                         Description :
                       </p>
                       <p
-                        class="text-muted-700 dark:text-muted-100 mt-3 text-xs font-normal"
+                        class="text-muted-700 dark:text-muted-100 mt-2 text-xs font-normal"
                       >
                         Date Echéance :
                       </p>
@@ -1248,10 +1264,10 @@ const onSubmit = handleSubmit(
                           ).toLocaleDateString('fr-FR')
                         }}
                       </p>
-                      <p class="mt-3 text-xs">
+                      <p class="mt-2 text-xs">
                         {{ currentOrderInvoice?.label }}
                       </p>
-                      <p class="mt-3 text-xs">29/11/2023</p>
+                      <p class="mt-2 text-xs">29/11/2023</p>
                     </div>
                   </div>
                 </div>
@@ -1465,7 +1481,7 @@ const onSubmit = handleSubmit(
                     </div>
                   </div>
                 </div>
-                <div class="px-2 py-8 sm:p-4 w-full">
+                <div class="px-2 py-4 sm:p-4 w-full">
                   <div class="px-2 w-full overflow-auto">
                     <table
                       class="divide-muted-200 dark:divide-muted-700 min-w-full divide-y"
@@ -1816,18 +1832,18 @@ const onSubmit = handleSubmit(
                           <th
                             scope="row"
                             colspan="7"
-                            class="text-muted-800 dark:text-muted-400 hidden pe-3 ps-6 pt-3 text-right text-sm font-light sm:table-cell md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 hidden pe-3 ps-6 pt-2 text-right text-xs font-light sm:table-cell md:ps-0"
                           >
                             {{ item.label }}
                           </th>
                           <td
                             scope="row"
                             colspan="3"
-                            class="pe-4 ps-3 pt-3 text-right sm:pe-6 md:pe-0 !w-64"
+                            class="pe-4 ps-3 pt-2 text-right sm:pe-6 md:pe-0 !w-64"
                             :class="
                               item.label === 'Net à payer'
-                                ? 'text-sm text-primary-800 dark:text-primary-500'
-                                : 'text-sm text-muted-800 dark:text-muted-200/70'
+                                ? 'text-xs text-primary-800 dark:text-primary-500'
+                                : 'text-xs text-muted-800 dark:text-muted-200/70'
                             "
                           >
                             {{
@@ -1842,17 +1858,27 @@ const onSubmit = handleSubmit(
                 </div>
 
                 <BaseHeading
-                  v-if="pageValue == 'invoice'"
+                  v-if="pageValue == 'invoice' && isPrint"
+                  as="h4"
+                  size="sm"
+                  weight="medium"
+                  lead="tight"
+                  class="text-primary-500 dark:text-primary-500 px-4 py-1"
+                >
+                  Historique des paiements
+                </BaseHeading>
+                <BaseHeading
+                  v-if="pageValue == 'invoice' && !isPrint"
                   as="h1"
                   size="lg"
                   weight="medium"
                   lead="tight"
-                  class="text-primary-500 dark:text-primary-500 px-4 py-4"
+                  class="text-primary-500 dark:text-primary-500 px-4 py-1"
                 >
                   Historique des paiements
                 </BaseHeading>
 
-                <div v-if="pageValue == 'invoice'" class="px-2 py-8 sm:p-4">
+                <div v-if="pageValue == 'invoice'" class="px-2 py-1 sm:p-4">
                   <div class="flex flex-col px-2 overflow-auto">
                     <table
                       class="divide-muted-200 dark:divide-muted-700 w-full divide-y"
@@ -1949,7 +1975,7 @@ const onSubmit = handleSubmit(
                   </div>
                 </div>
 
-                <div class="p-8">
+                <div class="p-2">
                   <BaseParagraph class="!py-2 dark:text-muted-400" size="xs">
                     Montant en lettre :
                   </BaseParagraph>
@@ -1977,8 +2003,17 @@ const onSubmit = handleSubmit(
                 </div>
 
                 <div
-                  class="border-primary-500 dark:border-primary-700 border-t-5 pt-8"
-                ></div>
+                  class="dark:text-muted-400 border-primary-500 text-center dark:border-primary-700 border-b"
+                >
+                  <BaseParagraph size="xs">
+                    Toute l'équipe de Canal2 internationa vous remercie
+                  </BaseParagraph>
+                </div>
+                <div class="dark:text-muted-400 text-center">
+                  <BaseParagraph size="xs">
+                    Contact 645454545 / 545454545; Douala Youpwe
+                  </BaseParagraph>
+                </div>
               </div>
             </BaseCard>
           </div>

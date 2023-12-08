@@ -1,3 +1,5 @@
+import moment from 'moment'
+
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const perPage = parseInt((query.perPage as string) || '5', 10)
@@ -53,14 +55,21 @@ function filterData(
 
   const offset = (page - 1) * perPage
   if (!filter) {
-    data.slice(offset, offset + perPage)
+    data
+      .filter((item) => {
+        return (
+          moment(item.date).format('DD/MM/yyyy') ==
+          moment().format('DD/MM/yyyy')
+        )
+      })
+      .slice(offset, offset + perPage)
   }
   const filterRe = new RegExp(filter, 'i')
   const filteredData = data.filter((item) => {
     return [
       new Date(item.date).toDateString(),
       item.product?.product,
-      item.product?.order?.announcer?.name,
+      item.product?.package?.order?.announcer?.name,
     ].some((item) => item.match(filterRe))
   })
 

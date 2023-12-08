@@ -32,6 +32,7 @@ if (
   authStore.user.appRole?.name != UserRole.sale &&
   authStore.user.appRole?.name != UserRole.billing &&
   authStore.user.appRole?.name != UserRole.admin &&
+  authStore.user.appRole?.name != UserRole.accountancy &&
   authStore.user.appRole?.name != UserRole.superAdmin
 ) {
   toaster.clearAll()
@@ -726,7 +727,12 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.code }}
+                  <NuxtLink
+                    class="text-primary-500 underline-offset-4 hover:underline"
+                    :to="'/bo/sales/orders/view-order-' + item._id"
+                  >
+                    {{ item.code }}
+                  </NuxtLink>
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">

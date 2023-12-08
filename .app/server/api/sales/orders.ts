@@ -42,7 +42,11 @@ function filterData(
 ) {
   const offset = (page - 1) * perPage
   if (!filter) {
-    return data.slice(offset, offset + perPage)
+    return data
+      .sort(function (a, b) {
+        return a.code < b.code ? 1 : -1
+      })
+      .slice(offset, offset + perPage)
   }
   const filterRe = new RegExp(filter, 'i')
   return data
@@ -50,6 +54,9 @@ function filterData(
       return [item.name, item.email, item.status].some((item) =>
         item.match(filterRe),
       )
+    })
+    .sort(function (a, b) {
+      return a.code < b.code ? 1 : -1
     })
     .slice(offset, offset + perPage)
 }

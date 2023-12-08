@@ -42,7 +42,7 @@ if (
     icon: 'ph:check',
     closable: true,
   })
-  router.push('/dashboards')
+  router.back()
 }
 
 watch([filter, perPage], () => {
@@ -795,7 +795,12 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.code }}
+                  <NuxtLink
+                    class="text-primary-500 underline-offset-4 hover:underline"
+                    :to="'/bo/sales/orders/view-invoice-' + item._id"
+                  >
+                    {{ item.code }}
+                  </NuxtLink>
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">

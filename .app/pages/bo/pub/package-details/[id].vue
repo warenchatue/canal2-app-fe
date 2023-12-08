@@ -25,6 +25,23 @@ const filter = ref('')
 const perPage = ref(20)
 const token = useCookie('token')
 
+const toaster = useToaster()
+// Check if can have access
+if (
+  authStore.user.appRole.name != UserRole.mediaPlanner &&
+  authStore.user.appRole.name != UserRole.superAdmin
+) {
+  toaster.clearAll()
+  toaster.show({
+    title: 'Désolé',
+    message: `Vous n'avez pas access à cette page!`,
+    color: 'danger',
+    icon: 'ph:check',
+    closable: true,
+  })
+  router.back()
+}
+
 const queryHours = computed(() => {
   return {
     filter: filter.value,
@@ -640,7 +657,6 @@ const {
   initialValues,
 })
 
-const toaster = useToaster()
 const success = ref(false)
 
 // This is where you would send the form data to the server
@@ -1580,7 +1596,7 @@ const onSubmit = handleSubmit(
           </div>
           <div shape="straight" class="border border-t-1"></div>
           <h3
-            class="font-heading text-muted-900 text-lg font-medium py-2 leading-6 dark:text-white"
+            class="font-heading text-muted-900 text-base font-medium py-2 leading-6 dark:text-white"
           >
             {{
               isPrintPlanning == true
@@ -1590,17 +1606,17 @@ const onSubmit = handleSubmit(
           </h3>
         </div>
         <div class="flex justify-between items-center p-2">
-          <BaseText size="base"
+          <BaseText size="sm"
             >Annonceur :
             <span class="text-primary-500">{{
               data?.data?.order?.announcer?.name
             }}</span>
           </BaseText>
-          <BaseText size="base"
+          <BaseText size="sm"
             >Produit :
             <span class="text-primary-500">{{ data?.data?.label ?? '-' }}</span>
           </BaseText>
-          <BaseText size="base"
+          <BaseText size="sm"
             >Mois :
             <span class="text-primary-500"
               >{{ formatter.format(activeDate) }}
@@ -1608,12 +1624,12 @@ const onSubmit = handleSubmit(
             ></BaseText
           >
 
-          <BaseText size="base"
+          <BaseText size="sm"
             >Total Commandés :
             <span class="text-primary-500">{{ data?.data?.quantities }} </span>
           </BaseText>
 
-          <BaseText size="base"
+          <BaseText size="sm"
             >Période :
             <span class="text-primary-500">{{ data.data?.period }}</span>
           </BaseText>
@@ -1638,7 +1654,7 @@ const onSubmit = handleSubmit(
           </div>
         </div>
 
-        <div class="flex justify-start px-2 pb-2">
+        <div class="flex justify-start text-sm px-2 pb-2">
           LEGENDE :
           <div v-for="(product, i) in data.data.products" :key="product._id">
             <span class="px-2">
@@ -1648,7 +1664,14 @@ const onSubmit = handleSubmit(
           </div>
         </div>
 
-        <div class="grid grid-cols-12 gap-2 pb-5 px-2 h-[550px]">
+        <div
+          class="grid grid-cols-12 gap-2 pb-5 px-2"
+          :class="
+            isPrintPlanning == false && isPrintCertificate == false
+              ? 'h-[550px]'
+              : ''
+          "
+        >
           <!-- Stat tile -->
           <div class="col-span-6 md:col-span-1">
             <BaseCard class="space-y-2 items-center">
@@ -1777,7 +1800,7 @@ const onSubmit = handleSubmit(
               </div>
             </BaseCard>
             <div v-if="true" class="flex justify-between py-4">
-              <div class="text-sm">
+              <div class="text-xs">
                 <p class="py-2">
                   NB: (Difusé:
                   <span class="px-1 text-primary-500"> SPOT </span>; En attente

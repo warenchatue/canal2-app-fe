@@ -4,6 +4,7 @@ import { Field } from 'vee-validate'
 
 import 'v-calendar/dist/style.css'
 import '~/assets/css/vcalendar.css'
+import { UserRole } from '~/types/user'
 
 definePageMeta({
   title: 'Tableau de bord Ventes',
@@ -17,12 +18,33 @@ definePageMeta({
   },
 })
 
+const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(10)
 const token = useCookie('token')
+
+const toaster = useToaster()
+// Check if can have access
+if (
+  authStore.user.appRole?.name != UserRole.billing &&
+  authStore.user.appRole?.name != UserRole.admin &&
+  authStore.user.appRole?.name != UserRole.accountancy &&
+  authStore.user.appRole?.name != UserRole.superAdmin
+) {
+  toaster.clearAll()
+  toaster.show({
+    title: 'Désolé',
+    message: `Vous n'avez pas access à cette page!`,
+    color: 'danger',
+    icon: 'ph:check',
+    closable: true,
+  })
+  router.back()
+}
+
 const query = computed(() => {
   return {
     filter: filter.value,

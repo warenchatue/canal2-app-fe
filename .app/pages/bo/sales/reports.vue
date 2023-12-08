@@ -3,6 +3,7 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useFieldError, useForm } from 'vee-validate'
 import { DatePicker } from 'v-calendar'
 import { z } from 'zod'
+import { UserRole } from '~/types/user'
 
 definePageMeta({
   title: 'Rapports',
@@ -20,12 +21,28 @@ const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
-
 const filter = ref('')
 const perPage = ref(10)
 const isModalNewPackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
 const isEdit = ref(false)
+
+const toaster = useToaster()
+// Check if can have access
+if (
+  authStore.user.appRole.name != UserRole.sale &&
+  authStore.user.appRole.name != UserRole.superAdmin
+) {
+  toaster.clearAll()
+  toaster.show({
+    title: 'Désolé',
+    message: `Vous n'avez pas access à cette page!`,
+    color: 'danger',
+    icon: 'ph:check',
+    closable: true,
+  })
+  router.back()
+}
 
 const orderContracts = ref<FileList | null>()
 const orderInvoices = ref<FileList | null>()
@@ -221,7 +238,6 @@ const {
   initialValues,
 })
 
-const toaster = useToaster()
 const success = ref(false)
 
 // This is where you would send the form data to the server
