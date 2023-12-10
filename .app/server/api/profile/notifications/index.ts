@@ -6,13 +6,18 @@ export default defineEventHandler(async (event) => {
   const filter = (query.filter as string) || ''
   const action = (query.action as string) || 'get'
   const id = (query.id as string) || ''
+  const uRole = (query.uRole as string) || ''
+  const uId = (query.uId as string) || ''
   const token = (query.token as string) || ''
 
   if (action == 'findOne') {
     const data = await findOne(id, token)
     return { data: data, success: true }
   } else if (action == 'findAll') {
-    const data = await findAll(token)
+    let data = await findAll(token)
+    data = data.filter((item: any) => {
+      return item.data.accountId == uId
+    })
     return {
       total: data.length,
       data: filterData(data, filter, page, perPage),

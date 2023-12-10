@@ -5,6 +5,8 @@ export default defineEventHandler(async (event) => {
   const slug = (query.slug as string) || ''
   const filter = (query.filter as string) || ''
   const action = (query.action as string) || 'get'
+  const uRole = (query.uRole as string) || ''
+  const uId = (query.uId as string) || ''
 
   const data = await getData()
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
 
+const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
@@ -24,6 +25,8 @@ const query = computed(() => {
     filter: filter.value,
     perPage: perPage.value,
     page: page.value,
+    uId: authStore.user?._id ?? '',
+    uRole: authStore.user.appRole?.name ?? '',
   }
 })
 

@@ -84,7 +84,7 @@ export default defineAppConfig({
           },
 
           {
-            name: 'Pub',
+            name: 'PUB',
             icon: { name: 'ph:target-duotone', class: 'w-5 h-5' },
             activePath: '/bo/pub',
             children: [
@@ -126,7 +126,7 @@ export default defineAppConfig({
                 icon: { name: 'lucide:file', class: 'w-4 h-4' },
               },
               {
-                name: 'Factures',
+                name: 'Factures clients',
                 to: '/bo/sales/invoices',
                 icon: { name: 'lucide:file', class: 'w-4 h-4' },
               },

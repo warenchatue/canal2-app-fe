@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
@@ -20,6 +21,8 @@ const query = computed(() => {
     filter: filter.value,
     perPage: perPage.value,
     page: page.value,
+    uId: authStore.user?._id ?? '',
+    uRole: authStore.user.appRole?.name ?? '',
   }
 })
 
@@ -54,18 +57,25 @@ const { data, pending, error, refresh } = await useFetch(
           class="text-muted-800 dark:text-white"
         >
           <BaseText
-            v-if="notification.type == 'newOrder' || notification.type == 'newInvoice'"
+            v-if="
+              notification.type == 'newOrder' ||
+              notification.type == 'newInvoice'
+            "
             size="sm"
             lead="tight"
           >
             <span class="text-muted-800 dark:text-muted-100"
               >{{ notification.data.memberName }}&nbsp;</span
             >
-            <span v-if="notification.type == 'newOrder'" class="text-muted-500 dark:text-muted-400"
+            <span
+              v-if="notification.type == 'newOrder'"
+              class="text-muted-500 dark:text-muted-400"
               >a créer un nouveau devis, code&nbsp;
             </span>
 
-             <span v-if="notification.type == 'newInvoice'" class="text-muted-500 dark:text-muted-400"
+            <span
+              v-if="notification.type == 'newInvoice'"
+              class="text-muted-500 dark:text-muted-400"
               >a créer une nouvelle facture, code&nbsp;
             </span>
 

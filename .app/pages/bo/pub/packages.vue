@@ -3,6 +3,7 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
+import 'vue-select/dist/vue-select.css'
 
 definePageMeta({
   title: 'Campagnes Publicitaires',
@@ -86,35 +87,65 @@ const { data: announcers } = await useFetch('/api/sales/announcers', {
   query,
 })
 
+const { data: allOrders } = await useFetch('/api/sales/orders', {
+  query,
+})
+
+const { data: allInvoices } = await useFetch('/api/sales/invoices', {
+  query,
+})
+
 const { data: allUsers } = await useFetch('/api/users', {
   query,
 })
-const commercials = allUsers.value?.data.filter((e: any) => {
-  return e.appRole?.name == UserRole.sale
+const adminsUser = allUsers.value?.data.filter((e: any) => {
+  return e.appRole?.name == UserRole.admin
 })
-function editPackage(orderPackage: any) {
+function editPackage(campaign: any) {
   isModalNewPackageOpen.value = true
   isEdit.value = true
-  currentPackage.value = orderPackage
-  setFieldValue('orderPackage._id', orderPackage._id)
-  setFieldValue('orderPackage.label', orderPackage.label)
-  setFieldValue('orderPackage.code', orderPackage.code)
-  setFieldValue('orderPackage.numberProducts', orderPackage.numberProducts)
-  setFieldValue('orderPackage.period', orderPackage.period)
+  currentPackage.value = campaign
+  setFieldValue('campaign._id', campaign._id)
+  setFieldValue('campaign.label', campaign.label)
+  setFieldValue('campaign.code', campaign.code)
+  setFieldValue('campaign.description', campaign.description)
+  setFieldValue('campaign.numberProducts', campaign.numberProducts)
+  setFieldValue('campaign.period', campaign.period)
+  setFieldValue('campaign.invoice', campaign.invoice)
+  setFieldValue('campaign.order', campaign.order)
+  setFieldValue('campaign.announcer', campaign.announcer)
+  setFieldValue('campaign.adminValidator', campaign.adminValidator)
 }
 
-function confirmDeletePackage(orderPackage: any) {
+function confirmDeletePackage(campaign: any) {
   isModalDeletePackageOpen.value = true
   isEdit.value = false
-  currentPackage.value = orderPackage
+  currentPackage.value = campaign
 }
 
-async function deletePackage(orderPackage: any) {
+const rSelected = ref('')
+const region = ref('')
+const cities = [
+  { id: 1, name: 'city 1', region: 'region A' },
+  { id: 2, name: 'city 2', region: 'region A' },
+  { id: 3, name: 'city 3', region: 'region B' },
+  { id: 4, name: 'city 4', region: 'region C' },
+  { id: 5, name: 'city 5', region: 'region D' },
+]
+
+function onSelected(opt) {
+  region.value = opt.region
+}
+function onDeselected(opt) {
+  region.value = ''
+}
+
+async function deletePackage(campaign: any) {
   const query2 = computed(() => {
     return {
       action: 'delete',
       token: token.value,
-      id: orderPackage._id,
+      id: campaign._id,
     }
   })
 
@@ -135,7 +166,7 @@ async function deletePackage(orderPackage: any) {
       closable: true,
     })
     isModalDeletePackageOpen.value = false
-    filter.value = 'orderPackage'
+    filter.value = 'campaign'
     filter.value = ''
   } else {
     toaster.clearAll()
@@ -177,10 +208,11 @@ const VALIDATION_TEXT = {
 // It's used to define the shape that the form data will have
 const zodSchema = z
   .object({
-    orderPackage: z.object({
+    campaign: z.object({
       _id: z.string().optional(),
       code: z.string().optional(),
       label: z.string().optional(),
+      description: z.string().optional(),
       numberProducts: z.number().optional(),
       quantities: z.number().optional(),
       status: z
@@ -191,15 +223,48 @@ const zodSchema = z
           z.literal('closed'),
         ])
         .optional(),
+      announcer: z
+        .object({
+          _id: z.string(),
+          email: z.string(),
+          name: z.string(),
+          photo: z.string().optional(),
+        })
+        .optional()
+        .nullable(),
+      adminValidator: z
+        .object({
+          _id: z.string(),
+          lastName: z.string(),
+          email: z.string(),
+        })
+        .optional()
+        .nullable(),
+      order: z
+        .object({
+          _id: z.string(),
+          code: z.string(),
+          date: z.string().optional(),
+        })
+        .optional()
+        .nullable(),
+      invoice: z
+        .object({
+          _id: z.string(),
+          code: z.string(),
+          date: z.string().optional(),
+        })
+        .optional()
+        .nullable(),
       period: z.string(),
     }),
   })
   .superRefine((data, ctx) => {
-    // if (!data.orderPackage.label) {
+    // if (!data.campaign.label) {
     //   ctx.addIssue({
     //     code: z.ZodIssueCode.custom,
     //     message: VALIDATION_TEXT.LABEL_REQUIRED,
-    //     path: ['orderPackage.label'],
+    //     path: ['campaign.label'],
     //   })
     // }
   })
@@ -211,13 +276,35 @@ type FormInput = z.infer<typeof zodSchema>
 const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
   avatar: null,
-  orderPackage: {
+  campaign: {
     label: '',
     code: '',
+    description: '',
     quantities: 0,
     numberProducts: 0,
     period: '',
     status: 'onHold',
+    announcer: {
+      _id: '',
+      email: '',
+      name: '',
+      flag: '',
+    },
+    adminValidator: {
+      _id: '',
+      lastName: '',
+      email: '',
+    },
+    order: {
+      _id: '',
+      code: '',
+      date: '',
+    },
+    invoice: {
+      _id: '',
+      code: '',
+      date: '',
+    },
   },
 }))
 
@@ -246,13 +333,7 @@ async function confirmOrder() {
       id: currentPackage.value._id,
     }
   })
-  if (authStore.user?.appRole?.tag == UserRole.respSaleTag) {
-    currentPackage.value.orderValidator = authStore.user._id
-  } else if (authStore.user.appRole?.tag == UserRole.respBillingTag) {
-    currentPackage.value.billValidator = authStore.user._id
-  } else if (authStore.user.appRole?.name == UserRole.admin) {
-    currentPackage.value.adminValidator = authStore.user._id
-  }
+  currentPackage.value.adminValidated = true
 
   const response = await useFetch('/api/pub/packages', {
     method: 'put',
@@ -266,7 +347,7 @@ async function confirmOrder() {
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Commande confirmée !`,
+      message: `Campagne validée !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
@@ -293,10 +374,6 @@ const onSubmit = handleSubmit(
 
     // here you have access to the validated form values
     console.log('package-create-success', values)
-    const contractUrl =
-      isEdit.value == true ? ref(currentPackage.contractUrl ?? '') : ref('')
-    const invoiceUrl =
-      isEdit.value == true ? ref(currentPackage.invoice?.url ?? '') : ref('')
 
     try {
       const isSuccess = ref(false)
@@ -306,7 +383,7 @@ const onSubmit = handleSubmit(
           return {
             action: 'updatePackage',
             token: token.value,
-            id: values.orderPackage._id,
+            id: values.campaign._id,
           }
         })
 
@@ -315,7 +392,11 @@ const onSubmit = handleSubmit(
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.orderPackage,
+            ...values.campaign,
+            announcer: values.campaign?.announcer._id,
+            order: values.campaign?.order._id,
+            invoice: values.campaign?.invoice._id,
+            adminValidator: values.campaign?.adminValidator._id,
           },
         })
         isSuccess.value = response.data.value?.success
@@ -332,7 +413,11 @@ const onSubmit = handleSubmit(
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.orderPackage,
+            ...values.campaign,
+            announcer: values.campaign?.announcer._id,
+            order: values.campaign?.order._id,
+            invoice: values.campaign?.invoice._id,
+            adminValidator: values.campaign?.adminValidator._id,
             _id: undefined,
           },
         })
@@ -351,7 +436,7 @@ const onSubmit = handleSubmit(
         })
         isModalNewPackageOpen.value = false
         resetForm()
-        filter.value = 'orderPackage'
+        filter.value = 'campaign'
         filter.value = ''
       } else {
         toaster.clearAll()
@@ -424,10 +509,15 @@ const onSubmit = handleSubmit(
           <option :value="50">50 per page</option>
           <option :value="100">100 per page</option>
         </BaseSelect>
+        <v-select
+          v-model="rSelected"
+          :options="cities"
+          :reduce="(item:any) => item.id"
+          label="name"
+        ></v-select>
         <BaseButton
           color="primary"
           class="w-full sm:w-52"
-          disabled
           @click=";(isModalNewPackageOpen = true), (isEdit = false)"
         >
           <Icon name="ph:plus" class="h-4 w-4" />
@@ -691,24 +781,22 @@ const onSubmit = handleSubmit(
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseAvatar
-                      :src="
-                        item.order.announcer?.logo ?? '/img/avatars/company.svg'
-                      "
+                      :src="item.announcer?.logo ?? '/img/avatars/company.svg'"
                       :text="item.initials"
                       :class="getRandomColor()"
                     />
                     <div class="ms-3 leading-none">
                       <h4 class="font-sans text-sm font-medium">
-                        {{ item.order.announcer?.name }}
+                        {{ item.announcer?.name }}
                       </h4>
                       <p class="text-muted-400 font-sans text-xs">
-                        {{ item.order.announcer?.email }}
+                        {{ item.announcer?.email }}
                       </p>
                     </div>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.order.label }}
+                  {{ item.label }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{ item.quantities }} spots
@@ -810,7 +898,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            {{ isEdit == true ? 'Editer' : 'Nouveau' }} Campagne
+            {{ isEdit == true ? 'Editer' : 'Nouvelle' }} Campagne
           </h3>
 
           <BaseButtonClose @click="isModalNewPackageOpen = false" />
@@ -832,10 +920,75 @@ const onSubmit = handleSubmit(
             <div class="mx-auto flex w-full flex-col">
               <div>
                 <div class="grid grid-cols-12 gap-4">
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="campaign.invoice"
+                    >
+                      <BaseListbox
+                        label="Facture"
+                        :items="allInvoices?.data"
+                        :properties="{
+                          value: '_id',
+                          label: 'code',
+                          sublabel: 'date',
+                        }"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="campaign.order"
+                    >
+                      <BaseListbox
+                        label="Devis"
+                        :items="allOrders?.data"
+                        :properties="{
+                          value: '_id',
+                          label: 'code',
+                          sublabel: 'date',
+                          media: 'flag',
+                        }"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="campaign.announcer"
+                    >
+                      <BaseListbox
+                        label="Annonceur"
+                        :items="announcers?.data"
+                        :properties="{
+                          value: '_id',
+                          label: 'name',
+                          sublabel: 'email',
+                          media: 'flag',
+                        }"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
                   <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="orderPackage.label"
+                      name="campaign.label"
                     >
                       <BaseInput
                         label="Nom"
@@ -852,7 +1005,7 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="orderPackage.numberProducts"
+                      name="campaign.numberProducts"
                     >
                       <BaseInput
                         label="Nombre de produits"
@@ -870,7 +1023,7 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="orderPackage.quantities"
+                      name="campaign.quantities"
                     >
                       <BaseInput
                         label="Quantité totale"
@@ -888,7 +1041,7 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="orderPackage.period"
+                      name="campaign.period"
                     >
                       <BaseInput
                         label="Periode"
@@ -905,7 +1058,7 @@ const onSubmit = handleSubmit(
                   <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="orderPackage.status"
+                      name="campaign.status"
                     >
                       <BaseSelect
                         label="Statut *"
@@ -923,6 +1076,44 @@ const onSubmit = handleSubmit(
                       </BaseSelect>
                     </Field>
                   </div>
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="campaign.adminValidator"
+                    >
+                      <BaseListbox
+                        label="Validateur"
+                        :items="adminsUser"
+                        :properties="{
+                          value: '_id',
+                          label: 'lastName',
+                          sublabel: 'email',
+                        }"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="campaign.description"
+                    >
+                      <BaseInput
+                        label="Observations"
+                        icon="ph:file-duotone"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
                 </div>
               </div>
             </div>
@@ -938,24 +1129,17 @@ const onSubmit = handleSubmit(
             >
             <div v-if="isEdit == true" class="flex">
               <BaseButton
-                :color="currentPackage?.orderValidator ? 'success' : 'warning'"
+                :color="currentPackage?.adminValidated ? 'success' : 'warning'"
                 class="!mx-2"
                 flavor="solid"
-                @click="isModalConfirmOrderOpen = true"
-                :disabled="authStore.user?.appRole?.tag != UserRole.respSaleTag"
+                @click="confirmOrder()"
+                :disabled="
+                  authStore.user?._id != currentPackage?.adminValidator
+                "
               >
                 <span class="text-bold text-muted-700">
-                  OK du Service CCial</span
+                  Validation du PDG/DG/DO</span
                 >
-              </BaseButton>
-              <BaseButton
-                :color="currentPackage?.adminValidator ? 'success' : 'warning'"
-                class="!mx-2"
-                flavor="solid"
-                @click="isModalConfirmOrderOpen = true"
-                :disabled="authStore.user?.appRole?.name != UserRole.admin"
-              >
-                <span class="text-bold text-muted-700"> OK du PDG/DG/DO</span>
               </BaseButton>
             </div>
 
