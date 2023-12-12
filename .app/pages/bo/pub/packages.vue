@@ -95,6 +95,33 @@ const { data: allInvoices } = await useFetch('/api/sales/invoices', {
   query,
 })
 
+const transformedAnnouncers = announcers.value?.data.map((e: any) => {
+  const invoice = {
+    id: e._id,
+    name: e.name,
+    text: e.phone,
+  }
+  return invoice
+})
+
+const transformedOrders = allOrders.value?.data.map((e: any) => {
+  const invoice = {
+    id: e._id,
+    name: e.code,
+    text: e.createdAt,
+  }
+  return invoice
+})
+
+const transformedInvoices = allInvoices.value?.data.map((e: any) => {
+  const invoice = {
+    id: e._id,
+    name: e.code,
+    text: e.createdAt,
+  }
+  return invoice
+})
+
 const { data: allUsers } = await useFetch('/api/users', {
   query,
 })
@@ -111,9 +138,21 @@ function editPackage(campaign: any) {
   setFieldValue('campaign.description', campaign.description)
   setFieldValue('campaign.numberProducts', campaign.numberProducts)
   setFieldValue('campaign.period', campaign.period)
-  setFieldValue('campaign.invoice', campaign.invoice)
-  setFieldValue('campaign.order', campaign.order)
-  setFieldValue('campaign.announcer', campaign.announcer)
+  setFieldValue('campaign.invoice', {
+    id: campaign.invoice._id,
+    name: campaign.invoice.code,
+    text: campaign.invoice.createdAt,
+  })
+  setFieldValue('campaign.order', {
+    id: campaign.order._id,
+    name: campaign.order.code,
+    text: campaign.order.createdAt,
+  })
+  setFieldValue('campaign.announcer', {
+    id: campaign.announcer._id,
+    name: campaign.announcer.name,
+    text: campaign.announcer.phone,
+  })
   setFieldValue('campaign.adminValidator', campaign.adminValidator)
 }
 
@@ -123,21 +162,17 @@ function confirmDeletePackage(campaign: any) {
   currentPackage.value = campaign
 }
 
-const rSelected = ref('')
-const region = ref('')
-const cities = [
-  { id: 1, name: 'city 1', region: 'region A' },
-  { id: 2, name: 'city 2', region: 'region A' },
-  { id: 3, name: 'city 3', region: 'region B' },
-  { id: 4, name: 'city 4', region: 'region C' },
-  { id: 5, name: 'city 5', region: 'region D' },
-]
+function filterItems(query?: string, items?: any[]) {
+  if (!query || !items) {
+    return items ?? []
+  }
 
-function onSelected(opt) {
-  region.value = opt.region
-}
-function onDeselected(opt) {
-  region.value = ''
+  // search by name or text
+  return items.filter((item) => {
+    const nameMatches = item?.name?.toLowerCase().includes(query.toLowerCase())
+    const textMatches = item?.text?.toLowerCase().includes(query.toLowerCase())
+    return nameMatches || textMatches
+  })
 }
 
 async function deletePackage(campaign: any) {
@@ -225,10 +260,9 @@ const zodSchema = z
         .optional(),
       announcer: z
         .object({
-          _id: z.string(),
-          email: z.string(),
+          id: z.string(),
           name: z.string(),
-          photo: z.string().optional(),
+          email: z.string().optional(),
         })
         .optional()
         .nullable(),
@@ -242,17 +276,15 @@ const zodSchema = z
         .nullable(),
       order: z
         .object({
-          _id: z.string(),
-          code: z.string(),
-          date: z.string().optional(),
+          id: z.string(),
+          name: z.string(),
         })
         .optional()
         .nullable(),
       invoice: z
         .object({
-          _id: z.string(),
-          code: z.string(),
-          date: z.string().optional(),
+          id: z.string(),
+          name: z.string(),
         })
         .optional()
         .nullable(),
@@ -260,13 +292,13 @@ const zodSchema = z
     }),
   })
   .superRefine((data, ctx) => {
-    // if (!data.campaign.label) {
-    //   ctx.addIssue({
-    //     code: z.ZodIssueCode.custom,
-    //     message: VALIDATION_TEXT.LABEL_REQUIRED,
-    //     path: ['campaign.label'],
-    //   })
-    // }
+    if (!data.campaign.label) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: VALIDATION_TEXT.LABEL_REQUIRED,
+        path: ['campaign.label'],
+      })
+    }
   })
 
 // Zod has a great infer method that will
@@ -284,27 +316,6 @@ const initialValues = computed<FormInput>(() => ({
     numberProducts: 0,
     period: '',
     status: 'onHold',
-    announcer: {
-      _id: '',
-      email: '',
-      name: '',
-      flag: '',
-    },
-    adminValidator: {
-      _id: '',
-      lastName: '',
-      email: '',
-    },
-    order: {
-      _id: '',
-      code: '',
-      date: '',
-    },
-    invoice: {
-      _id: '',
-      code: '',
-      date: '',
-    },
   },
 }))
 
@@ -393,10 +404,10 @@ const onSubmit = handleSubmit(
           query: query2,
           body: {
             ...values.campaign,
-            announcer: values.campaign?.announcer._id,
-            order: values.campaign?.order._id,
-            invoice: values.campaign?.invoice._id,
-            adminValidator: values.campaign?.adminValidator._id,
+            announcer: values.campaign?.announcer?.id ?? undefined,
+            order: values.campaign?.order?.id ?? undefined,
+            invoice: values.campaign?.invoice?.id ?? undefined,
+            adminValidator: values.campaign?.adminValidator?._id ?? undefined,
           },
         })
         isSuccess.value = response.data.value?.success
@@ -414,10 +425,10 @@ const onSubmit = handleSubmit(
           query: query2,
           body: {
             ...values.campaign,
-            announcer: values.campaign?.announcer._id,
-            order: values.campaign?.order._id,
-            invoice: values.campaign?.invoice._id,
-            adminValidator: values.campaign?.adminValidator._id,
+            announcer: values.campaign?.announcer?.id ?? undefined,
+            order: values.campaign?.order?.id ?? undefined,
+            invoice: values.campaign?.invoice?.id ?? undefined,
+            adminValidator: values.campaign?.adminValidator?._id ?? undefined,
             _id: undefined,
           },
         })
@@ -509,12 +520,6 @@ const onSubmit = handleSubmit(
           <option :value="50">50 per page</option>
           <option :value="100">100 per page</option>
         </BaseSelect>
-        <v-select
-          v-model="rSelected"
-          :options="cities"
-          :reduce="(item:any) => item.id"
-          label="name"
-        ></v-select>
         <BaseButton
           color="primary"
           class="w-full sm:w-52"
@@ -925,19 +930,19 @@ const onSubmit = handleSubmit(
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="campaign.invoice"
                     >
-                      <BaseListbox
-                        label="Facture"
-                        :items="allInvoices?.data"
-                        :properties="{
-                          value: '_id',
-                          label: 'code',
-                          sublabel: 'date',
-                        }"
+                      <BaseAutocomplete
                         :model-value="field.value"
                         :error="errorMessage"
                         :disabled="isSubmitting"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
+                        :items="transformedInvoices"
+                        :display-value="(item: any) => item.name || ''"
+                        :filter-items="filterItems"
+                        icon="lucide:file"
+                        placeholder="e.g. FAC/2023"
+                        label="Facture"
+                        clearable
                       />
                     </Field>
                   </div>
@@ -946,20 +951,19 @@ const onSubmit = handleSubmit(
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="campaign.order"
                     >
-                      <BaseListbox
-                        label="Devis"
-                        :items="allOrders?.data"
-                        :properties="{
-                          value: '_id',
-                          label: 'code',
-                          sublabel: 'date',
-                          media: 'flag',
-                        }"
+                      <BaseAutocomplete
                         :model-value="field.value"
                         :error="errorMessage"
                         :disabled="isSubmitting"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
+                        :items="transformedOrders"
+                        :display-value="(item: any) => item.name || ''"
+                        :filter-items="filterItems"
+                        icon="lucide:file"
+                        placeholder="e.g. DEV/2023"
+                        label="Devis"
+                        clearable
                       />
                     </Field>
                   </div>
@@ -968,20 +972,19 @@ const onSubmit = handleSubmit(
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="campaign.announcer"
                     >
-                      <BaseListbox
-                        label="Annonceur"
-                        :items="announcers?.data"
-                        :properties="{
-                          value: '_id',
-                          label: 'name',
-                          sublabel: 'email',
-                          media: 'flag',
-                        }"
+                      <BaseAutocomplete
                         :model-value="field.value"
                         :error="errorMessage"
                         :disabled="isSubmitting"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
+                        :items="transformedAnnouncers"
+                        :display-value="(item: any) => item.name || ''"
+                        :filter-items="filterItems"
+                        icon="lucide:file"
+                        placeholder="e.g. Canal2 International"
+                        label="Annonceur"
+                        clearable
                       />
                     </Field>
                   </div>

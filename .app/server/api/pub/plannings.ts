@@ -69,7 +69,7 @@ function filterData(
     return [
       new Date(item.date).toDateString(),
       item.product?.product,
-      item.product?.package?.order?.announcer?.name,
+      item.product?.package?.announcer?.name,
     ].some((item) => item.match(filterRe))
   })
 

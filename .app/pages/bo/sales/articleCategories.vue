@@ -5,11 +5,11 @@ import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Annonceurs',
+  title: 'Categories d\'articles',
   preview: {
-    title: 'Annonceurs',
-    description: 'Contribution and withdrawal',
-    categories: ['bo', 'announcers'],
+    title: 'Categories d\'articles',
+    description: 'Gestion des Categories d\'articles',
+    categories: ['bo', 'Categories d\'articles'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -23,15 +23,14 @@ const appStore = useAppStore()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(10)
-const isModalNewAnnouncerOpen = ref(false)
-const isModalDeleteAnnouncerOpen = ref(false)
+const isModalNewArticleOpen = ref(false)
+const isModalDeleteArticleOpen = ref(false)
 const isEdit = ref(false)
 
 const toaster = useToaster()
 // Check if can have access
 if (
   authStore.user.appRole?.name != UserRole.billing &&
-  authStore.user.appRole?.name != UserRole.sale &&
   authStore.user.appRole?.name != UserRole.admin &&
   authStore.user.appRole?.name != UserRole.accountancy &&
   authStore.user.appRole?.name != UserRole.superAdmin
@@ -67,7 +66,7 @@ const query = computed(() => {
 })
 
 const { data, pending, error, refresh } = await useFetch(
-  '/api/sales/announcers',
+  '/api/sales/articles',
   {
     query,
   },
@@ -86,7 +85,7 @@ function toggleAllVisibleSelection() {
   }
 }
 
-const currentAnnouncer = ref({})
+const currentArticle = ref({})
 const chatEl = ref<HTMLElement>()
 const expanded = ref(true)
 const loading = ref(false)
@@ -94,41 +93,35 @@ const loading = ref(false)
 // This is the object that will contain the validation messages
 const ONE_MB = 1000000
 const VALIDATION_TEXT = {
+  CODE_REQUIRED: "Code can't be empty",
   NAME_REQUIRED: "Name can't be empty",
-  PHONE_REQUIRED: "Phone number can't be empty",
-  EMAIL_REQUIRED: "Email address can't be empty",
-  COUNTRY_REQUIRED: 'Please select a country',
 }
 
 // This is the Zod schema for the form input
 // It's used to define the shape that the form data will have
 const zodSchema = z
   .object({
-    announcer: z.object({
+    article: z.object({
       _id: z.string().optional(),
+      code: z.string().min(1, VALIDATION_TEXT.CODE_REQUIRED),
       name: z.string().min(1, VALIDATION_TEXT.NAME_REQUIRED),
-      email: z.string(),
-      rc: z.string(),
-      nc: z.string(),
-      status: z.union([z.literal('active'), z.literal('trashed')]).optional(),
-      phone: z.string(),
-      country: z
+      description: z.string(),
+      category: z
         .object({
           _id: z.string(),
-          abbr: z.string(),
           name: z.string(),
-          flag: z.string().optional(),
+          description: z.string(),
         })
         .optional()
         .nullable(),
     }),
   })
   .superRefine((data, ctx) => {
-    if (!data.announcer.country) {
+    if (!data.article.name) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: VALIDATION_TEXT.PHONE_REQUIRED,
-        path: ['announcer.country'],
+        message: VALIDATION_TEXT.CODE_REQUIRED,
+        path: ['article.code'],
       })
     }
   })
@@ -140,18 +133,14 @@ type FormInput = z.infer<typeof zodSchema>
 const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
   avatar: null,
-  announcer: {
+  article: {
+    code: '',
     name: '',
-    email: '',
-    phone: '',
-    rc: '',
-    nc: '',
-    status: 'active',
-    country: {
+    description: '',
+    category: {
       _id: '',
-      abbr: '',
       name: '',
-      flag: '',
+      description: '',
     },
   },
 }))
@@ -173,40 +162,36 @@ const {
 
 const success = ref(false)
 
-function editAnnouncer(announcer: any) {
-  isModalNewAnnouncerOpen.value = true
+function editArticle(article: any) {
+  isModalNewArticleOpen.value = true
   isEdit.value = true
-  setFieldValue('announcer._id', announcer._id)
-  setFieldValue('announcer.name', announcer.name)
-  setFieldValue('announcer.email', announcer.email)
-  setFieldValue('announcer.phone', announcer.phone)
-  setFieldValue('announcer.country', announcer.country)
-  setFieldValue('announcer.rc', announcer.rc)
-  setFieldValue('announcer.nc', announcer.nc)
-  setFieldValue('announcer.status', announcer.status)
+  setFieldValue('article._id', article._id)
+  setFieldValue('article.code', article.code)
+  setFieldValue('article.name', article.name)
+  setFieldValue('article.description', article.description)
 }
 
-function selectAnnouncer(announcer: any) {
-  currentAnnouncer.value = announcer
+function selectArticle(article: any) {
+  currentArticle.value = article
   expanded.value = false
 }
 
-function confirmDeleteAnnouncer(announcer: any) {
-  isModalDeleteAnnouncerOpen.value = true
+function confirmDeleteArticle(article: any) {
+  isModalDeleteArticleOpen.value = true
   isEdit.value = false
-  currentAnnouncer.value = announcer
+  currentArticle.value = article
 }
 
-async function deleteAnnouncer(announcer: any) {
+async function deleteArticle(article: any) {
   const query2 = computed(() => {
     return {
       action: 'delete',
       token: token.value,
-      id: announcer._id,
+      id: article._id,
     }
   })
 
-  const response = await useFetch('/api/sales/announcers', {
+  const response = await useFetch('/api/sales/articles', {
     method: 'delete',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
@@ -217,13 +202,13 @@ async function deleteAnnouncer(announcer: any) {
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Annonceur supprimé !`,
+      message: `Article supprimé !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
     })
-    isModalDeleteAnnouncerOpen.value = false
-    filter.value = 'announcer'
+    isModalDeleteArticleOpen.value = false
+    filter.value = 'article'
     filter.value = ''
   } else {
     toaster.clearAll()
@@ -242,43 +227,45 @@ const onSubmit = handleSubmit(
   async (values) => {
     success.value = false
     // here you have access to the validated form values
-    console.log('announcer-create-success', values)
+    console.log('article-create-success', values)
 
     try {
       const isSuccess = ref(false)
       if (isEdit.value == true) {
         const query2 = computed(() => {
           return {
-            action: 'updateAnnouncer',
+            action: 'updateArticle',
             token: token.value,
-            id: values.announcer._id,
+            id: values.article._id,
           }
         })
 
-        const response = await useFetch('/api/sales/announcers', {
+        const response = await useFetch('/api/sales/articles', {
           method: 'put',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.announcer,
+            ...values.article,
+            category: undefined,
           },
         })
         isSuccess.value = response.data.value?.success
       } else {
         const query2 = computed(() => {
           return {
-            action: 'createAnnouncer',
+            action: 'createArticle',
             token: token.value,
           }
         })
 
-        const response = await useFetch('/api/sales/announcers', {
+        const response = await useFetch('/api/sales/articles', {
           method: 'post',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.announcer,
+            ...values.article,
             _id: undefined,
+            category: undefined,
           },
         })
         isSuccess.value = response.data.value?.success
@@ -289,14 +276,14 @@ const onSubmit = handleSubmit(
         toaster.show({
           title: 'Success',
           message:
-            isEdit.value == false ? `Annonceur créé !` : `Annonceur mis à jour`,
+            isEdit.value == false ? `Article créé !` : `Article mis à jour`,
           color: 'success',
           icon: 'ph:check',
           closable: true,
         })
-        isModalNewAnnouncerOpen.value = false
+        isModalNewArticleOpen.value = false
         resetForm()
-        filter.value = 'announcer'
+        filter.value = 'articlee'
         filter.value = ''
       } else {
         toaster.clearAll()
@@ -331,7 +318,7 @@ const onSubmit = handleSubmit(
     success.value = false
 
     // here you have access to the error
-    console.log('announcer-create-error', error)
+    console.log('article-create-error', error)
 
     // you can use it to scroll to the first error
     document.documentElement.scrollTo({
@@ -369,7 +356,7 @@ const onSubmit = handleSubmit(
           <option :value="100">100 per page</option>
         </BaseSelect>
         <BaseButton
-          @click=";(isModalNewAnnouncerOpen = true), (isEdit = false)"
+          @click=";(isModalNewArticleOpen = true), (isEdit = false)"
           color="primary"
           class="w-full sm:w-48"
           :disabled="
@@ -379,7 +366,7 @@ const onSubmit = handleSubmit(
           "
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
-          <span>Nouvel Annonceur</span>
+          <span>Nouvel Article</span>
         </BaseButton>
       </template>
 
@@ -421,14 +408,18 @@ const onSubmit = handleSubmit(
                     />
                   </div>
                 </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Code </TairoTableHeading>
+
+                <TairoTableHeading uppercase spaced> Nom </TairoTableHeading>
+
                 <TairoTableHeading uppercase spaced>
-                  Annonceur
+                  Description
                 </TairoTableHeading>
 
-                <TairoTableHeading uppercase spaced> Tel </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>
+                  Categorie
+                </TairoTableHeading>
 
-                <TairoTableHeading uppercase spaced> R/C </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> N/C </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
               </template>
 
@@ -459,53 +450,41 @@ const onSubmit = handleSubmit(
                     />
                   </div>
                 </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <BaseAvatar
-                      :src="item.logo ?? '/img/avatars/company.svg'"
-                      :text="item.initials"
-                      :class="getRandomColor()"
-                    />
-                    <div class="ms-3 leading-none">
-                      <h4 class="font-sans text-sm font-medium">
-                        {{ item.name }}
-                      </h4>
-                      <p class="text-muted-400 font-sans text-xs">
-                        {{ item.email }}
-                      </p>
-                    </div>
-                  </div>
-                </TairoTableCell>
 
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
-                      {{ item.phone }}
+                      {{ item.code }}
                     </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
-                      {{ item.rc }}
+                      {{ item.name }}
                     </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
-                      {{ item.nc }}
+                      {{ item.description }}
                     </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
+                  <div class="flex items-center">
+                    <span class="text-muted-400 font-sans text-xs">
+                      {{ item.category?.name ?? '-' }}
+                    </span>
+                  </div>
+                </TairoTableCell>
+
+                <TairoTableCell spaced>
                   <div class="flex">
-                    <BaseButtonAction to="/bo/spots/orders" muted
-                      >commandes</BaseButtonAction
-                    >
                     <BaseButtonAction
                       class="mx-2"
-                      @click.prevent="selectAnnouncer(item)"
+                      @click.prevent="selectArticle(item)"
                       muted
                     >
                       <Icon name="lucide:eye" class="h-4 w-4"
@@ -516,12 +495,12 @@ const onSubmit = handleSubmit(
                         authStore.user.appRole.name != UserRole.billing &&
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
-                      @click="editAnnouncer(item)"
+                      @click="editArticle(item)"
                     >
                       <Icon name="lucide:edit" class="h-4 w-4"
                     /></BaseButtonAction>
                     <BaseButtonAction
-                      @click="confirmDeleteAnnouncer(item)"
+                      @click="confirmDeleteArticle(item)"
                       :disabled="
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
@@ -546,11 +525,11 @@ const onSubmit = handleSubmit(
       </div>
     </TairoContentWrapper>
 
-    <!-- Modal new Announcer -->
+    <!-- Modal new Article -->
     <TairoModal
-      :open="isModalNewAnnouncerOpen"
+      :open="isModalNewArticleOpen"
       size="xl"
-      @close="isModalNewAnnouncerOpen = false"
+      @close="isModalNewArticleOpen = false"
     >
       <template #header>
         <!-- Header -->
@@ -558,10 +537,10 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            {{ isEdit == true ? 'Mise à jour' : 'Nouvel' }} Annonceur
+            {{ isEdit == true ? 'Mise à jour' : 'Nouvel' }} Article
           </h3>
 
-          <BaseButtonClose @click="isModalNewAnnouncerOpen = false" />
+          <BaseButtonClose @click="isModalNewArticleOpen = false" />
         </div>
       </template>
 
@@ -583,61 +562,10 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="announcer.name"
+                      name="article.code"
                     >
                       <BaseInput
-                        label="Nom"
-                        icon="ph:user-duotone"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="announcer.email"
-                    >
-                      <BaseInput
-                        label="Email"
-                        icon="ph:globe-duotone"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="announcer.phone"
-                    >
-                      <BaseInput
-                        label="Numéro de téléphone"
-                        icon="ph:phone-duotone"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="announcer.rc"
-                    >
-                      <BaseInput
-                        label="Registre de commerce"
+                        label="Code"
                         icon="ph:file-duotone"
                         placeholder=""
                         :model-value="field.value"
@@ -648,13 +576,30 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                  <div class="col-span-12 md:col-span-6">
+                  <div class="col-span-12 md:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="announcer.nc"
+                      name="article.name"
                     >
                       <BaseInput
-                        label="Numéro de contribuable"
+                        label="Nom"
+                        icon="ph:file-duotone"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-12">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="article.description"
+                    >
+                      <BaseInput
+                        label="Description"
                         icon="ph:file-duotone"
                         placeholder=""
                         :model-value="field.value"
@@ -666,20 +611,20 @@ const onSubmit = handleSubmit(
                     </Field>
                   </div>
                 </div>
-                <div class="grid grid-cols-12 gap-4 mt-4">
+                <!-- <div class="grid grid-cols-12 gap-4 mt-4">
                   <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="announcer.country"
+                      name="article.category"
                     >
                       <BaseListbox
-                        label="Pays"
+                        label="Catégorie"
                         :items="appStore.countries"
                         :properties="{
                           value: '_id',
                           label: 'name',
-                          sublabel: 'abbr',
-                          media: 'flag',
+                          sublabel: 'description',
+                          media: '',
                         }"
                         :model-value="field.value"
                         :error="errorMessage"
@@ -692,7 +637,7 @@ const onSubmit = handleSubmit(
                   <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="announcer.status"
+                      name="article.status"
                     >
                       <BaseSelect
                         label="Statut *"
@@ -708,7 +653,7 @@ const onSubmit = handleSubmit(
                       </BaseSelect>
                     </Field>
                   </div>
-                </div>
+                </div> -->
               </div>
             </div>
           </div>
@@ -718,7 +663,7 @@ const onSubmit = handleSubmit(
         <!-- Footer -->
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
-            <BaseButton @click="isModalNewAnnouncerOpen = false"
+            <BaseButton @click="isModalNewArticleOpen = false"
               >Annuler</BaseButton
             >
 
@@ -732,9 +677,9 @@ const onSubmit = handleSubmit(
 
     <!-- Modal delete -->
     <TairoModal
-      :open="isModalDeleteAnnouncerOpen"
+      :open="isModalDeleteArticleOpen"
       size="sm"
-      @close="isModalDeleteAnnouncerOpen = false"
+      @close="isModalDeleteArticleOpen = false"
     >
       <template #header>
         <!-- Header -->
@@ -742,10 +687,10 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Suppression d'un annonceur
+            Suppression d'un article
           </h3>
 
-          <BaseButtonClose @click="isModalDeleteAnnouncerOpen = false" />
+          <BaseButtonClose @click="isModalDeleteArticleOpen = false" />
         </div>
       </template>
 
@@ -756,7 +701,7 @@ const onSubmit = handleSubmit(
             class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
           >
             Supprimer
-            <span class="text-red-500">{{ currentAnnouncer?.name }}</span> ?
+            <span class="text-red-500">{{ currentArticle?.name }}</span> ?
           </h3>
 
           <p
@@ -771,14 +716,14 @@ const onSubmit = handleSubmit(
         <!-- Footer -->
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
-            <BaseButton @click="isModalDeleteAnnouncerOpen = false"
+            <BaseButton @click="isModalDeleteArticleOpen = false"
               >Annuler</BaseButton
             >
 
             <BaseButton
               color="primary"
               flavor="solid"
-              @click="deleteAnnouncer(currentAnnouncer)"
+              @click="deleteArticle(currentArticle)"
               >Suppimer</BaseButton
             >
           </div>
@@ -793,7 +738,7 @@ const onSubmit = handleSubmit(
     >
       <div class="flex h-16 w-full items-center justify-between px-8">
         <BaseHeading tag="h3" size="lg" class="text-muted-800 dark:text-white">
-          <span>Détails Annonceur</span>
+          <span>Détails Article</span>
         </BaseHeading>
         <BaseButtonIcon small @click="expanded = true">
           <Icon name="lucide:arrow-right" class="pointer-events-none h-4 w-4" />
@@ -834,18 +779,18 @@ const onSubmit = handleSubmit(
         <div v-else class="mt-8" @click.>
           <div class="flex items-center justify-center">
             <BaseAvatar
-              :src="currentAnnouncer?.logo"
-              :text="currentAnnouncer.initials"
+              :src="currentArticle?.logo"
+              :text="currentArticle.initials"
               :class="getRandomColor()"
               size="2xl"
             />
           </div>
           <div class="text-center">
             <BaseHeading tag="h3" size="lg" class="mt-4">
-              <span>{{ currentAnnouncer?.name }}</span>
+              <span>{{ currentArticle?.name }}</span>
             </BaseHeading>
             <BaseParagraph size="sm" class="text-muted-400">
-              <span>{{ currentAnnouncer?.email }}</span>
+              <span>{{ currentArticle?.description }}</span>
             </BaseParagraph>
             <div class="my-4">
               <BaseParagraph
@@ -879,7 +824,7 @@ const onSubmit = handleSubmit(
             </div>
             <div class="mt-6">
               <BaseButton shape="curved" class="w-full">
-                <span> Consulter les packages </span>
+                <span> Consulter </span>
               </BaseButton>
             </div>
           </div>

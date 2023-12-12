@@ -779,7 +779,7 @@ const onSubmit = handleSubmit(
         />
         <div class="mx-auto w-full max-w-4xl text-center">
           <BaseHeading tag="h2" size="xl" weight="medium" class="mt-4">
-            {{ data?.data?.order?.announcer?.name }}
+            {{ data?.data?.announcer?.name }}
           </BaseHeading>
           <div
             class="divide-muted-200 dark:divide-muted-800 flex items-center justify-center divide-x"
@@ -787,7 +787,7 @@ const onSubmit = handleSubmit(
             <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
               <Icon name="ph:globe" class="h-5 w-5" />
               <BaseText size="sm"
-                >Email: {{ data?.data?.order?.announcer.email }}</BaseText
+                >Email: {{ data?.data?.announcer.email }}</BaseText
               >
             </div>
 
@@ -1609,7 +1609,7 @@ const onSubmit = handleSubmit(
           <BaseText size="sm"
             >Annonceur :
             <span class="text-primary-500">{{
-              data?.data?.order?.announcer?.name
+              data?.data?.announcer?.name
             }}</span>
           </BaseText>
           <BaseText size="sm"
