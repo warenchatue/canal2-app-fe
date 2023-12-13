@@ -84,10 +84,11 @@ const zodSchema = z
       _id: z.string().optional(),
       name: z.string(),
       email: z.string(),
+      footerTitle: z.string().optional(),
       rc: z.string(),
       nc: z.string(),
-      status: z.union([z.literal('active'), z.literal('inactive')]),
       phone: z.string(),
+      phone2: z.string().optional(),
       address: z.string(),
       city: z.string(),
       country: z
@@ -129,7 +130,9 @@ const initialValues = computed<FormInput>(() => ({
   org: {
     name: '',
     email: '',
+    footerTitle: '',
     phone: '',
+    phone2: '',
     nc: '',
     status: 'active',
     rc: '',
@@ -171,12 +174,13 @@ function editOrg(org: any) {
   setFieldValue('org.email', org.email)
   setFieldValue('org.nc', org.nc)
   setFieldValue('org.phone', org.phone)
+  setFieldValue('org.phone2', org.phone2)
   setFieldValue('org.rc', org.rc)
   setFieldValue('org.rc', org.rc)
   setFieldValue('org.address', org.address)
   setFieldValue('org.city', org.city)
   setFieldValue('org.country', org.country)
-  setFieldValue('org.status', org.status)
+  setFieldValue('org.footerTitle', org.footerTitle)
 }
 
 function confirmDeleteOrg(org: any) {
@@ -619,6 +623,23 @@ const onSubmit = handleSubmit(
                   </div>
                 </div>
                 <div class="grid grid-cols-12 gap-4 mt-4">
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="org.phone2"
+                    >
+                      <BaseInput
+                        label="Numéro de téléphone 2"
+                        icon="ph:phone-duotone"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
                   <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
@@ -709,23 +730,21 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                  <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="org.status"
+                      name="org.footerTitle"
                     >
-                      <BaseSelect
-                        label="Statut *"
-                        icon="ph:funnel"
+                      <BaseInput
+                        label="Titre du pied de page"
+                        icon="ph:file-duotone"
+                        placeholder=""
                         :model-value="field.value"
                         :error="errorMessage"
                         :disabled="isSubmitting"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
-                      >
-                        <option value="active">Actif</option>
-                        <option value="inactive">Inactif</option>
-                      </BaseSelect>
+                      />
                     </Field>
                   </div>
                 </div>

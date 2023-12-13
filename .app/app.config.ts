@@ -146,15 +146,89 @@ export default defineAppConfig({
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Raports campagnes',
+                name: 'Suivi campagnes',
                 to: '/bo/sales/reports',
                 icon: { name: 'lucide:file', class: 'w-4 h-4' },
+              },
+            ],
+          },
+
+          {
+            name: 'Emission',
+            icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
+            activePath: '/bo/estimations',
+            children: [
+              {
+                name: 'Tableau de bord',
+                to: '/bo/estimations',
+                icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Conducteur',
+                to: '/bo/estimations/operations',
+                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Nos Emmisions',
+                to: '/bo/estimations/operations',
+                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Horaires',
+                to: '/bo/estimations/operations',
+                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
+              },
+            ],
+          },
+          {
+            name: 'Recouvrement',
+            icon: { name: 'ph:chat-duotone', class: 'w-5 h-5' },
+            isAdmin: true,
+            activePath: '/bo/sav',
+            children: [
+              {
+                name: 'Tableau de bord',
+                to: '/bo/pub',
+                icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Impayés',
+                to: '/bo/recovery/invoices',
+                icon: { name: 'ph:chat-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Procedures',
+                to: '/bo/recovery/procedures',
+                icon: { name: 'ph:chat-duotone', class: 'w-4 h-4' },
               },
             ],
           },
           {
             name: 'Comptabilité',
             icon: { name: 'ph:money-duotone', class: 'w-5 h-5' },
+            isAdmin: true,
+            activePath: '/bo/sav',
+            children: [
+              {
+                name: 'Tableau de bord',
+                to: '/bo/pub',
+                icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Pièces comptables',
+                to: '/bo/pub/reports',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Rapports',
+                to: '/bo/pub/reports',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+            ],
+          },
+          {
+            name: 'Configuration',
+            icon: { name: 'lucide:settings', class: 'w-5 h-5' },
             activePath: '/bo/accountancy',
             children: [
               {
@@ -163,7 +237,7 @@ export default defineAppConfig({
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Comptes',
+                name: 'Plan comptable',
                 to: '/bo/accountancy/accounts',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
@@ -176,58 +250,6 @@ export default defineAppConfig({
                 name: 'Conditions de paiement',
                 to: '/bo/accountancy/payment-conditions',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
-              },
-            ],
-          },
-
-          // {
-          //   name: 'Emissions',
-          //   icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
-          //   activePath: '/bo/estimations',
-          //   children: [
-          //     {
-          //       name: 'Tableau de bord',
-          //       to: '/bo/estimations',
-          //       icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
-          //     },
-          //     {
-          //       name: 'Liste de diffusion',
-          //       to: '/bo/estimations/operations',
-          //       icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
-          //     },
-          //     {
-          //       name: 'Planing de diffusion',
-          //       to: '/bo/estimations/operations',
-          //       icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
-          //     },
-          //     {
-          //       name: 'Horaires',
-          //       to: '/bo/estimations/operations',
-          //       icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
-          //     },
-          //   ],
-          // },
-
-          {
-            name: 'Messagerie',
-            icon: { name: 'ph:chat-duotone', class: 'w-5 h-5' },
-            isAdmin: true,
-            activePath: '/bo/sav',
-            children: [
-              {
-                name: 'Tableau de bord',
-                to: '/bo/pub',
-                icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Rappels',
-                to: '/bo/pub/reports',
-                icon: { name: 'ph:chat-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Conversations',
-                to: '/bo/pub/reports',
-                icon: { name: 'ph:chat-duotone', class: 'w-4 h-4' },
               },
             ],
           },

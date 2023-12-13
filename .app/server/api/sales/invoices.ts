@@ -19,6 +19,13 @@ export default defineEventHandler(async (event) => {
       metaData: response.metaData,
       data: filterData(response.data, filter, page, perPage),
     }
+  } else if (action == 'findAllUnpaid') {
+    const response = await findAll(token)
+    return {
+      total: response.metaData.totalItems,
+      metaData: response.metaData,
+      data: filterData(response.data, filter, page, perPage),
+    }
   } else if (action == 'createInvoice') {
     const body = await readBody(event)
     console.log(body)

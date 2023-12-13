@@ -4,6 +4,7 @@ import { Field, useForm } from 'vee-validate'
 import { DatePicker } from 'v-calendar'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
+import moment from 'moment'
 
 definePageMeta({
   title: 'Devis & Factures',
@@ -136,6 +137,15 @@ const { data: paymentConditions } = await useFetch(
 
 const { data: allUsers } = await useFetch('/api/users', {
   query,
+})
+
+const transformedAnnouncers = announcers.value?.data.map((e: any) => {
+  const invoice = {
+    id: e._id,
+    name: e.name,
+    text: e.phone,
+  }
+  return invoice
 })
 
 const commercials = allUsers.value?.data.filter((e: any) => {
@@ -323,6 +333,19 @@ const isAllVisibleSelected = computed(() => {
   return selected.value.length === data.value?.data.length
 })
 
+function filterItems(query?: string, items?: any[]) {
+  if (!query || !items) {
+    return items ?? []
+  }
+
+  // search by name or text
+  return items.filter((item) => {
+    const nameMatches = item?.name?.toLowerCase().includes(query.toLowerCase())
+    const textMatches = item?.text?.toLowerCase().includes(query.toLowerCase())
+    return nameMatches || textMatches
+  })
+}
+
 function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
     selected.value = []
@@ -372,19 +395,16 @@ const zodSchema = z
         .object({
           _id: z.string(),
           label: z.string(),
+          delay: z.number(),
           description: z.string(),
         })
         .optional()
         .nullable(),
-      announcer: z
-        .object({
-          _id: z.string(),
-          email: z.string(),
-          name: z.string(),
-          photo: z.string().optional(),
-        })
-        .optional()
-        .nullable(),
+      announcer: z.object({
+        id: z.string(),
+        name: z.string(),
+        email: z.string().optional(),
+      }),
       commercial: z
         .object({
           _id: z.string(),
@@ -420,10 +440,9 @@ const initialValues = computed<FormInput>(() => ({
     team: 'Douala',
     status: 'onHold',
     announcer: {
-      _id: '',
+      id: '',
       email: '',
       name: '',
-      flag: '',
     },
     commercial: {
       _id: authStore.user._id ?? '',
@@ -452,10 +471,16 @@ const {
 const success = ref(false)
 
 function editOrderInvoiceFile(currentOrderInvoice: any) {
+  dates.value.start = new Date(currentOrderInvoice.date)
+  dates.value.end = new Date(currentOrderInvoice.date)
   setTimeout(() => {
     setFieldValue('order._id', currentOrderInvoice._id)
     setFieldValue('order.label', currentOrderInvoice.label)
-    setFieldValue('order.announcer', currentOrderInvoice.announcer)
+    setFieldValue('order.announcer', {
+      id: currentOrderInvoice.announcer._id,
+      name: currentOrderInvoice.announcer.name,
+      text: currentOrderInvoice.announcer.phone,
+    })
     setFieldValue('order.commercial', currentOrderInvoice.manager)
     setFieldValue('order.status', currentOrderInvoice.status)
     setFieldValue('order.paymentMethod', currentOrderInvoice.paymentMethod)
@@ -597,6 +622,18 @@ async function confirmOrder() {
 
 function addOrderItem() {
   orderData.value.push({ ...curOrderItem.value, id: orderData.value.length })
+  curOrderItem.value = {
+    id: 0,
+    article: '',
+    description: '',
+    account: '',
+    quantity: 0,
+    unit: 'unité(s)',
+    rate: 0,
+    discount: 0,
+    taxes: [],
+    amount: 0,
+  }
 }
 
 function deleteOrderItem(id: number) {
@@ -605,8 +642,18 @@ function deleteOrderItem(id: number) {
   })
 }
 
-const orderData = ref([])
+function editOrderItem(item: any) {
+  curOrderItem.value = { ...item }
+  isEditOrderItem.value = true
+}
 
+function updateOrderItem(item: any) {
+  orderData.value[item.id] = item
+  isEditOrderItem.value = false
+}
+
+const orderData = ref([])
+const isEditOrderItem = ref(false)
 const curOrderItem = ref({
   id: 0,
   article: '',
@@ -671,15 +718,15 @@ const totalData = computed(() => {
 
   return [
     {
-      label: '+ Total Brut',
+      label: 'Total Brut',
       value: subtotal,
     },
     {
-      label: '- Remise',
+      label: 'Remise',
       value: Math.ceil(discount),
     },
     {
-      label: '+ Taxes',
+      label: 'Taxes',
       value: Math.ceil(vatValue),
     },
     {
@@ -760,11 +807,16 @@ const onSubmit = handleSubmit(
               ...values.order,
               paymentMethod: values.order?.paymentMethod?._id,
               paymentCondition: values.order?.paymentCondition?._id,
-              announcer: values.order?.announcer?._id,
+              announcer: values.order?.announcer?.id,
               manager: values.order?.commercial?._id,
               org: currentOrg.value,
               contractUrl,
               items: orderData.value,
+              date: dates.value?.start ?? new Date(),
+              dueDate: moment(dates.value?.start ?? new Date()).add(
+                values.order?.paymentCondition?.delay ?? 0,
+                'days',
+              ),
               amount:
                 totalData.value.length > 0
                   ? totalData.value[totalData.value.length - 1].value
@@ -789,12 +841,17 @@ const onSubmit = handleSubmit(
               ...values.order,
               paymentMethod: values.order?.paymentMethod?._id,
               paymentCondition: values.order?.paymentCondition?._id,
-              announcer: values.order?.announcer?._id,
+              announcer: values.order?.announcer?.id,
               manager: values.order?.commercial?._id,
               org: currentOrg.value,
               _id: undefined,
               contractUrl,
               items: orderData.value,
+              date: dates.value?.start ?? new Date(),
+              dueDate: moment(dates.value?.start ?? new Date()).add(
+                values.order?.paymentCondition?.delay ?? 0,
+                'days',
+              ),
               amount:
                 totalData.value.length > 0
                   ? totalData.value[totalData.value.length - 1].value
@@ -823,12 +880,17 @@ const onSubmit = handleSubmit(
               ...values.order,
               paymentMethod: values.order?.paymentMethod?._id,
               paymentCondition: values.order?.paymentCondition?._id,
-              announcer: values.order?.announcer?._id,
+              announcer: values.order?.announcer?.id,
               manager: values.order?.commercial?._id,
               order: selectedOrder.value?._id ?? undefined,
               org: currentOrg.value,
               items: orderData.value,
               paid: totalPaid,
+              date: dates.value?.start ?? new Date(),
+              dueDate: moment(dates.value?.start ?? new Date()).add(
+                values.order?.paymentCondition?.delay ?? 0,
+                'days',
+              ),
               amount:
                 totalData.value.length > 0
                   ? totalData.value[totalData.value.length - 1].value
@@ -853,13 +915,18 @@ const onSubmit = handleSubmit(
               ...values.order,
               paymentMethod: values.order?.paymentMethod?._id,
               paymentCondition: values.order?.paymentCondition?._id,
-              announcer: values.order?.announcer?._id,
+              announcer: values.order?.announcer?.id,
               manager: values.order?.commercial?._id,
               _id: undefined,
               order: selectedOrder.value?._id ?? undefined,
               org: currentOrg.value,
               items: orderData.value,
               paid: totalPaid,
+              date: dates.value?.start ?? new Date(),
+              dueDate: moment(dates.value?.start ?? new Date()).add(
+                values.order?.paymentCondition?.delay ?? 0,
+                'days',
+              ),
               amount:
                 totalData.value.length > 0
                   ? totalData.value[totalData.value.length - 1].value
@@ -1079,7 +1146,13 @@ const onSubmit = handleSubmit(
             </div>
           </div>
           <div id="print-invoice">
-            <BaseCard>
+            <div
+              :class="
+                isPrint == false
+                  ? 'bg-muted-50 dark:bg-muted-800/60 rounded'
+                  : ''
+              "
+            >
               <div class="overflow-hidden font-sans">
                 <div
                   v-if="isPrint"
@@ -1260,14 +1333,20 @@ const onSubmit = handleSubmit(
                       <p class="text-xs">
                         {{
                           new Date(
-                            currentOrderInvoice?.createdAt,
+                            currentOrderInvoice?.date,
                           ).toLocaleDateString('fr-FR')
                         }}
                       </p>
                       <p class="mt-2 text-xs">
-                        {{ currentOrderInvoice?.label }}
+                        {{ currentOrderInvoice?.paymentCondition?.label }}
                       </p>
-                      <p class="mt-2 text-xs">29/11/2023</p>
+                      <p class="mt-2 text-xs">
+                        {{
+                          new Date(
+                            currentOrderInvoice?.dueDate,
+                          ).toLocaleDateString('fr-FR')
+                        }}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1309,21 +1388,31 @@ const onSubmit = handleSubmit(
                             }"
                             name="order.announcer"
                           >
-                            <BaseListbox
-                              label="Annonceur"
-                              :items="announcers?.data"
-                              :properties="{
-                                value: '_id',
-                                label: 'name',
-                                sublabel: 'email',
-                                media: 'flag',
-                              }"
+                            <BaseAutocomplete
                               :model-value="field.value"
                               :error="errorMessage"
                               :disabled="isSubmitting"
                               @update:model-value="handleChange"
                               @blur="handleBlur"
-                            />
+                              :items="transformedAnnouncers"
+                              :display-value="(item: any) => item.name || ''"
+                              :filter-items="filterItems"
+                              icon="lucide:user"
+                              placeholder="e.g. Canal2 International"
+                              label="Annonceur"
+                              clearable
+                            >
+                              <template #empty="value">
+                                <!-- Use destruct to keep what you need -->
+                                Aucun resultat. Veuillez
+                                <NuxtLink
+                                  class="text-primary-500 hover:underline"
+                                  to="/bo/sales/announcers"
+                                >
+                                  créer un nouvel annonceur </NuxtLink
+                                >.
+                              </template>
+                            </BaseAutocomplete>
                           </Field>
                         </div>
                         <div class="col-span-12 md:col-span-6">
@@ -1433,6 +1522,53 @@ const onSubmit = handleSubmit(
                           </Field>
                         </div>
                         <div
+                          class="ltablet:col-span-12 col-span-12 lg:col-span-6"
+                        >
+                          <DatePicker
+                            v-model.range="dates"
+                            :masks="masks"
+                            mode="date"
+                            hide-time-header
+                            trim-weeks
+                          >
+                            <template #default="{ inputValue, inputEvents }">
+                              <div
+                                class="flex w-full flex-col gap-4 sm:flex-row"
+                              >
+                                <div class="relative grow">
+                                  <Field
+                                    v-slot="{
+                                      field,
+                                      errorMessage,
+                                      handleChange,
+                                      handleBlur,
+                                    }"
+                                    name="order.date"
+                                  >
+                                    <BaseInput
+                                      shape="rounded"
+                                      label="Date opération"
+                                      icon="ph:calendar-blank-duotone"
+                                      :value="inputValue.start"
+                                      v-on="inputEvents.start"
+                                      :classes="{
+                                        input: '!h-11 !ps-11',
+                                        icon: '!h-11 !w-11',
+                                      }"
+                                      :v-model="dates.start"
+                                      :error="errorMessage"
+                                      :disabled="isSubmitting"
+                                      type="text"
+                                      @update:model-value="handleChange"
+                                      @blur="handleBlur"
+                                    />
+                                  </Field>
+                                </div>
+                              </div>
+                            </template>
+                          </DatePicker>
+                        </div>
+                        <div
                           class="ltablet:col-span-6 col-span-12 lg:col-span-6"
                         >
                           <Field
@@ -1497,13 +1633,14 @@ const onSubmit = handleSubmit(
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-3.5 pe-3 ps-4 text-left text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-3.5 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
                           >
                             #
                           </th>
                           <th
+                            v-if="!isPrint"
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-3.5 pe-3 ps-4 text-left text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-3.5 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
                           >
                             Article
                           </th>
@@ -1542,7 +1679,7 @@ const onSubmit = handleSubmit(
                             scope="col"
                             class="text-muted-800 dark:text-muted-400 px-3 py-3.5 text-right text-xs font-medium uppercase sm:table-cell"
                           >
-                            Remise(%)
+                            Remise
                           </th>
                           <th
                             scope="col"
@@ -1569,9 +1706,21 @@ const onSubmit = handleSubmit(
                             class="py-4 pe-3 ps-4 text-sm sm:ps-6 md:ps-0"
                           >
                             <div
-                              class="text-muted-800 dark:text-muted-100 font-medium"
+                              class="flex text-muted-800 dark:text-muted-100 font-medium"
                             >
-                              <BaseButtonAction @click="deleteOrderItem(i)">
+                              <BaseButtonAction
+                                class="!p-2"
+                                @click="editOrderItem(item)"
+                              >
+                                <Icon
+                                  name="lucide:edit"
+                                  class="h-4 w-4 text-info-500"
+                                />
+                              </BaseButtonAction>
+                              <BaseButtonAction
+                                class="!p-2 mx-2"
+                                @click="deleteOrderItem(i)"
+                              >
                                 <Icon
                                   name="lucide:trash"
                                   class="h-4 w-4 text-red-500"
@@ -1585,14 +1734,11 @@ const onSubmit = handleSubmit(
                             {{ item.id + 1 }}
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-left text-xs sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 !w-40 px-3 py-4 text-left text-xs sm:table-cell"
                           >
-                            {{ item.article.code }}
-                          </td>
-                          <td
-                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-left text-xs sm:table-cell"
-                          >
-                            {{ item.description }}
+                            <p class="w-40 break-words">
+                              {{ item.description }}
+                            </p>
                           </td>
                           <td
                             v-if="!isPrint"
@@ -1616,7 +1762,7 @@ const onSubmit = handleSubmit(
                             {{ item.rate }}
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-center text-xs sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-2 py-4 text-center text-xs sm:table-cell"
                           >
                             {{ item.discount }} %
                           </td>
@@ -1651,7 +1797,17 @@ const onSubmit = handleSubmit(
                             <div
                               class="text-muted-800 dark:text-muted-100 font-medium"
                             >
-                              <BaseButtonAction @click="addOrderItem()">
+                              <BaseButtonAction
+                                v-if="isEditOrderItem == true"
+                                @click="updateOrderItem(curOrderItem)"
+                              >
+                                <Icon name="lucide:save" class="h-4 w-4" />
+                              </BaseButtonAction>
+
+                              <BaseButtonAction
+                                v-if="isEditOrderItem == false"
+                                @click="addOrderItem()"
+                              >
                                 <Icon name="lucide:plus" class="h-4 w-4" />
                               </BaseButtonAction>
                             </div>
@@ -1660,7 +1816,11 @@ const onSubmit = handleSubmit(
                             <div
                               class="text-muted-800 dark:text-muted-100 font-medium"
                             >
-                              {{ orderData.length + 1 }}
+                              {{
+                                isEditOrderItem
+                                  ? curOrderItem.id + 1
+                                  : orderData.length + 1
+                              }}
                             </div>
                           </td>
                           <td class="py-4 pe-3 ps-4 text-sm sm:ps-6 md:ps-0">
@@ -1832,17 +1992,17 @@ const onSubmit = handleSubmit(
                           <th
                             scope="row"
                             colspan="7"
-                            class="text-muted-800 dark:text-muted-400 hidden pe-3 ps-6 pt-2 text-right text-xs font-light sm:table-cell md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 pe-3 ps-6 pt-2 text-right text-xs font-light"
                           >
                             {{ item.label }}
                           </th>
                           <td
                             scope="row"
                             colspan="3"
-                            class="pe-4 ps-3 pt-2 text-right sm:pe-6 md:pe-0 !w-64"
+                            class="pe-4 ps-3 pt-2 text-right sm:pe-6"
                             :class="
                               item.label === 'Net à payer'
-                                ? 'text-xs text-primary-800 dark:text-primary-500'
+                                ? 'text-xs text-primary-800 border-muted-200 dark:border-muted-700  dark:text-primary-500'
                                 : 'text-xs text-muted-800 dark:text-muted-200/70'
                             "
                           >
@@ -1914,6 +2074,12 @@ const onSubmit = handleSubmit(
                             scope="col"
                             class="text-muted-800 dark:text-muted-400 py-3.5 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
                           >
+                            Moyen
+                          </th>
+                          <th
+                            scope="col"
+                            class="text-muted-800 dark:text-muted-400 py-3.5 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                          >
                             Reference
                           </th>
                         </tr>
@@ -1926,7 +2092,7 @@ const onSubmit = handleSubmit(
                         >
                           <td
                             v-if="!isPrint"
-                            class="py-4 pe-3 ps-4 text-center text-sm sm:ps-6 md:ps-0"
+                            class="py-2 pe-3 ps-4 text-center text-sm sm:ps-6 md:ps-0"
                           >
                             <div
                               class="text-muted-800 dark:text-muted-100 font-medium"
@@ -1943,12 +2109,12 @@ const onSubmit = handleSubmit(
                             </div>
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-center text-xs sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-xs sm:table-cell"
                           >
                             {{ i + 1 }}
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-center text-xs sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-xs sm:table-cell"
                           >
                             {{
                               new Date(item.createdAt).toLocaleDateString(
@@ -1957,7 +2123,7 @@ const onSubmit = handleSubmit(
                             }}
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-center text-xs sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-xs sm:table-cell"
                           >
                             {{
                               new Intl.NumberFormat('fr-FR').format(item.amount)
@@ -1965,7 +2131,12 @@ const onSubmit = handleSubmit(
                             XAF
                           </td>
                           <td
-                            class="px-3 py-4 text-center text-xs sm:table-cell"
+                            class="px-3 py-2 text-center text-xs sm:table-cell"
+                          >
+                            {{ item.paymentAccount?.label ?? '-' }}
+                          </td>
+                          <td
+                            class="px-3 py-2 text-center text-xs sm:table-cell"
                           >
                             {{ item.code ?? '-' }}
                           </td>
@@ -1975,7 +2146,7 @@ const onSubmit = handleSubmit(
                   </div>
                 </div>
 
-                <div class="p-2">
+                <div v-if="isPrint" class="p-2">
                   <BaseParagraph class="!py-2 dark:text-muted-400" size="xs">
                     Montant en lettre :
                   </BaseParagraph>
@@ -2001,21 +2172,36 @@ const onSubmit = handleSubmit(
                     </BaseParagraph>
                   </div>
                 </div>
-
-                <div
-                  class="dark:text-muted-400 border-primary-500 text-center dark:border-primary-700 border-b"
+                <footer
+                  v-if="isPrint"
+                  class="flex items-end justif-center w-full"
                 >
-                  <BaseParagraph size="xs">
-                    Toute l'équipe de Canal2 internationa vous remercie
-                  </BaseParagraph>
-                </div>
-                <div class="dark:text-muted-400 text-center">
-                  <BaseParagraph size="xs">
-                    Contact 645454545 / 545454545; Douala Youpwe
-                  </BaseParagraph>
-                </div>
+                  <div class="w-full">
+                    <div
+                      class="dark:text-muted-400 border-primary-500 text-center dark:border-primary-700 border-b-2"
+                    >
+                      <BaseParagraph size="xs">
+                        {{ currentOrderInvoice?.org?.footerTitle }}
+                      </BaseParagraph>
+                    </div>
+                    <div class="dark:text-muted-400 py-1 text-center">
+                      <BaseParagraph size="xs">
+                        Contact : {{ currentOrderInvoice?.org?.phone }}
+                        {{
+                          currentOrderInvoice?.org?.phone2
+                            ? '/ ' + currentOrderInvoice?.org?.phone2
+                            : ''
+                        }}; {{ currentOrderInvoice?.org?.address }}
+                      </BaseParagraph>
+                      <BaseParagraph size="xs">
+                        RC : {{ currentOrderInvoice?.org?.rc }}; NC :
+                        {{ currentOrderInvoice?.org?.nc }}
+                      </BaseParagraph>
+                    </div>
+                  </div>
+                </footer>
               </div>
-            </BaseCard>
+            </div>
           </div>
         </div>
       </form>

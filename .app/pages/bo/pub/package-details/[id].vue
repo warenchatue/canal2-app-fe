@@ -787,7 +787,7 @@ const onSubmit = handleSubmit(
             <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
               <Icon name="ph:globe" class="h-5 w-5" />
               <BaseText size="sm"
-                >Email: {{ data?.data?.announcer.email }}</BaseText
+                >Email: {{ data?.data?.announcer?.email }}</BaseText
               >
             </div>
 
@@ -804,7 +804,7 @@ const onSubmit = handleSubmit(
             <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
               <Icon name="ph:phone" class="h-5 w-5" />
               <BaseText size="sm">{{
-                data?.data?.order.announcer.phone
+                data?.data?.order?.announcer?.phone
               }}</BaseText>
             </div>
           </div>

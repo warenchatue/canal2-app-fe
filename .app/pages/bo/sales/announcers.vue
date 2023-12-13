@@ -110,8 +110,8 @@ const zodSchema = z
       email: z.string(),
       rc: z.string(),
       nc: z.string(),
-      status: z.union([z.literal('active'), z.literal('trashed')]).optional(),
       phone: z.string(),
+      city: z.string().optional(),
       country: z
         .object({
           _id: z.string(),
@@ -124,11 +124,11 @@ const zodSchema = z
     }),
   })
   .superRefine((data, ctx) => {
-    if (!data.announcer.country) {
+    if (!data.announcer.name) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: VALIDATION_TEXT.PHONE_REQUIRED,
-        path: ['announcer.country'],
+        message: VALIDATION_TEXT.NAME_REQUIRED,
+        path: ['announcer.name'],
       })
     }
   })
@@ -181,6 +181,7 @@ function editAnnouncer(announcer: any) {
   setFieldValue('announcer.email', announcer.email)
   setFieldValue('announcer.phone', announcer.phone)
   setFieldValue('announcer.country', announcer.country)
+  setFieldValue('announcer.city', announcer.city)
   setFieldValue('announcer.rc', announcer.rc)
   setFieldValue('announcer.nc', announcer.nc)
   setFieldValue('announcer.status', announcer.status)
@@ -421,6 +422,8 @@ const onSubmit = handleSubmit(
                     />
                   </div>
                 </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Code </TairoTableHeading>
+
                 <TairoTableHeading uppercase spaced>
                   Annonceur
                 </TairoTableHeading>
@@ -457,6 +460,13 @@ const onSubmit = handleSubmit(
                       shape="rounded"
                       class="text-primary-500"
                     />
+                  </div>
+                </TairoTableCell>
+                <TairoTableCell spaced>
+                  <div class="flex items-center">
+                    <span class="text-muted-400 font-sans text-xs">
+                      {{ item.code }}
+                    </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
@@ -500,9 +510,9 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex">
-                    <BaseButtonAction to="/bo/spots/orders" muted
+                    <!-- <BaseButtonAction to="/bo/spots/orders" muted
                       >commandes</BaseButtonAction
-                    >
+                    > -->
                     <BaseButtonAction
                       class="mx-2"
                       @click.prevent="selectAnnouncer(item)"
@@ -689,23 +699,21 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="announcer.status"
+                      name="announcer.city"
                     >
-                      <BaseSelect
-                        label="Statut *"
-                        icon="ph:funnel"
+                      <BaseInput
+                        label="Ville"
+                        icon="ph:file-duotone"
+                        placeholder=""
                         :model-value="field.value"
                         :error="errorMessage"
                         :disabled="isSubmitting"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
-                      >
-                        <option value="active">Actif</option>
-                        <option value="trashed">Inactif</option>
-                      </BaseSelect>
+                      />
                     </Field>
                   </div>
                 </div>
