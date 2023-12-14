@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
-import { Field, useFieldError, useForm } from 'vee-validate'
-import { DatePicker } from 'v-calendar'
+import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Rapports',
+  title: 'Règlements',
   preview: {
-    title: 'Rapports',
-    description: 'Contribution and withdrawal',
-    categories: ['bo', 'spots', 'packages'],
+    title: 'Règlements',
+    description: 'Règlements factures',
+    categories: ['bo', 'spots', 'orders'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -25,13 +24,15 @@ const filter = ref('')
 const perPage = ref(10)
 const isModalNewPackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
+const isModalConfirmOrderOpen = ref(false)
 const isEdit = ref(false)
-
 const toaster = useToaster()
 // Check if can have access
 if (
-  authStore.user.appRole.name != UserRole.sale &&
-  authStore.user.appRole.name != UserRole.superAdmin
+  authStore.user.appRole?.name != UserRole.billing &&
+  authStore.user.appRole?.name != UserRole.admin &&
+  authStore.user.appRole?.name != UserRole.accountancy &&
+  authStore.user.appRole?.name != UserRole.superAdmin
 ) {
   toaster.clearAll()
   toaster.show({
@@ -43,19 +44,6 @@ if (
   })
   router.back()
 }
-
-const orderContracts = ref<FileList | null>()
-const orderInvoices = ref<FileList | null>()
-
-watch(orderContracts, (value) => {
-  console.log('orderContracts')
-  console.log(orderContracts.value)
-})
-
-watch(orderInvoices, (value) => {
-  console.log('orderInvoices')
-  console.log(orderInvoices.value)
-})
 
 watch([filter, perPage], () => {
   router.push({
@@ -71,45 +59,59 @@ const query = computed(() => {
     filter: filter.value,
     perPage: perPage.value,
     page: page.value,
-    action: 'findAllReport',
+    action: 'findAll',
     token: token.value,
   }
 })
 
-const dates = ref({
-  start: new Date(),
-  end: new Date(),
-})
-
-const { data, pending, error, refresh } = await useFetch('/api/pub/packages', {
+const { data, pending } = await useFetch('/api/transactions', {
   query,
 })
 
+const { data: announcers } = await useFetch('/api/sales/announcers', {
+  query,
+})
+
+const { data: allUsers } = await useFetch('/api/users', {
+  query,
+})
+const commercials = allUsers.value?.data.filter((e: any) => {
+  return e.appRole?.name == UserRole.sale
+})
 function editPackage(spotPackage: any) {
   isModalNewPackageOpen.value = true
   isEdit.value = true
+  currentPackage.value = spotPackage
   setFieldValue('spotPackage._id', spotPackage._id)
   setFieldValue('spotPackage.label', spotPackage.label)
   setFieldValue('spotPackage.announcer', spotPackage.announcer)
+  setFieldValue('spotPackage.commercial', spotPackage.manager)
   setFieldValue('spotPackage.status', spotPackage.status)
+  setFieldValue('spotPackage.invoice.amount', spotPackage.invoice.amount)
+  setFieldValue('spotPackage.invoice.label', spotPackage.invoice.label)
+  setFieldValue('spotPackage.invoice.pending', spotPackage.invoice.pending)
+  setFieldValue(
+    'spotPackage.invoice.totalSpotsPaid',
+    spotPackage.invoice.totalSpotsPaid,
+  )
 }
 
-function confirmDeletePackage(spotPackage: any) {
+function confirmDeletePackage(invoice: any) {
   isModalDeletePackageOpen.value = true
   isEdit.value = false
-  currentPackage.value = spotPackage
+  currentPackage.value = invoice
 }
 
-async function deletePackage(spotPackage: any) {
+async function deletePackage(invoice: any) {
   const query2 = computed(() => {
     return {
       action: 'delete',
       token: token.value,
-      id: spotPackage._id,
+      id: invoice._id,
     }
   })
 
-  const response = await useFetch('/api/pub/packages', {
+  const response = await useFetch('/api/sales/invoices', {
     method: 'delete',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
@@ -120,13 +122,13 @@ async function deletePackage(spotPackage: any) {
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Package supprimé !`,
+      message: `Facture supprimée !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
     })
     isModalDeletePackageOpen.value = false
-    filter.value = 'spotPackage'
+    filter.value = 'invoice'
     filter.value = ''
   } else {
     toaster.clearAll()
@@ -171,7 +173,6 @@ const zodSchema = z
     spotPackage: z.object({
       _id: z.string().optional(),
       label: z.string().min(1, VALIDATION_TEXT.LABEL_REQUIRED),
-      totalAmount: z.number(),
       status: z
         .union([
           z.literal('onHold'),
@@ -181,12 +182,31 @@ const zodSchema = z
         ])
         .optional(),
       period: z.string(),
+      invoice: z
+        .object({
+          label: z.string(),
+          amount: z.number(),
+          pending: z.number(),
+          totalSpotsPaid: z.number(),
+          url: z.string(),
+        })
+        .optional()
+        .nullable(),
       announcer: z
         .object({
           _id: z.string(),
           email: z.string(),
           name: z.string(),
-          flag: z.string().optional(),
+          photo: z.string().optional(),
+        })
+        .optional()
+        .nullable(),
+      commercial: z
+        .object({
+          _id: z.string(),
+          email: z.string(),
+          lastName: z.string(),
+          photo: z.string().optional(),
         })
         .optional()
         .nullable(),
@@ -211,14 +231,26 @@ const initialValues = computed<FormInput>(() => ({
   avatar: null,
   spotPackage: {
     label: '',
-    totalAmount: 0,
     period: '',
     status: 'onHold',
+    invoice: {
+      label: '',
+      amount: 0,
+      pending: 0,
+      totalSpotsPaid: 0,
+      url: '',
+    },
     announcer: {
       _id: '',
       email: '',
       name: '',
       flag: '',
+    },
+    commercial: {
+      _id: authStore.user._id ?? '',
+      email: authStore.user.email ?? '',
+      lastName: authStore.user.firstName + ' ' + authStore.user.lastName,
+      photo: '',
     },
   },
 }))
@@ -240,6 +272,54 @@ const {
 
 const success = ref(false)
 
+async function confirmOrder() {
+  const query4 = computed(() => {
+    return {
+      action: 'updatePackage',
+      token: token.value,
+      id: currentPackage.value._id,
+    }
+  })
+  if (authStore.user?.appRole?.tag == UserRole.respSaleTag) {
+    currentPackage.value.orderValidator = authStore.user._id
+  } else if (authStore.user.appRole?.tag == UserRole.respBillingTag) {
+    currentPackage.value.billValidator = authStore.user._id
+  } else if (authStore.user.appRole?.name == UserRole.admin) {
+    currentPackage.value.adminValidator = authStore.user._id
+  }
+
+  const response = await useFetch('/api/pub/packages', {
+    method: 'put',
+    headers: { 'Content-Type': 'application/json' },
+    query: query4,
+    body: { ...currentPackage.value },
+  })
+
+  if (response.data?.value?.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Commande confirmée !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalConfirmOrderOpen.value = false
+    filter.value = 'order'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Oops',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+}
+
 // This is where you would send the form data to the server
 const onSubmit = handleSubmit(
   async (values) => {
@@ -247,9 +327,84 @@ const onSubmit = handleSubmit(
 
     // here you have access to the validated form values
     console.log('package-create-success', values)
+    const contractUrl =
+      isEdit.value == true ? ref(currentPackage.contractUrl ?? '') : ref('')
+    const invoiceUrl =
+      isEdit.value == true ? ref(currentPackage.invoice?.url ?? '') : ref('')
 
     try {
       const isSuccess = ref(false)
+
+      // upload contract file
+      if (orderContractFile.value != null) {
+        const fd = new FormData()
+        fd.append('0', orderContractFile.value)
+        const query3 = computed(() => {
+          return {
+            action: 'new-single-file',
+            dir: 'uploads/ordersFiles/contracts',
+            token: token.value,
+          }
+        })
+
+        const { data: uploadData, refresh } = await useFetch(
+          '/api/files/upload',
+          {
+            method: 'POST',
+            query: query3,
+            body: fd,
+          },
+        )
+        console.log(uploadData)
+        if (uploadData.value?.success == false) {
+          contractUrl.value = ''
+          toaster.show({
+            title: 'Oops',
+            message: `Une erreur est survenue lors de l'importation de des fichiers !`,
+            color: 'danger',
+            icon: 'ph:check',
+            closable: true,
+          })
+        } else {
+          contractUrl.value = uploadData.value.fileName
+        }
+      }
+
+      // upload invoice file
+      if (orderInvoiceFile.value != null) {
+        const fd = new FormData()
+        fd.append('0', orderInvoiceFile.value)
+        const query3 = computed(() => {
+          return {
+            action: 'new-single-file',
+            dir: 'uploads/ordersFiles/invoices',
+            token: token.value,
+          }
+        })
+
+        const { data: uploadData, refresh } = await useFetch(
+          '/api/files/upload',
+          {
+            method: 'POST',
+            query: query3,
+            body: fd,
+          },
+        )
+        console.log(uploadData)
+        if (uploadData.value?.success == false) {
+          invoiceUrl.value = ''
+          toaster.show({
+            title: 'Oops',
+            message: `Une erreur est survenue lors de l'importation de des fichiers !`,
+            color: 'danger',
+            icon: 'ph:check',
+            closable: true,
+          })
+        } else {
+          invoiceUrl.value = uploadData.value.fileName
+        }
+      }
+
       if (isEdit.value == true) {
         const query2 = computed(() => {
           return {
@@ -266,6 +421,9 @@ const onSubmit = handleSubmit(
           body: {
             ...values.spotPackage,
             announcer: values.spotPackage?.announcer?._id,
+            manager: values.spotPackage?.commercial?._id,
+            invoice: { ...values.spotPackage?.invoice, url: invoiceUrl.value },
+            contractUrl,
           },
         })
         isSuccess.value = response.data.value?.success
@@ -284,7 +442,10 @@ const onSubmit = handleSubmit(
           body: {
             ...values.spotPackage,
             announcer: values.spotPackage?.announcer?._id,
+            manager: values.spotPackage?.commercial?._id,
             _id: undefined,
+            invoice: { ...values.spotPackage?.invoice, url: invoiceUrl.value },
+            contractUrl,
           },
         })
         isSuccess.value = response.data.value?.success
@@ -353,73 +514,10 @@ const onSubmit = handleSubmit(
   <div>
     <TairoContentWrapper>
       <template #left>
-        <div class="col-span-12 mx-2 -mt-6">
-          <DatePicker
-            v-model.range="dates"
-            :masks="masks"
-            mode="date"
-            hide-time-header
-            trim-weeks
-          >
-            <template #default="{ inputValue, inputEvents }">
-              <div class="flex w-full flex-col gap-4 sm:flex-row">
-                <div class="relative grow">
-                  <Field
-                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                    name="event.startDateTime"
-                  >
-                    <BaseInput
-                      shape="curved"
-                      label="Date debut"
-                      icon="ph:calendar-blank-duotone"
-                      :value="inputValue.start"
-                      v-on="inputEvents.start"
-                      :classes="{
-                        input: '!h-11 !ps-11',
-                        icon: '!h-11 !w-11',
-                      }"
-                      :model-value="field.value"
-                      :error="errorMessage"
-                      :disabled="isSubmitting"
-                      type="text"
-                      @update:model-value="handleChange"
-                      @blur="handleBlur"
-                    />
-                  </Field>
-                </div>
-                <div class="relative grow">
-                  <Field
-                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                    name="event.endDateTime"
-                  >
-                    <BaseInput
-                      shape="curved"
-                      label="Date fin"
-                      icon="ph:calendar-blank-duotone"
-                      :value="inputValue.end"
-                      v-on="inputEvents.end"
-                      :classes="{
-                        input: '!h-11 !ps-11',
-                        icon: '!h-11 !w-11',
-                      }"
-                      :model-value="field.value"
-                      :error="errorMessage"
-                      :disabled="isSubmitting"
-                      type="text"
-                      @update:model-value="handleChange"
-                      @blur="handleBlur"
-                    />
-                  </Field>
-                </div>
-              </div>
-            </template>
-          </DatePicker>
-        </div>
-
         <BaseInput
           v-model="filter"
           icon="lucide:search"
-          placeholder="Filtre raport..."
+          placeholder="Filtrer facture..."
           :classes="{
             wrapper: 'w-full sm:w-auto',
           }"
@@ -440,11 +538,11 @@ const onSubmit = handleSubmit(
         </BaseSelect>
         <BaseButton
           color="primary"
-          class="w-full sm:w-32"
-          @click=";(isModalNewPackageOpen = true), (isEdit = false)"
+          class="w-full sm:w-52"
+          to="/bo/sales/orders/new-invoice-0"
         >
-          <span>Actualiser</span>
-          <Icon name="lucide:search" class="h-4 w-4" />
+          <Icon name="ph:plus" class="h-4 w-4" />
+          <span>Nouvelle facture</span>
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">
@@ -457,9 +555,9 @@ const onSubmit = handleSubmit(
                 size="sm"
                 weight="medium"
                 lead="tight"
-                class="text-muted-500 dark:text-muted-400"
+                class="text-muted-700 dark:text-muted-400"
               >
-                <span>Total Commandes</span>
+                <span>Total</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -483,7 +581,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+7.8%</span>
+              <span>+0.0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hause</span>
             </div>
@@ -498,16 +596,16 @@ const onSubmit = handleSubmit(
                 size="sm"
                 weight="medium"
                 lead="tight"
-                class="text-muted-500 dark:text-muted-400"
+                class="text-muted-700 dark:text-muted-400"
               >
-                <span>Quantité totale</span>
+                <span>Soldés</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
                 class="bg-yellow-100 text-yellow-500 dark:border-2 dark:border-yellow-500 dark:bg-yellow-500/20 dark:text-yellow-400"
                 shape="full"
               >
-                <Icon name="ph:basket" class="h-5 w-5" />
+                <Icon name="ph:money" class="h-5 w-5" />
               </BaseIconBox>
             </div>
             <div class="mb-2">
@@ -524,7 +622,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-danger-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>-2.7%</span>
+              <span>-0.0%</span>
               <Icon name="lucide:trending-down" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en baisse</span>
             </div>
@@ -539,50 +637,9 @@ const onSubmit = handleSubmit(
                 size="sm"
                 weight="medium"
                 lead="tight"
-                class="text-muted-500 dark:text-muted-400"
+                class="text-muted-700 dark:text-muted-400"
               >
-                <span>Total Diffusés</span>
-              </BaseHeading>
-              <BaseIconBox
-                size="xs"
-                class="bg-primary-100 text-primary-500 dark:bg-primary-500/20 dark:text-primary-400 dark:border-primary-500 dark:border-2"
-                shape="full"
-              >
-                <Icon name="ph:basket" class="h-5 w-5" />
-              </BaseIconBox>
-            </div>
-            <div class="mb-2">
-              <BaseHeading
-                as="h4"
-                size="2xl"
-                weight="bold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>{{ data?.metaData?.totalSpots }}</span>
-              </BaseHeading>
-            </div>
-            <div
-              class="text-success-500 flex items-center gap-1 font-sans text-sm"
-            >
-              <span>+4.5%</span>
-              <Icon name="lucide:trending-up" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">en hausse</span>
-            </div>
-          </BaseCard>
-        </div>
-        <!-- Stat tile -->
-        <div class="col-span-12 md:col-span-3">
-          <BaseCard class="p-4">
-            <div class="mb-1 flex items-center justify-between">
-              <BaseHeading
-                as="h5"
-                size="sm"
-                weight="medium"
-                lead="tight"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <span>Total restant a payer</span>
+                <span>En attente</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -600,20 +657,54 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>
-                  {{
-                    new Intl.NumberFormat().format(
-                      data?.data[0]?.globalPending ?? 0,
-                    )
-                  }}
-                  XAF</span
-                >
+                <span>{{ data?.metaData?.totalSpots }}</span>
               </BaseHeading>
             </div>
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+4.5%</span>
+              <span>+0.0%</span>
+              <Icon name="lucide:trending-up" class="h-5 w-5" />
+              <span class="text-muted-400 text-xs">en hausse</span>
+            </div>
+          </BaseCard>
+        </div>
+        <!-- Stat tile -->
+        <div class="col-span-12 md:col-span-3">
+          <BaseCard class="p-4">
+            <div class="mb-1 flex items-center justify-between">
+              <BaseHeading
+                as="h5"
+                size="sm"
+                weight="medium"
+                lead="tight"
+                class="text-muted-700 dark:text-muted-400"
+              >
+                <span>Annonceurs</span>
+              </BaseHeading>
+              <BaseIconBox
+                size="xs"
+                class="bg-primary-100 text-primary-500 dark:bg-primary-500/20 dark:text-primary-400 dark:border-primary-500 dark:border-2"
+                shape="full"
+              >
+                <Icon name="ph:user" class="h-5 w-5" />
+              </BaseIconBox>
+            </div>
+            <div class="mb-2">
+              <BaseHeading
+                as="h4"
+                size="2xl"
+                weight="bold"
+                lead="tight"
+                class="text-muted-800 dark:text-white"
+              >
+                <span>{{ data?.metaData?.totalFiles }}</span>
+              </BaseHeading>
+            </div>
+            <div
+              class="text-success-500 flex items-center gap-1 font-sans text-sm"
+            >
+              <span>+0.0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -658,44 +749,24 @@ const onSubmit = handleSubmit(
                     />
                   </div>
                 </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Date</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>
-                  Campagne
+                  Annonceur
                 </TairoTableHeading>
-
-                <TairoTableHeading uppercase spaced
-                  >Annonceur</TairoTableHeading
-                >
-
-                <TairoTableHeading uppercase spaced>Nature</TairoTableHeading>
-
-                <TairoTableHeading uppercase spaced>Durée</TairoTableHeading>
-                <TairoTableHeading uppercase spaced
-                  >Date Début</TairoTableHeading
-                >
-                <TairoTableHeading uppercase spaced>Date Fin</TairoTableHeading>
-                <TairoTableHeading uppercase spaced
-                  >Nombre de diffusion par jour</TairoTableHeading
-                >
-                <TairoTableHeading uppercase spaced
-                  >Total commandés</TairoTableHeading
-                >
-                <TairoTableHeading uppercase spaced
-                  >Total diffusés</TairoTableHeading
-                >
-                <TairoTableHeading uppercase spaced
-                  >Formule d'achat</TairoTableHeading
-                >
-                <TairoTableHeading uppercase spaced
-                  >Commercial en charge</TairoTableHeading
-                >
-                <TairoTableHeading uppercase spaced
-                  >Montant global
+                <TairoTableHeading uppercase spaced>
+                  Numéro facture
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced
-                  >MOntant payé
+                <TairoTableHeading uppercase spaced>
+                  Societé
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced
-                  >Montant restant
+                <TairoTableHeading uppercase spaced>
+                  Journal
+                </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>
+                  Vendeur
+                </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>
+                  Montant règlement
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
@@ -729,141 +800,96 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  <p v-if="item.products.length > 0">
-                    1- {{ item.products[0].product }}
-                  </p>
-                  <p v-if="item.products.length > 1">
-                    2- {{ item.products[1].product }}
-                  </p>
-                  <p v-if="item.products.length > 2">
-                    3- {{ item.products[2].product }}
-                  </p>
-                  <p v-if="item.products.length > 3">
-                    4- {{ item.products[3].product }}
-                  </p>
-                  <p v-if="item.products.length > 4">
-                    5- {{ item.products[4].product }}
-                  </p>
+                  {{ new Date(item.createdAt).toLocaleDateString('fr-FR') }}
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseAvatar
-                      :src="
-                        item.order.announcer?.logo ?? '/img/avatars/company.svg'
-                      "
+                      :src="item.author?.logo ?? '/img/avatars/company.svg'"
                       :text="item.initials"
                       :class="getRandomColor()"
                     />
                     <div class="ms-3 leading-none">
                       <h4 class="font-sans text-sm font-medium">
-                        {{ item.order.announcer?.name }}
+                        {{ item.author?.firstName }}
                       </h4>
                       <p class="text-muted-400 font-sans text-xs">
-                        {{ item.order.announcer?.email }}
+                        {{ item.author?.email }}
                       </p>
                     </div>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  <p v-if="item.products.length > 0">
-                    1- {{ item.products[0].type }}
-                  </p>
-                  <p v-if="item.products.length > 1">
-                    2- {{ item.products[1].type }}
-                  </p>
-                  <p v-if="item.products.length > 2">
-                    3- {{ item.products[2].type }}
-                  </p>
-                  <p v-if="item.products.length > 3">
-                    4- {{ item.products[3].type }}
-                  </p>
-                  <p v-if="item.products.length > 4">
-                    5- {{ item.products[4].type }}
-                  </p>
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <span class="text-base">
-                    {{ item.durationDays ?? 0 }} jour(s)</span
+                  <NuxtLink
+                    class="text-primary-500 underline-offset-4 hover:underline"
+                    :to="'/bo/sales/orders/view-invoice-' + item._id"
                   >
+                    {{ item.code }}
+                  </NuxtLink>
+                </TairoTableCell>
+
+                <TairoTableCell light spaced>
+                  {{ item.org.name }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.startDate ?? '' }}
+                  {{ item.paymentAccount.label }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.endDate ?? '' }}
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <span class="text-base"> {{ item.numberProducts }}</span>
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <span class="text-base"> {{ item.quantities }}</span>
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <span class="text-base"> {{ item.totalDiffused }}</span>
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{ item.label }}
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{ item.order.manager?.firstName ?? item.creator?.firstName }}
-                  {{ item.order.manager?.lastName ?? item.creator?.lastName }}
+                  {{ item.manager?.lastName }}
+                  {{ item.manager?.firstName }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{
-                    new Intl.NumberFormat().format(item.invoice?.amount ?? 0)
+                    new Intl.NumberFormat().format(Math.ceil(item.amount ?? 0))
                   }}
                   XAF
                 </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{ new Intl.NumberFormat().format(item.invoice?.paid ?? 0) }}
-                  XAF
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{
-                    new Intl.NumberFormat().format(
-                      (item.invoice?.amount ?? 0) - (item.invoice?.paid ?? 0),
-                    )
-                  }}
-                  XAF
-                </TairoTableCell>
+
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag
-                    v-if="item.status === 'closed'"
+                    v-if="item.state === 'trashed'"
                     color="muted"
                     flavor="pastel"
                     shape="full"
                     condensed
                     class="font-medium"
                   >
-                    Cloturée
+                    {{ item.state }}
                   </BaseTag>
                   <BaseTag
-                    v-else-if="
-                      item.status === 'onHold' ||
-                      item.status === 'confirmed' ||
-                      item.status == 'paid'
-                    "
+                    v-else-if="item.state === 'active'"
                     color="warning"
                     flavor="pastel"
                     shape="full"
                     condensed
                     class="font-medium"
                   >
-                    En cours
+                    {{ item.state }}
                   </BaseTag>
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex">
                     <BaseButtonAction
                       class="mx-2"
-                      :to="'/bo/spots/package-details/' + item._id"
+                      :to="'/bo/sales/orders/view-invoice-' + item._id"
                       muted
                     >
-                      <Icon name="lucide:settings" class="h-4 w-4"
+                      <Icon name="lucide:eye" class="h-4 w-4"
                     /></BaseButtonAction>
-                    <!-- <BaseButtonAction @click="editPackage(item)">
+                    <BaseButtonAction
+                      :to="'/bo/sales/orders/edit-invoice-' + item._id"
+                    >
                       <Icon name="lucide:edit" class="h-4 w-4"
-                    /></BaseButtonAction> -->
+                    /></BaseButtonAction>
+                    <BaseButtonAction
+                      @click="confirmDeletePackage(item)"
+                      class="mx-2"
+                      :disabled="
+                        authStore.user.appRole?.name != UserRole.superAdmin
+                      "
+                    >
+                      <Icon name="lucide:trash" class="h-4 w-4 text-red-500"
+                    /></BaseButtonAction>
                   </div>
                 </TairoTableCell>
               </TairoTableRow>
@@ -881,97 +907,6 @@ const onSubmit = handleSubmit(
       </div>
     </TairoContentWrapper>
 
-    <!-- Modal new Package -->
-    <TairoModal
-      :open="isModalNewPackageOpen"
-      size="xl"
-      @close="isModalNewPackageOpen = false"
-    >
-      <template #header>
-        <!-- Header -->
-        <div class="flex w-full items-center justify-between p-4 md:p-6">
-          <h3
-            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
-          >
-            {{ isEdit == true ? 'Editer' : 'Nouvelle' }} commande
-          </h3>
-
-          <BaseButtonClose @click="isModalNewPackageOpen = false" />
-        </div>
-      </template>
-
-      <!-- Body -->
-      <BaseCard class="w-full">
-        <form
-          method="POST"
-          action=""
-          class="divide-muted-200 dark:divide-muted-700"
-          @submit.prevent="onSubmit"
-        >
-          <div
-            shape="curved"
-            class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
-          >
-            <div class="mx-auto flex w-full flex-col">
-              <div>
-                <div class="grid grid-cols-12 gap-4">
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.label"
-                    >
-                      <BaseInput
-                        label="Libéllé"
-                        icon="ph:user-duotone"
-                        placeholder="ref facture : FACT N_ XXXXXX"
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.numberProducts"
-                    >
-                      <BaseInput
-                        label="Nombre de produits"
-                        icon="ph:file-duotone"
-                        type="number"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </form>
-      </BaseCard>
-      <template #footer>
-        <!-- Footer -->
-        <div class="p-4 md:p-6">
-          <div class="flex gap-x-2">
-            <BaseButton @click="isModalNewPackageOpen = false"
-              >Annuler</BaseButton
-            >
-
-            <BaseButton color="primary" flavor="solid" @click="onSubmit">
-              {{ isEdit == true ? 'Modifier' : 'Créer' }}
-            </BaseButton>
-          </div>
-        </div>
-      </template>
-    </TairoModal>
-
     <!-- Modal delete -->
     <TairoModal
       :open="isModalDeletePackageOpen"
@@ -984,7 +919,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Suppression d'un package
+            Suppression d'une facture
           </h3>
 
           <BaseButtonClose @click="isModalDeletePackageOpen = false" />
@@ -1002,7 +937,7 @@ const onSubmit = handleSubmit(
           </h3>
 
           <p
-            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+            class="font-alt text-muted-700 dark:text-muted-400 text-sm leading-5"
           >
             Cette action est irreversible
           </p>
@@ -1022,6 +957,64 @@ const onSubmit = handleSubmit(
               flavor="solid"
               @click="deletePackage(currentPackage)"
               >Suppimer</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal confirm order -->
+    <TairoModal
+      :open="isModalConfirmOrderOpen"
+      size="sm"
+      @close="isModalConfirmOrderOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Confirmation de la commande
+          </h3>
+
+          <BaseButtonClose @click="isModalConfirmOrderOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <h3
+            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
+          >
+            Voulez-vous confirmer la commande
+            <span class="text-primary-500">{{ currentPackage.label }}</span>
+            de
+            <span class="text-primary-500"
+              >{{ currentPackage?.announcer?.name }}
+            </span>
+            ?
+          </h3>
+
+          <p
+            class="font-alt text-muted-700 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est reversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalConfirmOrderOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton color="primary" flavor="solid" @click="confirmOrder()"
+              >Valider</BaseButton
             >
           </div>
         </div>

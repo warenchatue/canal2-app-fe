@@ -72,6 +72,13 @@ const { data, pending, error, refresh } = await useFetch(
   },
 )
 
+const { data: articleCategories } = await useFetch(
+  '/api/sales/article-categories',
+  {
+    query,
+  },
+)
+
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
   return selected.value.length === data.value?.data.length
@@ -91,10 +98,10 @@ const expanded = ref(true)
 const loading = ref(false)
 
 // This is the object that will contain the validation messages
-const ONE_MB = 1000000
 const VALIDATION_TEXT = {
   CODE_REQUIRED: "Code can't be empty",
   NAME_REQUIRED: "Name can't be empty",
+  CATEGORY_REQUIRED: "Category can't be empty",
 }
 
 // This is the Zod schema for the form input
@@ -105,15 +112,14 @@ const zodSchema = z
       _id: z.string().optional(),
       code: z.string().min(1, VALIDATION_TEXT.CODE_REQUIRED),
       name: z.string().min(1, VALIDATION_TEXT.NAME_REQUIRED),
-      description: z.string(),
-      category: z
-        .object({
-          _id: z.string(),
-          name: z.string(),
-          description: z.string(),
-        })
-        .optional()
-        .nullable(),
+      price: z.number().optional(),
+      description: z.string().optional(),
+      category: z.object({
+        _id: z.string(),
+        code: z.string(),
+        name: z.string(),
+        description: z.string(),
+      }),
     }),
   })
   .superRefine((data, ctx) => {
@@ -122,6 +128,14 @@ const zodSchema = z
         code: z.ZodIssueCode.custom,
         message: VALIDATION_TEXT.CODE_REQUIRED,
         path: ['article.code'],
+      })
+    }
+
+    if (!data.article.name) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: VALIDATION_TEXT.CATEGORY_REQUIRED,
+        path: ['article.category'],
       })
     }
   })
@@ -136,9 +150,11 @@ const initialValues = computed<FormInput>(() => ({
   article: {
     code: '',
     name: '',
+    price: 0,
     description: '',
     category: {
       _id: '',
+      code: '',
       name: '',
       description: '',
     },
@@ -169,6 +185,8 @@ function editArticle(article: any) {
   setFieldValue('article.code', article.code)
   setFieldValue('article.name', article.name)
   setFieldValue('article.description', article.description)
+  setFieldValue('article.price', article.price)
+  setFieldValue('article.category', article.category)
 }
 
 function selectArticle(article: any) {
@@ -246,7 +264,7 @@ const onSubmit = handleSubmit(
           query: query2,
           body: {
             ...values.article,
-            category: undefined,
+            category: values.article.category._id,
           },
         })
         isSuccess.value = response.data.value?.success
@@ -265,7 +283,7 @@ const onSubmit = handleSubmit(
           body: {
             ...values.article,
             _id: undefined,
-            category: undefined,
+            category: values.article.category._id,
           },
         })
         isSuccess.value = response.data.value?.success
@@ -412,6 +430,8 @@ const onSubmit = handleSubmit(
 
                 <TairoTableHeading uppercase spaced> Nom </TairoTableHeading>
 
+                <TairoTableHeading uppercase spaced> Prix </TairoTableHeading>
+
                 <TairoTableHeading uppercase spaced>
                   Description
                 </TairoTableHeading>
@@ -462,6 +482,13 @@ const onSubmit = handleSubmit(
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
                       {{ item.name }}
+                    </span>
+                  </div>
+                </TairoTableCell>
+                <TairoTableCell spaced>
+                  <div class="flex items-center">
+                    <span class="text-muted-400 font-sans text-xs">
+                      {{ item.price }}
                     </span>
                   </div>
                 </TairoTableCell>
@@ -593,25 +620,8 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                  <div class="col-span-12 md:col-span-12">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="article.description"
-                    >
-                      <BaseInput
-                        label="Description"
-                        icon="ph:file-duotone"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
                 </div>
-                <!-- <div class="grid grid-cols-12 gap-4 mt-4">
+                <div class="grid grid-cols-12 gap-4 mt-4">
                   <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
@@ -619,12 +629,11 @@ const onSubmit = handleSubmit(
                     >
                       <BaseListbox
                         label="Catégorie"
-                        :items="appStore.countries"
+                        :items="articleCategories.data"
                         :properties="{
                           value: '_id',
-                          label: 'name',
-                          sublabel: 'description',
-                          media: '',
+                          label: 'code',
+                          sublabel: 'name',
                         }"
                         :model-value="field.value"
                         :error="errorMessage"
@@ -634,26 +643,43 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                  <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="article.status"
+                      name="article.price"
                     >
-                      <BaseSelect
-                        label="Statut *"
-                        icon="ph:funnel"
+                      <BaseInput
+                        label="Prix"
+                        type="number"
+                        icon="ph:money-duotone"
+                        placeholder="0"
                         :model-value="field.value"
                         :error="errorMessage"
                         :disabled="isSubmitting"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
-                      >
-                        <option value="active">Actif</option>
-                        <option value="trashed">Inactif</option>
-                      </BaseSelect>
+                      />
                     </Field>
                   </div>
-                </div> -->
+                </div>
+
+                <div class="col-span-12 md:col-span-12">
+                  <Field
+                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    name="article.description"
+                  >
+                    <BaseInput
+                      label="Description"
+                      icon="ph:file-duotone"
+                      placeholder=""
+                      :model-value="field.value"
+                      :error="errorMessage"
+                      :disabled="isSubmitting"
+                      @update:model-value="handleChange"
+                      @blur="handleBlur"
+                    />
+                  </Field>
+                </div>
               </div>
             </div>
           </div>

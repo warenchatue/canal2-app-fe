@@ -104,6 +104,11 @@ export default defineAppConfig({
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
+                name: 'Suivi campagnes',
+                to: '/bo/pub/reports',
+                icon: { name: 'lucide:file', class: 'w-4 h-4' },
+              },
+              {
                 name: 'Horaires',
                 to: '/bo/pub/hours',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
@@ -131,6 +136,11 @@ export default defineAppConfig({
                 icon: { name: 'lucide:file', class: 'w-4 h-4' },
               },
               {
+                name: 'Paiements',
+                to: '/bo/sales/payments',
+                icon: { name: 'lucide:file', class: 'w-4 h-4' },
+              },
+              {
                 name: 'Annonceurs',
                 icon: { name: 'ph:users-duotone', class: 'w-5 h-5' },
                 to: '/bo/sales/announcers',
@@ -141,14 +151,9 @@ export default defineAppConfig({
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
-                name: "Variante d'articles",
-                to: '',
+                name: "Categories d'article",
+                to: '/bo/sales/articleCategories',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Suivi campagnes',
-                to: '/bo/sales/reports',
-                icon: { name: 'lucide:file', class: 'w-4 h-4' },
               },
             ],
           },

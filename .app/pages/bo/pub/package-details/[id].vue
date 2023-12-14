@@ -71,6 +71,7 @@ const phoneNumber = ref('')
 const formatter = new Intl.DateTimeFormat('fr', { month: 'long' })
 const activeDate = ref(new Date())
 const activeDay = ref('')
+const activePlanningId = ref('')
 const activeHour = ref({})
 var activeDays = ref(
   new Date(
@@ -127,9 +128,10 @@ function dayOfWeek(d: number) {
     .toLocaleUpperCase()
 }
 
-function openSpotPlanningModal(day: string, hour: any) {
+function openSpotPlanningModal(day: string, hour: any, planningId: string) {
   activeDay.value = day
   activeHour.value = hour
+  activePlanningId.value = planningId
   isModalNewSpotPlanningOpen.value = true
 }
 async function addSpotToPlanning() {
@@ -214,6 +216,64 @@ async function addSpotToPlanning() {
 
   isModalNewSpotPlanningOpen.value = false
 }
+async function deleteSpotToPlanning() {
+  console.log('Deleting product from the planning')
+
+  try {
+    const isSuccess = ref(false)
+    const response = await $fetch(
+      '/api/pub/plannings?action=delete&token=' +
+        token.value +
+        '&id=' +
+        activePlanningId.value,
+      {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      },
+    )
+
+    console.log(response)
+    isSuccess.value = response?.success
+    if (isSuccess.value == true) {
+      success.value = true
+      data.value.data.plannings = data.value?.data?.plannings.filter(
+        (p: any) => p._id != activePlanningId.value,
+      )
+      activePlanningId.value = ''
+      toaster.clearAll()
+      toaster.show({
+        title: 'Success',
+        message: 'Produit supprimé du planning !',
+        color: 'success',
+        icon: 'ph:check',
+        closable: true,
+      })
+    } else {
+      toaster.clearAll()
+      toaster.show({
+        title: 'Oops',
+        message: `Une erreur est survenue !`,
+        color: 'danger',
+        icon: 'ph:check',
+        closable: true,
+      })
+    }
+  } catch (error: any) {
+    console.log(error)
+    toaster.clearAll()
+    toaster.show({
+      title: 'Oops!',
+      message: 'Veuillez examiner les erreurs dans le formulaire',
+      color: 'danger',
+      icon: 'lucide:alert-triangle',
+      closable: true,
+    })
+    // return
+  }
+  console.log(data.value?.data?.plannings)
+
+  isModalNewSpotPlanningOpen.value = false
+}
 
 function checkEmptyPlanning(h: any) {
   if (isPrintPlanning.value == true || isPrintCertificate.value == true) {
@@ -245,7 +305,7 @@ function checkSpot(d: number, hour: string) {
       new Date(p.date).toLocaleString('fr-FR') == date?.toLocaleString('fr-FR'),
   )
   if (plannedSpots.length == 0) {
-    return ['+', 'default']
+    return ['+', 'default', undefined]
   } else {
     const dateNow = new Date().toLocaleString('fr-FR')
     const dateNowTime = new Date().getTime()
@@ -253,7 +313,7 @@ function checkSpot(d: number, hour: string) {
     var datePTime = new Date(plannedSpots[0].date).getTime()
     // console.log(plannedSpots[0])
     if (isPrintPlanning.value == true) {
-      return [plannedSpots[0].product.tag, 'warning']
+      return [plannedSpots[0].product.tag, 'warning', plannedSpots[0]._id]
     }
 
     console.log(dateP)
@@ -271,19 +331,19 @@ function checkSpot(d: number, hour: string) {
       plannedSpots[0].isAutoPlay == false &&
       isPrintCertificate.value == false
     ) {
-      return [plannedSpots[0].product.tag, 'danger']
+      return [plannedSpots[0].product.tag, 'danger', plannedSpots[0]._id]
     } else if (
       datePTime < dateNowTime &&
       (plannedSpots[0].isManualPlay == true ||
         plannedSpots[0].isAutoPlay == true)
     ) {
-      return [plannedSpots[0].product.tag, 'primary']
+      return [plannedSpots[0].product.tag, 'primary', plannedSpots[0]._id]
     } else if (datePTime > dateNowTime && isPrintCertificate.value == false) {
       // console.log(dateP)
       // console.log(dateNow)
-      return [plannedSpots[0].product.tag, 'warning']
+      return [plannedSpots[0].product.tag, 'warning', plannedSpots[0]._id]
     } else {
-      return ['+', 'default']
+      return ['+', 'default', undefined]
     }
   }
 }
@@ -1558,6 +1618,14 @@ const onSubmit = handleSubmit(
             >
               Valider
             </BaseButton>
+            <BaseButton
+              v-if="activePlanningId"
+              color="danger"
+              flavor="solid"
+              @click="deleteSpotToPlanning()"
+            >
+              Supprimer
+            </BaseButton>
           </div>
         </div>
       </template>
@@ -1782,7 +1850,13 @@ const onSubmit = handleSubmit(
                   >
                     <BaseButton
                       :title="dayOfWeek(d) + ' LE ' + d + ' A ' + h.name"
-                      @click="openSpotPlanningModal(d.toString(), h)"
+                      @click="
+                        openSpotPlanningModal(
+                          d.toString(),
+                          h,
+                          checkSpot(d, h.code)[2],
+                        )
+                      "
                       :color="checkSpot(d, h.code)[1]"
                       class="!w-6 !h-[2.106em] rounded-full !px-1 !my-2"
                     >

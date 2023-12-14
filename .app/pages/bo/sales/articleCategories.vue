@@ -5,11 +5,11 @@ import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Categories d\'articles',
+  title: "Categories d'articles",
   preview: {
-    title: 'Categories d\'articles',
-    description: 'Gestion des Categories d\'articles',
-    categories: ['bo', 'Categories d\'articles'],
+    title: "Categories d'articles",
+    description: "Gestion des Categories d'articles",
+    categories: ['bo', "Categories d'articles"],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -66,7 +66,7 @@ const query = computed(() => {
 })
 
 const { data, pending, error, refresh } = await useFetch(
-  '/api/sales/articles',
+  '/api/sales/article-categories',
   {
     query,
   },
@@ -101,27 +101,19 @@ const VALIDATION_TEXT = {
 // It's used to define the shape that the form data will have
 const zodSchema = z
   .object({
-    article: z.object({
+    articleCategory: z.object({
       _id: z.string().optional(),
       code: z.string().min(1, VALIDATION_TEXT.CODE_REQUIRED),
       name: z.string().min(1, VALIDATION_TEXT.NAME_REQUIRED),
       description: z.string(),
-      category: z
-        .object({
-          _id: z.string(),
-          name: z.string(),
-          description: z.string(),
-        })
-        .optional()
-        .nullable(),
     }),
   })
   .superRefine((data, ctx) => {
-    if (!data.article.name) {
+    if (!data.articleCategory.code) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: VALIDATION_TEXT.CODE_REQUIRED,
-        path: ['article.code'],
+        path: ['articleCategory.code'],
       })
     }
   })
@@ -133,15 +125,10 @@ type FormInput = z.infer<typeof zodSchema>
 const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
   avatar: null,
-  article: {
+  articleCategory: {
     code: '',
     name: '',
     description: '',
-    category: {
-      _id: '',
-      name: '',
-      description: '',
-    },
   },
 }))
 
@@ -162,13 +149,13 @@ const {
 
 const success = ref(false)
 
-function editArticle(article: any) {
+function editArticle(articleCategory: any) {
   isModalNewArticleOpen.value = true
   isEdit.value = true
-  setFieldValue('article._id', article._id)
-  setFieldValue('article.code', article.code)
-  setFieldValue('article.name', article.name)
-  setFieldValue('article.description', article.description)
+  setFieldValue('articleCategory._id', articleCategory._id)
+  setFieldValue('articleCategory.code', articleCategory.code)
+  setFieldValue('articleCategory.name', articleCategory.name)
+  setFieldValue('articleCategory.description', articleCategory.description)
 }
 
 function selectArticle(article: any) {
@@ -187,11 +174,11 @@ async function deleteArticle(article: any) {
     return {
       action: 'delete',
       token: token.value,
-      id: article._id,
+      id: articleCategory._id,
     }
   })
 
-  const response = await useFetch('/api/sales/articles', {
+  const response = await useFetch('/api/sales/article-categories', {
     method: 'delete',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
@@ -202,13 +189,13 @@ async function deleteArticle(article: any) {
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Article supprimé !`,
+      message: `Categorie supprimée !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
     })
     isModalDeleteArticleOpen.value = false
-    filter.value = 'article'
+    filter.value = 'article cat'
     filter.value = ''
   } else {
     toaster.clearAll()
@@ -227,45 +214,43 @@ const onSubmit = handleSubmit(
   async (values) => {
     success.value = false
     // here you have access to the validated form values
-    console.log('article-create-success', values)
+    console.log('article-cat-create-success', values)
 
     try {
       const isSuccess = ref(false)
       if (isEdit.value == true) {
         const query2 = computed(() => {
           return {
-            action: 'updateArticle',
+            action: 'updateArticleCategory',
             token: token.value,
-            id: values.article._id,
+            id: values.articleCategory._id,
           }
         })
 
-        const response = await useFetch('/api/sales/articles', {
+        const response = await useFetch('/api/sales/article-categories', {
           method: 'put',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.article,
-            category: undefined,
+            ...values.articleCategory,
           },
         })
         isSuccess.value = response.data.value?.success
       } else {
         const query2 = computed(() => {
           return {
-            action: 'createArticle',
+            action: 'createArticleCategory',
             token: token.value,
           }
         })
 
-        const response = await useFetch('/api/sales/articles', {
+        const response = await useFetch('/api/sales/article-categories', {
           method: 'post',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.article,
+            ...values.articleCategory,
             _id: undefined,
-            category: undefined,
           },
         })
         isSuccess.value = response.data.value?.success
@@ -276,14 +261,16 @@ const onSubmit = handleSubmit(
         toaster.show({
           title: 'Success',
           message:
-            isEdit.value == false ? `Article créé !` : `Article mis à jour`,
+            isEdit.value == false
+              ? `Categorie créé !`
+              : `Categorie mise à jour`,
           color: 'success',
           icon: 'ph:check',
           closable: true,
         })
         isModalNewArticleOpen.value = false
         resetForm()
-        filter.value = 'articlee'
+        filter.value = 'article cat'
         filter.value = ''
       } else {
         toaster.clearAll()
@@ -318,7 +305,7 @@ const onSubmit = handleSubmit(
     success.value = false
 
     // here you have access to the error
-    console.log('article-create-error', error)
+    console.log('article-cat-create-error', error)
 
     // you can use it to scroll to the first error
     document.documentElement.scrollTo({
@@ -358,7 +345,7 @@ const onSubmit = handleSubmit(
         <BaseButton
           @click=";(isModalNewArticleOpen = true), (isEdit = false)"
           color="primary"
-          class="w-full sm:w-48"
+          class="w-full sm:w-52"
           :disabled="
             authStore.user.appRole.name != UserRole.sale &&
             authStore.user.appRole.name != UserRole.billing &&
@@ -366,7 +353,7 @@ const onSubmit = handleSubmit(
           "
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
-          <span>Nouvel Article</span>
+          <span>Nouvelle categorie</span>
         </BaseButton>
       </template>
 
@@ -414,10 +401,6 @@ const onSubmit = handleSubmit(
 
                 <TairoTableHeading uppercase spaced>
                   Description
-                </TairoTableHeading>
-
-                <TairoTableHeading uppercase spaced>
-                  Categorie
                 </TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
@@ -473,14 +456,6 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
-                      {{ item.category?.name ?? '-' }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-
-                <TairoTableCell spaced>
                   <div class="flex">
                     <BaseButtonAction
                       class="mx-2"
@@ -525,7 +500,7 @@ const onSubmit = handleSubmit(
       </div>
     </TairoContentWrapper>
 
-    <!-- Modal new Article -->
+    <!-- Modal new Article Category -->
     <TairoModal
       :open="isModalNewArticleOpen"
       size="xl"
@@ -537,7 +512,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            {{ isEdit == true ? 'Mise à jour' : 'Nouvel' }} Article
+            {{ isEdit == true ? 'Mise à jour' : 'Nouvelle' }} Categorie
           </h3>
 
           <BaseButtonClose @click="isModalNewArticleOpen = false" />
@@ -562,7 +537,7 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="article.code"
+                      name="articleCategory.code"
                     >
                       <BaseInput
                         label="Code"
@@ -579,7 +554,7 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="article.name"
+                      name="articleCategory.name"
                     >
                       <BaseInput
                         label="Nom"
@@ -596,7 +571,7 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="article.description"
+                      name="articleCategory.description"
                     >
                       <BaseInput
                         label="Description"
@@ -615,7 +590,7 @@ const onSubmit = handleSubmit(
                   <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="article.category"
+                      name="articleCategory.category"
                     >
                       <BaseListbox
                         label="Catégorie"
@@ -637,7 +612,7 @@ const onSubmit = handleSubmit(
                   <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="article.status"
+                      name="articleCategory.status"
                     >
                       <BaseSelect
                         label="Statut *"
@@ -738,7 +713,7 @@ const onSubmit = handleSubmit(
     >
       <div class="flex h-16 w-full items-center justify-between px-8">
         <BaseHeading tag="h3" size="lg" class="text-muted-800 dark:text-white">
-          <span>Détails Article</span>
+          <span>Détails Catégorie</span>
         </BaseHeading>
         <BaseButtonIcon small @click="expanded = true">
           <Icon name="lucide:arrow-right" class="pointer-events-none h-4 w-4" />

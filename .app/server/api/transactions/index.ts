@@ -11,8 +11,8 @@ export default defineEventHandler(async (event) => {
   if (action == 'findOne') {
     const data = await findOne(txnId, token)
     return { data: data, success: true }
-  } else if (action == 'findAllForOrg') {
-    const data = await findAllForOrg(orgId, token)
+  } else if (action == 'findAll') {
+    const data = await findAll(token)
     return { data: filterData(data, filter, page, perPage), success: true }
   } else if (action == 'createSimpleDonation') {
     const body = await readBody(event)
@@ -76,19 +76,16 @@ async function findOne(txnId: string, token: string) {
   return Promise.resolve(data)
 }
 
-async function findAllForOrg(orgId: string, token: string) {
+async function findAll(token: string) {
   const runtimeConfig = useRuntimeConfig()
-  console.log('findAllForOrg, Token:' + token)
-  const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/org/' + orgId + '/transactions',
-    {
-      method: 'get',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-type': 'application/json',
-      },
+  console.log('findAll, Token:' + token)
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/transactions', {
+    method: 'get',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-type': 'application/json',
     },
-  ).catch((error) => console.log(error))
+  }).catch((error) => console.log(error))
   console.log(data)
 
   return Promise.resolve(data)
