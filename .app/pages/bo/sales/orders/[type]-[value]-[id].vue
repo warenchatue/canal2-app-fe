@@ -437,7 +437,7 @@ const initialValues = computed<FormInput>(() => ({
     label: '',
     amount: 0,
     pending: 0,
-    team: 'Douala',
+    team: authStore.user?.team ?? 'douala',
     status: 'onHold',
     announcer: {
       id: '',
@@ -665,6 +665,16 @@ const curOrderItem = ref({
   discount: 0,
   taxes: [],
   amount: 0,
+})
+
+watch(curOrderItem, (value) => {
+  setTimeout(() => {
+    console.log('value')
+    console.log(value)
+    if (curOrderItem.value.article != value.article) {
+      curOrderItem.value.rate = value.article.price
+    }
+  }, 500)
 })
 
 const curInvoicePaymentForm = ref({
@@ -1516,8 +1526,8 @@ const onSubmit = handleSubmit(
                               @update:model-value="handleChange"
                               @blur="handleBlur"
                             >
-                              <option value="Douala">Douala</option>
-                              <option value="Yaounde">Yaoundé</option>
+                              <option value="douala">Douala</option>
+                              <option value="yaounde">Yaoundé</option>
                             </BaseSelect>
                           </Field>
                         </div>
@@ -1938,6 +1948,11 @@ const onSubmit = handleSubmit(
                           >
                             <BaseInput
                               v-model.number="curOrderItem.rate"
+                              :value="
+                                curOrderItem.rate == 0
+                                  ? (curOrderItem.article?.price ?? 0)
+                                  : curOrderItem.rate
+                              "
                               type="number"
                               :classes="{
                                 wrapper: 'w-24',

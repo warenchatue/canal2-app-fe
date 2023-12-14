@@ -165,22 +165,22 @@ export default defineAppConfig({
             children: [
               {
                 name: 'Tableau de bord',
-                to: '/bo/estimations',
+                to: '',
                 icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Conducteur',
-                to: '/bo/estimations/operations',
+                to: '',
                 icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Nos Emmisions',
-                to: '/bo/estimations/operations',
+                to: '',
                 icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Horaires',
-                to: '/bo/estimations/operations',
+                to: '',
                 icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
               },
             ],

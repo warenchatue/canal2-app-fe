@@ -95,6 +95,10 @@ const { data: allInvoices } = await useFetch('/api/sales/invoices', {
   query,
 })
 
+const { data: orgs } = await useFetch('/api/admin/orgs', {
+  query,
+})
+
 const transformedAnnouncers = announcers.value?.data.map((e: any) => {
   const invoice = {
     id: e._id,
@@ -138,6 +142,7 @@ function editPackage(campaign: any) {
   setFieldValue('campaign.description', campaign.description)
   setFieldValue('campaign.numberProducts', campaign.numberProducts)
   setFieldValue('campaign.period', campaign.period)
+  setFieldValue('campaign.org', campaign.org)
   setFieldValue('campaign.invoice', {
     id: campaign.invoice._id,
     name: campaign.invoice.code,
@@ -261,6 +266,14 @@ const zodSchema = z
       announcer: z
         .object({
           id: z.string(),
+          name: z.string(),
+          email: z.string().optional(),
+        })
+        .optional()
+        .nullable(),
+      org: z
+        .object({
+          _id: z.string(),
           name: z.string(),
           email: z.string().optional(),
         })
@@ -781,7 +794,7 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.label }}
+                  {{ item.code }}
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
@@ -985,6 +998,28 @@ const onSubmit = handleSubmit(
                         placeholder="e.g. Canal2 International"
                         label="Annonceur"
                         clearable
+                      />
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="campaign.org"
+                    >
+                      <BaseListbox
+                        label="Société"
+                        :items="orgs.data"
+                        :properties="{
+                          value: '_id',
+                          label: 'name',
+                          sublabel: 'email',
+                          media: 'flag',
+                        }"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
                       />
                     </Field>
                   </div>

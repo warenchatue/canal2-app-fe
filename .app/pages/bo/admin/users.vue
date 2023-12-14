@@ -86,8 +86,11 @@ const zodSchema = z
       firstName: z.string(),
       lastName: z.string().min(1, VALIDATION_TEXT.NAME_REQUIRED),
       email: z.string(),
-      userType: z.union([z.literal('personal'), z.literal('corporate')]),
-      status: z.union([z.literal('active'), z.literal('inactive')]),
+      team: z.union([z.literal('douala'), z.literal('yaounde')]),
+      status: z
+        .union([z.literal('active'), z.literal('inactive')])
+        .optional()
+        .nullable(),
       phone: z.string(),
       appRole: z.object({
         _id: z.string(),
@@ -137,7 +140,7 @@ const initialValues = computed<FormInput>(() => ({
     lastName: '',
     email: '',
     phone: '',
-    userType: 'personal',
+    team: 'douala',
     status: 'active',
     appRole: {
       _id: '',
@@ -182,7 +185,7 @@ function editUser(user: any) {
   setFieldValue('user.lastName', user.lastName)
   setFieldValue('user.email', user.email)
   setFieldValue('user.phone', user.phone)
-  setFieldValue('user.userType', user.userType)
+  setFieldValue('user.team', user.team)
   setFieldValue('user.appRole', user.appRole)
   setFieldValue('user.country', user.country)
   setFieldValue('user.status', user.status)
@@ -456,7 +459,7 @@ const onSubmit = handleSubmit(
                 <TairoTableHeading uppercase spaced>
                   Utilisateur
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Pays</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Equipe</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Tel</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Role</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Status</TairoTableHeading>
@@ -508,22 +511,8 @@ const onSubmit = handleSubmit(
                     </div>
                   </div>
                 </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <BaseAvatar
-                      :src="item.country?.flag"
-                      :text="item.initials"
-                      :class="getRandomColor()"
-                    />
-                    <div class="ms-3 leading-none">
-                      <h4 class="font-sans text-sm font-medium">
-                        {{ item.country?.name }}
-                      </h4>
-                      <p class="text-muted-400 font-sans text-xs">
-                        {{ item.country?.abbr }}
-                      </p>
-                    </div>
-                  </div>
+                <TairoTableCell light spaced>
+                  {{ item.team }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{ item.phone }}
@@ -713,10 +702,10 @@ const onSubmit = handleSubmit(
                   <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="user.userType"
+                      name="user.team"
                     >
                       <BaseSelect
-                        label="Type d'utilisateur *"
+                        label="Equipe"
                         icon="ph:funnel"
                         :model-value="field.value"
                         :error="errorMessage"
@@ -724,8 +713,8 @@ const onSubmit = handleSubmit(
                         @update:model-value="handleChange"
                         @blur="handleBlur"
                       >
-                        <option value="personal">Compte Basique</option>
-                        <option value="corporate">Compte Admin</option>
+                        <option value="douala">Douala</option>
+                        <option value="yaounde">Yaoundé</option>
                       </BaseSelect>
                     </Field>
                   </div>
