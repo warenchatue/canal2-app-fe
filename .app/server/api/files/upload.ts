@@ -59,6 +59,25 @@ export default defineEventHandler(async (event) => {
       } catch (error) {
         return { status: 'OK', success: false, count: 0 }
       }
+    } else if (action == 'import-announcer') {
+      let dirName = `${path.join('.app', 'public')}`
+
+      try {
+        let fileName = 'uploads/announcers/' + files[0].data
+        let newPath = `${dirName}/${fileName}`
+
+        const { success } = await newAnnouncers(
+          dirName,
+          fileName,
+          newPath,
+          files,
+          token,
+        )
+
+        return { success }
+      } catch (error) {
+        return { status: 'OK', success: false, count: 0 }
+      }
     } else if (action == 'import-product-file') {
       try {
         const dirName = `${path.join('.app', 'public')}`
@@ -158,6 +177,51 @@ async function newPlaylist(
 
   return {
     success: resp ? true : false,
+    count: 1,
+  }
+}
+
+async function newAnnouncers(
+  dirName: string,
+  fileName: string,
+  newPath: string,
+  files: any,
+  token: string,
+) {
+  // fs.writeFile(newPath, files[0].data, { flag: 'w' }, function (err) {
+  //   if (err) {
+  //     console.log(err)
+  //     return { success: false, count: 0 }
+  //   }
+  //   console.log(`${fileName} Successfully uploaded`)
+  // })
+
+  // const content = fs.readFileSync(dirName + '/' + fileName, 'utf8')
+  const content = files[0].data.toString()
+  const rows = content.split('\n')
+  const finalContent = rows.map((row: any) => row.split(','))
+  console.log(finalContent.length)
+  for (let index = 1; index < finalContent.length; index++) {
+    const el = finalContent[index]
+    console.log('createAnnouncer ' + token)
+    const runtimeConfig = useRuntimeConfig()
+    const data: any = await $fetch(runtimeConfig.env.apiUrl + '/announcers', {
+      method: 'post',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+      body: {
+        name: el[1],
+        phone: el[3],
+        phone2: el[3],
+      },
+    }).catch((error) => console.log(error))
+    console.log(data)
+  }
+
+  return {
+    success: true,
     count: 1,
   }
 }

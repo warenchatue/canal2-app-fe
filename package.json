@@ -76,6 +76,7 @@
     "@pinia/nuxt": "^0.4.11",
     "@types/events": "^3.0.2",
     "@types/formidable": "^3.4.0",
+    "csv": "^6.3.6",
     "formidable": "^3.5.0",
     "h3-formidable": "^0.3.8",
     "moment": "^2.29.4",

@@ -25,6 +25,7 @@ const filter = ref('')
 const perPage = ref(10)
 const isModalNewAnnouncerOpen = ref(false)
 const isModalDeleteAnnouncerOpen = ref(false)
+const isModalImportAnnouncerOpen = ref(false)
 const isEdit = ref(false)
 
 const toaster = useToaster()
@@ -84,6 +85,57 @@ function toggleAllVisibleSelection() {
   } else {
     selected.value = data.value?.data.map((item) => item.id) ?? []
   }
+}
+
+const inputAnnouncerFile = ref<FileList | null>(null)
+const announcerFile = ref<File | null>(null)
+watch(inputAnnouncerFile, (value) => {
+  const file = value?.item(0) || null
+  announcerFile.value = file
+})
+
+async function importAnnouncers() {
+  const slug = ref('null')
+  const token = useCookie('token')
+  try {
+    const fd = new FormData()
+    fd.append('0', announcerFile.value)
+    const query3 = computed(() => {
+      return {
+        action: 'import-announcer',
+        token: token.value,
+      }
+    })
+
+    const { data: uploadData, refresh } = await useFetch('/api/files/upload', {
+      method: 'POST',
+      query: query3,
+      body: fd,
+    })
+    console.log(uploadData)
+    if (uploadData.value?.success == true) {
+      slug.value = ''
+      toaster.clearAll()
+      toaster.show({
+        title: 'Success',
+        message: `Vérification terminée !`,
+        color: 'success',
+        icon: 'ph:check',
+        closable: true,
+      })
+    } else {
+      slug.value = ''
+      toaster.clearAll()
+      toaster.show({
+        title: 'Oops',
+        message: `Une erreur est survenue lors de l'importation des annonceurs !`,
+        color: 'danger',
+        icon: 'ph:check',
+        closable: true,
+      })
+    }
+  } catch (error) {}
+  isModalImportAnnouncerOpen.value = false
 }
 
 const currentAnnouncer = ref({})
@@ -184,7 +236,6 @@ function editAnnouncer(announcer: any) {
   setFieldValue('announcer.city', announcer.city)
   setFieldValue('announcer.rc', announcer.rc)
   setFieldValue('announcer.nc', announcer.nc)
-  setFieldValue('announcer.status', announcer.status)
 }
 
 function selectAnnouncer(announcer: any) {
@@ -381,6 +432,19 @@ const onSubmit = handleSubmit(
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
           <span>Nouvel Annonceur</span>
+        </BaseButton>
+        <BaseButton
+          :disabled="
+            authStore.user.appRole.name != UserRole.sale &&
+            authStore.user.appRole.name != UserRole.billing &&
+            authStore.user.appRole.name != UserRole.superAdmin
+          "
+          @click="isModalImportAnnouncerOpen = true"
+          color="primary"
+          class="w-full sm:w-52"
+        >
+          <Icon name="lucide:import" class="h-4 w-4" />
+          <span>Importer annonceurs</span>
         </BaseButton>
       </template>
 
@@ -699,7 +763,7 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                    <div class="col-span-12 md:col-span-6">
+                  <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="announcer.city"
@@ -732,6 +796,73 @@ const onSubmit = handleSubmit(
 
             <BaseButton color="primary" flavor="solid" @click="onSubmit">
               {{ isEdit == true ? 'Modifier' : 'Créer' }}
+            </BaseButton>
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal import announcer file -->
+    <TairoModal
+      :open="isModalImportAnnouncerOpen"
+      size="xl"
+      @close="isModalImportAnnouncerOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Import des annonceurs
+          </h3>
+
+          <BaseButtonClose @click="isModalImportAnnouncerOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <BaseCard class="w-full">
+        <form
+          method="POST"
+          action=""
+          class="divide-muted-200 dark:divide-muted-700"
+          @submit.prevent="onSubmit"
+        >
+          <div
+            shape="curved"
+            class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
+          >
+            <div class="mx-auto flex w-full flex-col">
+              <div>
+                <div>
+                  <div class="col-span-12 sm:col-span-6 mt-2">
+                    <BaseInputFile
+                      v-model="inputAnnouncerFile"
+                      shape="rounded"
+                      label="Fichier"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </BaseCard>
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalImportAnnouncerOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="importAnnouncers()"
+            >
+              Importer
             </BaseButton>
           </div>
         </div>

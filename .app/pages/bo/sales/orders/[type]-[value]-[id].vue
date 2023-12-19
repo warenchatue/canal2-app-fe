@@ -24,7 +24,7 @@ const toaster = useToaster()
 const authStore = useAuthStore()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(10)
+const perPage = ref(12000)
 const isEdit = ref(false)
 const isPrint = ref(false)
 const currentOrderInvoice = ref({})
@@ -143,7 +143,6 @@ const transformedAnnouncers = announcers.value?.data.map((e: any) => {
   const invoice = {
     id: e._id,
     name: e.name,
-    text: e.phone,
   }
   return invoice
 })
@@ -168,14 +167,12 @@ if (pageType.value == 'new') {
     pageTitle = 'Nouvelle Facture'
   }
 }
-if (pageType.value == 'view') {
-  if (pageValue.value == 'order') {
-    pageTitle = 'Consultation Devis'
-  } else if (pageValue.value == 'invoice') {
-    pageTitle = 'Consultation Facture'
+if (pageType.value == 'view' || pageType.value == 'edit') {
+  if (pageType.value == 'view') {
+    isPrint.value = true
+  } else {
+    isEdit.value = true
   }
-} else if (pageType.value == 'edit') {
-  isEdit.value = true
   const query = computed(() => {
     return {
       filter: filter.value,
@@ -187,7 +184,6 @@ if (pageType.value == 'view') {
     }
   })
   if (pageValue.value == 'order') {
-    pageTitle = 'Mise à jour Devis'
     const { data: singleOrder } = await useFetch('/api/sales/orders', {
       query,
     })
@@ -338,11 +334,11 @@ function filterItems(query?: string, items?: any[]) {
     return items ?? []
   }
 
-  // search by name or text
+  // search by name
   return items.filter((item) => {
     const nameMatches = item?.name?.toLowerCase().includes(query.toLowerCase())
-    const textMatches = item?.text?.toLowerCase().includes(query.toLowerCase())
-    return nameMatches || textMatches
+    // const textMatches = item?.text?.toLowerCase().includes(query.toLowerCase())
+    return nameMatches
   })
 }
 
@@ -688,7 +684,6 @@ const curInvoicePaymentForm = ref({
   currency: '',
 })
 
-const vatRate = 0.1
 const totalData = computed(() => {
   const subtotal = orderData.value.reduce((acc, item) => {
     return acc + item.quantity * item.rate
@@ -734,6 +729,10 @@ const totalData = computed(() => {
     {
       label: 'Remise',
       value: Math.ceil(discount),
+    },
+    {
+      label: 'Total HT',
+      value: Math.ceil(subtotal - discount),
     },
     {
       label: 'Taxes',
@@ -827,6 +826,10 @@ const onSubmit = handleSubmit(
                 values.order?.paymentCondition?.delay ?? 0,
                 'days',
               ),
+              amountHT:
+                totalData.value.length > 0
+                  ? totalData.value[totalData.value.length - 3].value
+                  : 0,
               amount:
                 totalData.value.length > 0
                   ? totalData.value[totalData.value.length - 1].value
@@ -862,6 +865,10 @@ const onSubmit = handleSubmit(
                 values.order?.paymentCondition?.delay ?? 0,
                 'days',
               ),
+              amountHT:
+                totalData.value.length > 0
+                  ? totalData.value[totalData.value.length - 3].value
+                  : 0,
               amount:
                 totalData.value.length > 0
                   ? totalData.value[totalData.value.length - 1].value
@@ -901,6 +908,10 @@ const onSubmit = handleSubmit(
                 values.order?.paymentCondition?.delay ?? 0,
                 'days',
               ),
+              amountHT:
+                totalData.value.length > 0
+                  ? totalData.value[totalData.value.length - 3].value
+                  : 0,
               amount:
                 totalData.value.length > 0
                   ? totalData.value[totalData.value.length - 1].value
@@ -937,6 +948,10 @@ const onSubmit = handleSubmit(
                 values.order?.paymentCondition?.delay ?? 0,
                 'days',
               ),
+              amountHT:
+                totalData.value.length > 0
+                  ? totalData.value[totalData.value.length - 3].value
+                  : 0,
               amount:
                 totalData.value.length > 0
                   ? totalData.value[totalData.value.length - 1].value
@@ -1411,6 +1426,7 @@ const onSubmit = handleSubmit(
                               placeholder="e.g. Canal2 International"
                               label="Annonceur"
                               clearable
+                              :clear-value="''"
                             >
                               <template #empty="value">
                                 <!-- Use destruct to keep what you need -->
@@ -1637,69 +1653,69 @@ const onSubmit = handleSubmit(
                           <th
                             v-if="!isPrint"
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-3.5 pe-3 ps-4 text-left text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-left text-xs font-medium uppercase sm:ps-6 md:ps-0"
                           >
                             <Icon name="lucide:settings" class="h-4 w-4" />
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-3.5 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
                           >
                             #
                           </th>
                           <th
                             v-if="!isPrint"
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-3.5 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
                           >
                             Article
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-3.5 pe-3 ps-4 text-left text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-left text-xs font-medium uppercase sm:ps-6 md:ps-0"
                           >
                             Description
                           </th>
                           <th
                             v-if="!isPrint"
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-3.5 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
                           >
                             Compte
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 px-3 py-3.5 text-right text-xs font-medium uppercase sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-right text-xs font-medium uppercase sm:table-cell"
                           >
                             Quantité
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 px-3 py-3.5 text-center text-xs font-medium uppercase sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-xs font-medium uppercase sm:table-cell"
                           >
                             U.M
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 px-3 py-3.5 text-right text-xs font-medium uppercase sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-right text-xs font-medium uppercase sm:table-cell"
                           >
                             P.U
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 px-3 py-3.5 text-right text-xs font-medium uppercase sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-right text-xs font-medium uppercase sm:table-cell"
                           >
                             Remise
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 px-3 py-3.5 text-center text-xs font-medium uppercase sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-xs font-medium uppercase sm:table-cell"
                           >
                             Taxes
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-3.5 pe-4 ps-3 px-2 text-right text-xs font-medium uppercase sm:pe-6 md:pe-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-4 ps-3 px-2 text-right text-xs font-medium uppercase sm:pe-6 md:pe-0"
                           >
                             Montant
                           </th>
@@ -1950,7 +1966,7 @@ const onSubmit = handleSubmit(
                               v-model.number="curOrderItem.rate"
                               :value="
                                 curOrderItem.rate == 0
-                                  ? (curOrderItem.article?.price ?? 0)
+                                  ? curOrderItem.article?.price ?? 0
                                   : curOrderItem.rate
                               "
                               type="number"
@@ -2017,7 +2033,9 @@ const onSubmit = handleSubmit(
                             class="pe-4 ps-3 pt-2 text-right sm:pe-6"
                             :class="
                               item.label === 'Net à payer'
-                                ? 'text-xs text-primary-800 border-muted-200 dark:border-muted-700  dark:text-primary-500'
+                                ? 'text-xs text-primary-800 border-muted-400 dark:border-muted-700 border-t-2 dark:text-primary-500'
+                                : item.label === 'Total HT'
+                                ? 'text-xs border-muted-400 dark:border-muted-700 text-muted-800 dark:text-muted-200/70 border-t-2'
                                 : 'text-xs text-muted-800 dark:text-muted-200/70'
                             "
                           >
@@ -2063,37 +2081,37 @@ const onSubmit = handleSubmit(
                           <th
                             v-if="!isPrint"
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-3.5 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
                           >
                             <Icon name="lucide:settings" class="h-4 w-4" />
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-3.5 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
                           >
                             #
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-3.5 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
                           >
                             Date
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-3.5 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
                           >
                             Montant
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-3.5 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
                           >
                             Moyen
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-3.5 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
                           >
                             Reference
                           </th>

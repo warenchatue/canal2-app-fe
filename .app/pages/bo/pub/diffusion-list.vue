@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
-import { Field, useFieldError, useForm } from 'vee-validate'
+import { Field, useForm } from 'vee-validate'
 import { DatePicker } from 'v-calendar'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
@@ -918,7 +918,7 @@ const onSubmit = handleSubmit(
       </div>
     </TairoContentWrapper>
 
-    <!-- Modal component -->
+    <!-- Modal import playlist -->
     <TairoModal
       :open="isModalImportPlaylistOpen"
       size="xl"
@@ -930,7 +930,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Import d'une playlist
+            Import playlist
           </h3>
 
           <BaseButtonClose @click="isModalImportPlaylistOpen = false" />
@@ -1074,7 +1074,6 @@ const onSubmit = handleSubmit(
         </div>
       </template>
     </TairoModal>
-    <!-- Current Planning -->
 
     <!-- Modal confirm diffusion -->
     <TairoModal

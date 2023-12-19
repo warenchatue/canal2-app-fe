@@ -78,21 +78,30 @@ const query = computed(() => {
     token: token.value,
   }
 })
+const query2 = computed(() => {
+  return {
+    filter: filter.value,
+    perPage: 12000,
+    page: page.value,
+    action: 'findAll',
+    token: token.value,
+  }
+})
 
 const { data, pending } = await useFetch('/api/pub/packages', {
   query,
 })
 
 const { data: announcers } = await useFetch('/api/sales/announcers', {
-  query,
+  query: query2,
 })
 
 const { data: allOrders } = await useFetch('/api/sales/orders', {
-  query,
+  query: query2,
 })
 
 const { data: allInvoices } = await useFetch('/api/sales/invoices', {
-  query,
+  query: query2,
 })
 
 const { data: orgs } = await useFetch('/api/admin/orgs', {
@@ -103,7 +112,6 @@ const transformedAnnouncers = announcers.value?.data.map((e: any) => {
   const invoice = {
     id: e._id,
     name: e.name,
-    text: e.phone,
   }
   return invoice
 })
@@ -175,8 +183,8 @@ function filterItems(query?: string, items?: any[]) {
   // search by name or text
   return items.filter((item) => {
     const nameMatches = item?.name?.toLowerCase().includes(query.toLowerCase())
-    const textMatches = item?.text?.toLowerCase().includes(query.toLowerCase())
-    return nameMatches || textMatches
+    // const textMatches = item?.text?.toLowerCase().includes(query.toLowerCase())
+    return nameMatches
   })
 }
 
@@ -956,6 +964,7 @@ const onSubmit = handleSubmit(
                         placeholder="e.g. FAC/2023"
                         label="Facture"
                         clearable
+                        :clear-value="''"
                       />
                     </Field>
                   </div>

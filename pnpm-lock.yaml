@@ -19,6 +19,9 @@ importers:
       '@types/formidable':
         specifier: ^3.4.0
         version: 3.4.0
+      csv:
+        specifier: ^6.3.6
+        version: 6.3.6
       formidable:
         specifier: ^3.5.0
         version: 3.5.0
@@ -34,9 +37,6 @@ importers:
       pinia:
         specifier: ^2.1.6
         version: 2.1.6(typescript@5.0.4)
-      vue-select:
-        specifier: ^3.20.2
-        version: 3.20.2
     devDependencies:
       '@iconify/json':
         specifier: 2.2.67
@@ -4632,6 +4632,28 @@ packages:
 
   /csstype@3.1.2:
     resolution: {integrity: sha512-I7K1Uu0MBPzaFKg4nI5Q7Vs2t+3gWWW648spaF+Rg7pI9ds18Ugn+lvg4SHczUdKlHI5LWBXyqfS8+DufyBsgQ==}
+
+  /csv-generate@4.3.1:
+    resolution: {integrity: sha512-7YeeJq+44/I/O5N2sr2qBMcHZXhpfe38eh7DOFxyMtYO+Pir7kIfgFkW5MPksqKqqR6+/wX7UGoZm1Ot11151w==}
+    dev: false
+
+  /csv-parse@5.5.3:
+    resolution: {integrity: sha512-v0KW6C0qlZzoGjk6u5tLmVfyZxNgPGXZsWTXshpAgKVGmGXzaVWGdlCFxNx5iuzcXT/oJN1HHM9DZKwtAtYa+A==}
+    dev: false
+
+  /csv-stringify@6.4.5:
+    resolution: {integrity: sha512-SPu1Vnh8U5EnzpNOi1NDBL5jU5Rx7DVHr15DNg9LXDTAbQlAVAmEbVt16wZvEW9Fu9Qt4Ji8kmeCJ2B1+4rFTQ==}
+    dev: false
+
+  /csv@6.3.6:
+    resolution: {integrity: sha512-jsEsX2HhGp7xiwrJu5srQavKsh+HUJcCi78Ar3m4jlmFKRoTkkMy7ZZPP+LnQChmaztW+uj44oyfMb59daAs/Q==}
+    engines: {node: '>= 0.1.90'}
+    dependencies:
+      csv-generate: 4.3.1
+      csv-parse: 5.5.3
+      csv-stringify: 6.4.5
+      stream-transform: 3.3.0
+    dev: false
 
   /cuint@0.2.2:
     resolution: {integrity: sha512-d4ZVpCW31eWwCMe1YT3ur7mUDnTXbgwyzaL320DrcRT45rfjYxkt5QWLrmOJ+/UEAI2+fQgKe/fCjR8l4TpRgw==}
@@ -11097,6 +11119,10 @@ packages:
       readable-stream: 3.6.2
       xtend: 4.0.2
     dev: true
+
+  /stream-transform@3.3.0:
+    resolution: {integrity: sha512-pG1NeDdmErNYKtvTpFayrEueAmL0xVU5wd22V7InGnatl4Ocq3HY7dcXIKj629kXvYQvglCC7CeDIGAlx1RNGA==}
+    dev: false
 
   /streamsearch@1.1.0:
     resolution: {integrity: sha512-Mcc5wHehp9aXz1ax6bZUyY5afg9u2rv5cqQI3mRrYkGC8rW2hM02jWuwjtL++LS5qinSyhj2QfLyNsuc+VsExg==}
