@@ -330,6 +330,10 @@ const isAllVisibleSelected = computed(() => {
 })
 
 function filterItems(query?: string, items?: any[]) {
+  if (query.length < 3) {
+    return []
+  }
+
   if (!query || !items) {
     return items ?? []
   }
@@ -1430,13 +1434,18 @@ const onSubmit = handleSubmit(
                             >
                               <template #empty="value">
                                 <!-- Use destruct to keep what you need -->
-                                Aucun resultat. Veuillez
-                                <NuxtLink
-                                  class="text-primary-500 hover:underline"
-                                  to="/bo/sales/announcers"
-                                >
-                                  créer un nouvel annonceur </NuxtLink
-                                >.
+                                <div v-if="value.query.length < 3">
+                                  Saisissez au-moins 3 caractères
+                                </div>
+                                <div v-else>
+                                  Aucun resultat. Veuillez
+                                  <NuxtLink
+                                    class="text-primary-500 hover:underline"
+                                    to="/bo/sales/announcers"
+                                  >
+                                    créer un nouvel annonceur </NuxtLink
+                                  >.
+                                </div>
                               </template>
                             </BaseAutocomplete>
                           </Field>

@@ -176,6 +176,10 @@ function confirmDeletePackage(campaign: any) {
 }
 
 function filterItems(query?: string, items?: any[]) {
+  if (query.length < 3) {
+    return []
+  }
+
   if (!query || !items) {
     return items ?? []
   }
@@ -1007,7 +1011,24 @@ const onSubmit = handleSubmit(
                         placeholder="e.g. Canal2 International"
                         label="Annonceur"
                         clearable
-                      />
+                        :clear-value="''"
+                      >
+                        <template #empty="value">
+                          <!-- Use destruct to keep what you need -->
+                          <div v-if="value.query.length < 3">
+                            Saisissez au-moins 3 caractères
+                          </div>
+                          <div v-else>
+                            Aucun resultat. Veuillez
+                            <NuxtLink
+                              class="text-primary-500 hover:underline"
+                              to="/bo/sales/announcers"
+                            >
+                              créer un nouvel annonceur </NuxtLink
+                            >.
+                          </div>
+                        </template>
+                      </BaseAutocomplete>
                     </Field>
                   </div>
                   <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
