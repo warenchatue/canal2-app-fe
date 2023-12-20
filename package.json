@@ -10,7 +10,8 @@
   },
   "scripts": {
     "dev": "nuxi dev .app --open",
-    "build": "nuxi build .app",
+    "prod": "npx serve .app/.output/public",
+    "build": "node --max-old-space-size=4096 node_modules/nuxt/bin/nuxt.mjs build .app",
     "clean:all": "pnpm -r clean && rimraf .nuxt .output node_modules",
     "test": "run-p test:*",
     "test:lint": "run-s lint:eslint lint:prettier",
@@ -77,9 +78,8 @@
     "@types/events": "^3.0.2",
     "@types/formidable": "^3.4.0",
     "csv": "^6.3.6",
-    "formidable": "^3.5.0",
-    "h3-formidable": "^0.3.8",
     "moment": "^2.29.4",
+    "node-fetch-native": "^1.4.1",
     "nuxt-vue-select": "^0.1.4",
     "pinia": "^2.1.6"
   }

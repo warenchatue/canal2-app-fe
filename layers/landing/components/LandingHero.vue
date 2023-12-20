@@ -104,10 +104,10 @@ function useGaugePersonal() {
           lead="tight"
           class="text-muted-800 xs:!text-4xl mx-auto mb-4 max-w-4xl dark:text-white"
         >
-          Bienvenue sur la plateforme
+          Bienvenue sur la Plateforme
           <span
             class="text-primary-500 font-hairline underline decoration-dotted underline-offset-4"
-            >Digital Innova Enterprise Solution
+            >Digitale du Groupe CHATUE
           </span>
         </BaseHeading>
         <BaseParagraph

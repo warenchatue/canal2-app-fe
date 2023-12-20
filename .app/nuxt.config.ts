@@ -1,5 +1,4 @@
 import { isProduction } from 'std-env'
-import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 import {
   demoRules,
@@ -62,12 +61,8 @@ export default defineNuxtConfig({
   css: ['~/assets/css/colors.css'],
 
   experimental: {
-    // using parcel as as watcher run faster
-    // when using layers and/or in large projects
     watcher: 'parcel',
-    // Write early hints when using node server.
     writeEarlyHints: true,
-    // Render JSON payloads with support for revivifying complex types.
     renderJsonPayloads: true,
   },
 
@@ -109,15 +104,8 @@ export default defineNuxtConfig({
   },
   nitro: {
     prerender: {
-      crawlLinks: true,
-      routes: [
-        '/',
-        '/dashboards',
-        '/admin',
-        '/donations',
-        '/funds-raising',
-        '/layouts',
-      ],
+      crawlLinks: false,
+      routes: ['/', '/dashboards'],
     },
     esbuild: {
       options: {
@@ -135,33 +123,6 @@ export default defineNuxtConfig({
     },
     build: {
       target: 'esnext',
-      rollupOptions: {
-        plugins: [
-          // Enable rollup polyfills plugin
-          // used during production bundling
-          nodePolyfills({
-            // To add only specific polyfills, add them here. If no option is passed, adds all polyfills
-            include: ['path'],
-            // To exclude specific polyfills, add them to this list. Note: if include is provided, this has no effect
-            exclude: [
-              'http', // Excludes the polyfill for `http` and `node:http`.
-            ],
-            // Whether to polyfill specific globals.
-            globals: {
-              Buffer: true, // can also be 'build', 'dev', or false
-              global: true,
-              process: true,
-            },
-            // Override the default polyfills for specific modules.
-            overrides: {
-              // Since `fs` is not supported in browsers, we can use the `memfs` package to polyfill it.
-              fs: 'memfs',
-            },
-            // Whether to polyfill `node:` protocol imports.
-            protocolImports: true,
-          }),
-        ],
-      },
     },
   },
 
@@ -175,6 +136,6 @@ export default defineNuxtConfig({
     failOn404: true,
   },
   unhead: {
-    seoOptimise: true,
+    seoOptimise: false,
   },
 })

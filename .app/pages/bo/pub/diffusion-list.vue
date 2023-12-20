@@ -25,6 +25,7 @@ const filter = ref('')
 const perPage = ref(25)
 const isModalImportPlaylistOpen = ref(false)
 const isModalConfirmDiffusionOpen = ref(false)
+const playedHour = ref('')
 
 const initialDates = {
   start: new Date(),
@@ -134,7 +135,11 @@ async function confirmDiffusion(planning: any) {
     method: 'put',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
-    body: { ...currentPlanning.value._id, isManualPlay: true },
+    body: {
+      ...currentPlanning.value._id,
+      isManualPlay: true,
+      playedHour: playedHour.value ?? '',
+    },
   })
 
   if (response.data?.value?.success) {
@@ -1110,11 +1115,24 @@ const onSubmit = handleSubmit(
             }}</span>
             ?
           </h3>
+          <div class="col-span-12 sm:col-span-6 my-2">
+            <BaseInput
+              label="Préciser une autre heure: ex: 08:25"
+              icon="ph:clock"
+              placeholder=""
+              v-model="playedHour"
+              :error="errorMessage"
+              :disabled="isSubmitting"
+              type="text"
+              @update:model-value="handleChange"
+              @blur="handleBlur"
+            />
+          </div>
 
           <p
             class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
           >
-            Cette action est rreversible
+            Cette action est reversible
           </p>
         </div>
       </div>
