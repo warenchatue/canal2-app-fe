@@ -86,34 +86,9 @@ const { data, pending } = await useFetch('/api/sales/invoices', {
   query,
 })
 
-const { data: allUsers } = await useFetch('/api/users', {
-  query,
-})
-
 const { data: orgs } = await useFetch('/api/admin/orgs', {
   query,
 })
-
-const commercials = allUsers.value?.data.filter((e: any) => {
-  return e.appRole?.name == UserRole.sale
-})
-function editPackage(spotPackage: any) {
-  isModalNewPackageOpen.value = true
-  isEdit.value = true
-  currentPackage.value = spotPackage
-  setFieldValue('spotPackage._id', spotPackage._id)
-  setFieldValue('spotPackage.label', spotPackage.label)
-  setFieldValue('spotPackage.announcer', spotPackage.announcer)
-  setFieldValue('spotPackage.commercial', spotPackage.manager)
-  setFieldValue('spotPackage.status', spotPackage.status)
-  setFieldValue('spotPackage.invoice.amount', spotPackage.invoice.amount)
-  setFieldValue('spotPackage.invoice.label', spotPackage.invoice.label)
-  setFieldValue('spotPackage.invoice.pending', spotPackage.invoice.pending)
-  setFieldValue(
-    'spotPackage.invoice.totalSpotsPaid',
-    spotPackage.invoice.totalSpotsPaid,
-  )
-}
 
 function confirmDeletePackage(invoice: any) {
   isModalDeletePackageOpen.value = true
@@ -1090,122 +1065,120 @@ const onSubmit = handleSubmit(
           >
             <div class="mx-auto flex w-full flex-col">
               <div>
-                <div>
-                  <div class="col-span-12 sm:col-span-6 mt-2">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="report.org"
+                <div class="col-span-12 sm:col-span-6 mt-2">
+                  <Field
+                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    name="report.org"
+                  >
+                    <BaseListbox
+                      label="Société"
+                      :items="orgs.data"
+                      :classes="{
+                        wrapper: '!w-60',
+                      }"
+                      :properties="{
+                        value: '_id',
+                        label: 'name',
+                        sublabel: 'email',
+                        media: '',
+                      }"
+                      v-model="currentOrg"
+                      :error="errorMessage"
+                      :disabled="isSubmitting"
+                      @update:model-value="handleChange"
+                      @blur="handleBlur"
+                    />
+                  </Field>
+                </div>
+                <div class="col-span-12 md:col-span-6">
+                  <Field
+                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    name="order.team"
+                  >
+                    <BaseSelect
+                      label="Equipe"
+                      icon="ph:funnel"
+                      v-model="currentTeam"
+                      :error="errorMessage"
+                      @update:model-value="handleChange"
+                      @blur="handleBlur"
                     >
-                      <BaseListbox
-                        label="Société"
-                        :items="orgs.data"
-                        :classes="{
-                          wrapper: '!w-60',
-                        }"
-                        :properties="{
-                          value: '_id',
-                          label: 'name',
-                          sublabel: 'email',
-                          media: '',
-                        }"
-                        v-model="currentOrg"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="order.team"
-                    >
-                      <BaseSelect
-                        label="Equipe"
-                        icon="ph:funnel"
-                        v-model="currentTeam"
-                        :error="errorMessage"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      >
-                        <option value="douala">Douala</option>
-                        <option value="yaounde">Yaoundé</option>
-                      </BaseSelect>
-                    </Field>
-                  </div>
-                  <div class="col-span-12 mx-0 mt-2">
-                    <DatePicker
-                      v-model.range="planningDates"
-                      :masks="masks"
-                      mode="date"
-                      hide-time-header
-                      trim-weeks
-                    >
-                      <template #default="{ inputValue, inputEvents }">
-                        <div class="flex w-full flex-col gap-4 sm:flex-row">
-                          <div class="relative grow">
-                            <Field
-                              v-slot="{
-                                field,
-                                errorMessage,
-                                handleChange,
-                                handleBlur,
+                      <option value="douala">Douala</option>
+                      <option value="yaounde">Yaoundé</option>
+                    </BaseSelect>
+                  </Field>
+                </div>
+                <div class="col-span-12 mt-2">
+                  <DatePicker
+                    v-model.range="dates"
+                    :masks="masks"
+                    mode="date"
+                    hide-time-header
+                    trim-weeks
+                  >
+                    <template #default="{ inputValue, inputEvents }">
+                      <div class="flex w-full flex-col gap-4 sm:flex-row">
+                        <div class="relative grow">
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="event.startDateTime"
+                          >
+                            <BaseInput
+                              shape="curved"
+                              label="Date debut"
+                              icon="ph:calendar-blank-duotone"
+                              :value="inputValue.start"
+                              v-on="inputEvents.start"
+                              :classes="{
+                                input: '!h-11 !ps-11',
+                                icon: '!h-11 !w-11',
                               }"
-                              name="event.startDateTime"
-                            >
-                              <BaseInput
-                                shape="curved"
-                                label="Date debut"
-                                icon="ph:calendar-blank-duotone"
-                                :value="inputValue.start"
-                                v-on="inputEvents.start"
-                                :classes="{
-                                  input: '!h-11 !ps-11',
-                                  icon: '!h-11 !w-11',
-                                }"
-                                :model-value="field.value"
-                                :error="errorMessage"
-                                :disabled="isSubmitting"
-                                type="text"
-                                @update:model-value="handleChange"
-                                @blur="handleBlur"
-                              />
-                            </Field>
-                          </div>
-                          <div class="relative grow">
-                            <Field
-                              v-slot="{
-                                field,
-                                errorMessage,
-                                handleChange,
-                                handleBlur,
-                              }"
-                              name="event.endDateTime"
-                            >
-                              <BaseInput
-                                shape="curved"
-                                label="Date fin"
-                                icon="ph:calendar-blank-duotone"
-                                :value="inputValue.end"
-                                v-on="inputEvents.end"
-                                :classes="{
-                                  input: '!h-11 !ps-11',
-                                  icon: '!h-11 !w-11',
-                                }"
-                                :model-value="field.value"
-                                :error="errorMessage"
-                                :disabled="isSubmitting"
-                                type="text"
-                                @update:model-value="handleChange"
-                                @blur="handleBlur"
-                              />
-                            </Field>
-                          </div>
+                              :model-value="field.value"
+                              :error="errorMessage"
+                              :disabled="isSubmitting"
+                              type="text"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
+                            />
+                          </Field>
                         </div>
-                      </template>
-                    </DatePicker>
-                  </div>
+                        <div class="relative grow">
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="event.endDateTime"
+                          >
+                            <BaseInput
+                              shape="curved"
+                              label="Date fin"
+                              icon="ph:calendar-blank-duotone"
+                              :value="inputValue.end"
+                              v-on="inputEvents.end"
+                              :classes="{
+                                input: '!h-11 !ps-11',
+                                icon: '!h-11 !w-11',
+                              }"
+                              :model-value="field.value"
+                              :error="errorMessage"
+                              :disabled="isSubmitting"
+                              type="text"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
+                            />
+                          </Field>
+                        </div>
+                      </div>
+                    </template>
+                  </DatePicker>
                 </div>
               </div>
             </div>

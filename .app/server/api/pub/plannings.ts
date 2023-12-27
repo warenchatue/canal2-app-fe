@@ -10,24 +10,53 @@ export default defineEventHandler(async (event) => {
   const orderCode = (query.orderCode as string) || ''
   const packageId = (query.packageId as string) || ''
   const token = (query.token as string) || ''
-  const key = (query.key as string) || ''
+  const startDate = (query.startDate as string) || ''
+  const endDate = (query.endDate as string) || ''
 
   if (action == 'findOne') {
     const data = await findOne(id, token)
     return { data: data, success: true }
+  } else if (action == 'findToday') {
+    const response = await findToday(token)
+    return {
+      total: response.metaData.totalItems,
+      metaData: response.metaData,
+      data: filterData(
+        response.data,
+        filter,
+        startDate,
+        endDate,
+        page,
+        perPage,
+      ),
+    }
   } else if (action == 'findAll') {
     const response = await findAll(token)
     return {
       total: response.metaData.totalItems,
       metaData: response.metaData,
-      data: filterData(response.data, filter, page, perPage),
+      data: filterData(
+        response.data,
+        filter,
+        startDate,
+        endDate,
+        page,
+        perPage,
+      ),
     }
   } else if (action == 'findAllStats') {
     const response = await findAllStats(token)
     return {
       total: response.metaData.totalItems,
       metaData: response.metaData,
-      data: filterData(response.data, filter, page, perPage),
+      data: filterData(
+        response.data,
+        filter,
+        startDate,
+        endDate,
+        page,
+        perPage,
+      ),
     }
   } else if (action == 'createPlanning') {
     const body = await readBody(event)
@@ -48,14 +77,18 @@ export default defineEventHandler(async (event) => {
 function filterData(
   data: any[],
   filter: string,
+  startDate: string,
+  endDate: string,
   page: number,
   perPage: number,
 ) {
   data = data.filter((item) => item.product?.package?.validator != null)
-
+  data = data.sort((a: any, b: any) => {
+    return a.position < b.position ? -1 : 1
+  })
   const offset = (page - 1) * perPage
-  if (!filter) {
-    data
+  if (!filter && !startDate) {
+    return data
       .filter((item) => {
         return (
           moment(item.date).format('DD/MM/yyyy') ==
@@ -66,11 +99,25 @@ function filterData(
   }
   const filterRe = new RegExp(filter, 'i')
   const filteredData = data.filter((item) => {
-    return [
-      new Date(item.date).toDateString(),
-      item.product?.product,
-      item.product?.package?.announcer?.name,
-    ].some((item) => item.match(filterRe))
+    if (startDate && !filter) {
+      console.log('Start date: ' + startDate)
+      console.log('Item date: ' + item.date)
+      var itemTime = new Date(
+        new Date(item.date).toLocaleDateString(),
+      ).getTime()
+      console.log('itemTime: ' + itemTime)
+      var startTime = new Date(startDate).getTime()
+      console.log('startTime: ' + startTime)
+      var endTime = new Date(endDate).getTime()
+      console.log('endTime: ' + endTime)
+
+      return itemTime >= startTime && itemTime <= endTime
+    } else if (filter) {
+      return [
+        item.product?.product,
+        item.product?.package?.announcer?.name,
+      ].some((item) => item.match(filterRe))
+    }
   })
 
   return filteredData.slice(offset, offset + perPage)
@@ -81,6 +128,23 @@ async function findOne(id: string, token: string) {
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
     runtimeConfig.env.apiUrl + '/plannings/' + id,
+    {
+      method: 'get',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
+}
+
+async function findToday(token: string) {
+  console.log('findToday ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/plannings/today',
     {
       method: 'get',
       headers: {

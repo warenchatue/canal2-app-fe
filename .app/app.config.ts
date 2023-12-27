@@ -94,7 +94,12 @@ export default defineAppConfig({
                 icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Conducteur PUB',
+                name: 'Conducteur du jour',
+                to: '/bo/pub/daily-diffusion-list',
+                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Tous les conducteurs',
                 to: '/bo/pub/diffusion-list',
                 icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
@@ -122,7 +127,7 @@ export default defineAppConfig({
             children: [
               {
                 name: 'Tableau de bord',
-                to: '/bo/sales',
+                // to: '/bo/sales',
                 icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
               },
               {

@@ -758,18 +758,17 @@ const onSubmit = handleSubmit(
                     />
                   </div>
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Nom</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Code</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>
                   Annonceur
                 </TairoTableHeading>
 
-                <TairoTableHeading uppercase spaced>Libellé</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Nom</TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced
                   >Commandés</TairoTableHeading
                 >
 
-                <TairoTableHeading uppercase spaced>Diffusés</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Produits</TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>Période</TairoTableHeading>
@@ -806,7 +805,12 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.code }}
+                  <NuxtLink
+                    class="text-primary-500 underline-offset-4 hover:underline"
+                    :to="'/bo/pub/package-details/' + item._id"
+                  >
+                    {{ item.code }}
+                  </NuxtLink>
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
@@ -830,9 +834,6 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{ item.quantities }} spots
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{ item.numberPlay ?? 0 }} spots
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{ item.numberProducts }}

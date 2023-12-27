@@ -1154,6 +1154,43 @@ const onSubmit = handleSubmit(
                 reglement
               </BaseButtonIcon>
               <BaseButtonIcon
+                v-if="
+                  (authStore.user.appRole?.name == UserRole.sale ||
+                    authStore.user.appRole?.name == UserRole.billing ||
+                    authStore.user.appRole?.name == UserRole.admin ||
+                    authStore.user.appRole?.name == UserRole.superAdmin) &&
+                  pageType == 'view' &&
+                  pageValue == 'order'
+                "
+                :to="'/bo/sales/orders/edit-order-' + currentOrderInvoice?._id"
+                condensed
+                class="!w-32"
+                shape="xl"
+                data-tooltip="Modifier"
+              >
+                <Icon name="ph:eye-duotone" class="h-4 w-4 px-1" />
+                Modifier
+              </BaseButtonIcon>
+              <BaseButtonIcon
+                v-if="
+                  (authStore.user.appRole?.name == UserRole.billing ||
+                    authStore.user.appRole?.name == UserRole.admin ||
+                    authStore.user.appRole?.name == UserRole.superAdmin) &&
+                  pageType == 'view' &&
+                  pageValue == 'invoice'
+                "
+                :to="
+                  '/bo/sales/orders/edit-invoice-' + currentOrderInvoice?._id
+                "
+                condensed
+                class="!w-32"
+                shape="xl"
+                data-tooltip="Modifier"
+              >
+                <Icon name="ph:eye-duotone" class="h-4 w-4 px-1" />
+                Modifier
+              </BaseButtonIcon>
+              <BaseButtonIcon
                 @click="viewOrder()"
                 condensed
                 class="!w-32"

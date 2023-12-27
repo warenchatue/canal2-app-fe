@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import moment from 'moment'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useForm } from 'vee-validate'
 import { DatePicker } from 'v-calendar'
@@ -33,11 +32,9 @@ const initialDates = {
   end: new Date(),
 }
 
-const dates = ref(initialDates)
-
 const planningDates = ref(initialDates)
 
-watch([filter, perPage, dates], () => {
+watch([filter, perPage], () => {
   router.push({
     query: {
       page: undefined,
@@ -45,21 +42,14 @@ watch([filter, perPage, dates], () => {
   })
 })
 
-if (filter.value == '') {
-  dates.value = initialDates
-  filter.value = ''
-}
-
 const app = useAppStore()
 const token = useCookie('token')
 const query = computed(() => {
   return {
     filter: filter.value,
-    startDate: dates.value?.start.toLocaleDateString(),
-    endDate: dates.value?.end.toLocaleDateString(),
     perPage: perPage.value,
     page: page.value,
-    action: 'findAll',
+    action: 'findToday',
     token: token.value,
   }
 })
@@ -105,6 +95,8 @@ const handleClipboard = (textLink: string) => {
 }
 
 const currentPlanning = ref({})
+const chatEl = ref<HTMLElement>()
+const expanded = ref(true)
 const loading = ref(false)
 const success = ref(false)
 
@@ -161,50 +153,6 @@ async function confirmDiffusion(planning: any) {
     })
   }
 }
-async function updatePosition(curP: any, isInc: boolean) {
-  const query2 = computed(() => {
-    return {
-      action: 'updatePlanning',
-      token: token.value,
-      id: curP._id,
-    }
-  })
-
-  const response = await useFetch('/api/pub/plannings', {
-    method: 'put',
-    headers: { 'Content-Type': 'application/json' },
-    query: query2,
-    body: {
-      ...curP._id,
-      position: isInc
-        ? moment(curP?.position).add(1, 'seconds')
-        : moment(curP?.position).subtract(1, 'seconds'),
-    },
-  })
-
-  if (response.data?.value?.success) {
-    success.value = true
-    toaster.clearAll()
-    toaster.show({
-      title: 'Success',
-      message: `Position mise à jour !`,
-      color: 'success',
-      icon: 'ph:check',
-      closable: true,
-    })
-    filter.value = 'planning'
-    filter.value = ''
-  } else {
-    toaster.clearAll()
-    toaster.show({
-      title: 'Oops',
-      message: `Une erreur est survenue !`,
-      color: 'danger',
-      icon: 'ph:check',
-      closable: true,
-    })
-  }
-}
 
 function downloadProductFile(uri: string, item: any) {
   const link = document.createElement('a')
@@ -214,20 +162,6 @@ function downloadProductFile(uri: string, item: any) {
     item.product.message + '.' + fileElements[fileElements.length - 1]
   link.click()
   document.body.removeChild(link)
-  // fetch('/'+uri)
-  //   .then((response) => response.blob())
-  //   .then((blobresp) => {
-  //     var url = window.URL.createObjectURL(blobresp)
-  //     var link = document.createElement('a')
-  //     const fileElements = item.product?.file.split('.')
-  //     link.download =
-  //       item.product.message + '.' + fileElements[fileElements.length - 1]
-  //     link.href = url
-  //     document.body.appendChild(link)
-  //     link.click()
-  //     document.body.removeChild(link)
-  //     // delete link
-  //   })
 }
 
 async function importPlayList() {
@@ -446,68 +380,6 @@ const onSubmit = handleSubmit(
             wrapper: 'w-full sm:w-auto',
           }"
         />
-        <div class="col-span-12 mx-2 -mt-6">
-          <DatePicker
-            v-model.range="dates"
-            :masks="masks"
-            mode="date"
-            hide-time-header
-            trim-weeks
-          >
-            <template #default="{ inputValue, inputEvents }">
-              <div class="flex w-full flex-col gap-4 sm:flex-row">
-                <div class="relative grow">
-                  <Field
-                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                    name="event.startDateTime"
-                  >
-                    <BaseInput
-                      shape="curved"
-                      label="Date debut"
-                      icon="ph:calendar-blank-duotone"
-                      :value="inputValue.start"
-                      v-on="inputEvents.start"
-                      :classes="{
-                        input: '!h-11 !ps-11',
-                        icon: '!h-11 !w-11',
-                      }"
-                      :model-value="field.value"
-                      :error="errorMessage"
-                      :disabled="isSubmitting"
-                      type="text"
-                      @update:model-value="handleChange"
-                      @blur="handleBlur"
-                    />
-                  </Field>
-                </div>
-                <div class="relative grow">
-                  <Field
-                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                    name="event.endDateTime"
-                  >
-                    <BaseInput
-                      shape="curved"
-                      label="Date fin"
-                      icon="ph:calendar-blank-duotone"
-                      :value="inputValue.end"
-                      v-on="inputEvents.end"
-                      :classes="{
-                        input: '!h-11 !ps-11',
-                        icon: '!h-11 !w-11',
-                      }"
-                      :model-value="field.value"
-                      :error="errorMessage"
-                      :disabled="isSubmitting"
-                      type="text"
-                      @update:model-value="handleChange"
-                      @blur="handleBlur"
-                    />
-                  </Field>
-                </div>
-              </div>
-            </template>
-          </DatePicker>
-        </div>
       </template>
       <template #right>
         <BaseSelect
@@ -565,13 +437,20 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalDiffused }}</span>
+                <span>{{ data.metaData?.totalDiffused }}</span>
               </BaseHeading>
             </div>
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+7.8%</span>
+              <span
+                >{{
+                  Math.ceil(
+                    (data.metaData?.totalDiffused / data.metaData?.totalToday) *
+                      100,
+                  )
+                }}%</span
+              >
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -606,13 +485,21 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalNotDiffused }}</span>
+                <span>{{ data.metaData?.totalNotDiffused }}</span>
               </BaseHeading>
             </div>
             <div
               class="text-danger-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>-2.7%</span>
+              <span
+                >{{
+                  Math.ceil(
+                    (data.metaData?.totalNotDiffused /
+                      data.metaData?.totalToday) *
+                      100,
+                  )
+                }}%</span
+              >
               <Icon name="lucide:trending-down" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en baisse</span>
             </div>
@@ -647,13 +534,20 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalPending }}</span>
+                <span>{{ data.metaData?.totalPending }}</span>
               </BaseHeading>
             </div>
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+4.5%</span>
+              <span
+                >{{
+                  Math.ceil(
+                    (data.metaData?.totalPending / data.metaData?.totalToday) *
+                      100,
+                  )
+                }}%</span
+              >
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -688,13 +582,18 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalToday }}</span>
+                <span>{{ data.metaData?.totalToday }}</span>
               </BaseHeading>
             </div>
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+4.5%</span>
+              <span>{{
+                  Math.ceil(
+                    (data.metaData?.totalToday / data.metaData?.totalToday) *
+                      100,
+                  )
+                }}%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -739,7 +638,6 @@ const onSubmit = handleSubmit(
                     />
                   </div>
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Pos </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Heure </TairoTableHeading>
                 <!-- <TairoTableHeading uppercase spaced> Pos </TairoTableHeading> -->
@@ -753,7 +651,7 @@ const onSubmit = handleSubmit(
                 <TairoTableHeading uppercase spaced
                   >Titre du message</TairoTableHeading
                 >
-                <TairoTableHeading uppercase spaced>Durée</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Durée(s)</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Fichier</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
@@ -785,20 +683,6 @@ const onSubmit = handleSubmit(
                       class="text-primary-500"
                     />
                   </div>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <BaseButtonAction
-                    class="mx-1"
-                    @click.prevent="updatePosition(item, false)"
-                  >
-                    <Icon name="lucide:arrow-up" class="h-4 w-3" />
-                  </BaseButtonAction>
-                  <BaseButtonAction
-                    class="mx-1"
-                    @click.prevent="updatePosition(item, true)"
-                  >
-                    <Icon name="lucide:arrow-down" class="h-4 w-3" />
-                  </BaseButtonAction>
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
@@ -882,7 +766,7 @@ const onSubmit = handleSubmit(
                     <span
                       class="text-muted-600 dark:text-muted-300 font-sans text-base"
                     >
-                      {{ item.product.duration ?? '50s' }}
+                      {{ item.product.duration ?? '' }}
                     </span>
                   </div>
                 </TairoTableCell>

@@ -151,6 +151,7 @@ async function addSpotToPlanning() {
     product: activeProduct.value._id,
     hour: activeHour.value._id,
     date: date.toISOString(),
+    position: date.toISOString(),
     isManualPlay: false,
     isAutoPlay: false,
   }
@@ -339,8 +340,6 @@ function checkSpot(d: number, hour: string) {
     ) {
       return [plannedSpots[0].product.tag, 'primary', plannedSpots[0]._id]
     } else if (datePTime > dateNowTime && isPrintCertificate.value == false) {
-      // console.log(dateP)
-      // console.log(dateNow)
       return [plannedSpots[0].product.tag, 'warning', plannedSpots[0]._id]
     } else {
       return ['+', 'default', undefined]
