@@ -5,6 +5,7 @@ import { DatePicker } from 'v-calendar'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
 import moment from 'moment'
+import { ToWords } from 'to-words'
 
 definePageMeta({
   title: 'Devis & Factures',
@@ -151,6 +152,11 @@ const commercials = allUsers.value?.data.filter((e: any) => {
   return e.appRole?.name == UserRole.sale
 })
 
+const finalOrders = allOrders.value?.data.filter((e: any) => {
+  return e.validator
+})
+
+
 const paymentAccounts = accounts.value?.data.filter((e: any) => {
   return e.position == 'd'
 })
@@ -168,11 +174,6 @@ if (pageType.value == 'new') {
   }
 }
 if (pageType.value == 'view' || pageType.value == 'edit') {
-  if (pageType.value == 'view') {
-    isPrint.value = true
-  } else {
-    isEdit.value = true
-  }
   const query = computed(() => {
     return {
       filter: filter.value,
@@ -204,6 +205,11 @@ if (pageType.value == 'view' || pageType.value == 'edit') {
       selectedOrder.value = currentOrderInvoice.value.order
       editOrderInvoiceFile(currentOrderInvoice.value)
     }
+  }
+  if (pageType.value == 'view') {
+    isPrint.value = true
+  } else {
+    isEdit.value = true
   }
 }
 
@@ -295,6 +301,11 @@ async function addInvoicePayment() {
       ...curInvoicePaymentForm.value,
       paymentAccount: curInvoicePaymentForm.value.paymentAccount._id,
       org: currentOrg?.value?._id,
+      announcer: currentOrderInvoice?.value?.announcer._id,
+      data: {
+        invoiceId: currentOrderInvoice.value._id,
+        invoiceCode: currentOrderInvoice.value.code,
+      },
     },
   })
 
@@ -1056,7 +1067,7 @@ const onSubmit = handleSubmit(
           lead="tight"
           class="text-muted-500 dark:text-muted-200"
         >
-          Entreprise :
+          Société :
         </BaseHeading>
         <div class="text-muted-800 dark:text-muted-100 font-medium !w-64">
           <BaseListbox
@@ -1072,10 +1083,7 @@ const onSubmit = handleSubmit(
               media: '',
             }"
             v-model="currentOrg"
-            :error="errorMessage"
             :disabled="isSubmitting"
-            @update:model-value="handleChange"
-            @blur="handleBlur"
           />
         </div>
         <BaseButton
@@ -1088,6 +1096,7 @@ const onSubmit = handleSubmit(
           <span>Créer</span>
         </BaseButton>
         <BaseButton
+          :disabled="currentOrderInvoice.validator"
           v-if="pageType == 'edit'"
           color="primary"
           class="w-full sm:w-32"
@@ -1143,7 +1152,7 @@ const onSubmit = handleSubmit(
             </div>
             <div class="flex items-center justify-end gap-3">
               <BaseButtonIcon
-                v-if="pageValue == 'invoice'"
+                v-if="pageValue == 'invoice' && pageType == 'edit'"
                 @click="isModalCreatePaymentOpen = true"
                 condensed
                 shape="xl"
@@ -1431,7 +1440,7 @@ const onSubmit = handleSubmit(
                         >
                           <BaseListbox
                             label="Devis"
-                            :items="allOrders?.data"
+                            :items="finalOrders"
                             :properties="{
                               value: '_id',
                               label: 'code',
@@ -2228,6 +2237,14 @@ const onSubmit = handleSubmit(
                 <div v-if="isPrint" class="p-2">
                   <BaseParagraph class="!py-2 dark:text-muted-400" size="xs">
                     Montant en lettre :
+                    <span class="font-bold"
+                      >{{
+                        new ToWords({ localeCode: 'fr-FR' }).convert(
+                          currentOrderInvoice?.amount,
+                        )
+                      }}
+                      Francs CFA.</span
+                    >
                   </BaseParagraph>
                   <div
                     class="border-muted-200 dark:border-muted-700 border-t pt-2"
@@ -2247,17 +2264,17 @@ const onSubmit = handleSubmit(
                 <div class="mt-2 p-8 flex justify-end">
                   <div class="dark:text-muted-400">
                     <BaseParagraph size="xs">
-                      The sales department
+                      Le service commercial
                     </BaseParagraph>
                   </div>
                 </div>
                 <footer
                   v-if="isPrint"
-                  class="flex items-end justif-center w-full"
+                  class="flex items-end justif-center w-full absolute inset-x-0 bottom-0"
                 >
-                  <div class="w-full">
+                  <div class="w-full pb-2">
                     <div
-                      class="dark:text-muted-400 border-primary-500 text-center dark:border-primary-700 border-b-2"
+                      class="dark:text-muted-400 border-primary-500 pb-1 text-center dark:border-primary-700 border-b-2"
                     >
                       <BaseParagraph size="xs">
                         {{ currentOrderInvoice?.org?.footerTitle }}

@@ -852,12 +852,12 @@ const onSubmit = handleSubmit(
 
             <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
               <Icon name="ph:globe" class="h-5 w-5" />
-              <BaseText size="sm">Pays: Cameroun</BaseText>
+              <BaseText size="sm">Pays: {{data?.data?.announcer.country?.name}}</BaseText>
             </div>
 
             <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
               <Icon name="ph:globe" class="h-5 w-5" />
-              <BaseText size="sm">Adresse: Dla - Bonapriso</BaseText>
+              <BaseText size="sm">Adresse: {{data?.data?.announcer?.address}}</BaseText>
             </div>
 
             <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
@@ -1659,7 +1659,7 @@ const onSubmit = handleSubmit(
           class="items-center border-b-2 py-1"
         >
           <div shape="straight" class="">
-            <img class="h-32 fit-content" src="/uploads/logos/c2.png" />
+            <img class="h-32 fit-content" :src="data?.data?.org?.logo ?? ''" />
           </div>
           <div shape="straight" class="border border-t-1"></div>
           <h3

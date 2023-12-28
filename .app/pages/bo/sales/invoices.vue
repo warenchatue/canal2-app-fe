@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import moment from 'moment'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useForm } from 'vee-validate'
+import { DatePicker } from 'v-calendar'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
-import { DatePicker } from 'v-calendar'
 
 definePageMeta({
   title: 'Factures',
@@ -23,19 +24,17 @@ const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(10)
-const isModalNewPackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
-const isModalConfirmOrderOpen = ref(false)
 const isModalSalesReportOpen = ref(false)
 const isEdit = ref(false)
 const isPrint = ref(false)
 const toaster = useToaster()
 const currentOrg = ref('')
 const currentTeam = ref('')
-const dates = {
+const dates = ref({
   start: new Date(),
   end: new Date(),
-}
+})
 
 // Check if can have access
 if (
@@ -63,14 +62,6 @@ watch([filter, perPage], () => {
   })
 })
 
-watch(currentOrg, (value) => {
-  filter.value = value?.name
-})
-
-watch(currentTeam, (value) => {
-  filter.value = value
-})
-
 const token = useCookie('token')
 const query = computed(() => {
   return {
@@ -96,7 +87,25 @@ function confirmDeletePackage(invoice: any) {
   currentPackage.value = invoice
 }
 
-function printSalesReport() {
+async function printSalesReport() {
+  const queryP = computed(() => {
+    return {
+      filter: filter.value,
+      perPage: perPage.value,
+      page: page.value,
+      org: currentOrg.value._id,
+      team: currentTeam.value,
+      startDate: dates.value?.start.toLocaleDateString(),
+      endDate: dates.value?.end.toLocaleDateString(),
+      action: 'findAllFilters',
+      token: token.value,
+    }
+  })
+
+  const { data: reportData } = await useFetch('/api/sales/invoices', {
+    query: queryP,
+  })
+  data.value = reportData.value
   isPrint.value = true
   setTimeout(() => {
     var printContents = document.getElementById('print-sales-report').innerHTML
@@ -105,6 +114,12 @@ function printSalesReport() {
     window.print()
     document.body.innerHTML = originalContents
     location.reload()
+  }, 500)
+}
+
+function openReportModal() {
+  setTimeout(() => {
+    isModalSalesReportOpen.value = true
   }, 500)
 }
 
@@ -163,357 +178,7 @@ function toggleAllVisibleSelection() {
 
 const currentPackage = ref({})
 
-// This is the object that will contain the validation messages
-const ONE_MB = 1000000
-const VALIDATION_TEXT = {
-  LABEL_REQUIRED: "Label can't be empty",
-  PHONE_REQUIRED: "Phone number can't be empty",
-  EMAIL_REQUIRED: "Email address can't be empty",
-  COUNTRY_REQUIRED: 'Please select a country',
-}
-
-// This is the Zod schema for the form input
-// It's used to define the shape that the form data will have
-const zodSchema = z
-  .object({
-    spotPackage: z.object({
-      _id: z.string().optional(),
-      label: z.string().min(1, VALIDATION_TEXT.LABEL_REQUIRED),
-      status: z
-        .union([
-          z.literal('onHold'),
-          z.literal('confirmed'),
-          z.literal('paid'),
-          z.literal('closed'),
-        ])
-        .optional(),
-      period: z.string(),
-      invoice: z
-        .object({
-          label: z.string(),
-          amount: z.number(),
-          pending: z.number(),
-          totalSpotsPaid: z.number(),
-          url: z.string(),
-        })
-        .optional()
-        .nullable(),
-      announcer: z
-        .object({
-          _id: z.string(),
-          email: z.string(),
-          name: z.string(),
-          photo: z.string().optional(),
-        })
-        .optional()
-        .nullable(),
-      commercial: z
-        .object({
-          _id: z.string(),
-          email: z.string(),
-          lastName: z.string(),
-          photo: z.string().optional(),
-        })
-        .optional()
-        .nullable(),
-    }),
-  })
-  .superRefine((data, ctx) => {
-    if (!data.spotPackage.label) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: VALIDATION_TEXT.LABEL_REQUIRED,
-        path: ['spotPackage.label'],
-      })
-    }
-  })
-
-// Zod has a great infer method that will
-// infer the shape of the schema into a TypeScript type
-type FormInput = z.infer<typeof zodSchema>
-
-const validationSchema = toTypedSchema(zodSchema)
-const initialValues = computed<FormInput>(() => ({
-  avatar: null,
-  spotPackage: {
-    label: '',
-    period: '',
-    status: 'onHold',
-    invoice: {
-      label: '',
-      amount: 0,
-      pending: 0,
-      totalSpotsPaid: 0,
-      url: '',
-    },
-    announcer: {
-      _id: '',
-      email: '',
-      name: '',
-      flag: '',
-    },
-    commercial: {
-      _id: authStore.user._id ?? '',
-      email: authStore.user.email ?? '',
-      lastName: authStore.user.firstName + ' ' + authStore.user.lastName,
-      photo: '',
-    },
-  },
-}))
-
-const {
-  handleSubmit,
-  isSubmitting,
-  setFieldError,
-  meta,
-  values,
-  errors,
-  resetForm,
-  setFieldValue,
-  setErrors,
-} = useForm({
-  validationSchema,
-  initialValues,
-})
-
 const success = ref(false)
-
-async function confirmOrder() {
-  const query4 = computed(() => {
-    return {
-      action: 'updatePackage',
-      token: token.value,
-      id: currentPackage.value._id,
-    }
-  })
-  if (authStore.user?.appRole?.tag == UserRole.respSaleTag) {
-    currentPackage.value.orderValidator = authStore.user._id
-  } else if (authStore.user.appRole?.tag == UserRole.respBillingTag) {
-    currentPackage.value.billValidator = authStore.user._id
-  } else if (authStore.user.appRole?.name == UserRole.admin) {
-    currentPackage.value.adminValidator = authStore.user._id
-  }
-
-  const response = await useFetch('/api/pub/packages', {
-    method: 'put',
-    headers: { 'Content-Type': 'application/json' },
-    query: query4,
-    body: { ...currentPackage.value },
-  })
-
-  if (response.data?.value?.success) {
-    success.value = true
-    toaster.clearAll()
-    toaster.show({
-      title: 'Success',
-      message: `Commande confirmée !`,
-      color: 'success',
-      icon: 'ph:check',
-      closable: true,
-    })
-    isModalConfirmOrderOpen.value = false
-    filter.value = 'order'
-    filter.value = ''
-  } else {
-    toaster.clearAll()
-    toaster.show({
-      title: 'Oops',
-      message: `Une erreur est survenue !`,
-      color: 'danger',
-      icon: 'ph:check',
-      closable: true,
-    })
-  }
-}
-
-// This is where you would send the form data to the server
-const onSubmit = handleSubmit(
-  async (values) => {
-    success.value = false
-
-    // here you have access to the validated form values
-    console.log('package-create-success', values)
-    const contractUrl =
-      isEdit.value == true ? ref(currentPackage.contractUrl ?? '') : ref('')
-    const invoiceUrl =
-      isEdit.value == true ? ref(currentPackage.invoice?.url ?? '') : ref('')
-
-    try {
-      const isSuccess = ref(false)
-
-      // upload contract file
-      if (orderContractFile.value != null) {
-        const fd = new FormData()
-        fd.append('0', orderContractFile.value)
-        const query3 = computed(() => {
-          return {
-            action: 'new-single-file',
-            dir: 'uploads/ordersFiles/contracts',
-            token: token.value,
-          }
-        })
-
-        const { data: uploadData, refresh } = await useFetch(
-          '/api/files/upload',
-          {
-            method: 'POST',
-            query: query3,
-            body: fd,
-          },
-        )
-        console.log(uploadData)
-        if (uploadData.value?.success == false) {
-          contractUrl.value = ''
-          toaster.show({
-            title: 'Oops',
-            message: `Une erreur est survenue lors de l'importation de des fichiers !`,
-            color: 'danger',
-            icon: 'ph:check',
-            closable: true,
-          })
-        } else {
-          contractUrl.value = uploadData.value.fileName
-        }
-      }
-
-      // upload invoice file
-      if (orderInvoiceFile.value != null) {
-        const fd = new FormData()
-        fd.append('0', orderInvoiceFile.value)
-        const query3 = computed(() => {
-          return {
-            action: 'new-single-file',
-            dir: 'uploads/ordersFiles/invoices',
-            token: token.value,
-          }
-        })
-
-        const { data: uploadData, refresh } = await useFetch(
-          '/api/files/upload',
-          {
-            method: 'POST',
-            query: query3,
-            body: fd,
-          },
-        )
-        console.log(uploadData)
-        if (uploadData.value?.success == false) {
-          invoiceUrl.value = ''
-          toaster.show({
-            title: 'Oops',
-            message: `Une erreur est survenue lors de l'importation de des fichiers !`,
-            color: 'danger',
-            icon: 'ph:check',
-            closable: true,
-          })
-        } else {
-          invoiceUrl.value = uploadData.value.fileName
-        }
-      }
-
-      if (isEdit.value == true) {
-        const query2 = computed(() => {
-          return {
-            action: 'updatePackage',
-            token: token.value,
-            id: values.spotPackage._id,
-          }
-        })
-
-        const response = await useFetch('/api/pub/packages', {
-          method: 'put',
-          headers: { 'Content-Type': 'application/json' },
-          query: query2,
-          body: {
-            ...values.spotPackage,
-            announcer: values.spotPackage?.announcer?._id,
-            manager: values.spotPackage?.commercial?._id,
-            invoice: { ...values.spotPackage?.invoice, url: invoiceUrl.value },
-            contractUrl,
-          },
-        })
-        isSuccess.value = response.data.value?.success
-      } else {
-        const query2 = computed(() => {
-          return {
-            action: 'createPackage',
-            token: token.value,
-          }
-        })
-
-        const response = await useFetch('/api/pub/packages', {
-          method: 'post',
-          headers: { 'Content-Type': 'application/json' },
-          query: query2,
-          body: {
-            ...values.spotPackage,
-            announcer: values.spotPackage?.announcer?._id,
-            manager: values.spotPackage?.commercial?._id,
-            _id: undefined,
-            invoice: { ...values.spotPackage?.invoice, url: invoiceUrl.value },
-            contractUrl,
-          },
-        })
-        isSuccess.value = response.data.value?.success
-      }
-      if (isSuccess) {
-        success.value = true
-        toaster.clearAll()
-        toaster.show({
-          title: 'Success',
-          message:
-            isEdit.value == false ? `Package créé !` : `Package mis à jour`,
-          color: 'success',
-          icon: 'ph:check',
-          closable: true,
-        })
-        isModalNewPackageOpen.value = false
-        resetForm()
-        filter.value = 'spotPackage'
-        filter.value = ''
-      } else {
-        toaster.clearAll()
-        toaster.show({
-          title: 'Oops',
-          message: `Une erreur est survenue !`,
-          color: 'danger',
-          icon: 'ph:check',
-          closable: true,
-        })
-      }
-    } catch (error: any) {
-      console.log(error)
-      document.documentElement.scrollTo({
-        top: 0,
-        behavior: 'smooth',
-      })
-      toaster.clearAll()
-      toaster.show({
-        title: 'Oops!',
-        message: 'Veuillez examiner les erreurs dans le formulaire',
-        color: 'danger',
-        icon: 'lucide:alert-triangle',
-        closable: true,
-      })
-      // return
-    }
-
-    success.value = true
-  },
-  (error) => {
-    // this callback is optional and called only if the form has errors
-    success.value = false
-
-    // here you have access to the error
-    console.log('payment-create-error', error)
-
-    // you can use it to scroll to the first error
-    document.documentElement.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    })
-  },
-)
 </script>
 
 <template>
@@ -545,7 +210,7 @@ const onSubmit = handleSubmit(
         <BaseButton
           color="primary"
           class="w-full sm:w-52"
-          @click="isModalSalesReportOpen = true"
+          @click="openReportModal()"
         >
           <Icon name="ph:file" class="h-4 w-4" />
           <span>Rapports</span>
@@ -758,7 +423,9 @@ const onSubmit = handleSubmit(
           v-if="isPrint"
           class="font-heading text-muted-900 text-base font-medium pb-2 pt-1 px-2 leading-6 dark:text-white"
         >
-          Etat de ventes du .. au .. Pour la ville de .. de la société
+          Etat des ventes du {{ dates.start.toLocaleDateString('fr-FR') }} au
+          {{ dates.end.toLocaleDateString('fr-FR') }} Pour la ville de
+          {{ currentTeam.toUpperCase() }} de la société
           {{ currentOrg?.name ?? '' }}
         </h4>
         <h5
@@ -969,26 +636,26 @@ const onSubmit = handleSubmit(
                       >C</a
                     >
                   </TairoTableCell>
-                  <TairoTableCell v-if="!isPrint" spaced class="capitalize">
+                  <TairoTableCell spaced class="capitalize">
                     <BaseTag
-                      v-if="item.state === 'trashed'"
-                      color="muted"
+                      v-if="item.validator"
+                      color="success"
                       flavor="pastel"
                       shape="full"
                       condensed
                       class="font-medium"
                     >
-                      {{ item.state }}
+                      Confirmée
                     </BaseTag>
                     <BaseTag
-                      v-else-if="item.state === 'active'"
+                      v-else
                       color="warning"
                       flavor="pastel"
                       shape="full"
                       condensed
                       class="font-medium"
                     >
-                      {{ item.state }}
+                      Brouillon
                     </BaseTag>
                   </TairoTableCell>
                   <TairoTableCell v-if="!isPrint" spaced>
@@ -1057,7 +724,6 @@ const onSubmit = handleSubmit(
           method="POST"
           action=""
           class="divide-muted-200 dark:divide-muted-700"
-          @submit.prevent="onSubmit"
         >
           <div
             shape="curved"
@@ -1084,7 +750,6 @@ const onSubmit = handleSubmit(
                       }"
                       v-model="currentOrg"
                       :error="errorMessage"
-                      :disabled="isSubmitting"
                       @update:model-value="handleChange"
                       @blur="handleBlur"
                     />
@@ -1093,7 +758,7 @@ const onSubmit = handleSubmit(
                 <div class="col-span-12 md:col-span-6">
                   <Field
                     v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                    name="order.team"
+                    name="report.team"
                   >
                     <BaseSelect
                       label="Equipe"
@@ -1111,7 +776,6 @@ const onSubmit = handleSubmit(
                 <div class="col-span-12 mt-2">
                   <DatePicker
                     v-model.range="dates"
-                    :masks="masks"
                     mode="date"
                     hide-time-header
                     trim-weeks
@@ -1140,7 +804,6 @@ const onSubmit = handleSubmit(
                               }"
                               :model-value="field.value"
                               :error="errorMessage"
-                              :disabled="isSubmitting"
                               type="text"
                               @update:model-value="handleChange"
                               @blur="handleBlur"
@@ -1169,7 +832,6 @@ const onSubmit = handleSubmit(
                               }"
                               :model-value="field.value"
                               :error="errorMessage"
-                              :disabled="isSubmitting"
                               type="text"
                               @update:model-value="handleChange"
                               @blur="handleBlur"
@@ -1255,64 +917,6 @@ const onSubmit = handleSubmit(
               flavor="solid"
               @click="deletePackage(currentPackage)"
               >Suppimer</BaseButton
-            >
-          </div>
-        </div>
-      </template>
-    </TairoModal>
-
-    <!-- Modal confirm order -->
-    <TairoModal
-      :open="isModalConfirmOrderOpen"
-      size="sm"
-      @close="isModalConfirmOrderOpen = false"
-    >
-      <template #header>
-        <!-- Header -->
-        <div class="flex w-full items-center justify-between p-4 md:p-6">
-          <h3
-            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
-          >
-            Confirmation de la commande
-          </h3>
-
-          <BaseButtonClose @click="isModalConfirmOrderOpen = false" />
-        </div>
-      </template>
-
-      <!-- Body -->
-      <div class="p-4 md:p-6">
-        <div class="mx-auto w-full max-w-xs text-center">
-          <h3
-            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
-          >
-            Voulez-vous confirmer la commande
-            <span class="text-primary-500">{{ currentPackage.label }}</span>
-            de
-            <span class="text-primary-500"
-              >{{ currentPackage?.announcer?.name }}
-            </span>
-            ?
-          </h3>
-
-          <p
-            class="font-alt text-muted-700 dark:text-muted-400 text-sm leading-5"
-          >
-            Cette action est reversible
-          </p>
-        </div>
-      </div>
-
-      <template #footer>
-        <!-- Footer -->
-        <div class="p-4 md:p-6">
-          <div class="flex gap-x-2">
-            <BaseButton @click="isModalConfirmOrderOpen = false"
-              >Annuler</BaseButton
-            >
-
-            <BaseButton color="primary" flavor="solid" @click="confirmOrder()"
-              >Valider</BaseButton
             >
           </div>
         </div>

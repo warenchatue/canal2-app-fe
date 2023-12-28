@@ -136,6 +136,11 @@ export default defineAppConfig({
                 icon: { name: 'lucide:file', class: 'w-4 h-4' },
               },
               {
+                name: 'Bons de commandes',
+                // to: '/bo/sales/invoices',
+                icon: { name: 'lucide:file', class: 'w-4 h-4' },
+              },
+              {
                 name: 'Factures clients',
                 to: '/bo/sales/invoices',
                 icon: { name: 'lucide:file', class: 'w-4 h-4' },

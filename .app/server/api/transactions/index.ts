@@ -5,12 +5,36 @@ export default defineEventHandler(async (event) => {
   const filter = (query.filter as string) || ''
   const action = (query.action as string) || 'get'
   const txnId = (query.txnId as string) || ''
-  const orgId = (query.orgId as string) || ''
   const token = (query.token as string) || ''
+  const org = (query.org as string) || ''
+  const team = (query.team as string) || ''
+  const startDate = (query.startDate as string) || ''
+  const endDate = (query.endDate as string) || ''
 
   if (action == 'findOne') {
     const data = await findOne(txnId, token)
     return { data: data, success: true }
+  } else if (action == 'findAllFilters') {
+    let data = await findAll(token)
+    var startTime = new Date(startDate).getTime()
+    var endTime = new Date(endDate).getTime()
+    data = data.filter((e: any) => {
+      var itemTime = new Date(
+        new Date(e.createdAt).toLocaleDateString(),
+      ).getTime()
+
+      return (
+        e.org._id == org &&
+        // e.team == team &&
+        itemTime >= startTime &&
+        itemTime <= endTime
+      )
+    })
+
+    return {
+      data: filterData(data, filter, page, 1000),
+      success: true,
+    }
   } else if (action == 'findAll') {
     const data = await findAll(token)
     return { data: filterData(data, filter, page, perPage), success: true }

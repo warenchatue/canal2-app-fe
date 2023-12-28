@@ -786,24 +786,24 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag
-                    v-if="item.state === 'trashed'"
-                    color="muted"
+                    v-if="item.validator"
+                    color="success"
                     flavor="pastel"
                     shape="full"
                     condensed
                     class="font-medium"
                   >
-                    {{ item.state }}
+                    Confirmé
                   </BaseTag>
                   <BaseTag
-                    v-else-if="item.state === 'active'"
+                    v-else
                     color="warning"
                     flavor="pastel"
                     shape="full"
                     condensed
                     class="font-medium"
                   >
-                    {{ item.state }}
+                    Brouillon
                   </BaseTag>
                 </TairoTableCell>
                 <TairoTableCell spaced>

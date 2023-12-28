@@ -19,9 +19,15 @@ importers:
       '@types/formidable':
         specifier: ^3.4.0
         version: 3.4.0
+      convertir-nombre-lettre:
+        specifier: ^1.0.2
+        version: 1.0.2
       csv:
         specifier: ^6.3.6
         version: 6.3.6
+      i18n-num-in-words:
+        specifier: ^1.0.4
+        version: 1.0.4
       moment:
         specifier: ^2.29.4
         version: 2.29.4
@@ -34,6 +40,9 @@ importers:
       pinia:
         specifier: ^2.1.6
         version: 2.1.6(typescript@5.0.4)
+      to-words:
+        specifier: ^4.0.0
+        version: 4.0.0
     devDependencies:
       '@iconify/json':
         specifier: 2.2.67
@@ -3741,6 +3750,10 @@ packages:
   /convert-source-map@1.9.0:
     resolution: {integrity: sha512-ASFBup0Mz1uyiIjANan1jzLQami9z1PoYSZCiiYW2FczPbenXc45FZdBZLzOT+r6+iciuEModtmCti+hjaAk0A==}
 
+  /convertir-nombre-lettre@1.0.2:
+    resolution: {integrity: sha512-HPqznedT+IYRU3IMdTntcD5WLOYokTLFVGVmQY601E6XCQTTVapRDOR5fgu3ZZt77ZT9b4XxMf5UOncaDZQl9Q==}
+    dev: false
+
   /cookie-es@0.5.0:
     resolution: {integrity: sha512-RyZrFi6PNpBFbIaQjXDlFIhFVqV42QeKSZX1yQIl6ihImq6vcHNGMtqQ/QzY3RMPuYSkvsRwtnt5M9NeYxKt0g==}
     dev: true
@@ -5636,6 +5649,10 @@ packages:
   /human-signals@4.3.1:
     resolution: {integrity: sha512-nZXjEF2nbo7lIw3mgYjItAfgQXog3OjJogSbKa2CQIIvSGWcKgeJnQlNXip6NglNzYH45nSRiEVimMvYL8DDqQ==}
     engines: {node: '>=14.18.0'}
+
+  /i18n-num-in-words@1.0.4:
+    resolution: {integrity: sha512-deo/87RBBT6+G9vYMCMS82xhje9+eS+EN+oRH/kEkBLiZiNTNmyu3ebVyh29NNZW4a8bFhxaYnwKNKW22MwJjw==}
+    dev: false
 
   /iconv-lite@0.4.24:
     resolution: {integrity: sha512-v3MXnZAcvnywkTUEZomIActle7RXXeedOR31wwl7VlyoXO4Qi9arvSenNQWne1TcRwhCL1HwLI21bEqdpj8/rA==}
@@ -10261,6 +10278,11 @@ packages:
     engines: {node: '>=8.0'}
     dependencies:
       is-number: 7.0.0
+
+  /to-words@4.0.0:
+    resolution: {integrity: sha512-a05O5RDrjBcnNWR1GHXo7PH9GMsESNtoqmm60EnTMdCIWefcVKMwrzWQGxN0jSaYwwxnU6iBu5oWNV2lsRT5/g==}
+    engines: {node: '>=12.0.0'}
+    dev: false
 
   /toidentifier@1.0.1:
     resolution: {integrity: sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA==}

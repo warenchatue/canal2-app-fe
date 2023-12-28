@@ -8,6 +8,10 @@ export default defineEventHandler(async (event) => {
   const action = (query.action as string) || 'get'
   const id = (query.id as string) || ''
   const token = (query.token as string) || ''
+  const org = (query.org as string) || ''
+  const team = (query.team as string) || ''
+  const startDate = (query.startDate as string) || ''
+  const endDate = (query.endDate as string) || ''
 
   if (action == 'findOne') {
     const data = await findOne(id, token)
@@ -18,6 +22,26 @@ export default defineEventHandler(async (event) => {
       total: response.metaData.totalItems,
       metaData: response.metaData,
       data: filterData(response.data, filter, page, perPage),
+    }
+  } else if (action == 'findAllFilters') {
+    const response = await findAll(token)
+    var startTime = new Date(startDate).getTime()
+    var endTime = new Date(endDate).getTime()
+    response.data = response.data.filter((e: any) => {
+      var itemTime = new Date(new Date(e.date).toLocaleDateString()).getTime()
+
+      return (
+        e.org._id == org &&
+        e.team == team &&
+        itemTime >= startTime &&
+        itemTime <= endTime
+      )
+    })
+
+    return {
+      total: response.metaData.totalItems,
+      metaData: response.metaData,
+      data: filterData(response.data, filter, page, 1000),
     }
   } else if (action == 'findAllUnpaid') {
     const response = await findAll(token)

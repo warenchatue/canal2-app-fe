@@ -90,6 +90,7 @@ const zodSchema = z
       phone: z.string(),
       phone2: z.string().optional(),
       address: z.string(),
+      logo: z.string().optional(),
       city: z.string(),
       country: z
         .object({
@@ -138,6 +139,7 @@ const initialValues = computed<FormInput>(() => ({
     rc: '',
     city: '',
     address: '',
+    logo: '',
     country: {
       _id: '',
       abbr: '',
@@ -172,14 +174,14 @@ function editOrg(org: any) {
   setFieldValue('org._id', org._id)
   setFieldValue('org.name', org.name)
   setFieldValue('org.email', org.email)
-  setFieldValue('org.nc', org.nc)
   setFieldValue('org.phone', org.phone)
   setFieldValue('org.phone2', org.phone2)
-  setFieldValue('org.rc', org.rc)
+  setFieldValue('org.nc', org.nc)
   setFieldValue('org.rc', org.rc)
   setFieldValue('org.address', org.address)
   setFieldValue('org.city', org.city)
   setFieldValue('org.country', org.country)
+  setFieldValue('org.logo', org.logo)
   setFieldValue('org.footerTitle', org.footerTitle)
 }
 
@@ -547,7 +549,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            {{ isEdit == true ? 'Mêttre à jour ' : 'Nouvelle' }} entreprise
+            {{ isEdit == true ? 'Mêttre à jour ' : 'Nouvelle' }} société
           </h3>
 
           <BaseButtonClose @click="isModalNewOrgOpen = false" />
@@ -738,6 +740,23 @@ const onSubmit = handleSubmit(
                       <BaseInput
                         label="Titre du pied de page"
                         icon="ph:file-duotone"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="org.logo"
+                    >
+                      <BaseInput
+                        label="Chemin du logo"
+                        icon="ph:camera-duotone"
                         placeholder=""
                         :model-value="field.value"
                         :error="errorMessage"

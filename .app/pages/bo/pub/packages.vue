@@ -970,7 +970,15 @@ const onSubmit = handleSubmit(
                         label="Facture"
                         clearable
                         :clear-value="''"
-                      />
+                      >
+                        <template #empty="value">
+                          <!-- Use destruct to keep what you need -->
+                          <div v-if="value.query.length < 3">
+                            Saisissez au-moins 3 caractères
+                          </div>
+                          <div v-else>Aucun resultat.</div>
+                        </template>
+                      </BaseAutocomplete>
                     </Field>
                   </div>
                   <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
@@ -991,7 +999,15 @@ const onSubmit = handleSubmit(
                         placeholder="e.g. DEV/2023"
                         label="Devis"
                         clearable
-                      />
+                      >
+                        <template #empty="value">
+                          <!-- Use destruct to keep what you need -->
+                          <div v-if="value.query.length < 3">
+                            Saisissez au-moins 3 caractères
+                          </div>
+                          <div v-else>Aucun resultat.</div>
+                        </template>
+                      </BaseAutocomplete>
                     </Field>
                   </div>
                   <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
