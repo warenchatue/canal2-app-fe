@@ -493,8 +493,8 @@ const success = ref(false)
                   <TairoTableHeading uppercase spaced>
                     Total HT
                   </TairoTableHeading>
-                  <TairoTableHeading uppercase spaced> TVA </TairoTableHeading>
-                  <TairoTableHeading uppercase spaced> TSP </TairoTableHeading>
+                  <TairoTableHeading v-if="false" uppercase spaced> TVA </TairoTableHeading>
+                  <TairoTableHeading v-if="false" uppercase spaced> TSP </TairoTableHeading>
                   <TairoTableHeading uppercase spaced>
                     Total TTC
                   </TairoTableHeading>
@@ -587,13 +587,13 @@ const success = ref(false)
                     }}
                     XAF
                   </TairoTableCell>
-                  <TairoTableCell light spaced>
+                  <TairoTableCell v-if="false" light spaced>
                     {{
                       new Intl.NumberFormat().format(Math.ceil(item.tva ?? 0))
                     }}
                     XAF
                   </TairoTableCell>
-                  <TairoTableCell light spaced>
+                  <TairoTableCell v-if="false" light spaced>
                     {{
                       new Intl.NumberFormat().format(Math.ceil(item.tsp ?? 0))
                     }}
@@ -636,7 +636,7 @@ const success = ref(false)
                       >C</a
                     >
                   </TairoTableCell>
-                  <TairoTableCell spaced class="capitalize">
+                  <TairoTableCell v-if="!isPrint" spaced class="capitalize">
                     <BaseTag
                       v-if="item.validator"
                       color="success"
@@ -683,6 +683,104 @@ const success = ref(false)
                       /></BaseButtonAction>
                     </div>
                   </TairoTableCell>
+                </TairoTableRow>
+                <TairoTableRow v-if="isPrint">
+                  <TairoTableCell v-if="!isPrint" spaced> </TairoTableCell>
+                  <TairoTableCell light spaced> </TairoTableCell>
+                  <TairoTableCell spaced> </TairoTableCell>
+                  <TairoTableCell light spaced> </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" light spaced>
+                  </TairoTableCell>
+
+                  <TairoTableCell light spaced>
+                    {{
+                      new Intl.NumberFormat().format(
+                        Math.ceil(
+                          data.data
+                            .map((item) => item.amountHT)
+                            .reduce((accumulator, currentValue) => {
+                              return accumulator + currentValue
+                            }, 0) ?? 0,
+                        ),
+                      )
+                    }}
+                    XAF
+                  </TairoTableCell>
+                  <TairoTableCell v-if="false" light spaced>
+                    {{
+                      new Intl.NumberFormat().format(
+                        Math.ceil(
+                          data.data
+                            .map((item) => item.tva)
+                            .reduce((accumulator, currentValue) => {
+                              return accumulator + currentValue
+                            }, 0) ?? 0,
+                        ),
+                      )
+                    }}
+                    XAF
+                  </TairoTableCell>
+                  <TairoTableCell v-if="false" light spaced>
+                    {{
+                      new Intl.NumberFormat().format(
+                        Math.ceil(
+                          data.data
+                            .map((item) => item.tsp)
+                            .reduce((accumulator, currentValue) => {
+                              return accumulator + currentValue
+                            }, 0) ?? 0,
+                        ),
+                      )
+                    }}
+                    XAF
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    {{
+                      new Intl.NumberFormat().format(
+                        Math.ceil(
+                          data.data
+                            .map((item) => item.amount)
+                            .reduce((accumulator, currentValue) => {
+                              return accumulator + currentValue
+                            }, 0) ?? 0,
+                        ),
+                      )
+                    }}
+                    XAF
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    {{
+                      new Intl.NumberFormat().format(
+                        Math.ceil(
+                          data.data
+                            .map((item) => item.paid)
+                            .reduce((accumulator, currentValue) => {
+                              return accumulator + currentValue
+                            }, 0) ?? 0,
+                        ),
+                      )
+                    }}
+                    XAF
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    {{
+                      new Intl.NumberFormat().format(
+                        Math.ceil(
+                          data.data
+                            .map((item) => item.amount - item.paid ?? 0)
+                            .reduce((accumulator, currentValue) => {
+                              return accumulator + currentValue
+                            }, 0) ?? 0,
+                        ),
+                      )
+                    }}
+                    XAF
+                  </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" light spaced>
+                  </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" light spaced>
+                  </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" spaced> </TairoTableCell>
                 </TairoTableRow>
               </TairoTable>
             </div>

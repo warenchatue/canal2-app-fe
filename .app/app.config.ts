@@ -226,17 +226,17 @@ export default defineAppConfig({
             children: [
               {
                 name: 'Tableau de bord',
-                to: '/bo/pub',
+                // to: '/bo/pub',
                 icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Pièces comptables',
-                to: '/bo/pub/reports',
+                to: '/bo/accountancy/accounting-docs',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Rapports',
-                to: '/bo/pub/reports',
+                // to: '/bo/pub/reports',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
             ],

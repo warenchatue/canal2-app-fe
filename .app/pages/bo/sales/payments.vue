@@ -851,7 +851,7 @@ const onSubmit = handleSubmit(
                   <TairoTableHeading uppercase spaced>
                     Montant règlement
                   </TairoTableHeading>
-                  <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
+                  <TairoTableHeading  v-if="!isPrint" uppercase spaced>Statut</TairoTableHeading>
                   <TairoTableHeading v-if="!isPrint" uppercase spaced
                     >Action</TairoTableHeading
                   >
@@ -907,7 +907,9 @@ const onSubmit = handleSubmit(
                   <TairoTableCell light spaced>
                     <NuxtLink
                       class="text-primary-500 underline-offset-4 hover:underline"
-                      :to="'/bo/sales/orders/view-invoice-' + item.data?.invoiceId"
+                      :to="
+                        '/bo/sales/orders/view-invoice-' + item.data?.invoiceId
+                      "
                     >
                       {{ item.data?.invoiceCode }}
                     </NuxtLink>
@@ -931,7 +933,7 @@ const onSubmit = handleSubmit(
                     XAF
                   </TairoTableCell>
 
-                  <TairoTableCell spaced class="capitalize">
+                  <TairoTableCell v-if="!isPrint" spaced class="capitalize">
                     <BaseTag
                       v-if="item.state === 'trashed'"
                       color="muted"
@@ -978,6 +980,38 @@ const onSubmit = handleSubmit(
                       /></BaseButtonAction>
                     </div>
                   </TairoTableCell>
+                </TairoTableRow>
+                <TairoTableRow v-if="isPrint">
+                  <TairoTableCell v-if="!isPrint" spaced> </TairoTableCell>
+                  <TairoTableCell light spaced> </TairoTableCell>
+                  <TairoTableCell spaced> </TairoTableCell>
+                  <TairoTableCell light spaced> </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" light spaced>
+                  </TairoTableCell>
+                   <TairoTableCell light spaced>
+                  </TairoTableCell>
+                   <TairoTableCell  light spaced>
+                  </TairoTableCell>
+
+                  <TairoTableCell light spaced> </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    {{
+                      new Intl.NumberFormat().format(
+                        Math.ceil(
+                          data.data
+                            .map((item) => item.amount)
+                            .reduce((accumulator, currentValue) => {
+                              return accumulator + currentValue
+                            }, 0) ?? 0,
+                        ),
+                      )
+                    }}
+                    XAF
+                  </TairoTableCell>
+
+                  <TairoTableCell v-if="!isPrint" light spaced>
+                  </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" spaced> </TairoTableCell>
                 </TairoTableRow>
               </TairoTable>
             </div>
