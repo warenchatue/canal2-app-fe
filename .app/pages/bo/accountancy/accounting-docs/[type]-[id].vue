@@ -28,7 +28,7 @@ const filter = ref('')
 const perPage = ref(12000)
 const isEdit = ref(false)
 const isPrint = ref(false)
-const currentOrderInvoice = ref({})
+const currentAccountingDoc = ref({})
 const token = useCookie('token')
 const isModalCreatePackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
@@ -102,14 +102,6 @@ const { data: allOrders } = await useFetch('/api/sales/orders', {
   query,
 })
 
-const { data: announcers } = await useFetch('/api/sales/announcers', {
-  query,
-})
-
-const { data: articles } = await useFetch('/api/sales/articles', {
-  query,
-})
-
 const { data: orgs } = await useFetch('/api/admin/orgs', {
   query,
 })
@@ -122,31 +114,41 @@ const { data: accounts } = await useFetch('/api/accountancy/accounts', {
   query,
 })
 
-const { data: paymentMethods } = await useFetch(
-  '/api/accountancy/payment-methods',
-  {
-    query,
-  },
-)
-
-const { data: paymentConditions } = await useFetch(
-  '/api/accountancy/payment-conditions',
-  {
-    query,
-  },
-)
-
 const { data: allUsers } = await useFetch('/api/users', {
   query,
 })
 
-const transformedAnnouncers = announcers.value?.data.map((e: any) => {
-  const invoice = {
+const transformedUsers = allUsers.value?.data.map((e: any) => {
+  const user = {
     id: e._id,
-    name: e.name,
+    name: e.firstName + ' ' + e.lastName,
   }
-  return invoice
+  return user
 })
+
+const transformedAccounts = accounts.value?.data
+  .filter((e: any) => {
+    return e.position == 'd'
+  })
+  .map((e: any) => {
+    const account = {
+      id: e._id,
+      name: e.label,
+    }
+    return account
+  })
+
+const transformedCAccounts = accounts.value?.data
+  .filter((e: any) => {
+    return e.position == 'c'
+  })
+  .map((e: any) => {
+    const account = {
+      id: e._id,
+      name: e.label,
+    }
+    return account
+  })
 
 const commercials = allUsers.value?.data.filter((e: any) => {
   return e.appRole?.name == UserRole.sale
@@ -161,16 +163,11 @@ const paymentAccounts = accounts.value?.data.filter((e: any) => {
 })
 
 const pageType = computed(() => route.params.type)
-const pageValue = computed(() => route.params.value)
 const pageId = computed(() => route.params.id)
 
 let pageTitle = ''
 if (pageType.value == 'new') {
-  if (pageValue.value == 'order') {
-    pageTitle = 'Nouveau Devis'
-  } else if (pageValue.value == 'invoice') {
-    pageTitle = 'Nouvelle Facture'
-  }
+  pageTitle = 'Nouvelle pièce comptable'
 }
 if (pageType.value == 'view' || pageType.value == 'edit') {
   const query = computed(() => {
@@ -183,28 +180,19 @@ if (pageType.value == 'view' || pageType.value == 'edit') {
       token: token.value,
     }
   })
-  if (pageValue.value == 'order') {
-    const { data: singleOrder } = await useFetch('/api/sales/orders', {
+
+  pageTitle = 'Mise à jour Pièce comptable'
+  const { data: singleAccountingDoc } = await useFetch(
+    '/api/accountancy/accounting-docs',
+    {
       query,
-    })
-    if (singleOrder.value?.success) {
-      currentOrderInvoice.value = singleOrder.value?.data
-      packageId.value = currentOrderInvoice.value.package?._id ?? undefined
-      editOrderInvoiceFile(currentOrderInvoice.value)
-    }
-  } else if (pageValue.value == 'invoice') {
-    pageTitle = 'Mise à jour Facture'
-    const { data: singleOrder } = await useFetch('/api/sales/invoices', {
-      query,
-    })
-    if (singleOrder.value?.success) {
-      currentOrderInvoice.value = singleOrder.value?.data
-      packageId.value =
-        currentOrderInvoice.value.order.package?._id ?? undefined
-      selectedOrder.value = currentOrderInvoice.value.order
-      editOrderInvoiceFile(currentOrderInvoice.value)
-    }
+    },
+  )
+  if (singleAccountingDoc.value?.success) {
+    currentAccountingDoc.value = singleAccountingDoc.value?.data
+    editAccountingDoc(currentAccountingDoc.value)
   }
+
   if (pageType.value == 'view') {
     isPrint.value = true
   } else {
@@ -214,14 +202,16 @@ if (pageType.value == 'view' || pageType.value == 'edit') {
 
 watch(selectedOrder, (value) => {
   setTimeout(() => {
-    editOrderInvoiceFile(value)
+    editAccountingDoc(value)
   }, 1000)
 })
 
-function printOrder() {
+function printAccountingDoc() {
   isPrint.value = true
   setTimeout(() => {
-    var printContents = document.getElementById('print-invoice').innerHTML
+    var printContents = document.getElementById(
+      'print-accounting-doc',
+    ).innerHTML
     var originalContents = document.body.innerHTML
     document.body.innerHTML = printContents
     window.print()
@@ -230,16 +220,10 @@ function printOrder() {
   }, 1000)
 }
 
-function confirmDeleteOrder(order: any) {
-  isModalDeletePackageOpen.value = true
-  isEdit.value = false
-  currentPackage.value = order
-}
-
 function viewOrder() {
   setTimeout(() => {
     isPrint.value = !isPrint.value
-    editOrderInvoiceFile(currentOrderInvoice.value)
+    editAccountingDoc(currentAccountingDoc.value)
   }, 1000)
 }
 
@@ -288,7 +272,7 @@ async function addInvoicePayment() {
     return {
       action: 'addInvoicePayment',
       token: token.value,
-      id: currentOrderInvoice.value._id,
+      id: currentAccountingDoc.value._id,
     }
   })
 
@@ -300,10 +284,10 @@ async function addInvoicePayment() {
       ...curInvoicePaymentForm.value,
       paymentAccount: curInvoicePaymentForm.value.paymentAccount._id,
       org: currentOrg?.value?._id,
-      announcer: currentOrderInvoice?.value?.announcer._id,
+      announcer: currentAccountingDoc?.value?.announcer._id,
       data: {
-        invoiceId: currentOrderInvoice.value._id,
-        invoiceCode: currentOrderInvoice.value.code,
+        invoiceId: currentAccountingDoc.value._id,
+        invoiceCode: currentAccountingDoc.value.code,
       },
     },
   })
@@ -379,59 +363,39 @@ const VALIDATION_TEXT = {
 // It's used to define the shape that the form data will have
 const zodSchema = z
   .object({
-    order: z.object({
+    accountingDoc: z.object({
       _id: z.string().optional(),
-      label: z.string().optional(),
+      label: z.string(),
       amount: z.number(),
       team: z.string().optional(),
-      pending: z.number(),
-      status: z
-        .union([
-          z.literal('onHold'),
-          z.literal('confirmed'),
-          z.literal('paid'),
-          z.literal('closed'),
-        ])
-        .optional(),
-      paymentMethod: z
+      paymentAccount: z
         .object({
-          _id: z.string(),
-          label: z.string(),
-          description: z.string(),
+          id: z.string(),
+          name: z.string(),
         })
         .optional()
         .nullable(),
-      paymentCondition: z
-        .object({
-          _id: z.string(),
-          label: z.string(),
-          delay: z.number(),
-          description: z.string(),
-        })
-        .optional()
-        .nullable(),
-      announcer: z.object({
+      beneficiary: z.object({
         id: z.string(),
         name: z.string(),
         email: z.string().optional(),
       }),
-      commercial: z
+      authorizer: z
         .object({
-          _id: z.string(),
-          email: z.string(),
-          lastName: z.string(),
-          photo: z.string().optional(),
+          id: z.string(),
+          name: z.string(),
+          email: z.string().optional(),
         })
         .optional()
         .nullable(),
     }),
   })
   .superRefine((data, ctx) => {
-    if (!data.order.paymentMethod) {
+    if (!data.accountingDoc.label) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: VALIDATION_TEXT.LABEL_REQUIRED,
-        path: ['order.paymentMethod'],
+        path: ['accountingDoc.label'],
       })
     }
   })
@@ -443,22 +407,23 @@ type FormInput = z.infer<typeof zodSchema>
 const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
   avatar: null,
-  order: {
+  accountingDoc: {
     label: '',
     amount: 0,
-    pending: 0,
     team: authStore.user?.team ?? 'douala',
-    status: 'onHold',
-    announcer: {
+    paymentAccount: {
       id: '',
-      email: '',
       name: '',
     },
-    commercial: {
-      _id: authStore.user._id ?? '',
-      email: authStore.user.email ?? '',
-      lastName: authStore.user.firstName + ' ' + authStore.user.lastName,
-      photo: '',
+    beneficiary: {
+      id: '',
+      name: '',
+      email: '',
+    },
+    authorizer: {
+      id: '',
+      name: '',
+      email: '',
     },
   },
 }))
@@ -480,107 +445,38 @@ const {
 
 const success = ref(false)
 
-function editOrderInvoiceFile(currentOrderInvoice: any) {
-  dates.value.start = new Date(currentOrderInvoice.date)
-  dates.value.end = new Date(currentOrderInvoice.date)
+function editAccountingDoc(currentAccountingDoc: any) {
+  dates.value.start = new Date(currentAccountingDoc.date)
+  dates.value.end = new Date(currentAccountingDoc.date)
   setTimeout(() => {
-    setFieldValue('order._id', currentOrderInvoice._id)
-    setFieldValue('order.label', currentOrderInvoice.label)
-    setFieldValue('order.announcer', {
-      id: currentOrderInvoice.announcer._id,
-      name: currentOrderInvoice.announcer.name,
-      text: currentOrderInvoice.announcer.phone,
+    setFieldValue('accountingDoc._id', currentAccountingDoc._id)
+    setFieldValue('accountingDoc.label', currentAccountingDoc.label)
+    setFieldValue('accountingDoc.amount', currentAccountingDoc.amount)
+    setFieldValue('accountingDoc.team', currentAccountingDoc.team)
+    setFieldValue('accountingDoc.beneficiary', {
+      id: currentAccountingDoc.beneficiary._id,
+      name:
+        currentAccountingDoc.beneficiary.firstName +
+        ' ' +
+        currentAccountingDoc.beneficiary.lastName,
+      text: currentAccountingDoc.beneficiary.phone,
     })
-    setFieldValue('order.commercial', currentOrderInvoice.manager)
-    setFieldValue('order.status', currentOrderInvoice.status)
-    setFieldValue('order.paymentMethod', currentOrderInvoice.paymentMethod)
-    setFieldValue(
-      'order.paymentCondition',
-      currentOrderInvoice.paymentCondition,
-    )
-    currentOrg.value = currentOrderInvoice.org
-    orderData.value = currentOrderInvoice.items
-  }, 1000)
-}
-async function createPackage() {
-  const query4 = computed(() => {
-    return {
-      action: 'createPackage',
-      token: token.value,
-    }
-  })
-
-  const response = await useFetch('/api/pub/packages', {
-    method: 'post',
-    headers: { 'Content-Type': 'application/json' },
-    query: query4,
-    body: { order: currentOrderInvoice.value._id },
-  })
-
-  if (response.data?.value?.success) {
-    success.value = true
-    toaster.clearAll()
-    toaster.show({
-      title: 'Success',
-      message: `Package créer !`,
-      color: 'success',
-      icon: 'ph:check',
-      closable: true,
+    setFieldValue('accountingDoc.authorizer', {
+      id: currentAccountingDoc.authorizer?._id,
+      name:
+        currentAccountingDoc.authorizer?.firstName +
+        ' ' +
+        currentAccountingDoc.authorizer?.lastName,
+      text: currentAccountingDoc.authorizer?.phone,
     })
-    await addPackageOrder(response.data?.value?.data._id)
-    isModalCreatePackageOpen.value = false
-    filter.value = 'package'
-    filter.value = ''
-  } else {
-    toaster.clearAll()
-    toaster.show({
-      title: 'Oops',
-      message: `Une erreur est survenue !`,
-      color: 'danger',
-      icon: 'ph:check',
-      closable: true,
+    setFieldValue('accountingDoc.paymentAccount', {
+      id: currentAccountingDoc.paymentAccount?._id,
+      name: currentAccountingDoc.paymentAccount?.label,
+      text: currentAccountingDoc.paymentAccount?.code,
     })
-  }
-}
-async function addPackageOrder(id: string) {
-  const query4 = computed(() => {
-    return {
-      action: 'updateOrder',
-      token: token.value,
-      id: currentOrderInvoice.value._id,
-    }
-  })
-  const response = await useFetch('/api/sales/orders', {
-    method: 'put',
-    headers: { 'Content-Type': 'application/json' },
-    query: query4,
-    body: { ...currentOrderInvoice.value, package: id },
-  })
-
-  if (response.data?.value?.success) {
-    success.value = true
-    toaster.clearAll()
-    toaster.show({
-      title: 'Success',
-      message: 'Devis mis à jour !',
-      color: 'success',
-      icon: 'ph:check',
-      closable: true,
-    })
-    isModalConfirmOrderOpen.value = false
-    filter.value = 'order'
-    filter.value = ''
-    location.reload()
-  } else {
-    toaster.clearAll()
-    toaster.show({
-      title: 'Oops',
-      message: `Une erreur est survenue !`,
-      color: 'danger',
-      icon: 'ph:check',
-      closable: true,
-    })
-  }
+    currentOrg.value = currentAccountingDoc.org
+    accountingDocData.value = currentAccountingDoc.items
+  }, 500)
 }
 
 async function confirmOrder() {
@@ -588,10 +484,10 @@ async function confirmOrder() {
     return {
       action: pageValue.value == 'order' ? 'updateOrder' : 'updateInvoice',
       token: token.value,
-      id: currentOrderInvoice.value._id,
+      id: currentAccountingDoc.value._id,
     }
   })
-  currentOrderInvoice.value.validator = authStore.user._id
+  currentAccountingDoc.value.validator = authStore.user._id
 
   const response = await useFetch(
     pageValue.value == 'order' ? '/api/sales/orders' : '/api/sales/invoices',
@@ -599,7 +495,7 @@ async function confirmOrder() {
       method: 'put',
       headers: { 'Content-Type': 'application/json' },
       query: query4,
-      body: { ...currentOrderInvoice.value },
+      body: { ...currentAccountingDoc.value },
     },
   )
 
@@ -631,11 +527,11 @@ async function confirmOrder() {
 }
 
 function addOrderItem() {
-  orderData.value.push({
-    ...CurAccountingDocItem.value,
-    id: orderData.value.length,
+  accountingDocData.value.push({
+    ...curAccountingDocItem.value,
+    id: accountingDocData.value.length,
   })
-  CurAccountingDocItem.value = {
+  curAccountingDocItem.value = {
     id: 0,
     description: '',
     account: '',
@@ -644,42 +540,38 @@ function addOrderItem() {
 }
 
 function deleteOrderItem(id: number) {
-  orderData.value = orderData.value?.filter((e: any) => {
+  accountingDocData.value = accountingDocData.value?.filter((e: any) => {
     return e.id != id
   })
 }
 
 function editOrderItem(item: any) {
-  CurAccountingDocItem.value = { ...item }
+  curAccountingDocItem.value = { ...item }
   isEditOrderItem.value = true
 }
 
 function updateOrderItem(item: any) {
-  orderData.value[item.id] = item
+  accountingDocData.value[item.id] = item
   isEditOrderItem.value = false
 }
 
-const orderData = ref([])
+const accountingDocData = ref([])
 const isEditOrderItem = ref(false)
-const CurAccountingDocItem = ref({
+const curAccountingDocItem = ref({
   id: 0,
-  article: '',
   description: '',
   account: '',
   quantity: 0,
-  unit: 'unité(s)',
   rate: 0,
-  discount: 0,
-  taxes: [],
   amount: 0,
 })
 
-watch(CurAccountingDocItem, (value) => {
+watch(curAccountingDocItem, (value) => {
   setTimeout(() => {
     console.log('value')
     console.log(value)
-    if (CurAccountingDocItem.value.article != value.article) {
-      CurAccountingDocItem.value.rate = value.article.price
+    if (curAccountingDocItem.value.article != value.article) {
+      curAccountingDocItem.value.rate = value.article.price
     }
   }, 500)
 })
@@ -688,24 +580,19 @@ const curInvoicePaymentForm = ref({
   paymentAccount: {},
   label: '',
   amount:
-    currentOrderInvoice.value?.amount ??
-    0 - currentOrderInvoice.value?.paid ??
+    currentAccountingDoc.value?.amount ??
+    0 - currentAccountingDoc.value?.paid ??
     0,
   date: '',
   currency: '',
 })
 
 const totalData = computed(() => {
-  const subtotal = orderData.value.reduce((acc, item) => {
-    return acc + item.quantity * item.rate
-  }, 0)
-
-  const discount = orderData.value.reduce((acc, item) => {
-    return acc + (item.quantity * item.rate * item.discount) / 100
+  const subtotal = accountingDocData.value.reduce((acc, item) => {
+    return acc + item.amount
   }, 0)
 
   const total = subtotal
-
   return [
     {
       label: 'Total',
@@ -720,216 +607,110 @@ const onSubmit = handleSubmit(
     success.value = false
 
     // here you have access to the validated form values
-    console.log('order-invoice-create-success', values)
+    console.log('accounting-doc-create-success', values)
     const contractUrl =
       isEdit.value == true
-        ? ref(currentOrderInvoice?.contractUrl ?? '')
+        ? ref(currentAccountingDoc?.contractUrl ?? '')
         : ref('')
 
     try {
       const isSuccess = ref(false)
-      const orderInvoiceId = ref(undefined)
+      const accountingDocId = ref(undefined)
 
-      if (pageValue.value == 'order') {
-        // upload contract file
-        if (orderContractFile.value != null) {
-          const fd = new FormData()
-          fd.append('0', orderContractFile.value)
-          const query3 = computed(() => {
-            return {
-              action: 'new-single-file',
-              dir: 'uploads/ordersFiles/contracts',
-              token: token.value,
-            }
-          })
-
-          const { data: uploadData, refresh } = await useFetch(
-            '/api/files/upload',
-            {
-              method: 'POST',
-              query: query3,
-              body: fd,
-            },
-          )
-          console.log(uploadData)
-          if (uploadData.value?.success == false) {
-            contractUrl.value = ''
-            toaster.show({
-              title: 'Oops',
-              message: `Une erreur est survenue lors de l'importation de des fichiers !`,
-              color: 'danger',
-              icon: 'ph:check',
-              closable: true,
-            })
-          } else {
-            contractUrl.value = uploadData.value.fileName
+      // upload contract file
+      if (orderContractFile.value != null) {
+        const fd = new FormData()
+        fd.append('0', orderContractFile.value)
+        const query3 = computed(() => {
+          return {
+            action: 'new-single-file',
+            dir: 'uploads/ordersFiles/contracts',
+            token: token.value,
           }
+        })
+
+        const { data: uploadData, refresh } = await useFetch(
+          '/api/files/upload',
+          {
+            method: 'POST',
+            query: query3,
+            body: fd,
+          },
+        )
+        console.log(uploadData)
+        if (uploadData.value?.success == false) {
+          contractUrl.value = ''
+          toaster.show({
+            title: 'Oops',
+            message: `Une erreur est survenue lors de l'importation de des fichiers !`,
+            color: 'danger',
+            icon: 'ph:check',
+            closable: true,
+          })
+        } else {
+          contractUrl.value = uploadData.value.fileName
         }
       }
 
-      if (pageValue.value == 'order') {
-        if (isEdit.value == true) {
-          const query2 = computed(() => {
-            return {
-              action: 'updateOrder',
-              token: token.value,
-              id: values.order._id,
-            }
-          })
+      if (isEdit.value == true) {
+        const query2 = computed(() => {
+          return {
+            action: 'updateAccountingDoc',
+            token: token.value,
+            id: values.accountingDoc._id,
+          }
+        })
 
-          const response = await useFetch('/api/sales/orders', {
-            method: 'put',
-            headers: { 'Content-Type': 'application/json' },
-            query: query2,
-            body: {
-              ...values.order,
-              paymentMethod: values.order?.paymentMethod?._id,
-              paymentCondition: values.order?.paymentCondition?._id,
-              announcer: values.order?.announcer?.id,
-              manager: values.order?.commercial?._id,
-              org: currentOrg.value,
-              contractUrl,
-              items: orderData.value,
-              date: dates.value?.start ?? new Date(),
-              dueDate: moment(dates.value?.start ?? new Date()).add(
-                values.order?.paymentCondition?.delay ?? 0,
-                'days',
-              ),
-              amountHT:
-                totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 3].value
-                  : 0,
-              amount:
-                totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 1].value
-                  : 0,
-            },
-          })
-          isSuccess.value = response.data.value?.success
-          orderInvoiceId.value = response.data.value?.data._id
-        } else {
-          const query2 = computed(() => {
-            return {
-              action: 'createOrder',
-              token: token.value,
-            }
-          })
+        const response = await useFetch('/api/accountancy/accounting-docs', {
+          method: 'put',
+          headers: { 'Content-Type': 'application/json' },
+          query: query2,
+          body: {
+            ...values.accountingDoc,
+            paymentAccount: values.accountingDoc?.paymentAccount?.id,
+            beneficiary: values.accountingDoc?.beneficiary?.id,
+            authorizer: values.accountingDoc?.authorizer?.id,
+            org: currentOrg.value,
+            contractUrl,
+            items: accountingDocData.value,
+            date: dates.value?.start ?? new Date(),
+            amount:
+              currentAccountingDoc.value.length > 0
+                ? totalData.value[totalData.value.length - 1].value
+                : values.accountingDoc.amount,
+          },
+        })
+        isSuccess.value = response.data.value?.success
+        accountingDocId.value = response.data.value?.data._id
+      } else {
+        const query2 = computed(() => {
+          return {
+            action: 'createAccountingDoc',
+            token: token.value,
+          }
+        })
 
-          const response = await useFetch('/api/sales/orders', {
-            method: 'post',
-            headers: { 'Content-Type': 'application/json' },
-            query: query2,
-            body: {
-              ...values.order,
-              paymentMethod: values.order?.paymentMethod?._id,
-              paymentCondition: values.order?.paymentCondition?._id,
-              announcer: values.order?.announcer?.id,
-              manager: values.order?.commercial?._id,
-              org: currentOrg.value,
-              _id: undefined,
-              contractUrl,
-              items: orderData.value,
-              date: dates.value?.start ?? new Date(),
-              dueDate: moment(dates.value?.start ?? new Date()).add(
-                values.order?.paymentCondition?.delay ?? 0,
-                'days',
-              ),
-              amountHT:
-                totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 3].value
-                  : 0,
-              amount:
-                totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 1].value
-                  : 0,
-            },
-          })
-          isSuccess.value = response.data.value?.success
-          orderInvoiceId.value = response.data.value?.data._id
-        }
-      } else if (pageValue.value == 'invoice') {
-        let totalPaid = 0
-        if (isEdit.value == true) {
-          const query2 = computed(() => {
-            return {
-              action: 'updateInvoice',
-              token: token.value,
-              id: values.order._id,
-            }
-          })
-
-          const response = await useFetch('/api/sales/invoices', {
-            method: 'put',
-            headers: { 'Content-Type': 'application/json' },
-            query: query2,
-            body: {
-              ...values.order,
-              paymentMethod: values.order?.paymentMethod?._id,
-              paymentCondition: values.order?.paymentCondition?._id,
-              announcer: values.order?.announcer?.id,
-              manager: values.order?.commercial?._id,
-              order: selectedOrder.value?._id ?? undefined,
-              org: currentOrg.value,
-              items: orderData.value,
-              paid: totalPaid,
-              date: dates.value?.start ?? new Date(),
-              dueDate: moment(dates.value?.start ?? new Date()).add(
-                values.order?.paymentCondition?.delay ?? 0,
-                'days',
-              ),
-              amountHT:
-                totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 3].value
-                  : 0,
-              amount:
-                totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 1].value
-                  : 0,
-            },
-          })
-          isSuccess.value = response.data.value?.success
-          orderInvoiceId.value = response.data.value?.data._id
-        } else {
-          const query2 = computed(() => {
-            return {
-              action: 'createInvoice',
-              token: token.value,
-            }
-          })
-
-          const response = await useFetch('/api/sales/invoices', {
-            method: 'post',
-            headers: { 'Content-Type': 'application/json' },
-            query: query2,
-            body: {
-              ...values.order,
-              paymentMethod: values.order?.paymentMethod?._id,
-              paymentCondition: values.order?.paymentCondition?._id,
-              announcer: values.order?.announcer?.id,
-              manager: values.order?.commercial?._id,
-              _id: undefined,
-              order: selectedOrder.value?._id ?? undefined,
-              org: currentOrg.value,
-              items: orderData.value,
-              paid: totalPaid,
-              date: dates.value?.start ?? new Date(),
-              dueDate: moment(dates.value?.start ?? new Date()).add(
-                values.order?.paymentCondition?.delay ?? 0,
-                'days',
-              ),
-              amountHT:
-                totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 3].value
-                  : 0,
-              amount:
-                totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 1].value
-                  : 0,
-            },
-          })
-          isSuccess.value = response.data.value?.success
-          orderInvoiceId.value = response.data.value?.data._id
-        }
+        const response = await useFetch('/api/accountancy/accounting-docs', {
+          method: 'post',
+          headers: { 'Content-Type': 'application/json' },
+          query: query2,
+          body: {
+            ...values.accountingDoc,
+            paymentAccount: values.accountingDoc?.paymentAccount?.id,
+            beneficiary: values.accountingDoc?.beneficiary?.id,
+            authorizer: values.accountingDoc?.authorizer?.id,
+            org: currentOrg.value,
+            contractUrl,
+            items: accountingDocData.value,
+            date: dates.value?.start ?? new Date(),
+            amount:
+              currentAccountingDoc.value.length > 0
+                ? totalData.value[totalData.value.length - 1].value
+                : values.accountingDoc.amount,
+          },
+        })
+        isSuccess.value = response.data.value?.success
+        accountingDocId.value = response.data.value?.data._id
       }
 
       if (isSuccess) {
@@ -948,11 +729,9 @@ const onSubmit = handleSubmit(
         if (isEdit.value == true) {
           location.reload()
         } else {
-          if (pageValue.value == 'order') {
-            router.push('/bo/sales/orders/edit-order-' + orderInvoiceId.value)
-          } else {
-            router.push('/bo/sales/orders/edit-invoice-' + orderInvoiceId.value)
-          }
+          router.push(
+            '/bo/accountancy/accounting-docs/edit-' + accountingDocId.value,
+          )
         }
       } else {
         toaster.clearAll()
@@ -1050,7 +829,7 @@ const onSubmit = handleSubmit(
           <span>Créer</span>
         </BaseButton>
         <BaseButton
-          :disabled="currentOrderInvoice.validator"
+          :disabled="currentAccountingDoc.validator"
           v-if="pageType == 'edit'"
           color="primary"
           class="w-full sm:w-32"
@@ -1059,27 +838,10 @@ const onSubmit = handleSubmit(
           <Icon name="ph:pen" @click="onSubmit" class="h-4 w-4" />
           <span>Sauvegarder</span>
         </BaseButton>
-        <BaseButton
-          v-if="isEdit && packageId"
-          color="info"
-          class="w-full sm:w-32"
-          :to="'/bo/pub/package-details/' + packageId"
-        >
-          <Icon name="ph:file" class="h-4 w-4" />
-          <span>Planning</span>
-        </BaseButton>
-        <BaseButton
-          v-if="isEdit && !packageId"
-          color="info"
-          class="w-full sm:w-32"
-          @click="isModalCreatePackageOpen = true"
-        >
-          <Icon name="ph:file" class="h-4 w-4" />
-          <span>Planning</span>
-        </BaseButton>
+
         <BaseButton
           v-if="isEdit"
-          :disabled="currentOrderInvoice.validator ? true : false"
+          :disabled="currentAccountingDoc.validator ? true : false"
           color="warning"
           class="w-full sm:w-32"
           @click="isModalConfirmOrderOpen = true"
@@ -1095,13 +857,13 @@ const onSubmit = handleSubmit(
               <BaseHeading as="h2" size="xl" weight="medium" lead="none">
                 Pièce comptable
                 {{
-                  currentOrderInvoice.validator
+                  currentAccountingDoc.validator
                     ? pageValue == 'order'
                       ? 'Confirmé'
                       : 'Confirmée'
                     : 'Brouillon'
                 }}
-                {{ isEdit ? ' - ' + currentOrderInvoice?.code : '' }}
+                {{ isEdit ? ' - ' + currentAccountingDoc?.code : '' }}
               </BaseHeading>
             </div>
             <div class="flex items-center justify-end gap-3">
@@ -1118,14 +880,16 @@ const onSubmit = handleSubmit(
               </BaseButtonIcon>
               <BaseButtonIcon
                 v-if="
-                  (authStore.user.appRole?.name == UserRole.sale ||
+                  (authStore.user.appRole?.name == UserRole.accountancy ||
                     authStore.user.appRole?.name == UserRole.billing ||
                     authStore.user.appRole?.name == UserRole.admin ||
                     authStore.user.appRole?.name == UserRole.superAdmin) &&
-                  pageType == 'view' &&
-                  pageValue == 'order'
+                  pageType == 'view'
                 "
-                :to="'/bo/sales/orders/edit-order-' + currentOrderInvoice?._id"
+                :to="
+                  '/bo/accountancy/accounting-docs/edits-' +
+                  currentAccountingDoc?._id
+                "
                 condensed
                 class="!w-32"
                 shape="xl"
@@ -1143,7 +907,7 @@ const onSubmit = handleSubmit(
                   pageValue == 'invoice'
                 "
                 :to="
-                  '/bo/sales/orders/edit-invoice-' + currentOrderInvoice?._id
+                  '/bo/sales/orders/edit-invoice-' + currentAccountingDoc?._id
                 "
                 condensed
                 class="!w-32"
@@ -1167,14 +931,14 @@ const onSubmit = handleSubmit(
                 condensed
                 class="!w-32"
                 shape="xl"
-                @click="printOrder()"
+                @click="printAccountingDoc()"
                 data-tooltip="Imprimer"
               >
                 <Icon name="ph:printer-duotone" class="h-4 w-4 px-1" /> Imprimer
               </BaseButtonIcon>
             </div>
           </div>
-          <div id="print-invoice">
+          <div id="print-accounting-doc">
             <div
               :class="
                 isPrint == false
@@ -1248,7 +1012,7 @@ const onSubmit = handleSubmit(
                         <p
                           class="text-muted-800 dark:text-muted-100 text-xl font-bold"
                         >
-                          {{ currentOrderInvoice?.code }}
+                          {{ currentAccountingDoc?.code }}
                         </p>
                       </div>
                     </div>
@@ -1297,21 +1061,30 @@ const onSubmit = handleSubmit(
                       >
                         <p class="text-xs">
                           {{
-                            currentOrderInvoice?.announcer?.country?.name ??
-                            'Douala'
+                            currentAccountingDoc?.beneficiary?.firstName +
+                            ' ' +
+                            currentAccountingDoc?.beneficiary?.lastName
                           }}
                         </p>
                         <p class="mt-1 text-xs">
-                          {{ currentOrderInvoice?.announcer?.phone }}
+                          {{ currentAccountingDoc?.label }}
                         </p>
                         <p class="mt-1 text-xs">
-                          {{ currentOrderInvoice?.announcer?.email }}
+                          {{
+                            currentAccountingDoc?.creator?.firstName +
+                            ' ' +
+                            currentAccountingDoc?.creator?.lastName
+                          }}
                         </p>
                         <p class="mt-1 text-xs">
-                          {{ currentOrderInvoice?.announcer?.rc }}
+                          {{
+                            currentAccountingDoc?.authorizer?.firstName +
+                            ' ' +
+                            currentAccountingDoc?.authorizer?.lastName
+                          }}
                         </p>
                         <p class="mt-1 text-xs">
-                          {{ currentOrderInvoice?.announcer?.nc }}
+                          {{ currentAccountingDoc?.org?.name }}
                         </p>
                       </div>
                     </div>
@@ -1330,7 +1103,9 @@ const onSubmit = handleSubmit(
                     <div
                       class="text-muted-800 dark:text-muted-400 text-sm font-light"
                     >
-                      <p class="text-lg">0 XAF</p>
+                      <p class="text-lg">
+                        {{ currentAccountingDoc.amount }} XAF
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1361,7 +1136,7 @@ const onSubmit = handleSubmit(
                               :disabled="isSubmitting"
                               @update:model-value="handleChange"
                               @blur="handleBlur"
-                              :items="transformedAnnouncers"
+                              :items="transformedUsers"
                               :display-value="(item: any) => item.name || ''"
                               :filter-items="filterItems"
                               icon="lucide:user"
@@ -1375,15 +1150,7 @@ const onSubmit = handleSubmit(
                                 <div v-if="value.query.length < 3">
                                   Saisissez au-moins 3 caractères
                                 </div>
-                                <div v-else>
-                                  Aucun resultat. Veuillez
-                                  <NuxtLink
-                                    class="text-primary-500 hover:underline"
-                                    to="/bo/sales/announcers"
-                                  >
-                                    créer un nouvel annonceur </NuxtLink
-                                  >.
-                                </div>
+                                <div v-else>Aucun resultat.</div>
                               </template>
                             </BaseAutocomplete>
                           </Field>
@@ -1410,6 +1177,29 @@ const onSubmit = handleSubmit(
                             />
                           </Field>
                         </div>
+                        <div class="col-span-12 md:col-span-6">
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="accountingDoc.amount"
+                          >
+                            <BaseInput
+                              label="Montant"
+                              icon="ph:money-duotone"
+                              placeholder=""
+                              type="number"
+                              :model-value="field.value"
+                              :error="errorMessage"
+                              :disabled="isSubmitting"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
+                            />
+                          </Field>
+                        </div>
 
                         <div class="col-span-12 md:col-span-6">
                           <Field
@@ -1419,22 +1209,31 @@ const onSubmit = handleSubmit(
                               handleChange,
                               handleBlur,
                             }"
-                            name="accountingDoc.account"
+                            name="accountingDoc.paymentAccount"
                           >
-                            <BaseListbox
-                              label="Journal des reglements"
-                              :items="paymentConditions?.data"
-                              :properties="{
-                                value: '_id',
-                                label: 'label',
-                                sublabel: 'description',
-                              }"
+                            <BaseAutocomplete
                               :model-value="field.value"
                               :error="errorMessage"
                               :disabled="isSubmitting"
                               @update:model-value="handleChange"
                               @blur="handleBlur"
-                            />
+                              :items="transformedAccounts"
+                              :display-value="(item: any) => item.name || ''"
+                              :filter-items="filterItems"
+                              icon="ph:money-duotone"
+                              placeholder="Ex: Caisse"
+                              label="Journal des reglements"
+                              clearable
+                              :clear-value="''"
+                            >
+                              <template #empty="value">
+                                <!-- Use destruct to keep what you need -->
+                                <div v-if="value.query.length < 3">
+                                  Saisissez au-moins 3 caractères
+                                </div>
+                                <div v-else>Aucun resultat.</div>
+                              </template>
+                            </BaseAutocomplete>
                           </Field>
                         </div>
 
@@ -1448,23 +1247,31 @@ const onSubmit = handleSubmit(
                               handleChange,
                               handleBlur,
                             }"
-                            name="order.commercial"
+                            name="accountingDoc.authorizer"
                           >
-                            <BaseListbox
-                              label="créateur"
-                              :items="commercials"
-                              :properties="{
-                                value: '_id',
-                                label: 'lastName',
-                                sublabel: 'email',
-                                media: 'photo',
-                              }"
+                            <BaseAutocomplete
                               :model-value="field.value"
                               :error="errorMessage"
-                              :disabled="isSubmitting || true"
+                              :disabled="isSubmitting"
                               @update:model-value="handleChange"
                               @blur="handleBlur"
-                            />
+                              :items="transformedUsers"
+                              :display-value="(item: any) => item.name || ''"
+                              :filter-items="filterItems"
+                              icon="lucide:user"
+                              placeholder="Ex: nom"
+                              label="Ordonateur"
+                              clearable
+                              :clear-value="''"
+                            >
+                              <template #empty="value">
+                                <!-- Use destruct to keep what you need -->
+                                <div v-if="value.query.length < 3">
+                                  Saisissez au-moins 3 caractères
+                                </div>
+                                <div v-else>Aucun resultat.</div>
+                              </template>
+                            </BaseAutocomplete>
                           </Field>
                         </div>
                         <div class="col-span-12 md:col-span-6">
@@ -1475,7 +1282,7 @@ const onSubmit = handleSubmit(
                               handleChange,
                               handleBlur,
                             }"
-                            name="order.team"
+                            name="accountingDoc.team"
                           >
                             <BaseSelect
                               label="Equipe"
@@ -1537,36 +1344,7 @@ const onSubmit = handleSubmit(
                             </template>
                           </DatePicker>
                         </div>
-                        <div
-                          class="ltablet:col-span-6 col-span-12 lg:col-span-6"
-                        >
-                          <Field
-                            v-slot="{
-                              field,
-                              errorMessage,
-                              handleChange,
-                              handleBlur,
-                            }"
-                            name="order.status"
-                          >
-                            <BaseSelect
-                              label="Statut *"
-                              icon="ph:funnel"
-                              :model-value="field.value"
-                              :error="errorMessage"
-                              :disabled="true"
-                              @update:model-value="handleChange"
-                              @blur="handleBlur"
-                            >
-                              <option value="onHold">
-                                En attente de validation
-                              </option>
-                              <option value="confirmed">Validéé</option>
-                              <option value="completed">Soldée</option>
-                              <option value="closed">Cloturées</option>
-                            </BaseSelect>
-                          </Field>
-                        </div>
+
                         <div
                           class="ltablet:col-span-12 col-span-12 lg:col-span-6"
                         >
@@ -1587,8 +1365,12 @@ const onSubmit = handleSubmit(
                   </div>
                 </div>
                 <div class="px-2 py-4 sm:p-4 w-full">
-                  <div class="px-2 w-full overflow-auto">
+                  <div class="px-2 w-full">
                     <table
+                      v-if="
+                        (isPrint && currentAccountingDoc?.items.length != 0) ||
+                        !isPrint
+                      "
                       class="divide-muted-200 dark:divide-muted-700 min-w-full divide-y"
                     >
                       <thead class="font-sans">
@@ -1602,26 +1384,26 @@ const onSubmit = handleSubmit(
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium sm:ps-6 md:ps-0"
                           >
                             #
                           </th>
                           <th
                             v-if="!isPrint"
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium sm:ps-6 md:ps-0"
                           >
                             Compte
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-left text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium sm:ps-6 md:ps-0"
                           >
                             Description
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-4 ps-3 px-2 text-right text-xs font-medium uppercase sm:pe-6 md:pe-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-4 ps-3 px-2 text-right text-xs font-medium sm:pe-6 md:pe-0"
                           >
                             Montant
                           </th>
@@ -1629,7 +1411,7 @@ const onSubmit = handleSubmit(
                       </thead>
                       <tbody class="font-sans">
                         <tr
-                          v-for="(item, i) in orderData"
+                          v-for="(item, i) in accountingDocData"
                           :key="i"
                           class="border-muted-200 dark:border-muted-700 border-b"
                         >
@@ -1665,18 +1447,19 @@ const onSubmit = handleSubmit(
                           >
                             {{ item.id + 1 }}
                           </td>
-                          <td
-                            class="text-muted-800 dark:text-muted-400 !w-40 px-3 py-4 text-left text-xs sm:table-cell"
-                          >
-                            <p class="w-40 break-words">
-                              {{ item.description }}
-                            </p>
-                          </td>
+
                           <td
                             v-if="!isPrint"
                             class="px-3 py-4 text-center text-xs sm:table-cell"
                           >
-                            7011
+                            {{ item.account.name }}
+                          </td>
+                          <td
+                            class="text-muted-800 dark:text-muted-400 !w-48 px-3 py-4 text-center text-xs sm:table-cell"
+                          >
+                            <p class="w-48 break-words">
+                              {{ item.description }}
+                            </p>
                           </td>
                           <td
                             class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right text-sm sm:pe-6 md:pe-0"
@@ -1697,7 +1480,7 @@ const onSubmit = handleSubmit(
                             >
                               <BaseButtonAction
                                 v-if="isEditOrderItem == true"
-                                @click="updateOrderItem(CurAccountingDocItem)"
+                                @click="updateOrderItem(curAccountingDocItem)"
                               >
                                 <Icon name="lucide:save" class="h-4 w-4" />
                               </BaseButtonAction>
@@ -1716,8 +1499,8 @@ const onSubmit = handleSubmit(
                             >
                               {{
                                 isEditOrderItem
-                                  ? CurAccountingDocItem.id + 1
-                                  : orderData.length + 1
+                                  ? curAccountingDocItem.id + 1
+                                  : accountingDocData.length + 1
                               }}
                             </div>
                           </td>
@@ -1738,24 +1521,28 @@ const onSubmit = handleSubmit(
                                   }"
                                   name="order.account"
                                 >
-                                  <BaseListbox
-                                    label=""
-                                    :items="accounts.data"
-                                    :classes="{
-                                      wrapper: 'w-64',
-                                    }"
-                                    :properties="{
-                                      value: '_id',
-                                      label: 'code',
-                                      sublabel: 'label',
-                                      media: '',
-                                    }"
-                                    v-model="CurAccountingDocItem.account"
+                                  <BaseAutocomplete
+                                    v-model="curAccountingDocItem.account"
                                     :error="errorMessage"
                                     :disabled="isSubmitting"
                                     @update:model-value="handleChange"
                                     @blur="handleBlur"
-                                  />
+                                    :items="transformedAccounts"
+                                    :display-value="(item: any) => item.name || ''"
+                                    :filter-items="filterItems"
+                                    icon="ph:money-duotone"
+                                    placeholder="Ex: Compte de charge"
+                                    clearable
+                                    :clear-value="''"
+                                  >
+                                    <template #empty="value">
+                                      <!-- Use destruct to keep what you need -->
+                                      <div v-if="value.query.length < 3">
+                                        Saisissez au-moins 3 caractères
+                                      </div>
+                                      <div v-else>Aucun resultat.</div>
+                                    </template>
+                                  </BaseAutocomplete>
                                 </Field>
                               </div>
                             </div>
@@ -1764,7 +1551,7 @@ const onSubmit = handleSubmit(
                             class="text-muted-500 dark:text-muted-400 hidden px-3 py-4 text-right text-sm sm:table-cell"
                           >
                             <BaseTextarea
-                              v-model="CurAccountingDocItem.description"
+                              v-model="curAccountingDocItem.description"
                               label=""
                               shape="rounded"
                               placeholder="..."
@@ -1779,7 +1566,7 @@ const onSubmit = handleSubmit(
                             class="text-muted-500 dark:text-muted-400 hidden px-3 py-4 text-right text-sm sm:table-cell"
                           >
                             <BaseInput
-                              v-model="CurAccountingDocItem.amount"
+                              v-model="curAccountingDocItem.amount"
                               label=""
                               shape="rounded"
                               type="number"
@@ -1796,14 +1583,14 @@ const onSubmit = handleSubmit(
                         <tr clas="" v-for="item in totalData" :key="item.label">
                           <th
                             scope="row"
-                            colspan="6"
+                            colspan="4"
                             class="text-muted-800 dark:text-muted-400 pe-3 ps-6 pt-2 text-right text-xs font-light"
                           >
                             {{ item.label }}
                           </th>
                           <td
                             scope="row"
-                            colspan="4"
+                            colspan="3"
                             class="pe-4 ps-3 pt-2 text-right sm:pe-6"
                             :class="
                               item.label === 'Total'
@@ -1824,142 +1611,13 @@ const onSubmit = handleSubmit(
                   </div>
                 </div>
 
-                <BaseHeading
-                  v-if="pageValue == 'invoice' && isPrint"
-                  as="h4"
-                  size="sm"
-                  weight="medium"
-                  lead="tight"
-                  class="text-primary-500 dark:text-primary-500 px-4 py-1"
-                >
-                  Historique des paiements
-                </BaseHeading>
-                <BaseHeading
-                  v-if="pageValue == 'invoice' && !isPrint"
-                  as="h1"
-                  size="lg"
-                  weight="medium"
-                  lead="tight"
-                  class="text-primary-500 dark:text-primary-500 px-4 py-1"
-                >
-                  Historique des paiements
-                </BaseHeading>
-
-                <div v-if="pageValue == 'invoice'" class="px-2 py-1 sm:p-4">
-                  <div class="flex flex-col px-2 overflow-auto">
-                    <table
-                      class="divide-muted-200 dark:divide-muted-700 w-full divide-y"
-                    >
-                      <thead class="font-sans">
-                        <tr>
-                          <th
-                            v-if="!isPrint"
-                            scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
-                          >
-                            <Icon name="lucide:settings" class="h-4 w-4" />
-                          </th>
-                          <th
-                            scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
-                          >
-                            #
-                          </th>
-                          <th
-                            scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
-                          >
-                            Date
-                          </th>
-                          <th
-                            scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
-                          >
-                            Montant
-                          </th>
-                          <th
-                            scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
-                          >
-                            Moyen
-                          </th>
-                          <th
-                            scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
-                          >
-                            Reference
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody class="font-sans">
-                        <tr
-                          v-for="(item, i) in currentOrderInvoice?.transactions"
-                          :key="i"
-                          class="border-muted-200 dark:border-muted-700 border-b"
-                        >
-                          <td
-                            v-if="!isPrint"
-                            class="py-2 pe-3 ps-4 text-center text-sm sm:ps-6 md:ps-0"
-                          >
-                            <div
-                              class="text-muted-800 dark:text-muted-100 font-medium"
-                            >
-                              <BaseButtonAction
-                                disabled
-                                @click="deleteOrderItem(i)"
-                              >
-                                <Icon
-                                  name="lucide:trash"
-                                  class="h-4 w-4 text-red-500"
-                                />
-                              </BaseButtonAction>
-                            </div>
-                          </td>
-                          <td
-                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-xs sm:table-cell"
-                          >
-                            {{ i + 1 }}
-                          </td>
-                          <td
-                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-xs sm:table-cell"
-                          >
-                            {{
-                              new Date(item.createdAt).toLocaleDateString(
-                                'fr-FR',
-                              )
-                            }}
-                          </td>
-                          <td
-                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-xs sm:table-cell"
-                          >
-                            {{
-                              new Intl.NumberFormat('fr-FR').format(item.amount)
-                            }}
-                            XAF
-                          </td>
-                          <td
-                            class="px-3 py-2 text-center text-xs sm:table-cell"
-                          >
-                            {{ item.paymentAccount?.label ?? '-' }}
-                          </td>
-                          <td
-                            class="px-3 py-2 text-center text-xs sm:table-cell"
-                          >
-                            {{ item.code ?? '-' }}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
                 <div v-if="isPrint" class="p-2">
                   <BaseParagraph class="!py-2 dark:text-muted-400" size="xs">
                     Montant en lettre :
                     <span class="font-bold"
                       >{{
                         new ToWords({ localeCode: 'fr-FR' }).convert(
-                          currentOrderInvoice?.amount,
+                          currentAccountingDoc?.amount,
                         )
                       }}
                       Francs CFA.</span
@@ -1970,12 +1628,8 @@ const onSubmit = handleSubmit(
                   >
                     <div class="dark:text-muted-400">
                       <BaseParagraph size="xs">
-                        Termes de paiement :
-                        {{ currentOrderInvoice?.paymentCondition?.label }}
-                      </BaseParagraph>
-                      <BaseParagraph size="xs">
                         Mode de règlement :
-                        {{ currentOrderInvoice?.paymentMethod?.label }}
+                        {{ currentAccountingDoc?.paymentMethod?.label }}
                       </BaseParagraph>
                     </div>
                   </div>
@@ -1996,21 +1650,21 @@ const onSubmit = handleSubmit(
                       class="dark:text-muted-400 border-primary-500 pb-1 text-center dark:border-primary-700 border-b-2"
                     >
                       <BaseParagraph size="xs">
-                        {{ currentOrderInvoice?.org?.footerTitle }}
+                        {{ currentAccountingDoc?.org?.footerTitle }}
                       </BaseParagraph>
                     </div>
                     <div class="dark:text-muted-400 py-1 text-center">
                       <BaseParagraph size="xs">
-                        Contact : {{ currentOrderInvoice?.org?.phone }}
+                        Contact : {{ currentAccountingDoc?.org?.phone }}
                         {{
-                          currentOrderInvoice?.org?.phone2
-                            ? '/ ' + currentOrderInvoice?.org?.phone2
+                          currentAccountingDoc?.org?.phone2
+                            ? '/ ' + currentAccountingDoc?.org?.phone2
                             : ''
-                        }}; {{ currentOrderInvoice?.org?.address }}
+                        }}; {{ currentAccountingDoc?.org?.address }}
                       </BaseParagraph>
                       <BaseParagraph size="xs">
-                        RC : {{ currentOrderInvoice?.org?.rc }}; NC :
-                        {{ currentOrderInvoice?.org?.nc }}
+                        RC : {{ currentAccountingDoc?.org?.rc }}; NC :
+                        {{ currentAccountingDoc?.org?.nc }}
                       </BaseParagraph>
                     </div>
                   </div>
@@ -2107,11 +1761,11 @@ const onSubmit = handleSubmit(
             Voulez-vous confirmer
             {{ pageValue == 'order' ? 'le devis' : 'la facture' }}
             <span class="text-primary-500">{{
-              currentOrderInvoice.label
+              currentAccountingDoc.label
             }}</span>
             de
             <span class="text-primary-500"
-              >{{ currentOrderInvoice?.announcer?.name }}
+              >{{ currentAccountingDoc?.announcer?.name }}
             </span>
             ?
           </h3>
@@ -2135,249 +1789,6 @@ const onSubmit = handleSubmit(
             <BaseButton color="primary" flavor="solid" @click="confirmOrder()"
               >Valider</BaseButton
             >
-          </div>
-        </div>
-      </template>
-    </TairoModal>
-
-    <!-- Modal create package -->
-    <TairoModal
-      :open="isModalCreatePackageOpen"
-      size="sm"
-      @close="isModalCreatePackageOpen = false"
-    >
-      <template #header>
-        <!-- Header -->
-        <div class="flex w-full items-center justify-between p-4 md:p-6">
-          <h3
-            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
-          >
-            Création du package
-          </h3>
-
-          <BaseButtonClose @click="isModalCreatePackageOpen = false" />
-        </div>
-      </template>
-
-      <!-- Body -->
-      <div class="p-4 md:p-6">
-        <div class="mx-auto w-full max-w-xs text-center">
-          <h3
-            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
-          >
-            Voulez-vous créer le package pour le devis
-            <span class="text-primary-500">{{
-              currentOrderInvoice.label
-            }}</span>
-            de
-            <span class="text-primary-500"
-              >{{ currentOrderInvoice?.announcer?.name }}
-            </span>
-            ?
-          </h3>
-
-          <p
-            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
-          >
-            Cette action est reversible
-          </p>
-        </div>
-      </div>
-
-      <template #footer>
-        <!-- Footer -->
-        <div class="p-4 md:p-6">
-          <div class="flex gap-x-2">
-            <BaseButton @click="isModalCreatePackageOpen = false"
-              >Annuler</BaseButton
-            >
-
-            <BaseButton color="primary" flavor="solid" @click="createPackage()"
-              >Valider</BaseButton
-            >
-          </div>
-        </div>
-      </template>
-    </TairoModal>
-
-    <!-- Modal create payment -->
-    <TairoModal
-      :open="isModalCreatePaymentOpen"
-      size="xl"
-      @close="isModalCreatePaymentOpen = false"
-    >
-      <template #header>
-        <!-- Header -->
-        <div class="flex w-full items-center justify-between p-4 md:p-6">
-          <h3
-            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
-          >
-            Nouveau paiement
-          </h3>
-
-          <BaseButtonClose @click="isModalCreatePaymentOpen = false" />
-        </div>
-      </template>
-
-      <!-- Body -->
-      <BaseCard class="w-full">
-        <div class="divide-muted-200 dark:divide-muted-700">
-          <div
-            shape="curved"
-            class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
-          >
-            <div class="mx-auto flex w-full flex-col">
-              <div>
-                <div>
-                  <div class="grid grid-cols-12 gap-4">
-                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
-                      <BaseListbox
-                        label="Journal des reglements"
-                        :items="paymentAccounts"
-                        :properties="{
-                          value: '_id',
-                          label: 'label',
-                          sublabel: 'code',
-                        }"
-                        v-model="curInvoicePaymentForm.paymentAccount"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </div>
-                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
-                      <DatePicker
-                        v-model.range="dates"
-                        :masks="masks"
-                        :min-date="new Date()"
-                        mode="date"
-                        hide-time-header
-                        trim-weeks
-                      >
-                        <template #default="{ inputValue, inputEvents }">
-                          <div class="flex w-full flex-col gap-4 sm:flex-row">
-                            <div class="relative grow">
-                              <Field
-                                v-slot="{
-                                  field,
-                                  errorMessage,
-                                  handleChange,
-                                  handleBlur,
-                                }"
-                                name="event.startDateTime"
-                              >
-                                <BaseInput
-                                  shape="rounded"
-                                  label="Date de l'operation"
-                                  icon="ph:calendar-blank-duotone"
-                                  :value="inputValue.start"
-                                  v-on="inputEvents.start"
-                                  :classes="{
-                                    input: '!h-11 !ps-11',
-                                    icon: '!h-11 !w-11',
-                                  }"
-                                  :model-value="field.value"
-                                  :error="errorMessage"
-                                  :disabled="isSubmitting"
-                                  type="text"
-                                  @update:model-value="handleChange"
-                                  @blur="handleBlur"
-                                />
-                              </Field>
-                            </div>
-                          </div>
-                        </template>
-                      </DatePicker>
-                    </div>
-                  </div>
-                  <div class="col-span-12 sm:col-span-6 mt-2">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="operation.label"
-                    >
-                      <BaseInput
-                        label="Refence"
-                        icon="ph:note"
-                        disabled
-                        placeholder="Ex: CSH/2023/0001"
-                        v-model="curInvoicePaymentForm.label"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        type="text"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <!-- <div class="grid grid-cols-12 gap-4 mt-2">
-                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
-                      <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
-                        name="operation.currency"
-                      >
-                        <BaseListbox
-                          label="Devise"
-                          :items="currenciesData?.data"
-                          :properties="{
-                            value: '_id',
-                            label: 'name',
-                            sublabel: 'rate',
-                            media: '',
-                          }"
-                         v-model="curInvoicePaymentForm.currency"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        />
-                      </Field>
-                    </div>
-                  </div> -->
-                  <div class="col-span-12 sm:col-span-6 mt-2">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="operation.amount"
-                    >
-                      <BaseInput
-                        label="Montant"
-                        icon="ph:money"
-                        placeholder="Ex: 500 000 000"
-                        v-model="curInvoicePaymentForm.amount"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        type="number"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </BaseCard>
-      <template #footer>
-        <!-- Footer -->
-        <div class="p-4 md:p-6">
-          <div class="flex gap-x-2">
-            <BaseButton @click="isModalCreatePaymentOpen = false"
-              >Annuler</BaseButton
-            >
-
-            <BaseButton
-              color="primary"
-              flavor="solid"
-              @click="addInvoicePayment()"
-            >
-              Créer
-            </BaseButton>
           </div>
         </div>
       </template>

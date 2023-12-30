@@ -24,7 +24,6 @@ const filter = ref('')
 const perPage = ref(10)
 const isModalNewPackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
-const isModalConfirmOrderOpen = ref(false)
 const isEdit = ref(false)
 const toaster = useToaster()
 // Check if can have access
@@ -65,7 +64,7 @@ const query = computed(() => {
   }
 })
 
-const { data, pending } = await useFetch('/api/sales/orders', {
+const { data, pending } = await useFetch('/api/accountancy/accounting-docs', {
   query,
 })
 
@@ -449,7 +448,7 @@ const onSubmit = handleSubmit(
         <BaseInput
           v-model="filter"
           icon="lucide:search"
-          placeholder="Filtrer package..."
+          placeholder="Filtrer pièces comptable..."
           :classes="{
             wrapper: 'w-full sm:w-auto',
           }"
@@ -682,18 +681,20 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Code</TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Annonceur
-                </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>
+                  Beneficiaire
+                </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>
+                  Ordonateur
+                </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>
                   Societé
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>
-                  Vendeur
+                  Montant
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Total </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Dû </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Moyen </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Docs</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
@@ -729,37 +730,52 @@ const onSubmit = handleSubmit(
                 <TairoTableCell light spaced>
                   <NuxtLink
                     class="text-primary-500 underline-offset-4 hover:underline"
-                    :to="'/bo/sales/orders/view-order-' + item._id"
+                    :to="'/bo/accountancy/accounting-docs/view-' + item._id"
                   >
                     {{ item.code }}
                   </NuxtLink>
                 </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ new Date(item.date).toLocaleDateString('fr-FR') }}
+                </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseAvatar
-                      :src="item.announcer?.logo ?? '/img/avatars/company.svg'"
+                      :src="
+                        item.beneficiary?.logo ?? '/img/avatars/company.svg'
+                      "
                       :text="item.initials"
                       :class="getRandomColor()"
                     />
                     <div class="ms-3 leading-none">
                       <h4 class="font-sans text-sm font-medium">
-                        {{ item.announcer?.name }}
+                        {{ item.beneficiary?.name }}
                       </h4>
                       <p class="text-muted-400 font-sans text-xs">
-                        {{ item.announcer?.email }}
+                        {{ item.beneficiary?.email }}
+                      </p>
+                    </div>
+                  </div>
+                </TairoTableCell>
+                <TairoTableCell spaced>
+                  <div class="flex items-center">
+                    <BaseAvatar
+                      :src="item.authorizer?.logo ?? '/img/avatars/company.svg'"
+                      :text="item.initials"
+                      :class="getRandomColor()"
+                    />
+                    <div class="ms-3 leading-none">
+                      <h4 class="font-sans text-sm font-medium">
+                        {{ item.authorizer?.name }}
+                      </h4>
+                      <p class="text-muted-400 font-sans text-xs">
+                        {{ item.authorizer?.email }}
                       </p>
                     </div>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ new Date(item.createdAt).toLocaleDateString('fr-FR') }}
-                </TairoTableCell>
-                <TairoTableCell light spaced>
                   {{ item.org.name }}
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{ item.manager?.lastName }}
-                  {{ item.manager?.firstName }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{
@@ -767,7 +783,9 @@ const onSubmit = handleSubmit(
                   }}
                   XAF
                 </TairoTableCell>
-                <TairoTableCell light spaced> 0 XAF </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ item.paymentAccount?.label }}
+                </TairoTableCell>
                 <TairoTableCell light spaced>
                   <a
                     v-if="item.contractUrl"
@@ -786,7 +804,7 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag
-                    v-if="item.validator"
+                    v-if="item.authorizerValidated"
                     color="success"
                     flavor="pastel"
                     shape="full"
@@ -803,20 +821,20 @@ const onSubmit = handleSubmit(
                     condensed
                     class="font-medium"
                   >
-                    Brouillon
+                    Non confirmée
                   </BaseTag>
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex">
                     <BaseButtonAction
                       class="mx-2"
-                      :to="'/bo/sales/orders/view-order-' + item._id"
+                      :to="'/bo/accountancy/accounting-docs/view-' + item._id"
                       muted
                     >
                       <Icon name="lucide:eye" class="h-4 w-4"
                     /></BaseButtonAction>
                     <BaseButtonAction
-                      :to="'/bo/sales/orders/edit-order-' + item._id"
+                      :to="'/bo/accountancy/accounting-docs/edit-' + item._id"
                     >
                       <Icon name="lucide:edit" class="h-4 w-4" s
                     /></BaseButtonAction>
