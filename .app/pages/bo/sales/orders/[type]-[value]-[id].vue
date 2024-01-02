@@ -156,7 +156,6 @@ const finalOrders = allOrders.value?.data.filter((e: any) => {
   return e.validator
 })
 
-
 const paymentAccounts = accounts.value?.data.filter((e: any) => {
   return e.position == 'd'
 })
@@ -190,7 +189,7 @@ if (pageType.value == 'view' || pageType.value == 'edit') {
     })
     if (singleOrder.value?.success) {
       currentOrderInvoice.value = singleOrder.value?.data
-      packageId.value = currentOrderInvoice.value.package?._id ?? undefined
+      packageId.value = currentOrderInvoice.value?.package?._id ?? undefined
       editOrderInvoiceFile(currentOrderInvoice.value)
     }
   } else if (pageValue.value == 'invoice') {
@@ -201,7 +200,7 @@ if (pageType.value == 'view' || pageType.value == 'edit') {
     if (singleOrder.value?.success) {
       currentOrderInvoice.value = singleOrder.value?.data
       packageId.value =
-        currentOrderInvoice.value.order.package?._id ?? undefined
+        currentOrderInvoice.value.order?.package?._id ?? undefined
       selectedOrder.value = currentOrderInvoice.value.order
       editOrderInvoiceFile(currentOrderInvoice.value)
     }
@@ -754,7 +753,7 @@ const totalData = computed(() => {
       value: Math.ceil(vatValue),
     },
     {
-      label: 'Net à payer',
+      label: 'Montant Dû',
       value: Math.ceil(total),
     },
   ]
@@ -1096,7 +1095,6 @@ const onSubmit = handleSubmit(
           <span>Créer</span>
         </BaseButton>
         <BaseButton
-          :disabled="currentOrderInvoice.validator"
           v-if="pageType == 'edit'"
           color="primary"
           class="w-full sm:w-32"
@@ -1234,7 +1232,16 @@ const onSubmit = handleSubmit(
                   class="border-muted-200 dark:border-muted-700 flex justify-between gap-y-4 px-8 pt-4 items-center"
                 >
                   <div class="flex items-center gap-4">
-                    <img class="h-32 fit-content" src="/uploads/logos/c2.png" />
+                    <img
+                      v-if="currentOrg?.logo?.includes('r2')"
+                      class="h-16 pb-1 fit-content"
+                      :src="currentOrg.logo"
+                    />
+                    <img
+                      v-else
+                      class="h-32 max fit-content"
+                      :src="currentOrg.logo"
+                    />
                     <div class="">
                       <BaseHeading
                         as="h3"
@@ -1253,18 +1260,19 @@ const onSubmit = handleSubmit(
                       class="text-muted-800 dark:text-muted-400 text-sm font-light"
                     >
                       <p
-                        class="text-muted-800 dark:text-muted-100 text-right text-sm font-normal"
+                        class="text-muted-800 dark:text-muted-100 text-right text-sm font-semibold"
                       >
                         {{ currentOrg?.name }}
                       </p>
-                      <p class="text-xs text-right">
+                      <p class="text-[10px] text-right">
                         {{ currentOrg?.address }}
                       </p>
-                      <p class="text-xs text-right">
+                      <p class="text-[10px] text-right">
                         {{ currentOrg?.country?.name }}
                       </p>
-                      <p class="text-xs text-right">
-                        {{ currentOrg?.email }}
+                      <p class="text-[10px] text-right">
+                        <span class="font-bold">Courriel</span> :
+                        <span>{{ currentOrg?.email }}</span>
                       </p>
                     </div>
                   </div>
@@ -1280,7 +1288,7 @@ const onSubmit = handleSubmit(
                         <BaseHeading
                           as="h1"
                           size="2xl"
-                          weight="medium"
+                          weight="semibold"
                           lead="none"
                         >
                           {{ pageValue == 'order' ? 'Devis' : 'Facture' }} No:
@@ -1309,16 +1317,16 @@ const onSubmit = handleSubmit(
                     <div class="flex items-center gap-3">
                       <div class="">
                         <BaseHeading
-                          as="h3"
-                          size="md"
+                          as="h5"
+                          size="sm"
                           weight="medium"
                           lead="none"
                         >
-                          {{ pageValue == 'order' ? 'Devis' : 'Facture' }} pour
+                          {{ pageValue == 'order' ? 'Devis' : 'Facture' }} pour:
                         </BaseHeading>
                         <BaseParagraph
-                          size="md"
-                          class="text-muted-600 dark:text-muted-400"
+                          size="sm"
+                          class="text-muted-800 dark:text-muted-400 font-semibold"
                         >
                           {{ currentOrderInvoice?.announcer?.name }}
                         </BaseParagraph>
@@ -1329,52 +1337,54 @@ const onSubmit = handleSubmit(
                         class="text-muted-500 dark:text-muted-400 text-sm font-light"
                       >
                         <p
-                          class="text-muted-700 dark:text-muted-100 text-xs font-normal"
+                          v-if="currentOrderInvoice?.announcer?.address"
+                          class="text-muted-700 dark:text-muted-100 text-[9px] font-bold"
                         >
-                          Addresse
+                          Addresse :
                         </p>
 
                         <p
-                          class="text-muted-700 dark:text-muted-100 mt-1 text-xs font-normal"
+                          v-if="currentOrderInvoice?.announcer?.phone"
+                          class="text-muted-700 dark:text-muted-100 mt-1 text-[9px] font-bold"
                         >
                           Mobile :
                         </p>
                         <p
-                          class="text-muted-700 dark:text-muted-100 mt-1 text-xs font-normal"
+                          v-if="currentOrderInvoice?.announcer?.email"
+                          class="text-muted-700 dark:text-muted-100 mt-1 text-[9px] font-bold"
                         >
                           Courriel :
                         </p>
 
                         <p
-                          class="text-muted-700 dark:text-muted-100 mt-1 text-xs font-normal"
+                          v-if="currentOrderInvoice?.announcer?.rc"
+                          class="text-muted-700 dark:text-muted-100 mt-1 text-[9px] font-bold"
                         >
                           R/C :
                         </p>
                         <p
-                          class="text-muted-700 dark:text-muted-100 mt-1 text-xs font-normal"
+                          v-if="currentOrderInvoice?.announcer?.nc"
+                          class="text-muted-700 dark:text-muted-100 mt-1 text-[9px] font-bold"
                         >
                           N. Contribuable :
                         </p>
                       </div>
                       <div
-                        class="text-muted-800 dark:text-muted-400 text-sm font-light"
+                        class="text-muted-800 dark:text-muted-400 text-sm font-normal"
                       >
-                        <p class="text-xs">
-                          {{
-                            currentOrderInvoice?.announcer?.country?.name ??
-                            'Douala'
-                          }}
+                        <p class="text-[9px]">
+                          {{ currentOrderInvoice?.announcer?.country?.name }}
                         </p>
-                        <p class="mt-1 text-xs">
+                        <p class="mt-1 text-[9px]">
                           {{ currentOrderInvoice?.announcer?.phone }}
                         </p>
-                        <p class="mt-1 text-xs">
+                        <p class="mt-1 text-[9px]">
                           {{ currentOrderInvoice?.announcer?.email }}
                         </p>
-                        <p class="mt-1 text-xs">
+                        <p class="mt-1 text-[9px]">
                           {{ currentOrderInvoice?.announcer?.rc }}
                         </p>
-                        <p class="mt-1 text-xs">
+                        <p class="mt-1 text-[9px]">
                           {{ currentOrderInvoice?.announcer?.nc }}
                         </p>
                       </div>
@@ -1386,36 +1396,59 @@ const onSubmit = handleSubmit(
                       class="text-muted-500 dark:text-muted-400 text-sm font-light"
                     >
                       <p
-                        class="text-muted-700 dark:text-muted-100 text-xs font-normal"
+                        class="text-muted-800 dark:text-muted-100 text-[10px] font-semibold"
                       >
-                        Date De Devis
+                        {{
+                          pageValue == 'invoice'
+                            ? 'Date De Facture'
+                            : 'Date De Devis'
+                        }}
                       </p>
 
                       <p
-                        class="text-muted-700 dark:text-muted-100 mt-2 text-xs font-normal"
+                        class="text-muted-800 dark:text-muted-100 mt-2 text-[10px] font-semibold"
                       >
                         Description :
                       </p>
+
+                      <!-- <p
+                        class="text-muted-800 dark:text-muted-100 mt-2 text-[10px] font-semibold"
+                      >
+                        SO :
+                      </p>
+
                       <p
-                        class="text-muted-700 dark:text-muted-100 mt-2 text-xs font-normal"
+                        class="text-muted-800 dark:text-muted-100 mt-2 text-[10px] font-semibold"
+                      >
+                        Date de commande :
+                      </p> -->
+                      <p
+                        class="text-muted-800 dark:text-muted-100 mt-2 text-[10px] font-semibold"
                       >
                         Date Echéance :
                       </p>
                     </div>
                     <div
-                      class="text-muted-800 dark:text-muted-400 text-sm font-light"
+                      class="text-muted-800 dark:text-muted-400 text-sm font-normal"
                     >
-                      <p class="text-xs">
+                      <p class="text-[10px]">
                         {{
                           new Date(
                             currentOrderInvoice?.date,
                           ).toLocaleDateString('fr-FR')
                         }}
                       </p>
-                      <p class="mt-2 text-xs">
+                      <p class="mt-2 text-[10px]">
                         {{ currentOrderInvoice?.paymentCondition?.label }}
+                        <!-- BC N° 338 DU 18/07/2023 -->
                       </p>
-                      <p class="mt-2 text-xs">
+                      <!-- <p class="mt-2 text-[10px]">
+                         SO3078
+                      </p>
+                      <p class="mt-2 text-[10px]">
+                        30/05/2023
+                      </p> -->
+                      <p class="mt-2 text-[10px]">
                         {{
                           new Date(
                             currentOrderInvoice?.dueDate,
@@ -1708,71 +1741,72 @@ const onSubmit = handleSubmit(
                           <th
                             v-if="!isPrint"
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-left text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-left text-[9px] font-medium sm:ps-6 md:ps-0"
                           >
                             <Icon name="lucide:settings" class="h-4 w-4" />
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-[9px] font-bold sm:ps-6 md:ps-0"
                           >
                             #
                           </th>
                           <th
                             v-if="!isPrint"
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-[9px] font-bold sm:ps-6 md:ps-0"
                           >
                             Article
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-left text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-left text-[9px] font-bold sm:ps-6 md:ps-0"
                           >
                             Description
                           </th>
                           <th
                             v-if="!isPrint"
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-[9px] font-bold sm:ps-6 md:ps-0"
                           >
                             Compte
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-right text-xs font-medium uppercase sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-[9px] font-bold sm:table-cell"
                           >
                             Quantité
                           </th>
                           <th
+                            v-if="!isPrint"
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-xs font-medium uppercase sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-[9px] font-bold sm:table-cell"
                           >
                             U.M
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-right text-xs font-medium uppercase sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-[9px] font-bold sm:table-cell"
                           >
-                            P.U
+                            Prix unitaire
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-right text-xs font-medium uppercase sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-[9px] font-bold sm:table-cell"
                           >
                             Remise
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-xs font-medium uppercase sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-[9px] font-bold sm:table-cell"
                           >
                             Taxes
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-4 ps-3 px-2 text-right text-xs font-medium uppercase sm:pe-6 md:pe-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-4 ps-3 px-2 text-right text-[9px] font-bold sm:pe-6 md:pe-0"
                           >
-                            Montant
+                            Prix
                           </th>
                         </tr>
                       </thead>
@@ -1787,7 +1821,7 @@ const onSubmit = handleSubmit(
                             class="py-4 pe-3 ps-4 text-sm sm:ps-6 md:ps-0"
                           >
                             <div
-                              class="flex text-muted-800 dark:text-muted-100 font-medium"
+                              class="flex text-muted-800 dark:text-muted-100 font-normal"
                             >
                               <BaseButtonAction
                                 class="!p-2"
@@ -1810,45 +1844,46 @@ const onSubmit = handleSubmit(
                             </div>
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-left text-xs sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-left text-[9px] sm:table-cell"
                           >
                             {{ item.id + 1 }}
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-400 !w-40 px-3 py-4 text-left text-xs sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 !w-48 px-3 py-4 text-left font-medium text-[9px] sm:table-cell"
                           >
-                            <p class="w-40 break-words">
+                            <p class="w-48 break-words">
                               {{ item.description }}
                             </p>
                           </td>
                           <td
                             v-if="!isPrint"
-                            class="px-3 py-4 text-center text-xs sm:table-cell"
+                            class="px-3 py-4 text-center text-[9px] sm:table-cell"
                           >
                             7011
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-400 px-1 py-4 text-center text-xs sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-1 py-4 text-center font-medium text-[9px] sm:table-cell"
                           >
                             {{ item.quantity }}
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-center text-xs sm:table-cell"
+                            v-if="!isPrint"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-center font-medium text-[9px] sm:table-cell"
                           >
                             {{ item.unit }}
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-center text-xs sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-center font-medium text-[9px] sm:table-cell"
                           >
                             {{ item.rate }}
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-400 px-2 py-4 text-center text-xs sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-2 py-4 text-center font-medium text-[9px] sm:table-cell"
                           >
                             {{ item.discount }} %
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-center text-xs sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-4 text-center font-medium text-[9px] sm:table-cell"
                           >
                             <p v-if="item.taxes.length > 0">
                               {{ item.taxes[0]?.code }} :
@@ -1860,13 +1895,14 @@ const onSubmit = handleSubmit(
                             </p>
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right text-sm sm:pe-6 md:pe-0"
+                            class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right font-medium text-xs sm:pe-6 md:pe-0"
                           >
                             {{
                               new Intl.NumberFormat('fr-FR').format(
                                 item.rate * item.quantity,
                               )
                             }}
+                            XAF
                           </td>
                         </tr>
                         <!--  -->
@@ -2010,7 +2046,7 @@ const onSubmit = handleSubmit(
                               v-model="curOrderItem.unit"
                               type="text"
                               :classes="{
-                                wrapper: 'w-20 text-xs',
+                                wrapper: 'w-20 text-[9px]',
                               }"
                             />
                           </td>
@@ -2077,21 +2113,21 @@ const onSubmit = handleSubmit(
                         <tr clas="" v-for="item in totalData" :key="item.label">
                           <th
                             scope="row"
-                            colspan="7"
-                            class="text-muted-800 dark:text-muted-400 pe-3 ps-6 pt-2 text-right text-xs font-light"
+                            colspan="6"
+                            class="text-muted-800 dark:text-muted-400 pe-3 ps-6 pt-2 text-right text-[10px] font-bold"
                           >
                             {{ item.label }}
                           </th>
                           <td
                             scope="row"
-                            colspan="3"
-                            class="pe-4 ps-3 pt-2 text-right sm:pe-6"
+                            colspan="4"
+                            class="ps-3 pt-2 text-right"
                             :class="
-                              item.label === 'Net à payer'
-                                ? 'text-xs text-primary-800 border-muted-400 dark:border-muted-700 border-t-2 dark:text-primary-500'
+                              item.label === 'Montant Dû'
+                                ? 'text-[10px] text-primary-800 border-muted-400 dark:border-muted-700 border-t font-bold dark:text-primary-500'
                                 : item.label === 'Total HT'
-                                ? 'text-xs border-muted-400 dark:border-muted-700 text-muted-800 dark:text-muted-200/70 border-t-2'
-                                : 'text-xs text-muted-800 dark:text-muted-200/70'
+                                ? 'text-[10px] border-muted-400 dark:border-muted-800 text-muted-800 font-bold dark:text-muted-200/70 border-t'
+                                : 'text-[10px] text-muted-800 dark:text-muted-200/70 font-bold'
                             "
                           >
                             {{
@@ -2106,28 +2142,42 @@ const onSubmit = handleSubmit(
                 </div>
 
                 <BaseHeading
-                  v-if="pageValue == 'invoice' && isPrint"
+                  v-if="
+                    pageValue == 'invoice' &&
+                    isPrint &&
+                    currentOrderInvoice?.transactions.length > 0
+                  "
                   as="h4"
                   size="sm"
                   weight="medium"
                   lead="tight"
-                  class="text-primary-500 dark:text-primary-500 px-4 py-1"
+                  class="text-primary-500 dark:text-primary-500 px-6 py-1"
                 >
                   Historique des paiements
                 </BaseHeading>
                 <BaseHeading
-                  v-if="pageValue == 'invoice' && !isPrint"
+                  v-if="
+                    pageValue == 'invoice' &&
+                    !isPrint &&
+                    currentOrderInvoice?.transactions.length > 0
+                  "
                   as="h1"
                   size="lg"
                   weight="medium"
                   lead="tight"
-                  class="text-primary-500 dark:text-primary-500 px-4 py-1"
+                  class="text-primary-500 dark:text-primary-500 px-6 py-1"
                 >
                   Historique des paiements
                 </BaseHeading>
 
-                <div v-if="pageValue == 'invoice'" class="px-2 py-1 sm:p-4">
-                  <div class="flex flex-col px-2 overflow-auto">
+                <div
+                  v-if="
+                    pageValue == 'invoice' &&
+                    currentOrderInvoice?.transactions.length > 0
+                  "
+                  class="px-2 py-1 sm:p-4"
+                >
+                  <div class="flex flex-col px-2">
                     <table
                       class="divide-muted-200 dark:divide-muted-700 w-full divide-y"
                     >
@@ -2136,37 +2186,37 @@ const onSubmit = handleSubmit(
                           <th
                             v-if="!isPrint"
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-[9px] font-bold sm:ps-6 md:ps-0"
                           >
                             <Icon name="lucide:settings" class="h-4 w-4" />
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-[9px] font-bold sm:ps-6 md:ps-0"
                           >
                             #
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-[9px] font-bold sm:ps-6 md:ps-0"
                           >
                             Date
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-[9px] font-bold sm:ps-6 md:ps-0"
                           >
                             Montant
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-[9px] font-bold sm:ps-6 md:ps-0"
                           >
                             Moyen
                           </th>
                           <th
                             scope="col"
-                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium uppercase sm:ps-6 md:ps-0"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-[9px] font-bold sm:ps-6 md:ps-0"
                           >
                             Reference
                           </th>
@@ -2197,12 +2247,12 @@ const onSubmit = handleSubmit(
                             </div>
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-xs sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-[9px] sm:table-cell"
                           >
                             {{ i + 1 }}
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-xs sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-[9px] sm:table-cell"
                           >
                             {{
                               new Date(item.createdAt).toLocaleDateString(
@@ -2211,7 +2261,7 @@ const onSubmit = handleSubmit(
                             }}
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-xs sm:table-cell"
+                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-[9px] sm:table-cell"
                           >
                             {{
                               new Intl.NumberFormat('fr-FR').format(item.amount)
@@ -2219,12 +2269,12 @@ const onSubmit = handleSubmit(
                             XAF
                           </td>
                           <td
-                            class="px-3 py-2 text-center text-xs sm:table-cell"
+                            class="px-3 py-2 text-center text-[9px] sm:table-cell"
                           >
                             {{ item.paymentAccount?.label ?? '-' }}
                           </td>
                           <td
-                            class="px-3 py-2 text-center text-xs sm:table-cell"
+                            class="px-3 py-2 text-center text-[9px] sm:table-cell"
                           >
                             {{ item.code ?? '-' }}
                           </td>
@@ -2234,10 +2284,10 @@ const onSubmit = handleSubmit(
                   </div>
                 </div>
 
-                <div v-if="isPrint" class="p-2">
-                  <BaseParagraph class="!py-2 dark:text-muted-400" size="xs">
-                    Montant en lettre :
-                    <span class="font-bold"
+                <div v-if="isPrint" class="py-2 px-8">
+                  <div class="!py-2 dark:text-muted-400" size="xs">
+                    <span class="font-bold text-[10px]">Total en lettre</span> :
+                    <span class="font-normal text-[10px]"
                       >{{
                         new ToWords({ localeCode: 'fr-FR' }).convert(
                           currentOrderInvoice?.amount,
@@ -2245,26 +2295,36 @@ const onSubmit = handleSubmit(
                       }}
                       Francs CFA.</span
                     >
-                  </BaseParagraph>
+                  </div>
                   <div
                     class="border-muted-200 dark:border-muted-700 border-t pt-2"
                   >
                     <div class="dark:text-muted-400">
-                      <BaseParagraph size="xs">
-                        Termes de paiement :
-                        {{ currentOrderInvoice?.paymentCondition?.label }}
+                      <BaseParagraph class="!text-[10px]" size="xs">
+                        <span class="!font-bold">Termes de paiement : </span>
+                        <span class="!font-normal">
+                          {{
+                            currentOrderInvoice?.paymentCondition?.label
+                          }}</span
+                        >
                       </BaseParagraph>
-                      <BaseParagraph size="xs">
-                        Mode de règlement :
-                        {{ currentOrderInvoice?.paymentMethod?.label }}
+                      <BaseParagraph class="!text-[10px]" size="xs">
+                        <!-- <span class="!font-bold">Commentaire : </span> -->
+                        <span class="!font-bold">Mode de règlement : </span>
+
+                        <span class="!font-normal">
+                          {{ currentOrderInvoice?.paymentMethod?.label }}
+                          <!-- Condiftions générales de ventes de Regie 25% à la
+                          commande. -->
+                        </span>
                       </BaseParagraph>
                     </div>
                   </div>
                 </div>
                 <div class="mt-2 p-8 flex justify-end">
-                  <div class="dark:text-muted-400">
-                    <BaseParagraph size="xs">
-                      Le service commercial
+                  <div class="dark:text-muted-400 font-bold">
+                    <BaseParagraph size="sm">
+                      La Direction commerciale
                     </BaseParagraph>
                   </div>
                 </div>
@@ -2272,26 +2332,29 @@ const onSubmit = handleSubmit(
                   v-if="isPrint"
                   class="flex items-end justif-center w-full absolute inset-x-0 bottom-0"
                 >
-                  <div class="w-full pb-2">
+                  <div class="w-full pb-1">
                     <div
                       class="dark:text-muted-400 border-primary-500 pb-1 text-center dark:border-primary-700 border-b-2"
                     >
-                      <BaseParagraph size="xs">
+                      <BaseParagraph size="xs" class="text-[10px] font-medium">
                         {{ currentOrderInvoice?.org?.footerTitle }}
                       </BaseParagraph>
                     </div>
                     <div class="dark:text-muted-400 py-1 text-center">
-                      <BaseParagraph size="xs">
-                        Contact : {{ currentOrderInvoice?.org?.phone }}
+                      <BaseParagraph size="xs" class="text-[10px] font-medium">
+                        Téléphone : (+237)
+                        {{ currentOrderInvoice?.org?.phone }}
                         {{
                           currentOrderInvoice?.org?.phone2
                             ? '/ ' + currentOrderInvoice?.org?.phone2
                             : ''
-                        }}; {{ currentOrderInvoice?.org?.address }}
+                        }}
+                        . {{ currentOrderInvoice?.org?.address }}
                       </BaseParagraph>
-                      <BaseParagraph size="xs">
-                        RC : {{ currentOrderInvoice?.org?.rc }}; NC :
-                        {{ currentOrderInvoice?.org?.nc }}
+                      <BaseParagraph size="xs" class="text-[10px] font-medium">
+                        N° Contribuable: NC
+                        {{ currentOrderInvoice?.org?.nc }} - RC:
+                        {{ currentOrderInvoice?.org?.rc }};
                       </BaseParagraph>
                     </div>
                   </div>

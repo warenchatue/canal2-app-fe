@@ -16,8 +16,8 @@ export default defineEventHandler(async (event) => {
     return { data: data, success: true }
   } else if (action == 'findAllFilters') {
     let data = await findAll(token)
-    var startTime = new Date(startDate).getTime()
-    var endTime = new Date(endDate).getTime()
+    var startTime = new Date(new Date(startDate).toLocaleDateString()).getTime()
+    var endTime = new Date(new Date(endDate).toLocaleDateString()).getTime()
     data = data.filter((e: any) => {
       var itemTime = new Date(
         new Date(e.createdAt).toLocaleDateString(),

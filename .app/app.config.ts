@@ -244,26 +244,26 @@ export default defineAppConfig({
           {
             name: 'Configuration',
             icon: { name: 'lucide:settings', class: 'w-5 h-5' },
-            activePath: '/bo/accountancy',
+            activePath: '/bo/config',
             children: [
               {
                 name: 'Taxes',
-                to: '/bo/accountancy/taxes',
+                to: '/bo/config/taxes',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Plan comptable',
-                to: '/bo/accountancy/accounts',
+                to: '/bo/config/accounts',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Modes de reglement',
-                to: '/bo/accountancy/payment-methods',
+                to: '/bo/config/payment-methods',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Conditions de paiement',
-                to: '/bo/accountancy/payment-conditions',
+                to: '/bo/config/payment-conditions',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
             ],

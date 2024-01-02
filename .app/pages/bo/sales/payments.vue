@@ -36,7 +36,8 @@ const dates = ref({
   start: new Date(),
   end: new Date(),
 })
-
+const startDate = ref(new Date())
+const endDate = ref(new Date())
 // Check if can have access
 if (
   authStore.user.appRole?.name != UserRole.billing &&
@@ -96,8 +97,8 @@ async function printSalesReport() {
       page: page.value,
       org: currentOrg.value._id,
       team: currentTeam.value,
-      startDate: dates.value?.start.toLocaleDateString(),
-      endDate: dates.value?.end.toLocaleDateString(),
+      startDate: startDate.value,
+      endDate: endDate.value,
       action: 'findAllFilters',
       token: token.value,
     }
@@ -751,7 +752,7 @@ const onSubmit = handleSubmit(
           class="flex justify-between items-center border-b-2 py-1"
         >
           <div shape="straight" class="">
-            <img class="h-32 fit-content" src="/uploads/logos/c2.png" />
+            <img class="h-32 fit-content" :src="currentOrg.logo" />
           </div>
           <div class="flex justify-end">
             <div>
@@ -778,8 +779,9 @@ const onSubmit = handleSubmit(
           v-if="isPrint"
           class="font-heading text-muted-900 text-base font-medium pb-2 pt-1 px-2 leading-6 dark:text-white"
         >
-          Etat des paiments du {{ dates.start.toLocaleDateString('fr-FR') }} au
-          {{ dates.end.toLocaleDateString('fr-FR') }} Pour la ville de
+          Etat des paiments du
+          {{ new Date(startDate).toLocaleDateString('fr-FR') }} au
+          {{ new Date(endDate).toLocaleDateString('fr-FR') }} Pour la ville de
           {{ currentTeam.toUpperCase() }} de la société
           {{ currentOrg?.name ?? '' }}
         </h4>
@@ -851,7 +853,9 @@ const onSubmit = handleSubmit(
                   <TairoTableHeading uppercase spaced>
                     Montant règlement
                   </TairoTableHeading>
-                  <TairoTableHeading  v-if="!isPrint" uppercase spaced>Statut</TairoTableHeading>
+                  <TairoTableHeading v-if="!isPrint" uppercase spaced
+                    >Statut</TairoTableHeading
+                  >
                   <TairoTableHeading v-if="!isPrint" uppercase spaced
                     >Action</TairoTableHeading
                   >
@@ -988,10 +992,8 @@ const onSubmit = handleSubmit(
                   <TairoTableCell light spaced> </TairoTableCell>
                   <TairoTableCell v-if="!isPrint" light spaced>
                   </TairoTableCell>
-                   <TairoTableCell light spaced>
-                  </TairoTableCell>
-                   <TairoTableCell  light spaced>
-                  </TairoTableCell>
+                  <TairoTableCell light spaced> </TairoTableCell>
+                  <TairoTableCell light spaced> </TairoTableCell>
 
                   <TairoTableCell light spaced> </TairoTableCell>
                   <TairoTableCell light spaced>
@@ -1159,75 +1161,25 @@ const onSubmit = handleSubmit(
                     </BaseSelect>
                   </Field>
                 </div>
-                <div class="col-span-12 mt-2">
-                  <DatePicker
-                    v-model.range="dates"
-                    :masks="masks"
-                    mode="date"
-                    hide-time-header
-                    trim-weeks
-                  >
-                    <template #default="{ inputValue, inputEvents }">
-                      <div class="flex w-full flex-col gap-4 sm:flex-row">
-                        <div class="relative grow">
-                          <Field
-                            v-slot="{
-                              field,
-                              errorMessage,
-                              handleChange,
-                              handleBlur,
-                            }"
-                            name="event.startDateTime"
-                          >
-                            <BaseInput
-                              shape="curved"
-                              label="Date debut"
-                              icon="ph:calendar-blank-duotone"
-                              :value="inputValue.start"
-                              v-on="inputEvents.start"
-                              :classes="{
-                                input: '!h-11 !ps-11',
-                                icon: '!h-11 !w-11',
-                              }"
-                              :model-value="field.value"
-                              :error="errorMessage"
-                              type="text"
-                              @update:model-value="handleChange"
-                              @blur="handleBlur"
-                            />
-                          </Field>
-                        </div>
-                        <div class="relative grow">
-                          <Field
-                            v-slot="{
-                              field,
-                              errorMessage,
-                              handleChange,
-                              handleBlur,
-                            }"
-                            name="event.endDateTime"
-                          >
-                            <BaseInput
-                              shape="curved"
-                              label="Date fin"
-                              icon="ph:calendar-blank-duotone"
-                              :value="inputValue.end"
-                              v-on="inputEvents.end"
-                              :classes="{
-                                input: '!h-11 !ps-11',
-                                icon: '!h-11 !w-11',
-                              }"
-                              :model-value="field.value"
-                              :error="errorMessage"
-                              type="text"
-                              @update:model-value="handleChange"
-                              @blur="handleBlur"
-                            />
-                          </Field>
-                        </div>
-                      </div>
-                    </template>
-                  </DatePicker>
+                <div class="flex justify-between pt-5">
+                  <div class="col-span-12 md:col-span-6 mt-2">
+                    <label for="start">Date debut: </label>
+                    <input
+                      type="date"
+                      id="start"
+                      name="report-start"
+                      v-model="startDate"
+                    />
+                  </div>
+                  <div class="col-span-12 md:col-span-6 mt-2">
+                    <label for="start">Date de fin: </label>
+                    <input
+                      type="date"
+                      id="end"
+                      name="report-start"
+                      v-model="endDate"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

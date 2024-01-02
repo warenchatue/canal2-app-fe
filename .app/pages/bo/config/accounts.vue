@@ -101,6 +101,7 @@ const zodSchema = z
       _id: z.string().optional(),
       code: z.string().min(1, VALIDATION_TEXT.CODE_REQUIRED),
       label: z.string(),
+      journal: z.string(),
       position: z.union([z.literal('d'), z.literal('c')]),
       description: z.string(),
     }),
@@ -125,6 +126,7 @@ const initialValues = computed<FormInput>(() => ({
   account: {
     code: '',
     label: '',
+    journal: '',
     description: '',
     position: 'c',
   },
@@ -404,6 +406,10 @@ const onSubmit = handleSubmit(
                   Position
                 </TairoTableHeading>
 
+                  <TairoTableHeading uppercase spaced>
+                  Journal
+                </TairoTableHeading>
+
                 <TairoTableHeading uppercase spaced>
                   Description
                 </TairoTableHeading>
@@ -457,6 +463,13 @@ const onSubmit = handleSubmit(
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
                       {{ item.position }}
+                    </span>
+                  </div>
+                </TairoTableCell>
+                   <TairoTableCell light spaced>
+                  <div class="flex items-center">
+                    <span class="text-muted-400 font-sans text-xs">
+                      {{ item.journal }}
                     </span>
                   </div>
                 </TairoTableCell>
@@ -598,6 +611,33 @@ const onSubmit = handleSubmit(
                       >
                         <option value="d">Debit</option>
                         <option value="c">Credit</option>
+                      </BaseSelect>
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-12">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="account.journal"
+                    >
+                      <BaseSelect
+                        label="Journal *"
+                        icon="ph:funnel"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      >
+                        <option value="purchaseJournal">
+                          Journal des achats
+                        </option>
+                        <option value="saleJournal">Journal des ventes</option>
+                        <option value="treasuryJournal">
+                          Journaux de tresorerie
+                        </option>
+                        <option value="otherOperationJournal">
+                          Journal des operations diverses
+                        </option>
                       </BaseSelect>
                     </Field>
                   </div>

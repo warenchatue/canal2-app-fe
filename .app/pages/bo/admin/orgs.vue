@@ -84,6 +84,7 @@ const zodSchema = z
       _id: z.string().optional(),
       name: z.string(),
       email: z.string(),
+      website: z.string().optional(),
       footerTitle: z.string().optional(),
       rc: z.string(),
       nc: z.string(),
@@ -131,6 +132,7 @@ const initialValues = computed<FormInput>(() => ({
   org: {
     name: '',
     email: '',
+    website: '',
     footerTitle: '',
     phone: '',
     phone2: '',
@@ -174,6 +176,7 @@ function editOrg(org: any) {
   setFieldValue('org._id', org._id)
   setFieldValue('org.name', org.name)
   setFieldValue('org.email', org.email)
+  setFieldValue('org.website', org.website)
   setFieldValue('org.phone', org.phone)
   setFieldValue('org.phone2', org.phone2)
   setFieldValue('org.nc', org.nc)
@@ -656,6 +659,23 @@ const onSubmit = handleSubmit(
                           sublabel: 'abbr',
                           media: 'flag',
                         }"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="org.website"
+                    >
+                      <BaseInput
+                        label="Site web"
+                        icon="lucide:globe"
+                        placeholder=""
                         :model-value="field.value"
                         :error="errorMessage"
                         :disabled="isSubmitting"
