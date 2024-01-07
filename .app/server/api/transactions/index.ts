@@ -67,7 +67,11 @@ function filterData(
 ) {
   const offset = (page - 1) * perPage
   if (!filter) {
-    return data.slice(offset, offset + perPage)
+    return data
+      .sort(function (a, b) {
+        return a.code < b.code ? 1 : -1
+      })
+      .slice(offset, offset + perPage)
   }
   const filterRe = new RegExp(filter, 'i')
   return data
@@ -75,9 +79,12 @@ function filterData(
       console.log(item.amount)
       return [
         item.amount.toString(),
-        `${item.data?.donor?.lastName}`,
-        `${item.data?.donor?.email}`,
+        `${item.author?.lastName}`,
+        `${item.date}`,
       ].some((item) => item.match(filterRe))
+    })
+    .sort(function (a, b) {
+      return a.code < b.code ? 1 : -1
     })
     .slice(offset, offset + perPage)
 }
@@ -171,39 +178,7 @@ async function addExternalTxn(txnId: string, body: any, token: string) {
 
   return Promise.resolve(data)
 }
-async function getTxns() {
-  return Promise.resolve([
-    {
-      id: '1',
-      amount: '5000',
-      currency: 'XAF',
-      operator: {
-        name: 'Mobile Money',
-        slug: 'MOMO',
-        medias: {
-          avatar: '/img/avatars/5.svg',
-          flag: '/img/icons/flags/united-states-of-america.svg',
-        },
-      },
-      type: {
-        name: 'donation',
-        id: '1',
-      },
-      author: {
-        id: '1',
-        name: 'Jordan',
-        email: 'anafackjordan@gmail.com',
-        role: 'member',
-        medias: {
-          avatar: '/img/avatars/5.svg',
-          flag: '/img/icons/flags/united-states-of-america.svg',
-        },
-      },
-      createdAt: '2021-05-02',
-      updatedAt: '2021-05-02',
-    },
-  ])
-}
+
 async function getTxn(id: String) {
   return {}
 }

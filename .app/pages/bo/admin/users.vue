@@ -21,7 +21,7 @@ const appStore = useAppStore()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 
 const filter = ref('')
-const perPage = ref(10)
+const perPage = ref(25)
 const token = useCookie('token')
 const success = ref(false)
 

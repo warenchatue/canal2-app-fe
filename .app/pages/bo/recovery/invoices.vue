@@ -815,13 +815,13 @@ const onSubmit = handleSubmit(
                         {{ item.announcer?.name }}
                       </h4>
                       <p class="text-muted-400 font-sans text-xs">
-                        {{ item.announcer?.email }}
+                        {{ item.announcer?.code }}
                       </p>
                     </div>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ new Date(item.createdAt).toLocaleDateString('fr-FR') }}
+                  {{ new Date(item.date).toLocaleDateString('fr-FR') }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{ item.org.name }}

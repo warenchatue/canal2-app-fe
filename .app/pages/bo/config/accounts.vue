@@ -30,6 +30,7 @@ const isEdit = ref(false)
 const toaster = useToaster()
 // Check if can have access
 if (
+  authStore.user.appRole.name != UserRole.billing &&
   authStore.user.appRole.name != UserRole.accountancy &&
   authStore.user.appRole.name != UserRole.superAdmin
 ) {
@@ -406,7 +407,7 @@ const onSubmit = handleSubmit(
                   Position
                 </TairoTableHeading>
 
-                  <TairoTableHeading uppercase spaced>
+                <TairoTableHeading uppercase spaced>
                   Journal
                 </TairoTableHeading>
 
@@ -466,7 +467,7 @@ const onSubmit = handleSubmit(
                     </span>
                   </div>
                 </TairoTableCell>
-                   <TairoTableCell light spaced>
+                <TairoTableCell light spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
                       {{ item.journal }}

@@ -746,7 +746,7 @@ const onSubmit = handleSubmit(
                         {{ item.announcer?.name }}
                       </h4>
                       <p class="text-muted-400 font-sans text-xs">
-                        {{ item.announcer?.email }}
+                        {{ item.announcer?.code }}
                       </p>
                     </div>
                   </div>

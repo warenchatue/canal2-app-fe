@@ -44,7 +44,7 @@ function filterData(
   const filterRe = new RegExp(filter, 'i')
   return data
     .filter((item) => {
-      return [item.name, item.email].some((item) => item.match(filterRe))
+      return [item.name, item.email].some((item) => item?.match(filterRe))
     })
     .slice(offset, offset + perPage)
 }

@@ -53,21 +53,21 @@ export default defineEventHandler(async (event) => {
       metaData: response.metaData,
       data: filterData(response.data, filter, page, perPage),
     }
-  } else if (action == 'createInvoice') {
+  } else if (action == 'createRecoveryProcedure') {
     const body = await readBody(event)
     console.log(body)
-    const data = await createInvoice(body, token)
+    const data = await createRecoveryProcedure(body, token)
     return { data: data, success: true }
-  } else if (action == 'updateInvoice') {
+  } else if (action == 'updateRecoveryProcedure') {
     const body = await readBody(event)
-    const data = await updateInvoice(id, body, token)
+    const data = await updateRecoveryProcedure(id, body, token)
     return { data: data, success: true }
-  } else if (action == 'addInvoicePayment') {
+  } else if (action == 'addRecoveryProcedurePayment') {
     const body = await readBody(event)
-    const data = await addInvoicePayment(id, body, token)
+    const data = await addRecoveryProcedurePayment(id, body, token)
     return { data: data, success: true }
   } else if (action == 'delete') {
-    const data = await deleteInvoice(id, token)
+    const data = await deleteRecoveryProcedure(id, token)
     return { data: data, success: true }
   }
 })
@@ -103,13 +103,16 @@ function filterData(
 async function findOne(id: string, token: string) {
   console.log('findOne ' + token)
   const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/invoices/' + id, {
-    method: 'get',
-    headers: {
-      Authorization: 'Bearer ' + token,
-      'Content-type': 'application/json',
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/recovery-procedures/' + id,
+    {
+      method: 'get',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
     },
-  }).catch((error) => console.log(error))
+  ).catch((error) => console.log(error))
   console.log(data)
   return Promise.resolve(data)
 }
@@ -117,55 +120,46 @@ async function findOne(id: string, token: string) {
 async function findAll(token: string) {
   console.log('findAll ' + token)
   const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/invoices', {
-    method: 'get',
-    headers: {
-      Authorization: 'Bearer ' + token,
-      'Content-type': 'application/json',
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/recovery-procedures',
+    {
+      method: 'get',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
     },
-  }).catch((error) => console.log(error))
+  ).catch((error) => console.log(error))
   console.log(data)
   return Promise.resolve(data)
 }
 
-async function createInvoice(body: any, token: string) {
-  console.log('createInvoice ' + token)
-  const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/invoices', {
-    method: 'post',
-    headers: {
-      Authorization: 'Bearer ' + token,
-      'Content-type': 'application/json',
-    },
-    body: {
-      ...body,
-      code: 'FACT' + '/' + new Date().getFullYear() + '/' + makeId(4),
-    },
-  }).catch((error) => console.log(error))
-  console.log(data)
-  return Promise.resolve(data)
-}
-
-async function updateInvoice(id: string, body: any, token: string) {
-  console.log('updateInvoice ' + token)
-  const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/invoices/' + id, {
-    method: 'PUT',
-    headers: {
-      Authorization: 'Bearer ' + token,
-      'Content-type': 'application/json',
-    },
-    body: body,
-  }).catch((error) => console.log(error))
-  console.log(data)
-  return Promise.resolve(data)
-}
-
-async function addInvoicePayment(id: string, body: any, token: string) {
-  console.log('addInvoicePayment ' + token)
+async function createRecoveryProcedure(body: any, token: string) {
+  console.log('createRecoveryProcedure ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/invoices/' + id + '/addPayment',
+    runtimeConfig.env.apiUrl + '/recovery-procedures',
+    {
+      method: 'post',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+      body: {
+        ...body,
+        code: 'FACT' + '/' + new Date().getFullYear() + '/' + makeId(4),
+      },
+    },
+  ).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
+}
+
+async function updateRecoveryProcedure(id: string, body: any, token: string) {
+  console.log('updateRecoveryProcedure ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/recovery-procedures/' + id,
     {
       method: 'PUT',
       headers: {
@@ -179,16 +173,41 @@ async function addInvoicePayment(id: string, body: any, token: string) {
   return Promise.resolve(data)
 }
 
-async function deleteInvoice(id: string, token: string) {
-  console.log('deleteInvoice ' + token)
+async function addRecoveryProcedurePayment(
+  id: string,
+  body: any,
+  token: string,
+) {
+  console.log('addRecoveryProcedurePayment ' + token)
   const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/invoices/' + id, {
-    method: 'DELETE',
-    headers: {
-      Authorization: 'Bearer ' + token,
-      'Content-type': 'application/json',
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/recovery-procedures/' + id + '/addPayment',
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+      body: body,
     },
-  }).catch((error) => console.log(error))
+  ).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
+}
+
+async function deleteRecoveryProcedure(id: string, token: string) {
+  console.log('deleteRecoveryProcedure ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/recovery-procedures/' + id,
+    {
+      method: 'DELETE',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
   console.log(data)
   return Promise.resolve(data)
 }

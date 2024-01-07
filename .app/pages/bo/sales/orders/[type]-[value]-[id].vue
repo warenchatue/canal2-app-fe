@@ -382,6 +382,7 @@ const zodSchema = z
     order: z.object({
       _id: z.string().optional(),
       label: z.string().optional(),
+      description: z.string().optional(),
       amount: z.number(),
       team: z.string().optional(),
       pending: z.number(),
@@ -486,6 +487,7 @@ function editOrderInvoiceFile(currentOrderInvoice: any) {
   setTimeout(() => {
     setFieldValue('order._id', currentOrderInvoice._id)
     setFieldValue('order.label', currentOrderInvoice.label)
+    setFieldValue('order.description', currentOrderInvoice.description)
     setFieldValue('order.announcer', {
       id: currentOrderInvoice.announcer._id,
       name: currentOrderInvoice.announcer.name,
@@ -1373,7 +1375,7 @@ const onSubmit = handleSubmit(
                         class="text-muted-800 dark:text-muted-400 text-sm font-normal"
                       >
                         <p class="text-[9px]">
-                          {{ currentOrderInvoice?.announcer?.country?.name }}
+                          {{ currentOrderInvoice?.announcer?.address }}
                         </p>
                         <p class="mt-1 text-[9px]">
                           {{ currentOrderInvoice?.announcer?.phone }}
@@ -1405,7 +1407,7 @@ const onSubmit = handleSubmit(
                         }}
                       </p>
 
-                      <p
+                      <p v-if="currentOrderInvoice?.description"
                         class="text-muted-800 dark:text-muted-100 mt-2 text-[10px] font-semibold"
                       >
                         Description :
@@ -1438,16 +1440,12 @@ const onSubmit = handleSubmit(
                           ).toLocaleDateString('fr-FR')
                         }}
                       </p>
-                      <p class="mt-2 text-[10px]">
-                        {{ currentOrderInvoice?.paymentCondition?.label }}
-                        <!-- BC N° 338 DU 18/07/2023 -->
+                      <p v-if="currentOrderInvoice?.description" class="mt-2 text-[10px]">
+                        {{ currentOrderInvoice?.description }}
+                        <!-- BC N° 33880 DU 18/07/2023 -->
                       </p>
-                      <!-- <p class="mt-2 text-[10px]">
-                         SO3078
-                      </p>
-                      <p class="mt-2 text-[10px]">
-                        30/05/2023
-                      </p> -->
+                      <!-- <p class="mt-2 text-[10px]">SO3078</p>
+                      <p class="mt-2 text-[10px]">30/05/2023</p> -->
                       <p class="mt-2 text-[10px]">
                         {{
                           new Date(
@@ -1640,7 +1638,7 @@ const onSubmit = handleSubmit(
                         >
                           <DatePicker
                             v-model.range="dates"
-                            :masks="masks"
+                            :min-date="new Date('2022-01-01')"
                             mode="date"
                             hide-time-header
                             trim-weeks
@@ -1726,6 +1724,30 @@ const onSubmit = handleSubmit(
                             shape="straight"
                             label="Joindre un document"
                           />
+                        </div>
+                        <div
+                          class="ltablet:col-span-12 col-span-12 lg:col-span-6"
+                        >
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="order.description"
+                          >
+                            <BaseInput
+                              label="Référence"
+                              icon="ph:file-duotone"
+                              placeholder=""
+                              :model-value="field.value"
+                              :error="errorMessage"
+                              :disabled="isSubmitting"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
+                            />
+                          </Field>
                         </div>
                       </div>
                     </div>
@@ -1849,6 +1871,7 @@ const onSubmit = handleSubmit(
                             {{ item.id + 1 }}
                           </td>
                           <td
+                            style="white-space: pre-wrap; word-wrap: break-word"
                             class="text-muted-800 dark:text-muted-400 !w-48 px-3 py-4 text-left font-medium text-[9px] sm:table-cell"
                           >
                             <p class="w-48 break-words">
@@ -2126,7 +2149,7 @@ const onSubmit = handleSubmit(
                               item.label === 'Montant Dû'
                                 ? 'text-[10px] text-primary-800 border-muted-400 dark:border-muted-700 border-t font-bold dark:text-primary-500'
                                 : item.label === 'Total HT'
-                                ? 'text-[10px] border-muted-400 dark:border-muted-800 text-muted-800 font-bold dark:text-muted-200/70 border-t'
+                                ? 'text-[10px] border-muted-400 dark:border-muted-700 text-muted-800 font-bold dark:text-muted-200/70 border-t'
                                 : 'text-[10px] text-muted-800 dark:text-muted-200/70 font-bold'
                             "
                           >
@@ -2145,7 +2168,7 @@ const onSubmit = handleSubmit(
                   v-if="
                     pageValue == 'invoice' &&
                     isPrint &&
-                    currentOrderInvoice?.transactions.length > 0
+                    currentOrderInvoice?.transactions?.length > 0
                   "
                   as="h4"
                   size="sm"
@@ -2159,7 +2182,7 @@ const onSubmit = handleSubmit(
                   v-if="
                     pageValue == 'invoice' &&
                     !isPrint &&
-                    currentOrderInvoice?.transactions.length > 0
+                    currentOrderInvoice?.transactions?.length > 0
                   "
                   as="h1"
                   size="lg"
@@ -2173,7 +2196,7 @@ const onSubmit = handleSubmit(
                 <div
                   v-if="
                     pageValue == 'invoice' &&
-                    currentOrderInvoice?.transactions.length > 0
+                    currentOrderInvoice?.transactions?.length > 0
                   "
                   class="px-2 py-1 sm:p-4"
                 >
@@ -2309,13 +2332,10 @@ const onSubmit = handleSubmit(
                         >
                       </BaseParagraph>
                       <BaseParagraph class="!text-[10px]" size="xs">
-                        <!-- <span class="!font-bold">Commentaire : </span> -->
-                        <span class="!font-bold">Mode de règlement : </span>
+                        <span class="!font-bold">Commentaire : </span>
 
                         <span class="!font-normal">
-                          {{ currentOrderInvoice?.paymentMethod?.label }}
-                          <!-- Condiftions générales de ventes de Regie 25% à la
-                          commande. -->
+                          Condiftions générales de ventes.
                         </span>
                       </BaseParagraph>
                     </div>
@@ -2349,7 +2369,7 @@ const onSubmit = handleSubmit(
                             ? '/ ' + currentOrderInvoice?.org?.phone2
                             : ''
                         }}
-                        . {{ currentOrderInvoice?.org?.address }}
+                        . {{ currentOrderInvoice?.org?.website }}
                       </BaseParagraph>
                       <BaseParagraph size="xs" class="text-[10px] font-medium">
                         N° Contribuable: NC
@@ -2593,8 +2613,7 @@ const onSubmit = handleSubmit(
                     <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
                       <DatePicker
                         v-model.range="dates"
-                        :masks="masks"
-                        :min-date="new Date()"
+                        :min-date="new Date('2022-01-01')"
                         mode="date"
                         hide-time-header
                         trim-weeks

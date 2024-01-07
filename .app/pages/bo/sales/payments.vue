@@ -752,22 +752,27 @@ const onSubmit = handleSubmit(
           class="flex justify-between items-center border-b-2 py-1"
         >
           <div shape="straight" class="">
-            <img class="h-32 fit-content" :src="currentOrg.logo" />
+            <img
+              v-if="currentOrg?.logo?.includes('r2')"
+              class="h-16 pb-1 fit-content"
+              :src="currentOrg.logo"
+            />
+            <img v-else class="h-32 max fit-content" :src="currentOrg.logo" />
           </div>
           <div class="flex justify-end">
             <div>
               <h5
-                class="font-heading text-right text-muted-900 text-base font-medium py-1 leading-6 dark:text-white"
+                class="font-heading text-right text-muted-900 text-xs font-medium leading-6 dark:text-white"
               >
                 {{ currentOrg?.name ?? '' }}
               </h5>
               <h5
-                class="font-heading text-right text-muted-900 text-base font-medium pb-1 leading-6 dark:text-white"
+                class="font-heading text-right text-muted-900 text-xs font-medium leading-6 dark:text-white"
               >
                 {{ currentOrg?.email ?? '' }}
               </h5>
               <h5
-                class="font-heading text-right text-muted-900 text-base font-medium pb-1 leading-6 dark:text-white"
+                class="font-heading text-right text-muted-900 text-xs font-medium leading-6 dark:text-white"
               >
                 {{ currentOrg?.address ?? '' }}
               </h5>
@@ -777,7 +782,7 @@ const onSubmit = handleSubmit(
         <div v-if="isPrint" shape="straight" class="border border-t-1"></div>
         <h4
           v-if="isPrint"
-          class="font-heading text-muted-900 text-base font-medium pb-2 pt-1 px-2 leading-6 dark:text-white"
+          class="font-heading text-muted-900 text-xs font-medium pb-1 pt-1 px-2 leading-6 dark:text-white"
         >
           Etat des paiments du
           {{ new Date(startDate).toLocaleDateString('fr-FR') }} au
@@ -787,7 +792,7 @@ const onSubmit = handleSubmit(
         </h4>
         <h5
           v-if="isPrint"
-          class="font-heading text-muted-900 text-base font-medium py-1 leading-6 px-2 dark:text-white"
+          class="font-heading text-muted-900 text-xs font-medium py-1 leading-6 px-2 dark:text-white"
         >
           Fait par {{ authStore.user.firstName }} {{ authStore.user.lastName }}
         </h5>
@@ -985,7 +990,7 @@ const onSubmit = handleSubmit(
                     </div>
                   </TairoTableCell>
                 </TairoTableRow>
-                <TairoTableRow v-if="isPrint">
+                <TairoTableRow class="border !border-t-2" v-if="isPrint">
                   <TairoTableCell v-if="!isPrint" spaced> </TairoTableCell>
                   <TairoTableCell light spaced> </TairoTableCell>
                   <TairoTableCell spaced> </TairoTableCell>

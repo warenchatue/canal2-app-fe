@@ -2,14 +2,16 @@
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
+import { DatePicker } from 'v-calendar'
 import { UserRole } from '~/types/user'
+import 'vue-select/dist/vue-select.css'
 
 definePageMeta({
-  title: 'Factures',
+  title: 'Recouvrements',
   preview: {
-    title: 'Factures',
-    description: 'Factures | Commandes',
-    categories: ['bo', 'spots', 'orders'],
+    title: 'Recouvrements',
+    description: 'Recouvrements',
+    categories: ['bo', 'recovery', 'procedures'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -22,17 +24,19 @@ const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(10)
-const isModalNewPackageOpen = ref(false)
+const isModalNewRecoveryProcedureOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
 const isEdit = ref(false)
 const toaster = useToaster()
+const dates = ref({
+  start: new Date(),
+  end: new Date(),
+})
 // Check if can have access
 if (
-  authStore.user.appRole?.name != UserRole.billing &&
-  authStore.user.appRole?.name != UserRole.admin &&
-  authStore.user.appRole?.name != UserRole.accountancy &&
-  authStore.user.appRole?.name != UserRole.superAdmin
+  authStore.user.appRole.name != UserRole.mediaPlanner &&
+  authStore.user.appRole.name != UserRole.superAdmin
 ) {
   toaster.clearAll()
   toaster.show({
@@ -44,6 +48,22 @@ if (
   })
   router.back()
 }
+
+const inputOrderContracts = ref<FileList | null>()
+const orderContractFile = ref<File | null>(null)
+const inputOrderInvoices = ref<FileList | null>()
+const orderInvoiceFile = ref<File | null>(null)
+watch(inputOrderContracts, (value) => {
+  console.log('orderContract')
+  const file = value?.item(0) || null
+  orderContractFile.value = file
+})
+
+watch(inputOrderInvoices, (value) => {
+  console.log('orderInvoice')
+  const file = value?.item(0) || null
+  orderInvoiceFile.value = file
+})
 
 watch([filter, perPage], () => {
   router.push({
@@ -63,55 +83,131 @@ const query = computed(() => {
     token: token.value,
   }
 })
+const query2 = computed(() => {
+  return {
+    filter: filter.value,
+    perPage: 25,
+    page: page.value,
+    action: 'findAll',
+    token: token.value,
+  }
+})
 
-const { data, pending } = await useFetch('/api/sales/invoices', {
+const { data, pending } = await useFetch('/api/recovery/recovery-procedures', {
   query,
 })
 
 const { data: announcers } = await useFetch('/api/sales/announcers', {
-  query,
+  query: query2,
+})
+
+const transformedAnnouncers = announcers.value?.data.map((e: any) => {
+  const invoice = {
+    id: e._id,
+    name: e.name,
+  }
+  return invoice
 })
 
 const { data: allUsers } = await useFetch('/api/users', {
   query,
 })
-const commercials = allUsers.value?.data.filter((e: any) => {
-  return e.appRole?.name == UserRole.sale
+
+const transformedUsers = allUsers.value?.data.map((e: any) => {
+  const invoice = {
+    id: e._id,
+    name: e.firstName + ' ' + e.lastName,
+    text: e.email,
+  }
+  return invoice
 })
-function editPackage(spotPackage: any) {
-  isModalNewPackageOpen.value = true
+
+const adminsUser = allUsers.value?.data.filter((e: any) => {
+  return e.appRole?.name == UserRole.admin
+})
+
+function editRecoveryProcedure(recoveryProcedure: any) {
+  isModalNewRecoveryProcedureOpen.value = true
   isEdit.value = true
-  currentPackage.value = spotPackage
-  setFieldValue('spotPackage._id', spotPackage._id)
-  setFieldValue('spotPackage.label', spotPackage.label)
-  setFieldValue('spotPackage.announcer', spotPackage.announcer)
-  setFieldValue('spotPackage.commercial', spotPackage.manager)
-  setFieldValue('spotPackage.status', spotPackage.status)
-  setFieldValue('spotPackage.invoice.amount', spotPackage.invoice.amount)
-  setFieldValue('spotPackage.invoice.label', spotPackage.invoice.label)
-  setFieldValue('spotPackage.invoice.pending', spotPackage.invoice.pending)
-  setFieldValue(
-    'spotPackage.invoice.totalSpotsPaid',
-    spotPackage.invoice.totalSpotsPaid,
-  )
+  currentRecoveryProcedure.value = recoveryProcedure
+  setFieldValue('recoveryProcedure._id', recoveryProcedure._id)
+  setFieldValue('recoveryProcedure.code', recoveryProcedure.code)
+  setFieldValue('recoveryProcedure.description', recoveryProcedure.description)
+  setFieldValue('recoveryProcedure.amount', recoveryProcedure.amount)
+  setFieldValue('recoveryProcedure.status', recoveryProcedure.status)
+  setFieldValue('recoveryProcedure.validator', recoveryProcedure.validator)
+  setFieldValue('recoveryProcedure.announcer', {
+    id: recoveryProcedure.announcer._id,
+    name: recoveryProcedure.announcer.name,
+    text: recoveryProcedure.announcer.phone,
+  })
+  setFieldValue('recoveryProcedure.agent1', {
+    id: recoveryProcedure.agent1._id,
+    name:
+      recoveryProcedure.agent1.firstName +
+      ' ' +
+      recoveryProcedure.agent1.lastName,
+    text: recoveryProcedure.announcer.email,
+  })
+  setFieldValue('recoveryProcedure.agent2', {
+    id: recoveryProcedure.agent2._id,
+    name:
+      recoveryProcedure.agent2.firstName +
+      ' ' +
+      recoveryProcedure.agent2.lastName,
+    text: recoveryProcedure.agent2.email,
+  })
+  setFieldValue('recoveryProcedure.agent3', {
+    id: recoveryProcedure.agent3._id,
+    name:
+      recoveryProcedure.agent3.firstName +
+      ' ' +
+      recoveryProcedure.agent3.lastName,
+    text: recoveryProcedure.agent3.email,
+  })
+  setFieldValue('recoveryProcedure.agent4', {
+    id: recoveryProcedure.agent4._id,
+    name:
+      recoveryProcedure.agent4.firstName +
+      ' ' +
+      recoveryProcedure.agent4.lastName,
+    text: recoveryProcedure.agent4.email,
+  })
 }
 
-function confirmDeletePackage(invoice: any) {
+function confirmDeletePackage(recoveryProcedure: any) {
   isModalDeletePackageOpen.value = true
   isEdit.value = false
-  currentPackage.value = invoice
+  currentRecoveryProcedure.value = recoveryProcedure
 }
 
-async function deletePackage(invoice: any) {
+function filterItems(query?: string, items?: any[]) {
+  if (query.length < 3) {
+    return []
+  }
+
+  if (!query || !items) {
+    return items ?? []
+  }
+
+  // search by name or text
+  return items.filter((item) => {
+    const nameMatches = item?.name?.toLowerCase().includes(query.toLowerCase())
+    // const textMatches = item?.text?.toLowerCase().includes(query.toLowerCase())
+    return nameMatches
+  })
+}
+
+async function deletePackage(recoveryProcedure: any) {
   const query2 = computed(() => {
     return {
       action: 'delete',
       token: token.value,
-      id: invoice._id,
+      id: recoveryProcedure._id,
     }
   })
 
-  const response = await useFetch('/api/sales/invoices', {
+  const response = await useFetch('/api/recovery/recovery-procedures', {
     method: 'delete',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
@@ -122,13 +218,13 @@ async function deletePackage(invoice: any) {
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Facture supprimée !`,
+      message: `Dossier supprimé !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
     })
     isModalDeletePackageOpen.value = false
-    filter.value = 'invoice'
+    filter.value = 'recoveryProcedure'
     filter.value = ''
   } else {
     toaster.clearAll()
@@ -155,12 +251,12 @@ function toggleAllVisibleSelection() {
   }
 }
 
-const currentPackage = ref({})
+const currentRecoveryProcedure = ref({})
 
 // This is the object that will contain the validation messages
 const ONE_MB = 1000000
 const VALIDATION_TEXT = {
-  LABEL_REQUIRED: "Label can't be empty",
+  AMOUNT_REQUIRED: "Amount can't be empty",
   PHONE_REQUIRED: "Phone number can't be empty",
   EMAIL_REQUIRED: "Email address can't be empty",
   COUNTRY_REQUIRED: 'Please select a country',
@@ -170,54 +266,76 @@ const VALIDATION_TEXT = {
 // It's used to define the shape that the form data will have
 const zodSchema = z
   .object({
-    spotPackage: z.object({
+    recoveryProcedure: z.object({
       _id: z.string().optional(),
-      label: z.string().min(1, VALIDATION_TEXT.LABEL_REQUIRED),
+      code: z.string().optional(),
+      description: z.string().optional(),
+      amount: z.number().optional(),
       status: z
         .union([
           z.literal('onHold'),
-          z.literal('confirmed'),
-          z.literal('paid'),
+          z.literal('inProgress'),
           z.literal('closed'),
         ])
         .optional(),
-      period: z.string(),
-      invoice: z
-        .object({
-          label: z.string(),
-          amount: z.number(),
-          pending: z.number(),
-          totalSpotsPaid: z.number(),
-          url: z.string(),
-        })
-        .optional()
-        .nullable(),
       announcer: z
         .object({
-          _id: z.string(),
-          email: z.string(),
+          id: z.string(),
           name: z.string(),
-          photo: z.string().optional(),
+          text: z.string().optional(),
         })
         .optional()
         .nullable(),
-      commercial: z
+      agent1: z
+        .object({
+          id: z.string(),
+          name: z.string(),
+          text: z.string().optional(),
+        })
+        .optional()
+        .nullable(),
+      agent2: z
+        .object({
+          id: z.string(),
+          name: z.string(),
+          text: z.string().optional(),
+        })
+        .optional()
+        .nullable(),
+
+      agent3: z
+        .object({
+          id: z.string(),
+          name: z.string(),
+          text: z.string().optional(),
+        })
+        .optional()
+        .nullable(),
+      agent4: z
+        .object({
+          id: z.string(),
+          name: z.string(),
+          text: z.string().optional(),
+        })
+        .optional()
+        .nullable(),
+      validator: z
         .object({
           _id: z.string(),
-          email: z.string(),
+          firstName: z.string(),
           lastName: z.string(),
-          photo: z.string().optional(),
+          email: z.string().optional(),
         })
         .optional()
         .nullable(),
     }),
   })
   .superRefine((data, ctx) => {
-    if (!data.spotPackage.label) {
+    if (!data.recoveryProcedure.amount) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: VALIDATION_TEXT.LABEL_REQUIRED,
-        path: ['spotPackage.label'],
+        message: VALIDATION_TEXT.AMOUNT_REQUIRED,
+        path: ['recoveryProcedure.amount'],
       })
     }
   })
@@ -229,29 +347,10 @@ type FormInput = z.infer<typeof zodSchema>
 const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
   avatar: null,
-  spotPackage: {
-    label: '',
-    period: '',
+  recoveryProcedure: {
+    code: '',
+    amount: 0,
     status: 'onHold',
-    invoice: {
-      label: '',
-      amount: 0,
-      pending: 0,
-      totalSpotsPaid: 0,
-      url: '',
-    },
-    announcer: {
-      _id: '',
-      email: '',
-      name: '',
-      flag: '',
-    },
-    commercial: {
-      _id: authStore.user._id ?? '',
-      email: authStore.user.email ?? '',
-      lastName: authStore.user.firstName + ' ' + authStore.user.lastName,
-      photo: '',
-    },
   },
 }))
 
@@ -277,22 +376,16 @@ async function confirmOrder() {
     return {
       action: 'updatePackage',
       token: token.value,
-      id: currentPackage.value._id,
+      id: currentRecoveryProcedure.value._id,
     }
   })
-  if (authStore.user?.appRole?.tag == UserRole.respSaleTag) {
-    currentPackage.value.orderValidator = authStore.user._id
-  } else if (authStore.user.appRole?.tag == UserRole.respBillingTag) {
-    currentPackage.value.billValidator = authStore.user._id
-  } else if (authStore.user.appRole?.name == UserRole.admin) {
-    currentPackage.value.adminValidator = authStore.user._id
-  }
+  currentRecoveryProcedure.value.adminValidated = true
 
   const response = await useFetch('/api/pub/packages', {
     method: 'put',
     headers: { 'Content-Type': 'application/json' },
     query: query4,
-    body: { ...currentPackage.value },
+    body: { ...currentRecoveryProcedure.value },
   })
 
   if (response.data?.value?.success) {
@@ -300,7 +393,7 @@ async function confirmOrder() {
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Commande confirmée !`,
+      message: `Campagne validée !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
@@ -326,126 +419,58 @@ const onSubmit = handleSubmit(
     success.value = false
 
     // here you have access to the validated form values
-    console.log('package-create-success', values)
-    const contractUrl =
-      isEdit.value == true ? ref(currentPackage.contractUrl ?? '') : ref('')
-    const invoiceUrl =
-      isEdit.value == true ? ref(currentPackage.invoice?.url ?? '') : ref('')
+    console.log('recovery-procedure-create-success', values)
 
     try {
       const isSuccess = ref(false)
 
-      // upload contract file
-      if (orderContractFile.value != null) {
-        const fd = new FormData()
-        fd.append('0', orderContractFile.value)
-        const query3 = computed(() => {
-          return {
-            action: 'new-single-file',
-            dir: 'uploads/ordersFiles/contracts',
-            token: token.value,
-          }
-        })
-
-        const { data: uploadData, refresh } = await useFetch(
-          '/api/files/upload',
-          {
-            method: 'POST',
-            query: query3,
-            body: fd,
-          },
-        )
-        console.log(uploadData)
-        if (uploadData.value?.success == false) {
-          contractUrl.value = ''
-          toaster.show({
-            title: 'Oops',
-            message: `Une erreur est survenue lors de l'importation de des fichiers !`,
-            color: 'danger',
-            icon: 'ph:check',
-            closable: true,
-          })
-        } else {
-          contractUrl.value = uploadData.value.fileName
-        }
-      }
-
-      // upload invoice file
-      if (orderInvoiceFile.value != null) {
-        const fd = new FormData()
-        fd.append('0', orderInvoiceFile.value)
-        const query3 = computed(() => {
-          return {
-            action: 'new-single-file',
-            dir: 'uploads/ordersFiles/invoices',
-            token: token.value,
-          }
-        })
-
-        const { data: uploadData, refresh } = await useFetch(
-          '/api/files/upload',
-          {
-            method: 'POST',
-            query: query3,
-            body: fd,
-          },
-        )
-        console.log(uploadData)
-        if (uploadData.value?.success == false) {
-          invoiceUrl.value = ''
-          toaster.show({
-            title: 'Oops',
-            message: `Une erreur est survenue lors de l'importation de des fichiers !`,
-            color: 'danger',
-            icon: 'ph:check',
-            closable: true,
-          })
-        } else {
-          invoiceUrl.value = uploadData.value.fileName
-        }
-      }
-
       if (isEdit.value == true) {
         const query2 = computed(() => {
           return {
-            action: 'updatePackage',
+            action: 'updateRecoveryProcedure',
             token: token.value,
-            id: values.spotPackage._id,
+            id: values.recoveryProcedure._id,
           }
         })
 
-        const response = await useFetch('/api/pub/packages', {
+        const response = await useFetch('/api/recovery/recovery-procedures', {
           method: 'put',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.spotPackage,
-            announcer: values.spotPackage?.announcer?._id,
-            manager: values.spotPackage?.commercial?._id,
-            invoice: { ...values.spotPackage?.invoice, url: invoiceUrl.value },
-            contractUrl,
+            ...values.recoveryProcedure,
+            announcer: values.recoveryProcedure?.announcer?.id ?? undefined,
+            agent1: values.recoveryProcedure?.agent1?.id ?? undefined,
+            agent2: values.recoveryProcedure?.agent2?.id ?? undefined,
+            agent3: values.recoveryProcedure?.agent3?.id ?? undefined,
+            agent4: values.recoveryProcedure?.agent4?.id ?? undefined,
+            validator: values.recoveryProcedure?.validator?._id ?? undefined,
+            date: dates.value?.start ?? new Date(),
           },
         })
         isSuccess.value = response.data.value?.success
       } else {
         const query2 = computed(() => {
           return {
-            action: 'createPackage',
+            action: 'createRecoveryProcedure',
             token: token.value,
           }
         })
 
-        const response = await useFetch('/api/pub/packages', {
+        const response = await useFetch('/api/recovery/recovery-procedures', {
           method: 'post',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.spotPackage,
-            announcer: values.spotPackage?.announcer?._id,
-            manager: values.spotPackage?.commercial?._id,
+            ...values.recoveryProcedure,
+            announcer: values.recoveryProcedure?.announcer?.id ?? undefined,
+            agent1: values.recoveryProcedure?.agent1?.id ?? undefined,
+            agent2: values.recoveryProcedure?.agent2?.id ?? undefined,
+            agent3: values.recoveryProcedure?.agent3?.id ?? undefined,
+            agent4: values.recoveryProcedure?.agent4?.id ?? undefined,
+            validator: values.recoveryProcedure?.validator?._id ?? undefined,
             _id: undefined,
-            invoice: { ...values.spotPackage?.invoice, url: invoiceUrl.value },
-            contractUrl,
+            date: dates.value?.start ?? new Date(),
           },
         })
         isSuccess.value = response.data.value?.success
@@ -456,14 +481,14 @@ const onSubmit = handleSubmit(
         toaster.show({
           title: 'Success',
           message:
-            isEdit.value == false ? `Package créé !` : `Package mis à jour`,
+            isEdit.value == false ? `Dossier crée !` : `Dossier mis à jour`,
           color: 'success',
           icon: 'ph:check',
           closable: true,
         })
-        isModalNewPackageOpen.value = false
+        isModalNewRecoveryProcedureOpen.value = false
         resetForm()
-        filter.value = 'spotPackage'
+        filter.value = 'recoveryProcedure'
         filter.value = ''
       } else {
         toaster.clearAll()
@@ -489,7 +514,6 @@ const onSubmit = handleSubmit(
         icon: 'lucide:alert-triangle',
         closable: true,
       })
-      // return
     }
 
     success.value = true
@@ -499,7 +523,7 @@ const onSubmit = handleSubmit(
     success.value = false
 
     // here you have access to the error
-    console.log('payment-create-error', error)
+    console.log('recovery-procedure-create-error', error)
 
     // you can use it to scroll to the first error
     document.documentElement.scrollTo({
@@ -517,7 +541,7 @@ const onSubmit = handleSubmit(
         <BaseInput
           v-model="filter"
           icon="lucide:search"
-          placeholder="Filtrer facture..."
+          placeholder="Filtrer dossier..."
           :classes="{
             wrapper: 'w-full sm:w-auto',
           }"
@@ -539,10 +563,10 @@ const onSubmit = handleSubmit(
         <BaseButton
           color="primary"
           class="w-full sm:w-52"
-          to="/bo/sales/orders/new-invoice-0"
+          @click=";(isModalNewRecoveryProcedureOpen = true), (isEdit = false)"
         >
           <Icon name="ph:plus" class="h-4 w-4" />
-          <span>Nouvelle facture</span>
+          <span>Nouveau dossier</span>
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">
@@ -555,9 +579,9 @@ const onSubmit = handleSubmit(
                 size="sm"
                 weight="medium"
                 lead="tight"
-                class="text-muted-700 dark:text-muted-400"
+                class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total</span>
+                <span>Montant Total</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -575,13 +599,20 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalItems }}</span>
+                <span
+                  >{{
+                    new Intl.NumberFormat().format(
+                      Math.ceil(data?.metaData?.totalAmount ?? 0),
+                    )
+                  }}
+                  XAF</span
+                >
               </BaseHeading>
             </div>
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+0.0%</span>
+              <span>+0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hause</span>
             </div>
@@ -596,9 +627,9 @@ const onSubmit = handleSubmit(
                 size="sm"
                 weight="medium"
                 lead="tight"
-                class="text-muted-700 dark:text-muted-400"
+                class="text-muted-500 dark:text-muted-400"
               >
-                <span>Soldés</span>
+                <span>Montant recouvré</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -616,13 +647,13 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalAnnouncers }}</span>
+                <span>{{ 0 }}</span>
               </BaseHeading>
             </div>
             <div
               class="text-danger-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>-0.0%</span>
+              <span>-0%</span>
               <Icon name="lucide:trending-down" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en baisse</span>
             </div>
@@ -637,9 +668,9 @@ const onSubmit = handleSubmit(
                 size="sm"
                 weight="medium"
                 lead="tight"
-                class="text-muted-700 dark:text-muted-400"
+                class="text-muted-500 dark:text-muted-400"
               >
-                <span>En attente</span>
+                <span>Montant restant</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -657,13 +688,20 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalSpots }}</span>
+                <span>
+                  {{
+                    new Intl.NumberFormat().format(
+                      Math.ceil(data?.metaData?.totalAmount ?? 0),
+                    )
+                  }}
+                  XAF</span
+                >
               </BaseHeading>
             </div>
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+0.0%</span>
+              <span>+0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -678,16 +716,16 @@ const onSubmit = handleSubmit(
                 size="sm"
                 weight="medium"
                 lead="tight"
-                class="text-muted-700 dark:text-muted-400"
+                class="text-muted-500 dark:text-muted-400"
               >
-                <span>Annonceurs</span>
+                <span>Total Annonceurs</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
                 class="bg-primary-100 text-primary-500 dark:bg-primary-500/20 dark:text-primary-400 dark:border-primary-500 dark:border-2"
                 shape="full"
               >
-                <Icon name="ph:user" class="h-5 w-5" />
+                <Icon name="ph:file" class="h-5 w-5" />
               </BaseIconBox>
             </div>
             <div class="mb-2">
@@ -698,13 +736,13 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalFiles }}</span>
+                <span>{{ data?.metaData?.totalAnnouncers }}</span>
               </BaseHeading>
             </div>
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+0.0%</span>
+              <span>+0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -750,20 +788,21 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Code</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Date</TairoTableHeading>
+
                 <TairoTableHeading uppercase spaced>
-                  Annonceur
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Societé
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Vendeur
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Total </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Dû </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Docs</TairoTableHeading>
+                  Annonceur</TairoTableHeading
+                >
+
+                <TairoTableHeading uppercase spaced>Montant</TairoTableHeading>
+
+                <TairoTableHeading uppercase spaced>Payé</TairoTableHeading>
+
                 <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Agents</TairoTableHeading>
+
+                <TairoTableHeading uppercase spaced>Docs</TairoTableHeading>
+
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
               </template>
 
@@ -797,10 +836,13 @@ const onSubmit = handleSubmit(
                 <TairoTableCell light spaced>
                   <NuxtLink
                     class="text-primary-500 underline-offset-4 hover:underline"
-                    :to="'/bo/sales/orders/view-invoice-' + item._id"
+                    :to="'/bo/recovery/procedure-details-' + item._id"
                   >
                     {{ item.code }}
                   </NuxtLink>
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ new Date(item.date).toLocaleDateString('fr-FR') }}
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
@@ -820,74 +862,87 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ new Date(item.createdAt).toLocaleDateString('fr-FR') }}
+                  {{ item.amount }} XAF
                 </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{ item.org.name }}
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{ item.manager?.lastName }}
-                  {{ item.manager?.firstName }}
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{
-                    new Intl.NumberFormat().format(Math.ceil(item.amount ?? 0))
-                  }}
-                  XAF
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{
-                    new Intl.NumberFormat().format(
-                      Math.ceil(item.amount - item.paid ?? 0) > 0
-                        ? Math.ceil(item.amount - item.paid ?? 0)
-                        : 0,
-                    )
-                  }}
-                  XAF
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <a
-                    v-if="item.contractUrl"
-                    class="mx-1 text-white bg-muted-600 p-2 rounded"
-                    :href="'/' + item.order.contractUrl"
-                    target="_blank"
-                    >C</a
-                  >
-                </TairoTableCell>
+                <TairoTableCell light spaced> {{ 0 }} XAF </TairoTableCell>
+
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag
-                    v-if="item.state === 'trashed'"
-                    color="muted"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    {{ item.state }}
-                  </BaseTag>
-                  <BaseTag
-                    v-else-if="item.state === 'active'"
+                    v-if="item.status === 'onHold'"
                     color="warning"
                     flavor="pastel"
                     shape="full"
                     condensed
                     class="font-medium"
                   >
-                    {{ item.state }}
+                    En attente
                   </BaseTag>
+                  <BaseTag
+                    v-else-if="item.status === 'inProgress'"
+                    color="success"
+                    flavor="pastel"
+                    shape="full"
+                    condensed
+                    class="font-medium"
+                  >
+                    En cours
+                  </BaseTag>
+                  <BaseTag
+                    v-else-if="item.status === 'closed'"
+                    color="muted"
+                    flavor="pastel"
+                    shape="full"
+                    condensed
+                    class="font-medium"
+                  >
+                    Cloturé
+                  </BaseTag>
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  <p v-if="item.agent1">
+                    Agent 1-
+                    {{ item.agent1.firstName + ' ' + item.agent1.lastName }}
+                  </p>
+                  <p v-if="item.agent2">
+                    Agent 2-
+                    {{ item.agent2.firstName + ' ' + item.agent2.lastName }}
+                  </p>
+                  <p v-if="item.agent3">
+                    Agent 3-
+                    {{ item.agent3.firstName + ' ' + item.agent3.lastName }}
+                  </p>
+                  <p v-if="item.agent4">
+                    Agent 4-
+                    {{ item.agent4.firstName + ' ' + item.agent4.lastName }}
+                  </p>
+                </TairoTableCell>
+
+                <TairoTableCell light spaced>
+                  <a
+                    v-if="item.contractUrl"
+                    class="mx-1 text-white bg-muted-600 p-2 rounded"
+                    :href="'/' + item?.contractUrl"
+                    target="_blank"
+                    >C</a
+                  >
+                  <a
+                    v-if="item.invoice?.url"
+                    class="mx-1 text-white bg-muted-600 p-2 rounded"
+                    :href="'/' + item.invoice?.url"
+                    target="_blank"
+                    >F</a
+                  >
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex">
                     <BaseButtonAction
                       class="mx-2"
-                      :to="'/bo/sales/orders/view-invoice-' + item._id"
+                      :to="'/bo/pub/package-details/' + item._id"
                       muted
                     >
-                      <Icon name="lucide:eye" class="h-4 w-4"
+                      <Icon name="lucide:settings" class="h-4 w-4"
                     /></BaseButtonAction>
-                    <BaseButtonAction
-                      :to="'/bo/sales/orders/edit-invoice-' + item._id"
-                    >
+                    <BaseButtonAction @click="editRecoveryProcedure(item)">
                       <Icon name="lucide:edit" class="h-4 w-4"
                     /></BaseButtonAction>
                     <BaseButtonAction
@@ -916,6 +971,348 @@ const onSubmit = handleSubmit(
       </div>
     </TairoContentWrapper>
 
+    <!-- Modal new Package -->
+    <TairoModal
+      :open="isModalNewRecoveryProcedureOpen"
+      size="3xl"
+      @close="isModalNewRecoveryProcedureOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            {{ isEdit == true ? 'Editer' : 'Nouveau' }} Dossier
+          </h3>
+
+          <BaseButtonClose @click="isModalNewRecoveryProcedureOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <BaseCard class="w-full">
+        <form
+          method="POST"
+          action=""
+          class="divide-muted-200 dark:divide-muted-700"
+          @submit.prevent="onSubmit"
+        >
+          <div
+            shape="curved"
+            class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
+          >
+            <div class="mx-auto flex w-full flex-col">
+              <div>
+                <div class="grid grid-cols-12 gap-4">
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="recoveryProcedure.announcer"
+                    >
+                      <BaseAutocomplete
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                        :items="transformedAnnouncers"
+                        :display-value="(item: any) => item.name || ''"
+                        :filter-items="filterItems"
+                        icon="lucide:file"
+                        placeholder="e.g. Nom"
+                        label="Annonceur"
+                        clearable
+                        :clear-value="''"
+                      >
+                        <template #empty="value">
+                          <!-- Use destruct to keep what you need -->
+                          <div v-if="value.query.length < 3">
+                            Saisissez au-moins 3 caractères
+                          </div>
+                          <div v-else>Aucun resultat.</div>
+                        </template>
+                      </BaseAutocomplete>
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="recoveryProcedure.amount"
+                    >
+                      <BaseInput
+                        label="Montant"
+                        type="number"
+                        icon="ph:file-duotone"
+                        placeholder="ex: 10 000"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="recoveryProcedure.agent1"
+                    >
+                      <BaseAutocomplete
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                        :items="transformedUsers"
+                        :display-value="(item: any) => item.name || ''"
+                        :filter-items="filterItems"
+                        icon="lucide:file"
+                        placeholder="e.g. Nom"
+                        label="Agent 1"
+                        clearable
+                      >
+                        <template #empty="value">
+                          <!-- Use destruct to keep what you need -->
+                          <div v-if="value.query.length < 3">
+                            Saisissez au-moins 3 caractères
+                          </div>
+                          <div v-else>Aucun resultat.</div>
+                        </template>
+                      </BaseAutocomplete>
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="recoveryProcedure.agent2"
+                    >
+                      <BaseAutocomplete
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                        :items="transformedUsers"
+                        :display-value="(item: any) => item.name || ''"
+                        :filter-items="filterItems"
+                        icon="lucide:file"
+                        placeholder="e.g. Nom"
+                        label="Agent 2"
+                        clearable
+                      >
+                        <template #empty="value">
+                          <!-- Use destruct to keep what you need -->
+                          <div v-if="value.query.length < 3">
+                            Saisissez au-moins 3 caractères
+                          </div>
+                          <div v-else>Aucun resultat.</div>
+                        </template>
+                      </BaseAutocomplete>
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="recoveryProcedure.agent3"
+                    >
+                      <BaseAutocomplete
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                        :items="transformedUsers"
+                        :display-value="(item: any) => item.name || ''"
+                        :filter-items="filterItems"
+                        icon="lucide:file"
+                        placeholder="e.g. Nom"
+                        label="Agent 3"
+                        clearable
+                      >
+                        <template #empty="value">
+                          <!-- Use destruct to keep what you need -->
+                          <div v-if="value.query.length < 3">
+                            Saisissez au-moins 3 caractères
+                          </div>
+                          <div v-else>Aucun resultat.</div>
+                        </template>
+                      </BaseAutocomplete>
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="recoveryProcedure.agent4"
+                    >
+                      <BaseAutocomplete
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                        :items="transformedUsers"
+                        :display-value="(item: any) => item.name || ''"
+                        :filter-items="filterItems"
+                        icon="lucide:file"
+                        placeholder="e.g. Nom"
+                        label="Agent 4"
+                        clearable
+                      >
+                        <template #empty="value">
+                          <!-- Use destruct to keep what you need -->
+                          <div v-if="value.query.length < 3">
+                            Saisissez au-moins 3 caractères
+                          </div>
+                          <div v-else>Aucun resultat.</div>
+                        </template>
+                      </BaseAutocomplete>
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
+                    <DatePicker
+                      v-model.range="dates"
+                      :min-date="new Date('2022-01-01')"
+                      mode="date"
+                      hide-time-header
+                      trim-weeks
+                    >
+                      <template #default="{ inputValue, inputEvents }">
+                        <div class="flex w-full flex-col gap-4 sm:flex-row">
+                          <div class="relative grow">
+                            <Field
+                              v-slot="{
+                                field,
+                                errorMessage,
+                                handleChange,
+                                handleBlur,
+                              }"
+                              name="order.date"
+                            >
+                              <BaseInput
+                                shape="rounded"
+                                label="Date"
+                                icon="ph:calendar-blank-duotone"
+                                :value="inputValue.start"
+                                v-on="inputEvents.start"
+                                :classes="{
+                                  input: '!h-11 !ps-11',
+                                  icon: '!h-11 !w-11',
+                                }"
+                                :v-model="dates.start"
+                                :error="errorMessage"
+                                :disabled="isSubmitting"
+                                type="text"
+                                @update:model-value="handleChange"
+                                @blur="handleBlur"
+                              />
+                            </Field>
+                          </div>
+                        </div>
+                      </template>
+                    </DatePicker>
+                  </div>
+
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="recoveryProcedure.status"
+                    >
+                      <BaseSelect
+                        label="Statut *"
+                        icon="ph:funnel"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      >
+                        <option value="onHold">En attente de démarrage</option>
+                        <option value="inProgress">En cours</option>
+                        <option value="closed">Cloturées</option>
+                      </BaseSelect>
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="recoveryProcedure.validator"
+                    >
+                      <BaseListbox
+                        label="Validateur"
+                        :items="adminsUser"
+                        :properties="{
+                          value: '_id',
+                          label: 'lastName',
+                          sublabel: 'email',
+                        }"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="recoveryProcedure.description"
+                    >
+                      <BaseInput
+                        label="Observations"
+                        icon="ph:file-duotone"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </BaseCard>
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalNewRecoveryProcedureOpen = false"
+              >Annuler</BaseButton
+            >
+            <div v-if="isEdit == true" class="flex">
+              <BaseButton
+                :color="
+                  currentRecoveryProcedure?.adminValidated
+                    ? 'success'
+                    : 'warning'
+                "
+                class="!mx-2"
+                flavor="solid"
+                @click="confirmOrder()"
+                :disabled="
+                  authStore.user?._id !=
+                  currentRecoveryProcedure?.adminValidator
+                "
+              >
+                <span class="text-bold text-muted-700">
+                  Validation du PDG/DG/DO</span
+                >
+              </BaseButton>
+            </div>
+
+            <BaseButton color="primary" flavor="solid" @click="onSubmit">
+              {{ isEdit == true ? 'Modifier' : 'Créer' }}
+            </BaseButton>
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
     <!-- Modal delete -->
     <TairoModal
       :open="isModalDeletePackageOpen"
@@ -928,7 +1325,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Suppression d'une facture
+            Suppression d'un dossier
           </h3>
 
           <BaseButtonClose @click="isModalDeletePackageOpen = false" />
@@ -942,11 +1339,14 @@ const onSubmit = handleSubmit(
             class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
           >
             Supprimer
-            <span class="text-red-500">{{ currentPackage?.label }}</span> ?
+            <span class="text-red-500">{{
+              currentRecoveryProcedure?.label
+            }}</span>
+            ?
           </h3>
 
           <p
-            class="font-alt text-muted-700 dark:text-muted-400 text-sm leading-5"
+            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
           >
             Cette action est irreversible
           </p>
@@ -964,7 +1364,7 @@ const onSubmit = handleSubmit(
             <BaseButton
               color="primary"
               flavor="solid"
-              @click="deletePackage(currentPackage)"
+              @click="deletePackage(currentRecoveryProcedure)"
               >Suppimer</BaseButton
             >
           </div>
@@ -998,16 +1398,18 @@ const onSubmit = handleSubmit(
             class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
           >
             Voulez-vous confirmer la commande
-            <span class="text-primary-500">{{ currentPackage.label }}</span>
+            <span class="text-primary-500">{{
+              currentRecoveryProcedure.label
+            }}</span>
             de
             <span class="text-primary-500"
-              >{{ currentPackage?.announcer?.name }}
+              >{{ currentRecoveryProcedure?.announcer?.name }}
             </span>
             ?
           </h3>
 
           <p
-            class="font-alt text-muted-700 dark:text-muted-400 text-sm leading-5"
+            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
           >
             Cette action est reversible
           </p>

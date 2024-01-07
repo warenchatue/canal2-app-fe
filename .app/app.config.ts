@@ -198,12 +198,11 @@ export default defineAppConfig({
           {
             name: 'Recouvrement',
             icon: { name: 'ph:chat-duotone', class: 'w-5 h-5' },
-            isAdmin: true,
             activePath: '/bo/sav',
             children: [
               {
                 name: 'Tableau de bord',
-                to: '/bo/pub',
+                // to: '/bo/pub',
                 icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
               },
               {
@@ -221,7 +220,6 @@ export default defineAppConfig({
           {
             name: 'Comptabilité',
             icon: { name: 'ph:money-duotone', class: 'w-5 h-5' },
-            isAdmin: true,
             activePath: '/bo/sav',
             children: [
               {
@@ -233,6 +231,50 @@ export default defineAppConfig({
                 name: 'Pièces comptables',
                 to: '/bo/accountancy/accounting-docs',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Rapports',
+                // to: '/bo/pub/reports',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+            ],
+          },
+          {
+            name: 'RH',
+            icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
+            activePath: '/bo/sav',
+            children: [
+              {
+                name: 'Tableau de bord',
+                // to: '/bo/pub',
+                icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Personnel',
+                to: '/bo/accountancy/accounting-docs',
+                icon: { name: 'ph:users-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Rapports',
+                // to: '/bo/pub/reports',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+            ],
+          },
+          {
+            name: 'PI',
+            icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
+            activePath: '/bo/sav',
+            children: [
+              {
+                name: 'Tableau de bord',
+                // to: '/bo/pub',
+                icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Immobilisations',
+                to: '/bo/accountancy/accounting-docs',
+                icon: { name: 'ph:app-window-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Rapports',

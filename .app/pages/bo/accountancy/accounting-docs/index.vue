@@ -529,7 +529,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Facturés</span>
+                <span>Confirmée</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -570,7 +570,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Non Facturés</span>
+                <span>En attente</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -611,7 +611,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Annonceurs</span>
+                <span></span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -682,6 +682,7 @@ const onSubmit = handleSubmit(
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Code</TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Motif </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>
                   Beneficiaire
                 </TairoTableHeading>
@@ -737,6 +738,9 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{ new Date(item.date).toLocaleDateString('fr-FR') }}
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ item.label }}
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">

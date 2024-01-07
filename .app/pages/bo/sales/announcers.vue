@@ -22,7 +22,7 @@ const router = useRouter()
 const appStore = useAppStore()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(10)
+const perPage = ref(25)
 const isModalNewAnnouncerOpen = ref(false)
 const isModalDeleteAnnouncerOpen = ref(false)
 const isModalImportAnnouncerOpen = ref(false)
@@ -31,6 +31,7 @@ const isEdit = ref(false)
 const toaster = useToaster()
 // Check if can have access
 if (
+  authStore.user.appRole?.name != UserRole.rh &&
   authStore.user.appRole?.name != UserRole.billing &&
   authStore.user.appRole?.name != UserRole.sale &&
   authStore.user.appRole?.name != UserRole.admin &&
@@ -164,6 +165,7 @@ const zodSchema = z
       nc: z.string(),
       phone: z.string(),
       city: z.string().optional(),
+      address: z.string().optional(),
       country: z
         .object({
           _id: z.string(),
@@ -195,6 +197,7 @@ const initialValues = computed<FormInput>(() => ({
   announcer: {
     name: '',
     email: '',
+    address: '',
     phone: '',
     rc: '',
     nc: '',
@@ -234,6 +237,7 @@ function editAnnouncer(announcer: any) {
   setFieldValue('announcer.phone', announcer.phone)
   setFieldValue('announcer.country', announcer.country)
   setFieldValue('announcer.city', announcer.city)
+  setFieldValue('announcer.address', announcer.address)
   setFieldValue('announcer.rc', announcer.rc)
   setFieldValue('announcer.nc', announcer.nc)
 }
@@ -401,7 +405,7 @@ const onSubmit = handleSubmit(
         <BaseInput
           v-model="filter"
           icon="lucide:search"
-          placeholder="Filtrer opera..."
+          placeholder="Filtrer annonceurs..."
           :classes="{
             wrapper: 'w-full sm:w-auto',
           }"
@@ -493,9 +497,12 @@ const onSubmit = handleSubmit(
                 </TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced> Tel </TairoTableHeading>
-
                 <TairoTableHeading uppercase spaced> R/C </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> N/C </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>
+                  Categorie
+                </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Statut </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
               </template>
 
@@ -570,6 +577,16 @@ const onSubmit = handleSubmit(
                     <span class="text-muted-400 font-sans text-xs">
                       {{ item.nc }}
                     </span>
+                  </div>
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  <div class="flex items-center">
+                    <span class="text-muted-400 font-sans text-xs"> </span>
+                  </div>
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  <div class="flex items-center">
+                    <span class="text-muted-400 font-sans text-xs"> </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
@@ -770,6 +787,23 @@ const onSubmit = handleSubmit(
                     >
                       <BaseInput
                         label="Ville"
+                        icon="ph:file-duotone"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-12">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="announcer.address"
+                    >
+                      <BaseInput
+                        label="Adresse"
                         icon="ph:file-duotone"
                         placeholder=""
                         :model-value="field.value"
@@ -1018,7 +1052,7 @@ const onSubmit = handleSubmit(
             </div>
             <div class="mt-6">
               <BaseButton shape="curved" class="w-full">
-                <span> Consulter les packages </span>
+                <span> Consulter l'état </span>
               </BaseButton>
             </div>
           </div>
