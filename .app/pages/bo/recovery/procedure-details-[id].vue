@@ -25,10 +25,6 @@ const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(10)
 const token = useCookie('token')
-const dates = ref({
-  start: new Date(),
-  end: new Date(),
-})
 
 const toaster = useToaster()
 // Check if can have access
@@ -59,11 +55,9 @@ const queryHours = computed(() => {
 
 const isModalNewActionOpen = ref(false)
 const isModalDeleteActionOpen = ref(false)
-const isModalConfirmPlanningOpen = ref(false)
 const isModalUploadProductFileOpen = ref(false)
 const isEdit = ref(false)
 const activeProduct = ref({ _id: '', product: '', tag: '', flag: '' })
-const currentProduct = ref({})
 
 watch([filter, perPage], () => {
   router.push({
@@ -74,11 +68,11 @@ watch([filter, perPage], () => {
 })
 
 const app = useAppStore()
-const packageId = computed(() => route.params.id)
+const recoveryProcedureId = computed(() => route.params.id)
 const query = computed(() => {
   return {
     action: 'findOne',
-    id: packageId.value,
+    id: recoveryProcedureId.value,
     token: token.value,
   }
 })
@@ -179,21 +173,20 @@ function toggleAllVisibleSelection() {
   }
 }
 
-function addProcedureAction() {
-  procedureActions.value.push({
+async function addProcedureAction() {
+  data.value.data.items.push({
     ...curProcedureAction.value,
-    id: Math.floor(Math.random() * 10000),
+    _id: Math.floor(Math.random() * 1000),
   })
   curProcedureAction.value = {
-    id: Math.floor(Math.random() * 10000),
+    _id: Math.floor(Math.random() * 1000),
     message: '',
     date: new Date(),
     amount: 0,
   }
 
   //
-  data.value.data.items = procedureActions.value
-  updateProcedure()
+  await updateProcedure()
 }
 
 function confirmDeleteProcedureAction(procedureAction: any) {
@@ -202,15 +195,14 @@ function confirmDeleteProcedureAction(procedureAction: any) {
   curProcedureAction.value = procedureAction
 }
 
-function deleteProcedureAction(id: number) {
-  procedureActions.value = procedureActions.value?.filter((e: any) => {
-    return e.id != id
+async function deleteProcedureAction(id: number) {
+  data.value.data.items = data.value.data.items?.filter((e: any) => {
+    return e._id != id
   })
   isModalDeleteActionOpen.value = false
 
   //
-  data.value.data.items = procedureActions.value
-  updateProcedure()
+  await updateProcedure()
 }
 
 function editProcedureAction(item: any) {
@@ -219,17 +211,19 @@ function editProcedureAction(item: any) {
   isModalNewActionOpen.value = true
 }
 
-function updateProcedureAction(item: any) {
-  procedureActions.value[item.id] = { ...item }
-  isEdit.value = false
-  //
-  data.value.data.items = procedureActions.value
-  updateProcedure()
+async function updateProcedureAction(item: any) {
+  for (let index = 0; index < data.value.data.items?.length; index++) {
+    if (data.value.data.items[index]._id == item._id) {
+      data.value.data.items[index] = { ...item }
+      isEdit.value = false
+      //
+      await updateProcedure()
+    }
+  }
 }
 
-const procedureActions = ref(data.value.data.items ?? [])
 const curProcedureAction = ref({
-  id: 0,
+  _id: 0,
   date: new Date(),
   type: '',
   message: '',
@@ -238,24 +232,28 @@ const curProcedureAction = ref({
 })
 
 async function updateProcedure() {
-  const query4 = computed(() => {
-    return {
-      action: 'updateRecoveryProcedure',
-      token: token.value,
-      id: data.value.data._id,
-    }
-  })
-
-  const response = await useFetch('/api/recovery/recovery-procedures', {
-    method: 'put',
-    headers: { 'Content-Type': 'application/json' },
-    query: query4,
-    body: {
-      ...data.value.data,
+  const paid = data.value?.data?.items
+    ?.map((item: any) => item.amount ?? 0)
+    .reduce(
+      (accumulator, currentValue: number) => accumulator + currentValue,
+      0,
+    )
+  const response = await $fetch(
+    '/api/recovery/recovery-procedures?action=updateRecoveryProcedure&token=' +
+      token.value +
+      '&id=' +
+      data.value?.data?._id,
+    {
+      method: 'put',
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        ...data.value.data,
+        paid: paid,
+      },
     },
-  })
-
-  if (response.data?.value?.success) {
+  )
+  console.log(response)
+  if (response.success) {
     success.value = true
     toaster.clearAll()
     toaster.show({
@@ -266,6 +264,7 @@ async function updateProcedure() {
       closable: true,
     })
     isModalNewActionOpen.value = false
+    // location.reload()
     filter.value = 'actions'
     filter.value = ''
   } else {
@@ -368,9 +367,11 @@ const success = ref(false)
           color="primary"
           class="w-full sm:w-48"
           :disabled="
-            authStore.user.appRole.name != UserRole.sale &&
-            authStore.user.appRole.name != UserRole.mediaPlanner &&
-            authStore.user.appRole.name != UserRole.superAdmin
+            authStore.user._id != data.data.agent1?._id &&
+            authStore.user._id != data.data.agent2?._id &&
+            authStore.user._id != data.data.agent3?._id &&
+            authStore.user._id != data.data.agent4?._id &&
+            authStore.user.appRole?.name != UserRole.superAdmin
           "
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
@@ -649,8 +650,16 @@ const success = ref(false)
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
-                      {{ item.value }}
+                    <span
+                      v-if="item.amount"
+                      class="text-muted-400 font-sans text-xs"
+                    >
+                      {{
+                        new Intl.NumberFormat().format(
+                          Math.ceil(item.amount ?? 0),
+                        )
+                      }}
+                      XAF
                     </span>
                   </div>
                 </TairoTableCell>
@@ -659,9 +668,11 @@ const success = ref(false)
                   <div class="flex">
                     <BaseButtonAction
                       :disabled="
-                        authStore.user.appRole.name != UserRole.sale &&
-                        authStore.user.appRole.name != UserRole.broadcast &&
-                        authStore.user.appRole.name != UserRole.superAdmin
+                        authStore.user._id != data.data.agent1?._id &&
+                        authStore.user._id != data.data.agent2?._id &&
+                        authStore.user._id != data.data.agent3?._id &&
+                        authStore.user._id != data.data.agent4?._id &&
+                        authStore.user.appRole?.name != UserRole.superAdmin
                       "
                       @click="openProductFileModal(item)"
                       class="mx-2"
@@ -671,9 +682,12 @@ const success = ref(false)
                     /></BaseButtonAction>
                     <BaseButtonAction
                       :disabled="
-                        authStore.user.appRole.name != UserRole.sale &&
-                        authStore.user.appRole.name != UserRole.mediaPlanner &&
-                        authStore.user.appRole.name != UserRole.superAdmin
+                        authStore.user._id != data.data.agent1?._id &&
+                        authStore.user._id != data.data.agent2?._id &&
+                        authStore.user._id != data.data.agent3?._id &&
+                        authStore.user._id != data.data.agent4?._id &&
+                        authStore.user.appRole?.name != UserRole.superAdmin &&
+                        authStore.user.appRole?.name != UserRole.accountancy
                       "
                       @click="editProcedureAction(item)"
                     >
@@ -683,9 +697,12 @@ const success = ref(false)
                       @click="confirmDeleteProcedureAction(item)"
                       class="mx-2"
                       :disabled="
-                        authStore.user.appRole.name != UserRole.sale &&
-                        authStore.user.appRole.name != UserRole.mediaPlanner &&
-                        authStore.user.appRole.name != UserRole.superAdmin
+                        authStore.user._id != data.data.agent1?._id &&
+                        authStore.user._id != data.data.agent2?._id &&
+                        authStore.user._id != data.data.agent3?._id &&
+                        authStore.user._id != data.data.agent4?._id &&
+                        authStore.user.appRole?.name != UserRole.superAdmin &&
+                        authStore.user.appRole?.name != UserRole.accountancy
                       "
                     >
                       <Icon name="lucide:trash" class="h-4 w-4 text-red-500"
@@ -779,7 +796,7 @@ const success = ref(false)
                 </div>
                 <div class="ltablet:col-span-12 col-span-12 lg:col-span-12">
                   <DatePicker
-                    v-model.range="dates"
+                    v-model="curProcedureAction.date"
                     :min-date="new Date('2022-01-01')"
                     mode="date"
                     hide-time-header
@@ -801,13 +818,13 @@ const success = ref(false)
                               shape="rounded"
                               label="Date"
                               icon="ph:calendar-blank-duotone"
-                              :value="inputValue.start"
-                              v-on="inputEvents.start"
+                              :value="inputValue"
+                              v-on="inputEvents"
                               :classes="{
                                 input: '!h-11 !ps-11',
                                 icon: '!h-11 !w-11',
                               }"
-                              :v-model="dates.start"
+                              :v-model="curProcedureAction.date"
                               :error="errorMessage"
                               :disabled="isSubmitting"
                               type="text"
@@ -821,7 +838,10 @@ const success = ref(false)
                   </DatePicker>
                 </div>
                 <div class="grid grid-cols-12 gap-4 mt-4">
-                  <div class="col-span-12 md:col-span-12">
+                  <div
+                    v-if="curProcedureAction.type == 'transaction'"
+                    class="col-span-12 md:col-span-12"
+                  >
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                     >
@@ -921,7 +941,7 @@ const success = ref(false)
             <BaseButton
               color="primary"
               flavor="solid"
-              @click="deleteProcedureAction(curProcedureAction.id)"
+              @click="deleteProcedureAction(curProcedureAction?._id)"
               >Suppimer</BaseButton
             >
           </div>

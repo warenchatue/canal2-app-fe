@@ -160,12 +160,15 @@ const zodSchema = z
     announcer: z.object({
       _id: z.string().optional(),
       name: z.string().min(1, VALIDATION_TEXT.NAME_REQUIRED),
-      email: z.string(),
-      rc: z.string(),
-      nc: z.string(),
-      phone: z.string(),
+      email: z.string().optional(),
+      rc: z.string().optional(),
+      nc: z.string().optional(),
+      phone: z.string().optional(),
       city: z.string().optional(),
       address: z.string().optional(),
+      type: z.string().optional(),
+      status: z.string().optional(),
+      category: z.string().optional(),
       country: z
         .object({
           _id: z.string(),
@@ -201,7 +204,9 @@ const initialValues = computed<FormInput>(() => ({
     phone: '',
     rc: '',
     nc: '',
-    status: 'active',
+    status: '',
+    type: '',
+    category: '',
     country: {
       _id: '',
       abbr: '',
@@ -240,6 +245,9 @@ function editAnnouncer(announcer: any) {
   setFieldValue('announcer.address', announcer.address)
   setFieldValue('announcer.rc', announcer.rc)
   setFieldValue('announcer.nc', announcer.nc)
+  setFieldValue('announcer.type', announcer.type)
+  setFieldValue('announcer.status', announcer.status)
+  setFieldValue('announcer.category', announcer.category)
 }
 
 function selectAnnouncer(announcer: any) {
@@ -430,6 +438,7 @@ const onSubmit = handleSubmit(
           class="w-full sm:w-48"
           :disabled="
             authStore.user.appRole.name != UserRole.sale &&
+            authStore.user.appRole.name != UserRole.accountancy &&
             authStore.user.appRole.name != UserRole.billing &&
             authStore.user.appRole.name != UserRole.superAdmin
           "
@@ -581,13 +590,44 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs"> </span>
+                    <span class="text-muted-400 font-sans text-xs">
+                      {{
+                        item.category == 'largeAccount'
+                          ? 'Grand Compte'
+                          : item.category == 'bank'
+                          ? 'Institution Bancaire'
+                          : item.category == 'school'
+                          ? 'Ecole'
+                          : item.category == 'PME'
+                          ? 'PME'
+                          : item.category == 'TPE'
+                          ? 'TPE'
+                          : ''
+                      }}
+                    </span>
                   </div>
                 </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs"> </span>
-                  </div>
+                <TairoTableCell spaced class="capitalize">
+                  <BaseTag
+                    v-if="item.status === 'active'"
+                    color="success"
+                    flavor="pastel"
+                    shape="full"
+                    condensed
+                    class="font-medium"
+                  >
+                    Actif
+                  </BaseTag>
+                  <BaseTag
+                    v-else-if="item.status === 'inactive'"
+                    color="warning"
+                    flavor="pastel"
+                    shape="full"
+                    condensed
+                    class="font-medium"
+                  >
+                    Dormand
+                  </BaseTag>
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex">
@@ -812,6 +852,66 @@ const onSubmit = handleSubmit(
                         @update:model-value="handleChange"
                         @blur="handleBlur"
                       />
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="announcer.type"
+                    >
+                      <BaseSelect
+                        label="Type *"
+                        icon="ph:funnel"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      >
+                        <option value="personal">Particulier</option>
+                        <option value="corporate">Entreprise</option>
+                      </BaseSelect>
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="announcer.status"
+                    >
+                      <BaseSelect
+                        label="Status*"
+                        icon="ph:funnel"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      >
+                        <option value="active">Actif</option>
+                        <option value="inactive">Dormand</option>
+                      </BaseSelect>
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-12 col-span-12 lg:col-span-12">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="announcer.category"
+                    >
+                      <BaseSelect
+                        label="Categorie *"
+                        icon="ph:funnel"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      >
+                        <option value="largeAccount">Grand Compte</option>
+                        <option value="bank">Institution Bancaire</option>
+                        <option value="school">Ecole</option>
+                        <option value="PME">PME</option>
+                        <option value="TPE">TPE</option>
+                      </BaseSelect>
                     </Field>
                   </div>
                 </div>

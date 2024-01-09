@@ -16,7 +16,8 @@ export default defineNuxtConfig({
      *
      * @see https://github.com/shuriken-ui/nuxt
      */
-    process.env?.DEV_SHURIKEN_UI_PATH || '@shuriken-ui/nuxt',
+    // process.env?.DEV_SHURIKEN_UI_PATH || '@shuriken-ui/nuxt',
+    '@shuriken-ui/nuxt',
   ],
   modules: ['unplugin-fonts/nuxt', '@cssninja/nuxt-toaster'],
   tailwindcss: {

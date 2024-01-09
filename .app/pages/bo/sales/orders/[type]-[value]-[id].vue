@@ -1407,7 +1407,8 @@ const onSubmit = handleSubmit(
                         }}
                       </p>
 
-                      <p v-if="currentOrderInvoice?.description"
+                      <p
+                        v-if="currentOrderInvoice?.description"
                         class="text-muted-800 dark:text-muted-100 mt-2 text-[10px] font-semibold"
                       >
                         Description :
@@ -1440,7 +1441,10 @@ const onSubmit = handleSubmit(
                           ).toLocaleDateString('fr-FR')
                         }}
                       </p>
-                      <p v-if="currentOrderInvoice?.description" class="mt-2 text-[10px]">
+                      <p
+                        v-if="currentOrderInvoice?.description"
+                        class="mt-2 text-[10px]"
+                      >
                         {{ currentOrderInvoice?.description }}
                         <!-- BC N° 33880 DU 18/07/2023 -->
                       </p>
@@ -1753,8 +1757,8 @@ const onSubmit = handleSubmit(
                     </div>
                   </div>
                 </div>
-                <div class="px-2 py-4 sm:p-4 w-full">
-                  <div class="px-2 w-full overflow-auto">
+                <div class="px-2 py-4 sm:p-4 overflow-x-auto w-full">
+                  <div class="px-2 w-full">
                     <table
                       class="divide-muted-200 dark:divide-muted-700 min-w-full divide-y"
                     >

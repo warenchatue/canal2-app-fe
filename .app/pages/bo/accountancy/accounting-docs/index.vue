@@ -753,7 +753,8 @@ const onSubmit = handleSubmit(
                     />
                     <div class="ms-3 leading-none">
                       <h4 class="font-sans text-sm font-medium">
-                        {{ item.beneficiary?.name }}
+                        {{ item.beneficiary?.firstName }}
+                        {{ item.beneficiary?.lastName }}
                       </h4>
                       <p class="text-muted-400 font-sans text-xs">
                         {{ item.beneficiary?.email }}

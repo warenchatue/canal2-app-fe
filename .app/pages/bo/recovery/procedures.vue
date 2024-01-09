@@ -23,7 +23,7 @@ const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(10)
+const perPage = ref(50)
 const isModalNewRecoveryProcedureOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
@@ -35,7 +35,10 @@ const dates = ref({
 })
 // Check if can have access
 if (
-  authStore.user.appRole.name != UserRole.mediaPlanner &&
+  authStore.user.appRole.name != UserRole.accountancy &&
+  authStore.user.appRole.name != UserRole.billing &&
+  authStore.user.appRole.name != UserRole.sale &&
+  authStore.user.appRole.name != UserRole.accountancy &&
   authStore.user.appRole.name != UserRole.superAdmin
 ) {
   toaster.clearAll()
@@ -86,7 +89,7 @@ const query = computed(() => {
 const query2 = computed(() => {
   return {
     filter: filter.value,
-    perPage: 25,
+    perPage: 12000,
     page: page.value,
     action: 'findAll',
     token: token.value,
@@ -257,7 +260,7 @@ const currentRecoveryProcedure = ref({})
 const ONE_MB = 1000000
 const VALIDATION_TEXT = {
   AMOUNT_REQUIRED: "Amount can't be empty",
-  PHONE_REQUIRED: "Phone number can't be empty",
+  ANNOUNCER_REQUIRED: "Announcer can't be empty",
   EMAIL_REQUIRED: "Email address can't be empty",
   COUNTRY_REQUIRED: 'Please select a country',
 }
@@ -331,11 +334,11 @@ const zodSchema = z
     }),
   })
   .superRefine((data, ctx) => {
-    if (!data.recoveryProcedure.amount) {
+    if (!data.recoveryProcedure.announcer) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: VALIDATION_TEXT.AMOUNT_REQUIRED,
-        path: ['recoveryProcedure.amount'],
+        message: VALIDATION_TEXT.ANNOUNCER_REQUIRED,
+        path: ['recoveryProcedure.announcer'],
       })
     }
   })
@@ -647,7 +650,14 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ 0 }}</span>
+                <span
+                  >{{
+                    new Intl.NumberFormat().format(
+                      Math.ceil(data?.metaData?.totalPaid ?? 0),
+                    )
+                  }}
+                  XAF</span
+                >
               </BaseHeading>
             </div>
             <div
@@ -691,7 +701,10 @@ const onSubmit = handleSubmit(
                 <span>
                   {{
                     new Intl.NumberFormat().format(
-                      Math.ceil(data?.metaData?.totalAmount ?? 0),
+                      Math.ceil(
+                        data?.metaData?.totalAmount -
+                          data?.metaData?.totalPaid ?? 0,
+                      ),
                     )
                   }}
                   XAF</span
@@ -794,6 +807,10 @@ const onSubmit = handleSubmit(
                   Annonceur</TairoTableHeading
                 >
 
+                <TairoTableHeading uppercase spaced>
+                  Description</TairoTableHeading
+                >
+
                 <TairoTableHeading uppercase spaced>Montant</TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>Payé</TairoTableHeading>
@@ -862,9 +879,14 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
+                  {{ item.description }}
+                </TairoTableCell>
+                <TairoTableCell light spaced>
                   {{ item.amount }} XAF
                 </TairoTableCell>
-                <TairoTableCell light spaced> {{ 0 }} XAF </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ item.paid }} XAF
+                </TairoTableCell>
 
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag
@@ -942,13 +964,24 @@ const onSubmit = handleSubmit(
                     >
                       <Icon name="lucide:settings" class="h-4 w-4"
                     /></BaseButtonAction>
-                    <BaseButtonAction @click="editRecoveryProcedure(item)">
+                    <BaseButtonAction
+                      @click="editRecoveryProcedure(item)"
+                      :disabled="
+                        authStore.user._id != item.agent1?._id &&
+                        authStore.user._id != item.agent2?._id &&
+                        authStore.user._id != item.agent3?._id &&
+                        authStore.user._id != item.agent4?._id &&
+                        authStore.user.appRole?.name != UserRole.accountancy &&
+                        authStore.user.appRole?.name != UserRole.superAdmin
+                      "
+                    >
                       <Icon name="lucide:edit" class="h-4 w-4"
                     /></BaseButtonAction>
                     <BaseButtonAction
                       @click="confirmDeletePackage(item)"
                       class="mx-2"
                       :disabled="
+                        authStore.user.appRole?.name != UserRole.accountancy &&
                         authStore.user.appRole?.name != UserRole.superAdmin
                       "
                     >
