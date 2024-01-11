@@ -90,9 +90,11 @@ function filterData(
 
   return data
     .filter((item) => {
-      return [item.code, item.org.name, item.announcer.name, item.team].some(
-        (item) => item.match(filterRe),
-      )
+      return [
+        item.code ?? '',
+        item.announcer?.name ?? '',
+        item.agent1?.firstName ?? '' + item.agent1?.lastName ?? '',
+      ].some((item) => item.match(filterRe))
     })
     .sort(function (a, b) {
       return a.code < b.code ? 1 : -1
@@ -130,7 +132,7 @@ async function findAll(token: string) {
       },
     },
   ).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
 

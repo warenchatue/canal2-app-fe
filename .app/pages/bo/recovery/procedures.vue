@@ -23,7 +23,7 @@ const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(50)
+const perPage = ref(100)
 const isModalNewRecoveryProcedureOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
@@ -702,8 +702,8 @@ const onSubmit = handleSubmit(
                   {{
                     new Intl.NumberFormat().format(
                       Math.ceil(
-                        data?.metaData?.totalAmount -
-                          data?.metaData?.totalPaid ?? 0,
+                        (data?.metaData?.totalAmount ?? 0) -
+                          (data?.metaData?.totalPaid ?? 0),
                       ),
                     )
                   }}
@@ -882,10 +882,16 @@ const onSubmit = handleSubmit(
                   {{ item.description }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.amount }} XAF
+                  {{
+                    new Intl.NumberFormat().format(Math.ceil(item.amount ?? 0))
+                  }}
+                  XAF
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.paid }} XAF
+                  {{
+                    new Intl.NumberFormat().format(Math.ceil(item.paid ?? 0))
+                  }}
+                  XAF
                 </TairoTableCell>
 
                 <TairoTableCell spaced class="capitalize">

@@ -25,7 +25,7 @@ const toaster = useToaster()
 const authStore = useAuthStore()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(12000)
+const perPage = ref(10000)
 const isEdit = ref(false)
 const isPrint = ref(false)
 const currentAccountingDoc = ref({})
@@ -98,19 +98,19 @@ const { data } = await useFetch('/api/pub/packages', {
   query,
 })
 
-const { data: allOrders } = await useFetch('/api/sales/orders', {
-  query,
-})
-
 const { data: orgs } = await useFetch('/api/admin/orgs', {
   query,
 })
 
-const { data: taxes } = await useFetch('/api/accountancy/taxes', {
+const { data: allJournals } = await useFetch('/api/accountancy/journals', {
   query,
 })
 
-const { data: accounts } = await useFetch('/api/accountancy/accounts', {
+const { data: allAccounts } = await useFetch('/api/accountancy/accounts', {
+  query,
+})
+
+const { data: allDocTypes } = await useFetch('/api/accountancy/doc-types', {
   query,
 })
 
@@ -126,40 +126,30 @@ const transformedUsers = allUsers.value?.data.map((e: any) => {
   return user
 })
 
-const transformedAccounts = accounts.value?.data
-  .filter((e: any) => {
-    return e.position == 'd'
-  })
-  .map((e: any) => {
-    const account = {
-      id: e._id,
-      name: e.label,
-    }
-    return account
-  })
-
-const transformedCAccounts = accounts.value?.data
-  .filter((e: any) => {
-    return e.position == 'c'
-  })
-  .map((e: any) => {
-    const account = {
-      id: e._id,
-      name: e.label,
-    }
-    return account
-  })
-
-const commercials = allUsers.value?.data.filter((e: any) => {
-  return e.appRole?.name == UserRole.sale
+const transformedAccounts = allAccounts.value?.data.map((e: any) => {
+  const account = {
+    id: e._id,
+    name: e.code + ' : ' + e.label,
+  }
+  return account
 })
 
-const finalOrders = allOrders.value?.data.filter((e: any) => {
-  return e.validator
+const transformedDocTypes = allDocTypes.value?.data.map((e: any) => {
+  const docType = {
+    id: e._id,
+    name: e.code + ' : ' + e.label,
+  }
+  return docType
 })
-
-const paymentAccounts = accounts.value?.data.filter((e: any) => {
-  return e.position == 'd'
+//  .filter((e: any) => {
+//     return e.org._id == currentOrg.value._id
+//   })
+const transformedJournals = allJournals.value?.data.map((e: any) => {
+  const journal = {
+    id: e._id,
+    name: e.code + ' : ' + e.label,
+  }
+  return journal
 })
 
 const pageType = computed(() => route.params.type)
@@ -324,7 +314,7 @@ const isAllVisibleSelected = computed(() => {
 })
 
 function filterItems(query?: string, items?: any[]) {
-  if (query.length < 3) {
+  if (query.length < 2) {
     return []
   }
 
@@ -366,20 +356,31 @@ const zodSchema = z
     accountingDoc: z.object({
       _id: z.string().optional(),
       label: z.string(),
-      amount: z.number(),
+      amount: z.number().optional(),
       team: z.string().optional(),
-      paymentAccount: z
+      extBeneficiary: z.string().optional(),
+      journal: z
         .object({
           id: z.string(),
           name: z.string(),
         })
         .optional()
         .nullable(),
-      beneficiary: z.object({
-        id: z.string(),
-        name: z.string(),
-        email: z.string().optional(),
-      }),
+      docType: z
+        .object({
+          id: z.string(),
+          name: z.string(),
+        })
+        .optional()
+        .nullable(),
+      beneficiary: z
+        .object({
+          id: z.string(),
+          name: z.string(),
+          email: z.string().optional(),
+        })
+        .optional()
+        .nullable(),
       authorizer: z
         .object({
           id: z.string(),
@@ -411,20 +412,6 @@ const initialValues = computed<FormInput>(() => ({
     label: '',
     amount: 0,
     team: authStore.user?.team ?? 'douala',
-    paymentAccount: {
-      id: '',
-      name: '',
-    },
-    beneficiary: {
-      id: '',
-      name: '',
-      email: '',
-    },
-    authorizer: {
-      id: '',
-      name: '',
-      email: '',
-    },
   },
 }))
 
@@ -453,14 +440,21 @@ function editAccountingDoc(currentAccountingDoc: any) {
     setFieldValue('accountingDoc.label', currentAccountingDoc.label)
     setFieldValue('accountingDoc.amount', currentAccountingDoc.amount)
     setFieldValue('accountingDoc.team', currentAccountingDoc.team)
-    setFieldValue('accountingDoc.beneficiary', {
-      id: currentAccountingDoc.beneficiary._id,
+    setFieldValue(
+      'accountingDoc.extBeneficiary',
+      currentAccountingDoc.extBeneficiary,
+    )
+    if (currentAccountingDoc.beneficiary) {
+       setFieldValue('accountingDoc.beneficiary', {
+      id: currentAccountingDoc.beneficiary?._id,
       name:
-        currentAccountingDoc.beneficiary.firstName +
+        currentAccountingDoc.beneficiary?.firstName +
         ' ' +
-        currentAccountingDoc.beneficiary.lastName,
-      text: currentAccountingDoc.beneficiary.phone,
+        currentAccountingDoc.beneficiary?.lastName,
+      text: currentAccountingDoc.beneficiary?.phone,
     })
+    }
+   
     setFieldValue('accountingDoc.authorizer', {
       id: currentAccountingDoc.authorizer?._id,
       name:
@@ -469,43 +463,48 @@ function editAccountingDoc(currentAccountingDoc: any) {
         currentAccountingDoc.authorizer?.lastName,
       text: currentAccountingDoc.authorizer?.phone,
     })
-    setFieldValue('accountingDoc.paymentAccount', {
-      id: currentAccountingDoc.paymentAccount?._id,
-      name: currentAccountingDoc.paymentAccount?.label,
-      text: currentAccountingDoc.paymentAccount?.code,
+    setFieldValue('accountingDoc.journal', {
+      id: currentAccountingDoc.journal?._id,
+      name: currentAccountingDoc.journal?.label,
+      text: currentAccountingDoc.journal?.code,
+    })
+    setFieldValue('accountingDoc.docType', {
+      id: currentAccountingDoc.docType?._id,
+      name: currentAccountingDoc.docType?.label,
+      text: currentAccountingDoc.docType?.code,
     })
     currentOrg.value = currentAccountingDoc.org
     accountingDocData.value = currentAccountingDoc.items
   }, 500)
 }
 
-async function confirmOrder() {
+async function confirmAccountingDoc() {
   const query4 = computed(() => {
     return {
-      action: pageValue.value == 'order' ? 'updateOrder' : 'updateInvoice',
+      action: 'updateAccountingDoc',
       token: token.value,
       id: currentAccountingDoc.value._id,
     }
   })
   currentAccountingDoc.value.validator = authStore.user._id
 
-  const response = await useFetch(
-    pageValue.value == 'order' ? '/api/sales/orders' : '/api/sales/invoices',
-    {
-      method: 'put',
-      headers: { 'Content-Type': 'application/json' },
-      query: query4,
-      body: { ...currentAccountingDoc.value },
+  const response = await useFetch('/api/accountancy/accounting-docs', {
+    method: 'put',
+    headers: { 'Content-Type': 'application/json' },
+    query: query4,
+    body: {
+      ...currentAccountingDoc.value,
+      beneficiary: values.accountingDoc?.beneficiary?.id ?? undefined,
+      authorizer: values.accountingDoc?.authorizer?.id ?? undefined,
     },
-  )
+  })
 
   if (response.data?.value?.success) {
     success.value = true
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message:
-        pageValue.value == 'order' ? `Devis confirmé !` : `Facture confirmée !`,
+      message: 'Pièce comptable confirmée',
       color: 'success',
       icon: 'ph:check',
       closable: true,
@@ -535,7 +534,8 @@ function addOrderItem() {
     id: 0,
     description: '',
     account: '',
-    amount: 0,
+    debit: 0,
+    credit: 0,
   }
 }
 
@@ -563,7 +563,8 @@ const curAccountingDocItem = ref({
   account: '',
   quantity: 0,
   rate: 0,
-  amount: 0,
+  debit: 0,
+  credit: 0,
 })
 
 watch(curAccountingDocItem, (value) => {
@@ -588,15 +589,19 @@ const curInvoicePaymentForm = ref({
 })
 
 const totalData = computed(() => {
-  const subtotal = accountingDocData.value.reduce((acc, item) => {
-    return acc + item.amount
+  const debit = accountingDocData.value.reduce((acc, item) => {
+    return acc + item.debit ?? 0
   }, 0)
 
-  const total = subtotal
+  const credit = accountingDocData.value.reduce((acc, item) => {
+    return acc + item.credit ?? 0
+  }, 0)
+
   return [
     {
       label: 'Total',
-      value: Math.ceil(total),
+      debit: Math.ceil(debit),
+      credit: Math.ceil(credit),
     },
   ]
 })
@@ -667,15 +672,16 @@ const onSubmit = handleSubmit(
           query: query2,
           body: {
             ...values.accountingDoc,
-            paymentAccount: values.accountingDoc?.paymentAccount?.id,
-            beneficiary: values.accountingDoc?.beneficiary?.id,
-            authorizer: values.accountingDoc?.authorizer?.id,
+            beneficiary: values.accountingDoc?.beneficiary?.id ?? undefined,
+            authorizer: values.accountingDoc?.authorizer?.id ?? undefined,
+            journal: values.accountingDoc?.journal?.id,
+            docType: values.accountingDoc?.docType?.id,
             org: currentOrg.value,
             contractUrl,
             items: accountingDocData.value,
             date: dates.value?.start ?? new Date(),
             amount:
-              currentAccountingDoc.value.length > 0
+              currentAccountingDoc.value?.length > 0
                 ? totalData.value[totalData.value.length - 1].value
                 : values.accountingDoc.amount,
           },
@@ -696,9 +702,10 @@ const onSubmit = handleSubmit(
           query: query2,
           body: {
             ...values.accountingDoc,
-            paymentAccount: values.accountingDoc?.paymentAccount?.id,
-            beneficiary: values.accountingDoc?.beneficiary?.id,
-            authorizer: values.accountingDoc?.authorizer?.id,
+            beneficiary: values.accountingDoc?.beneficiary?.id ?? undefined,
+            authorizer: values.accountingDoc?.authorizer?.id ?? undefined,
+            journal: values.accountingDoc?.journal?.id,
+            docType: values.accountingDoc?.docType?.id,
             org: currentOrg.value,
             contractUrl,
             items: accountingDocData.value,
@@ -829,7 +836,6 @@ const onSubmit = handleSubmit(
           <span>Créer</span>
         </BaseButton>
         <BaseButton
-          :disabled="currentAccountingDoc.validator"
           v-if="pageType == 'edit'"
           color="primary"
           class="w-full sm:w-32"
@@ -1029,6 +1035,7 @@ const onSubmit = handleSubmit(
                         class="text-muted-500 dark:text-muted-400 text-sm font-light"
                       >
                         <p
+                          v-if="currentAccountingDoc?.beneficiary"
                           class="text-muted-700 dark:text-muted-100 text-xs font-normal"
                         >
                           Beneficiare
@@ -1059,7 +1066,10 @@ const onSubmit = handleSubmit(
                       <div
                         class="text-muted-800 dark:text-muted-400 text-sm font-light"
                       >
-                        <p class="text-xs">
+                        <p
+                          v-if="currentAccountingDoc?.beneficiary"
+                          class="text-xs"
+                        >
                           {{
                             currentAccountingDoc?.beneficiary?.firstName +
                             ' ' +
@@ -1095,15 +1105,35 @@ const onSubmit = handleSubmit(
                       class="text-muted-500 dark:text-muted-400 text-sm font-light"
                     >
                       <p
-                        class="text-muted-700 dark:text-muted-100 text-lg font-normal"
+                        class="text-muted-700 dark:text-muted-100 text-sm font-normal"
                       >
-                        Montant
+                        Journal:
+                      </p>
+                      <p
+                        class="text-muted-700 dark:text-muted-100 text-sm mt-2 font-normal"
+                      >
+                        Date:
+                      </p>
+                      <p
+                        class="text-muted-700 dark:text-muted-100 text-sm mt-2 font-normal"
+                      >
+                        Montant:
                       </p>
                     </div>
                     <div
                       class="text-muted-800 dark:text-muted-400 text-sm font-light"
                     >
-                      <p class="text-lg">
+                      <p class="text-sm">
+                        {{ currentAccountingDoc.journal?.label }}
+                      </p>
+                      <p class="text-sm mt-2">
+                        {{
+                          new Date(
+                            currentAccountingDoc.date,
+                          ).toLocaleDateString('fr-FR')
+                        }}
+                      </p>
+                      <p class="text-sm mt-2">
                         {{ currentAccountingDoc.amount }} XAF
                       </p>
                     </div>
@@ -1118,6 +1148,76 @@ const onSubmit = handleSubmit(
                   <div class="mx-auto flex w-full flex-col">
                     <div>
                       <div class="grid grid-cols-12 gap-4">
+                        <div class="col-span-12 md:col-span-6">
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="accountingDoc.journal"
+                          >
+                            <BaseAutocomplete
+                              :model-value="field.value"
+                              :error="errorMessage"
+                              :disabled="isSubmitting"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
+                              :items="transformedJournals"
+                              :display-value="(item: any) => item.name || ''"
+                              :filter-items="filterItems"
+                              icon="ph:file-duotone"
+                              placeholder="Ex: Jounal de caisse dépense"
+                              label="Journal"
+                              clearable
+                              :clear-value="''"
+                            >
+                              <template #empty="value">
+                                <!-- Use destruct to keep what you need -->
+                                <div v-if="value.query.length < 2">
+                                  Saisissez au-moins 2 caractères
+                                </div>
+                                <div v-else>Aucun resultat.</div>
+                              </template>
+                            </BaseAutocomplete>
+                          </Field>
+                        </div>
+                        <div class="col-span-12 md:col-span-6">
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="accountingDoc.docType"
+                          >
+                            <BaseAutocomplete
+                              :model-value="field.value"
+                              :error="errorMessage"
+                              :disabled="isSubmitting"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
+                              :items="transformedDocTypes"
+                              :display-value="(item: any) => item.name || ''"
+                              :filter-items="filterItems"
+                              icon="ph:file-duotone"
+                              placeholder="Ex: Pice de caisse dépense"
+                              label="Type de document"
+                              clearable
+                              :clear-value="''"
+                            >
+                              <template #empty="value">
+                                <!-- Use destruct to keep what you need -->
+                                <div v-if="value.query.length < 2">
+                                  Saisissez au-moins 2 caractères
+                                </div>
+                                <div v-else>Aucun resultat.</div>
+                              </template>
+                            </BaseAutocomplete>
+                          </Field>
+                        </div>
                         <div
                           class="ltablet:col-span-6 col-span-12 lg:col-span-6"
                         >
@@ -1147,12 +1247,34 @@ const onSubmit = handleSubmit(
                             >
                               <template #empty="value">
                                 <!-- Use destruct to keep what you need -->
-                                <div v-if="value.query.length < 3">
-                                  Saisissez au-moins 3 caractères
+                                <div v-if="value.query.length < 2">
+                                  Saisissez au-moins 2 caractères
                                 </div>
                                 <div v-else>Aucun resultat.</div>
                               </template>
                             </BaseAutocomplete>
+                          </Field>
+                        </div>
+                        <div class="col-span-12 md:col-span-6">
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="accountingDoc.extBeneficiary"
+                          >
+                            <BaseInput
+                              label="Bénéficiaire externe"
+                              icon="ph:user-duotone"
+                              placeholder="ex: nom"
+                              :model-value="field.value"
+                              :error="errorMessage"
+                              :disabled="isSubmitting"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
+                            />
                           </Field>
                         </div>
                         <div class="col-span-12 md:col-span-6">
@@ -1177,6 +1299,7 @@ const onSubmit = handleSubmit(
                             />
                           </Field>
                         </div>
+
                         <div class="col-span-12 md:col-span-6">
                           <Field
                             v-slot="{
@@ -1198,42 +1321,6 @@ const onSubmit = handleSubmit(
                               @update:model-value="handleChange"
                               @blur="handleBlur"
                             />
-                          </Field>
-                        </div>
-
-                        <div class="col-span-12 md:col-span-6">
-                          <Field
-                            v-slot="{
-                              field,
-                              errorMessage,
-                              handleChange,
-                              handleBlur,
-                            }"
-                            name="accountingDoc.paymentAccount"
-                          >
-                            <BaseAutocomplete
-                              :model-value="field.value"
-                              :error="errorMessage"
-                              :disabled="isSubmitting"
-                              @update:model-value="handleChange"
-                              @blur="handleBlur"
-                              :items="transformedAccounts"
-                              :display-value="(item: any) => item.name || ''"
-                              :filter-items="filterItems"
-                              icon="ph:money-duotone"
-                              placeholder="Ex: Caisse"
-                              label="Journal des reglements"
-                              clearable
-                              :clear-value="''"
-                            >
-                              <template #empty="value">
-                                <!-- Use destruct to keep what you need -->
-                                <div v-if="value.query.length < 3">
-                                  Saisissez au-moins 3 caractères
-                                </div>
-                                <div v-else>Aucun resultat.</div>
-                              </template>
-                            </BaseAutocomplete>
                           </Field>
                         </div>
 
@@ -1266,8 +1353,8 @@ const onSubmit = handleSubmit(
                             >
                               <template #empty="value">
                                 <!-- Use destruct to keep what you need -->
-                                <div v-if="value.query.length < 3">
-                                  Saisissez au-moins 3 caractères
+                                <div v-if="value.query.length < 2">
+                                  Saisissez au-moins 2 caractères
                                 </div>
                                 <div v-else>Aucun resultat.</div>
                               </template>
@@ -1399,13 +1486,19 @@ const onSubmit = handleSubmit(
                             scope="col"
                             class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-xs font-medium sm:ps-6 md:ps-0"
                           >
-                            Description
+                            Libellé
                           </th>
                           <th
                             scope="col"
                             class="text-muted-800 dark:text-muted-400 py-2 pe-4 ps-3 px-2 text-right text-xs font-medium sm:pe-6 md:pe-0"
                           >
-                            Montant
+                            Debit
+                          </th>
+                          <th
+                            scope="col"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-4 ps-3 px-2 text-right text-xs font-medium sm:pe-6 md:pe-0"
+                          >
+                            Crédit
                           </th>
                         </tr>
                       </thead>
@@ -1465,7 +1558,18 @@ const onSubmit = handleSubmit(
                             class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right text-sm sm:pe-6 md:pe-0"
                           >
                             {{
-                              new Intl.NumberFormat('fr-FR').format(item.amount)
+                              new Intl.NumberFormat('fr-FR').format(
+                                item.debit ?? 0,
+                              )
+                            }}
+                          </td>
+                          <td
+                            class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right text-sm sm:pe-6 md:pe-0"
+                          >
+                            {{
+                              new Intl.NumberFormat('fr-FR').format(
+                                item.credit ?? 0,
+                              )
                             }}
                           </td>
                         </tr>
@@ -1537,8 +1641,8 @@ const onSubmit = handleSubmit(
                                   >
                                     <template #empty="value">
                                       <!-- Use destruct to keep what you need -->
-                                      <div v-if="value.query.length < 3">
-                                        Saisissez au-moins 3 caractères
+                                      <div v-if="value.query.length < 2">
+                                        Saisissez au-moins 2 caractères
                                       </div>
                                       <div v-else>Aucun resultat.</div>
                                     </template>
@@ -1566,11 +1670,26 @@ const onSubmit = handleSubmit(
                             class="text-muted-500 dark:text-muted-400 hidden px-3 py-4 text-right text-sm sm:table-cell"
                           >
                             <BaseInput
-                              v-model="curAccountingDocItem.amount"
+                              v-model="curAccountingDocItem.debit"
                               label=""
                               shape="rounded"
                               type="number"
-                              placeholder="..."
+                              placeholder=""
+                              :classes="{
+                                wrapper: 'w-32',
+                              }"
+                              autogrow
+                            />
+                          </td>
+                          <td
+                            class="text-muted-500 dark:text-muted-400 hidden px-3 py-4 text-right text-sm sm:table-cell"
+                          >
+                            <BaseInput
+                              v-model="curAccountingDocItem.credit"
+                              label=""
+                              shape="rounded"
+                              type="number"
+                              placeholder=""
                               :classes="{
                                 wrapper: 'w-32',
                               }"
@@ -1583,25 +1702,28 @@ const onSubmit = handleSubmit(
                         <tr clas="" v-for="item in totalData" :key="item.label">
                           <th
                             scope="row"
-                            colspan="4"
+                            :colspan="isPrint ? '2' : '4'"
                             class="text-muted-800 dark:text-muted-400 pe-3 ps-6 pt-2 text-right text-xs font-light"
                           >
                             {{ item.label }}
                           </th>
                           <td
                             scope="row"
-                            colspan="3"
-                            class="pe-4 ps-3 pt-2 text-right sm:pe-6"
-                            :class="
-                              item.label === 'Total'
-                                ? 'text-xs text-primary-800 border-muted-400 dark:border-muted-700 border-t-2 dark:text-primary-500'
-                                : item.label === 'Total HT'
-                                ? 'text-xs border-muted-400 dark:border-muted-700 text-muted-800 dark:text-muted-200/70 border-t-2'
-                                : 'text-xs text-muted-800 dark:text-muted-200/70'
-                            "
+                            colspan="1"
+                            class="pe-4 ps-3 pt-2 text-right sm:pe-6 text-xs text-muted-800 dark:text-muted-200/70"
                           >
                             {{
-                              new Intl.NumberFormat('fr-FR').format(item.value)
+                              new Intl.NumberFormat('fr-FR').format(item.debit)
+                            }}
+                            XAF
+                          </td>
+                          <td
+                            scope="row"
+                            colspan="1"
+                            class="pe-4 ps-3 pt-2 text-right sm:pe-6 text-xs text-muted-800 dark:text-muted-200/70"
+                          >
+                            {{
+                              new Intl.NumberFormat('fr-FR').format(item.credit)
                             }}
                             XAF
                           </td>
@@ -1744,8 +1866,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Confirmation
-            {{ pageValue == 'order' ? 'du devis' : 'de la facture' }}
+            Confirmation PC
           </h3>
 
           <BaseButtonClose @click="isModalConfirmOrderOpen = false" />
@@ -1758,14 +1879,13 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
           >
-            Voulez-vous confirmer
-            {{ pageValue == 'order' ? 'le devis' : 'la facture' }}
+            Voulez-vous confirmer la pièce
             <span class="text-primary-500">{{
-              currentAccountingDoc.label
+              currentAccountingDoc.code
             }}</span>
-            de
+            créer par
             <span class="text-primary-500"
-              >{{ currentAccountingDoc?.announcer?.name }}
+              >{{ currentAccountingDoc?.creator?.firstName }}
             </span>
             ?
           </h3>
@@ -1786,7 +1906,10 @@ const onSubmit = handleSubmit(
               >Annuler</BaseButton
             >
 
-            <BaseButton color="primary" flavor="solid" @click="confirmOrder()"
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="confirmAccountingDoc()"
               >Valider</BaseButton
             >
           </div>

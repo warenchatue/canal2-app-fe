@@ -29,7 +29,9 @@ const token = useCookie('token')
 const toaster = useToaster()
 // Check if can have access
 if (
-  authStore.user.appRole.name != UserRole.mediaPlanner &&
+  authStore.user.appRole.name != UserRole.sale &&
+  authStore.user.appRole.name != UserRole.billing &&
+  authStore.user.appRole.name != UserRole.accountancy &&
   authStore.user.appRole.name != UserRole.superAdmin
 ) {
   toaster.clearAll()
@@ -371,6 +373,7 @@ const success = ref(false)
             authStore.user._id != data.data.agent2?._id &&
             authStore.user._id != data.data.agent3?._id &&
             authStore.user._id != data.data.agent4?._id &&
+            authStore.user.appRole?.name != UserRole.accountancy &&
             authStore.user.appRole?.name != UserRole.superAdmin
           "
         >

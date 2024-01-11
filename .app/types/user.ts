@@ -26,6 +26,7 @@ export enum UserRole {
   dgTag = 'dg',
   doTag = 'do',
   superAdmin = 'SuperAdmin',
+  employee = 'Employee',
 }
 
 export interface User {

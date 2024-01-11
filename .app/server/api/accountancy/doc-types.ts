@@ -16,17 +16,17 @@ export default defineEventHandler(async (event) => {
       total: data.length,
       data: filterData(data, filter, page, perPage),
     }
-  } else if (action == 'createAnnouncer') {
+  } else if (action == 'createDocType') {
     const body = await readBody(event)
     console.log(body)
-    const data = await createAnnouncer(body, token)
+    const data = await createDocType(body, token)
     return { data: data, success: true }
-  } else if (action == 'updateAnnouncer') {
+  } else if (action == 'updateDocType') {
     const body = await readBody(event)
-    const data = await updateAnnouncer(id, body, token)
+    const data = await updateDocType(id, body, token)
     return { data: data, success: true }
   } else if (action == 'delete') {
-    const data = await deleteAnnouncer(id, token)
+    const data = await deleteDocType(id, token)
     return { data: data, success: true }
   }
 })
@@ -44,8 +44,8 @@ function filterData(
   const filterRe = new RegExp(filter, 'i')
   return data
     .filter((item) => {
-      return [item.code, item.name, item.email].some((item) =>
-        item?.match(filterRe),
+      return [item.code, item.label, item.description].some((item) =>
+        item.match(filterRe),
       )
     })
     .slice(offset, offset + perPage)
@@ -55,7 +55,7 @@ async function findOne(id: string, token: string) {
   console.log('findOne ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/announcers/' + id,
+    runtimeConfig.env.apiUrl + '/doc-types/' + id,
     {
       method: 'get',
       headers: {
@@ -71,21 +71,21 @@ async function findOne(id: string, token: string) {
 async function findAll(token: string) {
   console.log('findAll ' + token)
   const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/announcers', {
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/doc-types', {
     method: 'get',
     headers: {
       Authorization: 'Bearer ' + token,
       'Content-type': 'application/json',
     },
   }).catch((error) => console.log(error))
-  // console.log(data)
+  console.log(data)
   return Promise.resolve(data)
 }
 
-async function createAnnouncer(body: any, token: string) {
-  console.log('createAnnouncer ' + token)
+async function createDocType(body: any, token: string) {
+  console.log('createDocType ' + token)
   const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/announcers', {
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/doc-types', {
     method: 'post',
     headers: {
       Authorization: 'Bearer ' + token,
@@ -97,11 +97,11 @@ async function createAnnouncer(body: any, token: string) {
   return Promise.resolve(data)
 }
 
-async function updateAnnouncer(id: string, body: any, token: string) {
-  console.log('updateAnnouncer ' + token)
+async function updateDocType(id: string, body: any, token: string) {
+  console.log('updateDocType ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/announcers/' + id,
+    runtimeConfig.env.apiUrl + '/doc-types/' + id,
     {
       method: 'PUT',
       headers: {
@@ -115,11 +115,11 @@ async function updateAnnouncer(id: string, body: any, token: string) {
   return Promise.resolve(data)
 }
 
-async function deleteAnnouncer(id: string, token: string) {
-  console.log('deleteAnnouncer ' + token)
+async function deleteDocType(id: string, token: string) {
+  console.log('deleteDocType ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/announcers/' + id,
+    runtimeConfig.env.apiUrl + '/doc-types/' + id,
     {
       method: 'DELETE',
       headers: {

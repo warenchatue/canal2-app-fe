@@ -5,11 +5,11 @@ import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Annonceurs',
+  title: 'Journaux',
   preview: {
-    title: 'Annonceurs',
-    description: 'Contribution and withdrawal',
-    categories: ['bo', 'announcers'],
+    title: 'Journaux',
+    description: 'Gestion des Journaux',
+    categories: ['bo', 'accountancy', 'journals'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -22,21 +22,18 @@ const router = useRouter()
 const appStore = useAppStore()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(25)
-const isModalNewAnnouncerOpen = ref(false)
-const isModalDeleteAnnouncerOpen = ref(false)
-const isModalImportAnnouncerOpen = ref(false)
+const perPage = ref(10)
+const isModalNewAccountOpen = ref(false)
+const isModalDeleteAccountOpen = ref(false)
 const isEdit = ref(false)
+const journalAccounts = ref([])
 
 const toaster = useToaster()
 // Check if can have access
 if (
-  authStore.user.appRole?.name != UserRole.rh &&
-  authStore.user.appRole?.name != UserRole.billing &&
-  authStore.user.appRole?.name != UserRole.sale &&
-  authStore.user.appRole?.name != UserRole.admin &&
-  authStore.user.appRole?.name != UserRole.accountancy &&
-  authStore.user.appRole?.name != UserRole.superAdmin
+  authStore.user.appRole.name != UserRole.billing &&
+  authStore.user.appRole.name != UserRole.accountancy &&
+  authStore.user.appRole.name != UserRole.superAdmin
 ) {
   toaster.clearAll()
   toaster.show({
@@ -69,11 +66,18 @@ const query = computed(() => {
 })
 
 const { data, pending, error, refresh } = await useFetch(
-  '/api/sales/announcers',
+  '/api/accountancy/journals',
   {
     query,
   },
 )
+const { data: orgs } = await useFetch('/api/admin/orgs', {
+  query,
+})
+
+const { data: allAccounts } = await useFetch('/api/accountancy/accounts', {
+  query,
+})
 
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
@@ -88,104 +92,41 @@ function toggleAllVisibleSelection() {
   }
 }
 
-const inputAnnouncerFile = ref<FileList | null>(null)
-const announcerFile = ref<File | null>(null)
-watch(inputAnnouncerFile, (value) => {
-  const file = value?.item(0) || null
-  announcerFile.value = file
-})
-
-async function importAnnouncers() {
-  const slug = ref('null')
-  const token = useCookie('token')
-  try {
-    const fd = new FormData()
-    fd.append('0', announcerFile.value)
-    const query3 = computed(() => {
-      return {
-        action: 'import-announcer',
-        token: token.value,
-      }
-    })
-
-    const { data: uploadData, refresh } = await useFetch('/api/files/upload', {
-      method: 'POST',
-      query: query3,
-      body: fd,
-    })
-    console.log(uploadData)
-    if (uploadData.value?.success == true) {
-      slug.value = ''
-      toaster.clearAll()
-      toaster.show({
-        title: 'Success',
-        message: `Vérification terminée !`,
-        color: 'success',
-        icon: 'ph:check',
-        closable: true,
-      })
-    } else {
-      slug.value = ''
-      toaster.clearAll()
-      toaster.show({
-        title: 'Oops',
-        message: `Une erreur est survenue lors de l'importation des annonceurs !`,
-        color: 'danger',
-        icon: 'ph:check',
-        closable: true,
-      })
-    }
-  } catch (error) {}
-  isModalImportAnnouncerOpen.value = false
-}
-
-const currentAnnouncer = ref({})
+const currentAccount = ref({})
 const chatEl = ref<HTMLElement>()
 const expanded = ref(true)
 const loading = ref(false)
 
 // This is the object that will contain the validation messages
-const ONE_MB = 1000000
 const VALIDATION_TEXT = {
-  NAME_REQUIRED: "Name can't be empty",
-  PHONE_REQUIRED: "Phone number can't be empty",
-  EMAIL_REQUIRED: "Email address can't be empty",
-  COUNTRY_REQUIRED: 'Please select a country',
+  CODE_REQUIRED: "Code can't be empty",
 }
 
 // This is the Zod schema for the form input
 // It's used to define the shape that the form data will have
 const zodSchema = z
   .object({
-    announcer: z.object({
+    journal: z.object({
       _id: z.string().optional(),
-      name: z.string().min(1, VALIDATION_TEXT.NAME_REQUIRED),
-      email: z.string().optional(),
-      rc: z.string().optional(),
-      nc: z.string().optional(),
-      phone: z.string().optional(),
-      city: z.string().optional(),
-      address: z.string().optional(),
-      type: z.string().optional(),
-      status: z.string().optional(),
-      category: z.string().optional(),
-      country: z
+      code: z.string().min(1, VALIDATION_TEXT.CODE_REQUIRED),
+      label: z.string(),
+      accounts: z.string().optional(),
+      position: z.union([z.literal('d'), z.literal('c')]),
+      org: z
         .object({
           _id: z.string(),
-          abbr: z.string(),
           name: z.string(),
-          flag: z.string().optional(),
         })
-        .optional()
-        .nullable(),
+        .optional(),
+      description: z.string().optional(),
     }),
   })
   .superRefine((data, ctx) => {
-    if (!data.announcer.name) {
+    if (!data.journal.code) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: VALIDATION_TEXT.NAME_REQUIRED,
-        path: ['announcer.name'],
+        message: VALIDATION_TEXT.CODE_REQUIRED,
+        path: ['journal.code'],
       })
     }
   })
@@ -196,23 +137,11 @@ type FormInput = z.infer<typeof zodSchema>
 
 const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
-  avatar: null,
-  announcer: {
-    name: '',
-    email: '',
-    address: '',
-    phone: '',
-    rc: '',
-    nc: '',
-    status: '',
-    type: '',
-    category: '',
-    country: {
-      _id: '',
-      abbr: '',
-      name: '',
-      flag: '',
-    },
+  journal: {
+    code: '',
+    label: '',
+    description: '',
+    position: 'c',
   },
 }))
 
@@ -233,44 +162,39 @@ const {
 
 const success = ref(false)
 
-function editAnnouncer(announcer: any) {
-  isModalNewAnnouncerOpen.value = true
+function editAccount(journal: any) {
+  isModalNewAccountOpen.value = true
   isEdit.value = true
-  setFieldValue('announcer._id', announcer._id)
-  setFieldValue('announcer.name', announcer.name)
-  setFieldValue('announcer.email', announcer.email)
-  setFieldValue('announcer.phone', announcer.phone)
-  setFieldValue('announcer.country', announcer.country)
-  setFieldValue('announcer.city', announcer.city)
-  setFieldValue('announcer.address', announcer.address)
-  setFieldValue('announcer.rc', announcer.rc)
-  setFieldValue('announcer.nc', announcer.nc)
-  setFieldValue('announcer.type', announcer.type)
-  setFieldValue('announcer.status', announcer.status)
-  setFieldValue('announcer.category', announcer.category)
+  setFieldValue('journal._id', journal._id)
+  setFieldValue('journal.code', journal.code)
+  setFieldValue('journal.position', journal.position)
+  setFieldValue('journal.label', journal.label)
+  setFieldValue('journal.org', journal.org)
+  setFieldValue('journal.description', journal.description)
+  journalAccounts.value = journal.accounts
 }
 
-function selectAnnouncer(announcer: any) {
-  currentAnnouncer.value = announcer
+function selectAccount(tax: any) {
+  currentAccount.value = tax
   expanded.value = false
 }
 
-function confirmDeleteAnnouncer(announcer: any) {
-  isModalDeleteAnnouncerOpen.value = true
+function confirmDeleteAccount(tax: any) {
+  isModalDeleteAccountOpen.value = true
   isEdit.value = false
-  currentAnnouncer.value = announcer
+  currentAccount.value = tax
 }
 
-async function deleteAnnouncer(announcer: any) {
+async function deleteAccount(account: any) {
   const query2 = computed(() => {
     return {
       action: 'delete',
       token: token.value,
-      id: announcer._id,
+      id: account._id,
     }
   })
 
-  const response = await useFetch('/api/sales/announcers', {
+  const response = await useFetch('/api/accountancy/journals', {
     method: 'delete',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
@@ -281,13 +205,13 @@ async function deleteAnnouncer(announcer: any) {
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Annonceur supprimé !`,
+      message: `Compte supprimé !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
     })
-    isModalDeleteAnnouncerOpen.value = false
-    filter.value = 'announcer'
+    isModalDeleteAccountOpen.value = false
+    filter.value = 'account'
     filter.value = ''
   } else {
     toaster.clearAll()
@@ -306,42 +230,46 @@ const onSubmit = handleSubmit(
   async (values) => {
     success.value = false
     // here you have access to the validated form values
-    console.log('announcer-create-success', values)
+    console.log('journal-create-success', values)
 
     try {
       const isSuccess = ref(false)
       if (isEdit.value == true) {
         const query2 = computed(() => {
           return {
-            action: 'updateAnnouncer',
+            action: 'updateJournal',
             token: token.value,
-            id: values.announcer._id,
+            id: values.journal._id,
           }
         })
 
-        const response = await useFetch('/api/sales/announcers', {
+        const response = await useFetch('/api/accountancy/journals', {
           method: 'put',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.announcer,
+            ...values.journal,
+            org: values.journal.org?._id,
+            accounts: journalAccounts.value?.map((item) => item._id) ?? [],
           },
         })
         isSuccess.value = response.data.value?.success
       } else {
         const query2 = computed(() => {
           return {
-            action: 'createAnnouncer',
+            action: 'createJournal',
             token: token.value,
           }
         })
 
-        const response = await useFetch('/api/sales/announcers', {
+        const response = await useFetch('/api/accountancy/journals', {
           method: 'post',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.announcer,
+            ...values.journal,
+            org: values.journal.org?._id,
+            accounts: journalAccounts.value?.map((item) => item._id) ?? [],
             _id: undefined,
           },
         })
@@ -353,14 +281,14 @@ const onSubmit = handleSubmit(
         toaster.show({
           title: 'Success',
           message:
-            isEdit.value == false ? `Annonceur créé !` : `Annonceur mis à jour`,
+            isEdit.value == false ? `Compte créé !` : `Compte mis à jour`,
           color: 'success',
           icon: 'ph:check',
           closable: true,
         })
-        isModalNewAnnouncerOpen.value = false
+        isModalNewAccountOpen.value = false
         resetForm()
-        filter.value = 'announcer'
+        filter.value = 'tax'
         filter.value = ''
       } else {
         toaster.clearAll()
@@ -395,7 +323,7 @@ const onSubmit = handleSubmit(
     success.value = false
 
     // here you have access to the error
-    console.log('announcer-create-error', error)
+    console.log('tax-create-error', error)
 
     // you can use it to scroll to the first error
     document.documentElement.scrollTo({
@@ -413,7 +341,7 @@ const onSubmit = handleSubmit(
         <BaseInput
           v-model="filter"
           icon="lucide:search"
-          placeholder="Filtrer annonceurs..."
+          placeholder="Filtrer journaux..."
           :classes="{
             wrapper: 'w-full sm:w-auto',
           }"
@@ -433,31 +361,17 @@ const onSubmit = handleSubmit(
           <option :value="100">100 per page</option>
         </BaseSelect>
         <BaseButton
-          @click=";(isModalNewAnnouncerOpen = true), (isEdit = false)"
+          @click=";(isModalNewAccountOpen = true), (isEdit = false)"
           color="primary"
           class="w-full sm:w-48"
           :disabled="
             authStore.user.appRole.name != UserRole.sale &&
-            authStore.user.appRole.name != UserRole.accountancy &&
-            authStore.user.appRole.name != UserRole.billing &&
+            authStore.user.appRole.name != UserRole.mediaPlanner &&
             authStore.user.appRole.name != UserRole.superAdmin
           "
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
-          <span>Nouvel Annonceur</span>
-        </BaseButton>
-        <BaseButton
-          :disabled="
-            authStore.user.appRole.name != UserRole.sale &&
-            authStore.user.appRole.name != UserRole.billing &&
-            authStore.user.appRole.name != UserRole.superAdmin
-          "
-          @click="isModalImportAnnouncerOpen = true"
-          color="primary"
-          class="w-full sm:w-52"
-        >
-          <Icon name="lucide:import" class="h-4 w-4" />
-          <span>Importer annonceurs</span>
+          <span>Nouveau Journal</span>
         </BaseButton>
       </template>
 
@@ -502,16 +416,25 @@ const onSubmit = handleSubmit(
                 <TairoTableHeading uppercase spaced> Code </TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>
-                  Annonceur
+                  Libellé
                 </TairoTableHeading>
 
-                <TairoTableHeading uppercase spaced> Tel </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> R/C </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> N/C </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>
-                  Categorie
+                  Société
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Statut </TairoTableHeading>
+
+                <TairoTableHeading uppercase spaced>
+                  Position
+                </TairoTableHeading>
+
+                <TairoTableHeading uppercase spaced>
+                  Comptes
+                </TairoTableHeading>
+
+                <TairoTableHeading uppercase spaced>
+                  Description
+                </TairoTableHeading>
+
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
               </template>
 
@@ -542,6 +465,7 @@ const onSubmit = handleSubmit(
                     />
                   </div>
                 </TairoTableCell>
+
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
@@ -551,92 +475,46 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
-                    <BaseAvatar
-                      :src="item.logo ?? '/img/avatars/company.svg'"
-                      :text="item.initials"
-                      :class="getRandomColor()"
-                    />
-                    <div class="ms-3 leading-none">
-                      <h4 class="font-sans text-sm font-medium">
-                        {{ item.name }}
-                      </h4>
-                      <p class="text-muted-400 font-sans text-xs">
-                        {{ item.email }}
-                      </p>
-                    </div>
+                    <span class="text-muted-400 font-sans text-xs">
+                      {{ item.label }}
+                    </span>
+                  </div>
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  <div class="flex items-center">
+                    <span class="text-muted-400 font-sans text-xs">
+                      {{ item.org?.name }}
+                    </span>
+                  </div>
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  <div class="flex items-center">
+                    <span class="text-muted-400 font-sans text-xs">
+                      {{ item.position }}
+                    </span>
+                  </div>
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  <div class="flex items-center">
+                    <span class="text-muted-400 font-sans text-xs">
+                      {{ item.accounts?.map((item) => item.code) }}
+                    </span>
                   </div>
                 </TairoTableCell>
 
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
-                      {{ item.phone }}
+                      {{ item.description ?? '-' }}
                     </span>
                   </div>
                 </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
-                      {{ item.rc }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
-                      {{ item.nc }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
-                      {{
-                        item.category == 'largeAccount'
-                          ? 'Grand Compte'
-                          : item.category == 'bank'
-                          ? 'Institution Bancaire'
-                          : item.category == 'school'
-                          ? 'Ecole'
-                          : item.category == 'PME'
-                          ? 'PME'
-                          : item.category == 'TPE'
-                          ? 'TPE'
-                          : ''
-                      }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell spaced class="capitalize">
-                  <BaseTag
-                    v-if="item.status === 'active'"
-                    color="success"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    Actif
-                  </BaseTag>
-                  <BaseTag
-                    v-else-if="item.status === 'inactive'"
-                    color="warning"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    Dormant
-                  </BaseTag>
-                </TairoTableCell>
+
                 <TairoTableCell spaced>
                   <div class="flex">
-                    <!-- <BaseButtonAction to="/bo/spots/orders" muted
-                      >commandes</BaseButtonAction
-                    > -->
                     <BaseButtonAction
                       class="mx-2"
-                      @click.prevent="selectAnnouncer(item)"
+                      @click.prevent="selectAccount(item)"
                       muted
                     >
                       <Icon name="lucide:eye" class="h-4 w-4"
@@ -644,16 +522,15 @@ const onSubmit = handleSubmit(
                     <BaseButtonAction
                       :disabled="
                         authStore.user.appRole.name != UserRole.sale &&
-                        authStore.user.appRole.name != UserRole.accountancy &&
-                        authStore.user.appRole.name != UserRole.billing &&
+                        authStore.user.appRole.name != UserRole.mediaPlanner &&
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
-                      @click="editAnnouncer(item)"
+                      @click="editAccount(item)"
                     >
                       <Icon name="lucide:edit" class="h-4 w-4"
                     /></BaseButtonAction>
                     <BaseButtonAction
-                      @click="confirmDeleteAnnouncer(item)"
+                      @click="confirmDeleteAccount(item)"
                       :disabled="
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
@@ -678,11 +555,11 @@ const onSubmit = handleSubmit(
       </div>
     </TairoContentWrapper>
 
-    <!-- Modal new Announcer -->
+    <!-- Modal new Account -->
     <TairoModal
-      :open="isModalNewAnnouncerOpen"
+      :open="isModalNewAccountOpen"
       size="xl"
-      @close="isModalNewAnnouncerOpen = false"
+      @close="isModalNewAccountOpen = false"
     >
       <template #header>
         <!-- Header -->
@@ -690,10 +567,10 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            {{ isEdit == true ? 'Mise à jour' : 'Nouvel' }} Annonceur
+            {{ isEdit == true ? 'Mise à jour' : 'Nouveau' }} Journal
           </h3>
 
-          <BaseButtonClose @click="isModalNewAnnouncerOpen = false" />
+          <BaseButtonClose @click="isModalNewAccountOpen = false" />
         </div>
       </template>
 
@@ -715,61 +592,10 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="announcer.name"
+                      name="journal.code"
                     >
                       <BaseInput
-                        label="Nom"
-                        icon="ph:user-duotone"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="announcer.email"
-                    >
-                      <BaseInput
-                        label="Email"
-                        icon="ph:globe-duotone"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="announcer.phone"
-                    >
-                      <BaseInput
-                        label="Numéro de téléphone"
-                        icon="ph:phone-duotone"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="announcer.rc"
-                    >
-                      <BaseInput
-                        label="Registre de commerce"
+                        label="Code"
                         icon="ph:file-duotone"
                         placeholder=""
                         :model-value="field.value"
@@ -780,13 +606,14 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                  <div class="col-span-12 md:col-span-6">
+
+                  <div class="col-span-12 md:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="announcer.nc"
+                      name="journal.label"
                     >
                       <BaseInput
-                        label="Numéro de contribuable"
+                        label="Libellé"
                         icon="ph:file-duotone"
                         placeholder=""
                         :model-value="field.value"
@@ -797,42 +624,67 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                </div>
-                <div class="grid grid-cols-12 gap-4 mt-4">
-                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="announcer.country"
+                      name="journal.position"
+                    >
+                      <BaseSelect
+                        label="Position *"
+                        icon="ph:funnel"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      >
+                        <option value="d">Debit</option>
+                        <option value="c">Credit</option>
+                      </BaseSelect>
+                    </Field>
+                  </div>
+                  <div class="col-span-12 sm:col-span-12 mt-2">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="journal.accounts"
                     >
                       <BaseListbox
-                        label="Pays"
-                        :items="appStore.countries"
+                        v-model="journalAccounts"
+                        label="Comptes"
+                        :items="allAccounts.data"
+                        placeholder=""
+                        :multiple-label="
+                              (value: any[], labelProperty?: string) => { 
+                                if (value.length === 0) { return 'Vide'; } else if (value.length > 2) {return `${value.length} elements`; } else if (value.length > 1) {return String(value?.[0]?.[labelProperty])+', '+String(value?.[1]?.[labelProperty]); } 
+                                return labelProperty ? String(value?.[0]?.[labelProperty]) :  String(value?.[0])+' : '+String(value?.[1]); }"
+                        :properties="{
+                          value: '_id',
+                          label: 'code',
+                          sublabel: 'label',
+                        }"
+                        multiple
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 sm:col-span-12 mt-2">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="journal.org"
+                    >
+                      <BaseListbox
+                        label="Société"
+                        :items="orgs.data"
+                        :classes="{
+                          wrapper: '!w-60',
+                        }"
                         :properties="{
                           value: '_id',
                           label: 'name',
-                          sublabel: 'abbr',
-                          media: 'flag',
+                          sublabel: 'email',
+                          media: '',
                         }"
-                        :model-value="field.value"
+                        v-model="currentOrg"
                         :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="announcer.city"
-                    >
-                      <BaseInput
-                        label="Ville"
-                        icon="ph:file-duotone"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
                       />
@@ -841,10 +693,10 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="announcer.address"
+                      name="journal.description"
                     >
                       <BaseInput
-                        label="Adresse"
+                        label="Description"
                         icon="ph:file-duotone"
                         placeholder=""
                         :model-value="field.value"
@@ -853,66 +705,6 @@ const onSubmit = handleSubmit(
                         @update:model-value="handleChange"
                         @blur="handleBlur"
                       />
-                    </Field>
-                  </div>
-                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="announcer.type"
-                    >
-                      <BaseSelect
-                        label="Type *"
-                        icon="ph:funnel"
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      >
-                        <option value="personal">Particulier</option>
-                        <option value="corporate">Entreprise</option>
-                      </BaseSelect>
-                    </Field>
-                  </div>
-                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="announcer.status"
-                    >
-                      <BaseSelect
-                        label="Status*"
-                        icon="ph:funnel"
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      >
-                        <option value="active">Actif</option>
-                        <option value="inactive">Dormand</option>
-                      </BaseSelect>
-                    </Field>
-                  </div>
-                  <div class="ltablet:col-span-12 col-span-12 lg:col-span-12">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="announcer.category"
-                    >
-                      <BaseSelect
-                        label="Categorie *"
-                        icon="ph:funnel"
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      >
-                        <option value="largeAccount">Grand Compte</option>
-                        <option value="bank">Institution Bancaire</option>
-                        <option value="school">Ecole</option>
-                        <option value="PME">PME</option>
-                        <option value="TPE">TPE</option>
-                      </BaseSelect>
                     </Field>
                   </div>
                 </div>
@@ -925,7 +717,7 @@ const onSubmit = handleSubmit(
         <!-- Footer -->
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
-            <BaseButton @click="isModalNewAnnouncerOpen = false"
+            <BaseButton @click="isModalNewAccountOpen = false"
               >Annuler</BaseButton
             >
 
@@ -937,78 +729,11 @@ const onSubmit = handleSubmit(
       </template>
     </TairoModal>
 
-    <!-- Modal import announcer file -->
-    <TairoModal
-      :open="isModalImportAnnouncerOpen"
-      size="xl"
-      @close="isModalImportAnnouncerOpen = false"
-    >
-      <template #header>
-        <!-- Header -->
-        <div class="flex w-full items-center justify-between p-4 md:p-6">
-          <h3
-            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
-          >
-            Import des annonceurs
-          </h3>
-
-          <BaseButtonClose @click="isModalImportAnnouncerOpen = false" />
-        </div>
-      </template>
-
-      <!-- Body -->
-      <BaseCard class="w-full">
-        <form
-          method="POST"
-          action=""
-          class="divide-muted-200 dark:divide-muted-700"
-          @submit.prevent="onSubmit"
-        >
-          <div
-            shape="curved"
-            class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
-          >
-            <div class="mx-auto flex w-full flex-col">
-              <div>
-                <div>
-                  <div class="col-span-12 sm:col-span-6 mt-2">
-                    <BaseInputFile
-                      v-model="inputAnnouncerFile"
-                      shape="rounded"
-                      label="Fichier"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </form>
-      </BaseCard>
-      <template #footer>
-        <!-- Footer -->
-        <div class="p-4 md:p-6">
-          <div class="flex gap-x-2">
-            <BaseButton @click="isModalImportAnnouncerOpen = false"
-              >Annuler</BaseButton
-            >
-
-            <BaseButton
-              color="primary"
-              flavor="solid"
-              @click="importAnnouncers()"
-            >
-              Importer
-            </BaseButton>
-          </div>
-        </div>
-      </template>
-    </TairoModal>
-
     <!-- Modal delete -->
     <TairoModal
-      :open="isModalDeleteAnnouncerOpen"
+      :open="isModalDeleteAccountOpen"
       size="sm"
-      @close="isModalDeleteAnnouncerOpen = false"
+      @close="isModalDeleteAccountOpen = false"
     >
       <template #header>
         <!-- Header -->
@@ -1016,10 +741,10 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Suppression d'un annonceur
+            Suppression d'un Journal
           </h3>
 
-          <BaseButtonClose @click="isModalDeleteAnnouncerOpen = false" />
+          <BaseButtonClose @click="isModalDeleteAccountOpen = false" />
         </div>
       </template>
 
@@ -1030,7 +755,7 @@ const onSubmit = handleSubmit(
             class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
           >
             Supprimer
-            <span class="text-red-500">{{ currentAnnouncer?.name }}</span> ?
+            <span class="text-red-500">{{ currentAccount?.name }}</span> ?
           </h3>
 
           <p
@@ -1045,14 +770,14 @@ const onSubmit = handleSubmit(
         <!-- Footer -->
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
-            <BaseButton @click="isModalDeleteAnnouncerOpen = false"
+            <BaseButton @click="isModalDeleteAccountOpen = false"
               >Annuler</BaseButton
             >
 
             <BaseButton
               color="primary"
               flavor="solid"
-              @click="deleteAnnouncer(currentAnnouncer)"
+              @click="deleteAccount(currentAccount)"
               >Suppimer</BaseButton
             >
           </div>
@@ -1067,7 +792,7 @@ const onSubmit = handleSubmit(
     >
       <div class="flex h-16 w-full items-center justify-between px-8">
         <BaseHeading tag="h3" size="lg" class="text-muted-800 dark:text-white">
-          <span>Détails Annonceur</span>
+          <span>Détails Journal</span>
         </BaseHeading>
         <BaseButtonIcon small @click="expanded = true">
           <Icon name="lucide:arrow-right" class="pointer-events-none h-4 w-4" />
@@ -1108,18 +833,18 @@ const onSubmit = handleSubmit(
         <div v-else class="mt-8" @click.>
           <div class="flex items-center justify-center">
             <BaseAvatar
-              :src="currentAnnouncer?.logo"
-              :text="currentAnnouncer.initials"
+              :src="currentAccount?.logo"
+              :text="currentAccount.initials"
               :class="getRandomColor()"
               size="2xl"
             />
           </div>
           <div class="text-center">
             <BaseHeading tag="h3" size="lg" class="mt-4">
-              <span>{{ currentAnnouncer?.name }}</span>
+              <span>{{ currentAccount?.name }}</span>
             </BaseHeading>
             <BaseParagraph size="sm" class="text-muted-400">
-              <span>{{ currentAnnouncer?.email }}</span>
+              <span>{{ currentAccount?.description }}</span>
             </BaseParagraph>
             <div class="my-4">
               <BaseParagraph
@@ -1153,7 +878,7 @@ const onSubmit = handleSubmit(
             </div>
             <div class="mt-6">
               <BaseButton shape="curved" class="w-full">
-                <span> Consulter l'état </span>
+                <span> Consulter </span>
               </BaseButton>
             </div>
           </div>

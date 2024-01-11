@@ -682,7 +682,12 @@ const onSubmit = handleSubmit(
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Code</TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>
+                  Journal
+                </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Type </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Motif </TairoTableHeading>
+
                 <TairoTableHeading uppercase spaced>
                   Beneficiaire
                 </TairoTableHeading>
@@ -695,7 +700,6 @@ const onSubmit = handleSubmit(
                 <TairoTableHeading uppercase spaced>
                   Montant
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Moyen </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Docs</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
@@ -740,6 +744,12 @@ const onSubmit = handleSubmit(
                   {{ new Date(item.date).toLocaleDateString('fr-FR') }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
+                  {{ item.journal?.label }}
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ item.docType?.label }}
+                </TairoTableCell>
+                <TairoTableCell light spaced>
                   {{ item.label }}
                 </TairoTableCell>
                 <TairoTableCell spaced>
@@ -751,7 +761,7 @@ const onSubmit = handleSubmit(
                       :text="item.initials"
                       :class="getRandomColor()"
                     />
-                    <div class="ms-3 leading-none">
+                    <div v-if="item.beneficiary" class="ms-3 leading-none">
                       <h4 class="font-sans text-sm font-medium">
                         {{ item.beneficiary?.firstName }}
                         {{ item.beneficiary?.lastName }}
@@ -759,6 +769,9 @@ const onSubmit = handleSubmit(
                       <p class="text-muted-400 font-sans text-xs">
                         {{ item.beneficiary?.email }}
                       </p>
+                    </div>
+                    <div v-else class="ms-3 leading-none">
+                      {{ item.extBeneficiary }}
                     </div>
                   </div>
                 </TairoTableCell>
@@ -771,7 +784,8 @@ const onSubmit = handleSubmit(
                     />
                     <div class="ms-3 leading-none">
                       <h4 class="font-sans text-sm font-medium">
-                        {{ item.authorizer?.name }}
+                        {{ item.authorizer?.firstName }}
+                        {{ item.authorizer?.lastName }}
                       </h4>
                       <p class="text-muted-400 font-sans text-xs">
                         {{ item.authorizer?.email }}
@@ -787,9 +801,6 @@ const onSubmit = handleSubmit(
                     new Intl.NumberFormat().format(Math.ceil(item.amount ?? 0))
                   }}
                   XAF
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{ item.paymentAccount?.label }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   <a
@@ -809,14 +820,14 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag
-                    v-if="item.authorizerValidated"
+                    v-if="item.validator"
                     color="success"
                     flavor="pastel"
                     shape="full"
                     condensed
                     class="font-medium"
                   >
-                    Confirmé
+                    Confirmée
                   </BaseTag>
                   <BaseTag
                     v-else

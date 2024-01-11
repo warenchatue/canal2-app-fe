@@ -211,7 +211,7 @@ export default defineAppConfig({
                 icon: { name: 'ph:chat-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Procedures',
+                name: 'Etat des clients',
                 to: '/bo/recovery/procedures',
                 icon: { name: 'ph:chat-duotone', class: 'w-4 h-4' },
               },
@@ -233,7 +233,17 @@ export default defineAppConfig({
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Rapports',
+                name: 'Types Pièces C.',
+                to: '/bo/accountancy/doc-types',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Journaux',
+                to: '/bo/accountancy/journals',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Etats',
                 // to: '/bo/pub/reports',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
