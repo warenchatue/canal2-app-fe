@@ -220,7 +220,7 @@ export default defineAppConfig({
           {
             name: 'Comptabilité',
             icon: { name: 'ph:money-duotone', class: 'w-5 h-5' },
-            activePath: '/bo/sav',
+            activePath: '/bo/accountancy',
             children: [
               {
                 name: 'Tableau de bord',
@@ -228,7 +228,7 @@ export default defineAppConfig({
                 icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Pièces comptables',
+                name: 'Bons de caisse',
                 to: '/bo/accountancy/accounting-docs',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
@@ -237,14 +237,37 @@ export default defineAppConfig({
                 to: '/bo/accountancy/doc-types',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
+
               {
-                name: 'Journaux',
+                name: 'Etats',
+                // to: '/bo/pub/reports',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+            ],
+          },
+          {
+            name: 'Creation',
+            icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
+            activePath: '/bo/creation',
+            children: [
+              {
+                name: 'Taxes',
+                to: '/bo/config/taxes',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Plan comptable',
+                to: '/bo/config/accounts',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Codes Journaux',
                 to: '/bo/accountancy/journals',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Etats',
-                // to: '/bo/pub/reports',
+                name: 'Plan de Tiers',
+                to: '/bo/accountancy/journals',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
             ],
@@ -298,16 +321,6 @@ export default defineAppConfig({
             icon: { name: 'lucide:settings', class: 'w-5 h-5' },
             activePath: '/bo/config',
             children: [
-              {
-                name: 'Taxes',
-                to: '/bo/config/taxes',
-                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Plan comptable',
-                to: '/bo/config/accounts',
-                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
-              },
               {
                 name: 'Modes de reglement',
                 to: '/bo/config/payment-methods',

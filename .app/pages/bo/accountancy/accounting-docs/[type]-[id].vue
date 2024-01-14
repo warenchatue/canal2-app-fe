@@ -8,10 +8,10 @@ import moment from 'moment'
 import { ToWords } from 'to-words'
 
 definePageMeta({
-  title: 'Pièces comptables',
+  title: 'Bons de Caisses',
   preview: {
-    title: 'Pièces comptables',
-    description: 'Gestion des Pièces comptables',
+    title: 'Bons de Caisses',
+    description: 'Gestion des Bons de Caisses',
     categories: ['bo', 'sales', 'orders'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
@@ -358,6 +358,8 @@ const zodSchema = z
       label: z.string(),
       amount: z.number().optional(),
       team: z.string().optional(),
+      invoiceNumber: z.string().optional(),
+      ref: z.string().optional(),
       extBeneficiary: z.string().optional(),
       journal: z
         .object({
@@ -440,21 +442,26 @@ function editAccountingDoc(currentAccountingDoc: any) {
     setFieldValue('accountingDoc.label', currentAccountingDoc.label)
     setFieldValue('accountingDoc.amount', currentAccountingDoc.amount)
     setFieldValue('accountingDoc.team', currentAccountingDoc.team)
+    setFieldValue('accountingDoc.ref', currentAccountingDoc.ref)
+    setFieldValue(
+      'accountingDoc.invoiceNumber',
+      currentAccountingDoc.invoiceNumber,
+    )
     setFieldValue(
       'accountingDoc.extBeneficiary',
       currentAccountingDoc.extBeneficiary,
     )
     if (currentAccountingDoc.beneficiary) {
-       setFieldValue('accountingDoc.beneficiary', {
-      id: currentAccountingDoc.beneficiary?._id,
-      name:
-        currentAccountingDoc.beneficiary?.firstName +
-        ' ' +
-        currentAccountingDoc.beneficiary?.lastName,
-      text: currentAccountingDoc.beneficiary?.phone,
-    })
+      setFieldValue('accountingDoc.beneficiary', {
+        id: currentAccountingDoc.beneficiary?._id,
+        name:
+          currentAccountingDoc.beneficiary?.firstName +
+          ' ' +
+          currentAccountingDoc.beneficiary?.lastName,
+        text: currentAccountingDoc.beneficiary?.phone,
+      })
     }
-   
+
     setFieldValue('accountingDoc.authorizer', {
       id: currentAccountingDoc.authorizer?._id,
       name:
@@ -893,7 +900,7 @@ const onSubmit = handleSubmit(
                   pageType == 'view'
                 "
                 :to="
-                  '/bo/accountancy/accounting-docs/edits-' +
+                  '/bo/accountancy/accounting-docs/edit-' +
                   currentAccountingDoc?._id
                 "
                 condensed
@@ -1007,7 +1014,7 @@ const onSubmit = handleSubmit(
                           weight="medium"
                           lead="none"
                         >
-                          Pièce comptable No:
+                          Bon de caisse No:
                         </BaseHeading>
                       </div>
                     </div>
@@ -1035,7 +1042,10 @@ const onSubmit = handleSubmit(
                         class="text-muted-500 dark:text-muted-400 text-sm font-light"
                       >
                         <p
-                          v-if="currentAccountingDoc?.beneficiary"
+                          v-if="
+                            currentAccountingDoc?.beneficiary ||
+                            currentAccountingDoc?.extBeneficiary
+                          "
                           class="text-muted-700 dark:text-muted-100 text-xs font-normal"
                         >
                           Beneficiare
@@ -1076,6 +1086,9 @@ const onSubmit = handleSubmit(
                             currentAccountingDoc?.beneficiary?.lastName
                           }}
                         </p>
+                        <p v-else class="text-xs">
+                          {{ currentAccountingDoc?.extBeneficiary }}
+                        </p>
                         <p class="mt-1 text-xs">
                           {{ currentAccountingDoc?.label }}
                         </p>
@@ -1105,6 +1118,7 @@ const onSubmit = handleSubmit(
                       class="text-muted-500 dark:text-muted-400 text-sm font-light"
                     >
                       <p
+                        v-if="currentAccountingDoc.journal"
                         class="text-muted-700 dark:text-muted-100 text-sm font-normal"
                       >
                         Journal:
@@ -1123,7 +1137,7 @@ const onSubmit = handleSubmit(
                     <div
                       class="text-muted-800 dark:text-muted-400 text-sm font-light"
                     >
-                      <p class="text-sm">
+                      <p v-if="currentAccountingDoc.journal" class="text-sm">
                         {{ currentAccountingDoc.journal?.label }}
                       </p>
                       <p class="text-sm mt-2">
@@ -1446,6 +1460,50 @@ const onSubmit = handleSubmit(
                             shape="straight"
                             label="Joindre un document"
                           />
+                        </div>
+                        <div class="col-span-12 md:col-span-6">
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="accountingDoc.invoiceNumber"
+                          >
+                            <BaseInput
+                              label="Numéro Facture"
+                              icon="ph:file-duotone"
+                              placeholder=""
+                              :model-value="field.value"
+                              :error="errorMessage"
+                              :disabled="isSubmitting"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
+                            />
+                          </Field>
+                        </div>
+                        <div class="col-span-12 md:col-span-6">
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="accountingDoc.ref"
+                          >
+                            <BaseInput
+                              label="Reference"
+                              icon="ph:file-duotone"
+                              placeholder=""
+                              :model-value="field.value"
+                              :error="errorMessage"
+                              :disabled="isSubmitting"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
+                            />
+                          </Field>
                         </div>
                       </div>
                     </div>

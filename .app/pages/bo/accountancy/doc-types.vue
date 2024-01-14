@@ -344,8 +344,8 @@ const onSubmit = handleSubmit(
           color="primary"
           class="w-full sm:w-48"
           :disabled="
-            authStore.user.appRole.name != UserRole.sale &&
-            authStore.user.appRole.name != UserRole.mediaPlanner &&
+            authStore.user.appRole.name != UserRole.billing &&
+            authStore.user.appRole.name != UserRole.accountancy &&
             authStore.user.appRole.name != UserRole.superAdmin
           "
         >
@@ -467,7 +467,8 @@ const onSubmit = handleSubmit(
                     <BaseButtonAction
                       :disabled="
                         authStore.user.appRole.name != UserRole.sale &&
-                        authStore.user.appRole.name != UserRole.mediaPlanner &&
+                        authStore.user.appRole.name != UserRole.billing &&
+                        authStore.user.appRole.name != UserRole.accountancy &&
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
                       @click="editAccount(item)"
@@ -477,6 +478,8 @@ const onSubmit = handleSubmit(
                     <BaseButtonAction
                       @click="confirmDeleteAccount(item)"
                       :disabled="
+                        authStore.user.appRole.name != UserRole.billing &&
+                        authStore.user.appRole.name != UserRole.accountancy &&
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
                       class="mx-2"

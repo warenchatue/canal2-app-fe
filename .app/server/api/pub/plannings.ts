@@ -115,6 +115,7 @@ function filterData(
     } else if (filter) {
       return [
         item.product?.product,
+        item.code,
         item.product?.package?.announcer?.name,
       ].some((item) => item.match(filterRe))
     }

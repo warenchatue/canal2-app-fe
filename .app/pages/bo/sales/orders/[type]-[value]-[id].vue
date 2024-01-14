@@ -709,6 +709,17 @@ const totalData = computed(() => {
     return acc + (item.quantity * item.rate * item.discount) / 100
   }, 0)
 
+  const tspValue = orderData.value.reduce((acc, item: any) => {
+    const baseAmount =
+      item.quantity * item.rate * (1 - item.discount / 100 ?? 0)
+    let tspAmount = 0
+    const tsp = item.taxes.filter((el: any) => el.code == 'TSP')
+    if (tsp.length == 1) {
+      tspAmount += baseAmount * (tsp[0].value / 100 ?? 0)
+    }
+    return acc + tspAmount
+  }, 0)
+
   const vatValue = orderData.value.reduce((acc, item: any) => {
     const baseAmount =
       item.quantity * item.rate * (1 - item.discount / 100 ?? 0)
@@ -718,7 +729,6 @@ const totalData = computed(() => {
     const tsp = item.taxes.filter((el: any) => el.code == 'TSP')
     if (tsp.length == 1) {
       tspAmount = baseAmount * (tsp[0].value / 100 ?? 0)
-      totalTaxes += tspAmount
     }
 
     const tva = item.taxes.filter((el: any) => el.code == 'TVA')
@@ -735,7 +745,35 @@ const totalData = computed(() => {
     }
     return acc + totalTaxes
   }, 0)
-  const total = subtotal - discount + vatValue
+
+  // const vatValue = orderData.value.reduce((acc, item: any) => {
+  //   const baseAmount =
+  //     item.quantity * item.rate * (1 - item.discount / 100 ?? 0)
+  //   let tspAmount = 0
+  //   let tvaAmount = 0
+  //   let totalTaxes = 0
+  //   const tsp = item.taxes.filter((el: any) => el.code == 'TSP')
+  //   if (tsp.length == 1) {
+  //     tspAmount = baseAmount * (tsp[0].value / 100 ?? 0)
+  //     totalTaxes += tspAmount
+  //   }
+
+  //   const tva = item.taxes.filter((el: any) => el.code == 'TVA')
+  //   if (tva.length == 1) {
+  //     tvaAmount = (baseAmount + tspAmount) * (tva[0].value / 100 ?? 0)
+  //     totalTaxes += tvaAmount
+  //   }
+
+  //   const otherTaxes = item.taxes.filter(
+  //     (el: any) => el.code != 'TSP' && el.code != 'TVA',
+  //   )
+  //   for (let index = 0; index < otherTaxes.length; index++) {
+  //     totalTaxes += baseAmount * (otherTaxes[index].value / 100 ?? 0)
+  //   }
+  //   return acc + totalTaxes
+  // }, 0)
+
+  const total = subtotal - discount + tspValue + vatValue
 
   return [
     {
@@ -751,7 +789,11 @@ const totalData = computed(() => {
       value: Math.ceil(subtotal - discount),
     },
     {
-      label: 'Taxes',
+      label: 'TSP',
+      value: Math.ceil(tspValue),
+    },
+    {
+      label: 'TVA',
       value: Math.ceil(vatValue),
     },
     {
@@ -926,7 +968,7 @@ const onSubmit = handleSubmit(
               ),
               amountHT:
                 totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 3].value
+                  ? totalData.value[totalData.value.length - 4].value
                   : 0,
               amount:
                 totalData.value.length > 0
@@ -966,7 +1008,7 @@ const onSubmit = handleSubmit(
               ),
               amountHT:
                 totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 3].value
+                  ? totalData.value[totalData.value.length - 4].value
                   : 0,
               amount:
                 totalData.value.length > 0
@@ -1370,6 +1412,12 @@ const onSubmit = handleSubmit(
                         >
                           N. Contribuable :
                         </p>
+                        <p
+                          v-if="currentOrderInvoice?.announcer?.niu"
+                          class="text-muted-700 dark:text-muted-100 mt-1 text-[9px] font-bold"
+                        >
+                          Numéro d'Identifiant Unique :
+                        </p>
                       </div>
                       <div
                         class="text-muted-800 dark:text-muted-400 text-sm font-normal"
@@ -1388,6 +1436,9 @@ const onSubmit = handleSubmit(
                         </p>
                         <p class="mt-1 text-[9px]">
                           {{ currentOrderInvoice?.announcer?.nc }}
+                        </p>
+                        <p class="mt-1 text-[9px]">
+                          {{ currentOrderInvoice?.announcer?.niu }}
                         </p>
                       </div>
                     </div>
@@ -2157,10 +2208,22 @@ const onSubmit = handleSubmit(
                                 : 'text-[10px] text-muted-800 dark:text-muted-200/70 font-bold'
                             "
                           >
-                            {{
-                              new Intl.NumberFormat('fr-FR').format(item.value)
-                            }}
-                            XAF
+                            <span v-if="item.label === 'Montant Dû'"
+                              >{{
+                                new Intl.NumberFormat('fr-FR').format(
+                                  item.value - (currentOrderInvoice?.paid ?? 0),
+                                )
+                              }}
+                              XAF</span
+                            >
+                            <span v-else
+                              >{{
+                                new Intl.NumberFormat('fr-FR').format(
+                                  item.value,
+                                )
+                              }}
+                              XAF</span
+                            >
                           </td>
                         </tr>
                       </tfoot>

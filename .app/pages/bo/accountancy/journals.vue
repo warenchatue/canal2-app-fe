@@ -111,7 +111,6 @@ const zodSchema = z
       code: z.string().min(1, VALIDATION_TEXT.CODE_REQUIRED),
       label: z.string(),
       accounts: z.string().optional(),
-      position: z.union([z.literal('d'), z.literal('c')]),
       org: z
         .object({
           _id: z.string(),
@@ -167,7 +166,6 @@ function editAccount(journal: any) {
   isEdit.value = true
   setFieldValue('journal._id', journal._id)
   setFieldValue('journal.code', journal.code)
-  setFieldValue('journal.position', journal.position)
   setFieldValue('journal.label', journal.label)
   setFieldValue('journal.org', journal.org)
   setFieldValue('journal.description', journal.description)
@@ -365,8 +363,8 @@ const onSubmit = handleSubmit(
           color="primary"
           class="w-full sm:w-48"
           :disabled="
-            authStore.user.appRole.name != UserRole.sale &&
-            authStore.user.appRole.name != UserRole.mediaPlanner &&
+            authStore.user.appRole.name != UserRole.billing &&
+            authStore.user.appRole.name != UserRole.accountancy &&
             authStore.user.appRole.name != UserRole.superAdmin
           "
         >
@@ -421,10 +419,6 @@ const onSubmit = handleSubmit(
 
                 <TairoTableHeading uppercase spaced>
                   Société
-                </TairoTableHeading>
-
-                <TairoTableHeading uppercase spaced>
-                  Position
                 </TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>
@@ -490,13 +484,6 @@ const onSubmit = handleSubmit(
                 <TairoTableCell light spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
-                      {{ item.position }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
                       {{ item.accounts?.map((item) => item.code) }}
                     </span>
                   </div>
@@ -521,8 +508,8 @@ const onSubmit = handleSubmit(
                     /></BaseButtonAction>
                     <BaseButtonAction
                       :disabled="
-                        authStore.user.appRole.name != UserRole.sale &&
-                        authStore.user.appRole.name != UserRole.mediaPlanner &&
+                        authStore.user.appRole.name != UserRole.billing &&
+                        authStore.user.appRole.name != UserRole.accountancy &&
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
                       @click="editAccount(item)"
@@ -532,6 +519,7 @@ const onSubmit = handleSubmit(
                     <BaseButtonAction
                       @click="confirmDeleteAccount(item)"
                       :disabled="
+                        authStore.user.appRole.name != UserRole.accountancy &&
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
                       class="mx-2"
@@ -624,25 +612,7 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-12">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="journal.position"
-                    >
-                      <BaseSelect
-                        label="Position *"
-                        icon="ph:funnel"
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      >
-                        <option value="d">Debit</option>
-                        <option value="c">Credit</option>
-                      </BaseSelect>
-                    </Field>
-                  </div>
+
                   <div class="col-span-12 sm:col-span-12 mt-2">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"

@@ -44,7 +44,7 @@ function filterData(
   const filterRe = new RegExp(filter, 'i')
   return data
     .filter((item) => {
-      return [item.name, item.email, item.status].some((item) =>
+      return [item.label ?? '', item.code ?? ''].some((item) =>
         item.match(filterRe),
       )
     })
@@ -75,7 +75,7 @@ async function findAll(token: string) {
       'Content-type': 'application/json',
     },
   }).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
 

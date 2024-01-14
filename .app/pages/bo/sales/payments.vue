@@ -787,7 +787,8 @@ const onSubmit = handleSubmit(
           Etat des paiments du
           {{ new Date(startDate).toLocaleDateString('fr-FR') }} au
           {{ new Date(endDate).toLocaleDateString('fr-FR') }} Pour la ville de
-          {{ currentTeam.toUpperCase() }} de la société
+          {{ currentTeam ? currentTeam.toUpperCase() : 'Douala et Yaounde' }} de
+          la société
           {{ currentOrg?.name ?? '' }}
         </h4>
         <h5
@@ -999,21 +1000,24 @@ const onSubmit = handleSubmit(
                   </TairoTableCell>
                   <TairoTableCell light spaced> </TairoTableCell>
                   <TairoTableCell light spaced> </TairoTableCell>
-
-                  <TairoTableCell light spaced> </TairoTableCell>
                   <TairoTableCell light spaced>
-                    {{
-                      new Intl.NumberFormat().format(
-                        Math.ceil(
-                          data.data
-                            .map((item) => item.amount)
-                            .reduce((accumulator, currentValue) => {
-                              return accumulator + currentValue
-                            }, 0) ?? 0,
-                        ),
-                      )
-                    }}
-                    XAF
+                    <span class="text-bold">Total:</span>
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    <span class="text-bold">
+                      {{
+                        new Intl.NumberFormat().format(
+                          Math.ceil(
+                            data.data
+                              .map((item) => item.amount)
+                              .reduce((accumulator, currentValue) => {
+                                return accumulator + currentValue
+                              }, 0) ?? 0,
+                          ),
+                        )
+                      }}
+                      XAF</span
+                    >
                   </TairoTableCell>
 
                   <TairoTableCell v-if="!isPrint" light spaced>

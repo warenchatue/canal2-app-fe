@@ -433,7 +433,8 @@ const success = ref(false)
           Etat des ventes du
           {{ new Date(startDate).toLocaleDateString('fr-FR') }} au
           {{ new Date(endDate).toLocaleDateString('fr-FR') }} Pour la ville de
-          {{ currentTeam.toUpperCase() }} de la société
+          {{ currentTeam ? currentTeam.toUpperCase() : 'Douala et Yaounde' }} de
+          la société
           {{ currentOrg?.name ?? '' }}
         </h4>
         <h5
@@ -713,9 +714,7 @@ const success = ref(false)
                   <TairoTableCell v-if="!isPrint" spaced> </TairoTableCell>
                   <TairoTableCell light spaced> </TairoTableCell>
                   <TairoTableCell spaced> </TairoTableCell>
-                  <TairoTableCell light spaced> </TairoTableCell>
-                  <TairoTableCell v-if="!isPrint" light spaced>
-                  </TairoTableCell>
+                  <TairoTableCell light spaced> Total: </TairoTableCell>
 
                   <TairoTableCell light spaced>
                     {{

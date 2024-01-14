@@ -163,6 +163,7 @@ const zodSchema = z
       email: z.string().optional(),
       rc: z.string().optional(),
       nc: z.string().optional(),
+      niu: z.string().optional(),
       phone: z.string().optional(),
       city: z.string().optional(),
       address: z.string().optional(),
@@ -204,6 +205,7 @@ const initialValues = computed<FormInput>(() => ({
     phone: '',
     rc: '',
     nc: '',
+    niu: '',
     status: '',
     type: '',
     category: '',
@@ -245,6 +247,7 @@ function editAnnouncer(announcer: any) {
   setFieldValue('announcer.address', announcer.address)
   setFieldValue('announcer.rc', announcer.rc)
   setFieldValue('announcer.nc', announcer.nc)
+  setFieldValue('announcer.niu', announcer.niu)
   setFieldValue('announcer.type', announcer.type)
   setFieldValue('announcer.status', announcer.status)
   setFieldValue('announcer.category', announcer.category)
@@ -787,6 +790,23 @@ const onSubmit = handleSubmit(
                     >
                       <BaseInput
                         label="Numéro de contribuable"
+                        icon="ph:file-duotone"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-12">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="announcer.niu"
+                    >
+                      <BaseInput
+                        label="Numéro d'Identifiant Unique"
                         icon="ph:file-duotone"
                         placeholder=""
                         :model-value="field.value"

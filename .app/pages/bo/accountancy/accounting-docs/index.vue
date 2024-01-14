@@ -5,10 +5,10 @@ import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Pièces comptable',
+  title: 'Bons de Caisse',
   preview: {
-    title: 'Pièces comptable',
-    description: 'Pièces comptable | Comptabilité',
+    title: 'Bons de Caisse',
+    description: 'Bons de Caisse | Comptabilité',
     categories: ['bo', 'Accountancy', 'accounting-docs'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
@@ -24,8 +24,15 @@ const filter = ref('')
 const perPage = ref(10)
 const isModalNewPackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
+const isModalSalesReportOpen = ref(false)
 const isEdit = ref(false)
+const isPrint = ref(false)
+const currentOrg = ref('')
+const currentTeam = ref('')
+const startDate = ref(new Date())
+const endDate = ref(new Date())
 const toaster = useToaster()
+
 // Check if can have access
 if (
   authStore.user.appRole?.name != UserRole.sale &&
@@ -68,17 +75,55 @@ const { data, pending } = await useFetch('/api/accountancy/accounting-docs', {
   query,
 })
 
-const { data: allUsers } = await useFetch('/api/users', {
+const { data: orgs } = await useFetch('/api/admin/orgs', {
   query,
-})
-const commercials = allUsers.value?.data.filter((e: any) => {
-  return e.appRole?.name == UserRole.sale
 })
 
 function confirmDeletePackage(spotPackage: any) {
   isModalDeletePackageOpen.value = true
   isEdit.value = false
   currentOrder.value = spotPackage
+}
+
+function openReportModal() {
+  setTimeout(() => {
+    isModalSalesReportOpen.value = true
+  }, 500)
+}
+
+async function printSalesReport() {
+  const queryP = computed(() => {
+    return {
+      filter: filter.value,
+      perPage: perPage.value,
+      page: page.value,
+      org: currentOrg.value._id,
+      team: currentTeam.value,
+      startDate: startDate.value,
+      endDate: endDate.value,
+      action: 'findAllFilters',
+      token: token.value,
+    }
+  })
+
+  const { data: reportData } = await useFetch(
+    '/api/accountancy/accounting-docs',
+    {
+      query: queryP,
+    },
+  )
+  data.value = reportData.value
+  isPrint.value = true
+  setTimeout(() => {
+    var printContents = document.getElementById(
+      'print-expenses-report',
+    ).innerHTML
+    var originalContents = document.body.innerHTML
+    document.body.innerHTML = printContents
+    window.print()
+    document.body.innerHTML = originalContents
+    location.reload()
+  }, 500)
 }
 
 async function deleteOrder(order: any) {
@@ -448,7 +493,7 @@ const onSubmit = handleSubmit(
         <BaseInput
           v-model="filter"
           icon="lucide:search"
-          placeholder="Filtrer pièces comptable..."
+          placeholder="Filtrer bon de caisse..."
           :classes="{
             wrapper: 'w-full sm:w-auto',
           }"
@@ -467,6 +512,14 @@ const onSubmit = handleSubmit(
           <option :value="50">50 per page</option>
           <option :value="100">100 per page</option>
         </BaseSelect>
+        <BaseButton
+          color="primary"
+          class="w-full sm:w-52"
+          @click="openReportModal()"
+        >
+          <Icon name="ph:file" class="h-4 w-4" />
+          <span>Rapports</span>
+        </BaseButton>
         <BaseButton
           color="primary"
           class="w-full sm:w-52"
@@ -611,7 +664,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span></span>
+                <span>Montant Total</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -629,7 +682,14 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalAnnouncers }}</span>
+                <span>
+                  {{
+                    new Intl.NumberFormat().format(
+                      Math.ceil(data?.metaData?.totalAmount ?? 0),
+                    )
+                  }}
+                  XAF</span
+                >
               </BaseHeading>
             </div>
             <div
@@ -642,243 +702,470 @@ const onSubmit = handleSubmit(
           </BaseCard>
         </div>
       </div>
-      <div>
-        <div v-if="!pending && data?.data.length === 0">
-          <BasePlaceholderPage
-            title="No matching results"
-            subtitle="Looks like we couldn't find any matching results for your search terms. Try other search terms."
-          >
-            <template #image>
-              <img
-                class="block dark:hidden"
-                src="/img/illustrations/placeholders/flat/placeholder-search-4.svg"
-                alt="Placeholder image"
-              />
-              <img
-                class="hidden dark:block"
-                src="/img/illustrations/placeholders/flat/placeholder-search-4-dark.svg"
-                alt="Placeholder image"
-              />
-            </template>
-          </BasePlaceholderPage>
-        </div>
-        <div v-else>
-          <div class="w-full">
-            <TairoTable shape="rounded">
-              <template #header>
-                <TairoTableHeading uppercase spaced class="p-4">
-                  <div class="flex items-center">
-                    <BaseCheckbox
-                      :model-value="isAllVisibleSelected"
-                      :indeterminate="
-                        selected.length > 0 && !isAllVisibleSelected
-                      "
-                      name="table-1-main"
-                      shape="rounded"
-                      class="text-primary-500"
-                      @click="toggleAllVisibleSelection"
-                    />
-                  </div>
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Code</TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Journal
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Type </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Motif </TairoTableHeading>
-
-                <TairoTableHeading uppercase spaced>
-                  Beneficiaire
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Ordonateur
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Societé
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Montant
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Docs</TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
-              </template>
-
-              <TairoTableRow v-if="selected.length > 0" :hoverable="false">
-                <TairoTableCell
-                  colspan="6"
-                  class="bg-success-100 text-success-700 dark:bg-success-700 dark:text-success-100 p-4"
-                >
-                  You have selected {{ selected.length }} items of the total
-                  {{ data?.total }} items.
-                  <a
-                    href="#"
-                    class="outline-none hover:underline focus:underline"
-                    >Click here to everything</a
-                  >
-                </TairoTableCell>
-              </TairoTableRow>
-
-              <TairoTableRow v-for="item in data?.data" :key="item.id">
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <BaseCheckbox
-                      v-model="selected"
-                      :value="item.id"
-                      :name="`item-checkbox-${item.id}`"
-                      shape="rounded"
-                      class="text-primary-500"
-                    />
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <NuxtLink
-                    class="text-primary-500 underline-offset-4 hover:underline"
-                    :to="'/bo/accountancy/accounting-docs/view-' + item._id"
-                  >
-                    {{ item.code }}
-                  </NuxtLink>
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{ new Date(item.date).toLocaleDateString('fr-FR') }}
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{ item.journal?.label }}
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{ item.docType?.label }}
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{ item.label }}
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <BaseAvatar
-                      :src="
-                        item.beneficiary?.logo ?? '/img/avatars/company.svg'
-                      "
-                      :text="item.initials"
-                      :class="getRandomColor()"
-                    />
-                    <div v-if="item.beneficiary" class="ms-3 leading-none">
-                      <h4 class="font-sans text-sm font-medium">
-                        {{ item.beneficiary?.firstName }}
-                        {{ item.beneficiary?.lastName }}
-                      </h4>
-                      <p class="text-muted-400 font-sans text-xs">
-                        {{ item.beneficiary?.email }}
-                      </p>
-                    </div>
-                    <div v-else class="ms-3 leading-none">
-                      {{ item.extBeneficiary }}
-                    </div>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <BaseAvatar
-                      :src="item.authorizer?.logo ?? '/img/avatars/company.svg'"
-                      :text="item.initials"
-                      :class="getRandomColor()"
-                    />
-                    <div class="ms-3 leading-none">
-                      <h4 class="font-sans text-sm font-medium">
-                        {{ item.authorizer?.firstName }}
-                        {{ item.authorizer?.lastName }}
-                      </h4>
-                      <p class="text-muted-400 font-sans text-xs">
-                        {{ item.authorizer?.email }}
-                      </p>
-                    </div>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{ item.org.name }}
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{
-                    new Intl.NumberFormat().format(Math.ceil(item.amount ?? 0))
-                  }}
-                  XAF
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <a
-                    v-if="item.contractUrl"
-                    class="mx-1 text-white bg-muted-600 p-2 rounded"
-                    :href="'/' + item.contractUrl"
-                    target="_blank"
-                    >C</a
-                  >
-                  <a
-                    v-if="item.invoice?.url"
-                    class="mx-1 text-white bg-muted-600 p-2 rounded"
-                    :href="'/' + item.invoice?.url"
-                    target="_blank"
-                    >F</a
-                  >
-                </TairoTableCell>
-                <TairoTableCell spaced class="capitalize">
-                  <BaseTag
-                    v-if="item.validator"
-                    color="success"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    Confirmée
-                  </BaseTag>
-                  <BaseTag
-                    v-else
-                    color="warning"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    Non confirmée
-                  </BaseTag>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex">
-                    <BaseButtonAction
-                      class="mx-2"
-                      :to="'/bo/accountancy/accounting-docs/view-' + item._id"
-                      muted
-                    >
-                      <Icon name="lucide:eye" class="h-4 w-4"
-                    /></BaseButtonAction>
-                    <BaseButtonAction
-                      :to="'/bo/accountancy/accounting-docs/edit-' + item._id"
-                    >
-                      <Icon name="lucide:edit" class="h-4 w-4" s
-                    /></BaseButtonAction>
-                    <BaseButtonAction
-                      @click="confirmDeletePackage(item)"
-                      class="mx-2"
-                      :disabled="
-                        authStore.user.appRole?.name != UserRole.superAdmin
-                      "
-                    >
-                      <Icon name="lucide:trash" class="h-4 w-4 text-red-500"
-                    /></BaseButtonAction>
-                  </div>
-                </TairoTableCell>
-              </TairoTableRow>
-            </TairoTable>
-          </div>
-          <div class="mt-6">
-            <BasePagination
-              :total-items="data?.total ?? 0"
-              :item-per-page="perPage"
-              :current-page="page"
-              shape="curved"
+      <div id="print-expenses-report" class="mx-2">
+        <div
+          v-if="isPrint"
+          class="flex justify-between items-center border-b-2 py-1"
+        >
+          <div shape="straight" class="">
+            <img
+              v-if="currentOrg?.logo?.includes('r2')"
+              class="h-16 pb-1 fit-content"
+              :src="currentOrg.logo"
             />
+            <img v-else class="h-32 max fit-content" :src="currentOrg.logo" />
+          </div>
+          <div class="flex justify-end">
+            <div>
+              <h5
+                class="font-heading text-right text-muted-900 text-xs font-medium leading-6 dark:text-white"
+              >
+                {{ currentOrg?.name ?? '' }}
+              </h5>
+              <h5
+                class="font-heading text-right text-muted-900 text-xs font-medium leading-6 dark:text-white"
+              >
+                {{ currentOrg?.email ?? '' }}
+              </h5>
+              <h5
+                class="font-heading text-right text-muted-900 text-xs font-medium leading-6 dark:text-white"
+              >
+                {{ currentOrg?.address ?? '' }}
+              </h5>
+            </div>
+          </div>
+        </div>
+        <div v-if="isPrint" shape="straight" class="border border-t-1"></div>
+        <h4
+          v-if="isPrint"
+          class="font-heading text-muted-900 text-xs font-medium pb-2 pt-1 px-2 leading-6 dark:text-white"
+        >
+          Etat des dépenses du
+          {{ new Date(startDate).toLocaleDateString('fr-FR') }} au
+          {{ new Date(endDate).toLocaleDateString('fr-FR') }} Pour la ville de
+          {{ currentTeam ? currentTeam.toUpperCase() : 'Douala et Yaounde' }} de
+          la société
+          {{ currentOrg?.name ?? '' }}
+        </h4>
+        <h5
+          v-if="isPrint"
+          class="font-heading text-muted-900 text-xs font-medium leading-6 py-1 px-2 dark:text-white"
+        >
+          Fait par {{ authStore.user.firstName }} {{ authStore.user.lastName }}
+        </h5>
+        <div>
+          <div v-if="!pending && data?.data.length === 0">
+            <BasePlaceholderPage
+              title="No matching results"
+              subtitle="Looks like we couldn't find any matching results for your search terms. Try other search terms."
+            >
+              <template #image>
+                <img
+                  class="block dark:hidden"
+                  src="/img/illustrations/placeholders/flat/placeholder-search-4.svg"
+                  alt="Placeholder image"
+                />
+                <img
+                  class="hidden dark:block"
+                  src="/img/illustrations/placeholders/flat/placeholder-search-4-dark.svg"
+                  alt="Placeholder image"
+                />
+              </template>
+            </BasePlaceholderPage>
+          </div>
+          <div v-else>
+            <div class="w-full">
+              <TairoTable shape="rounded">
+                <template #header>
+                  <TairoTableHeading
+                    v-if="!isPrint"
+                    uppercase
+                    spaced
+                    class="p-4"
+                  >
+                    <div class="flex items-center">
+                      <BaseCheckbox
+                        :model-value="isAllVisibleSelected"
+                        :indeterminate="
+                          selected.length > 0 && !isAllVisibleSelected
+                        "
+                        name="table-1-main"
+                        shape="rounded"
+                        class="text-primary-500"
+                        @click="toggleAllVisibleSelection"
+                      />
+                    </div>
+                  </TairoTableHeading>
+                  <TairoTableHeading uppercase spaced>Code</TairoTableHeading>
+                  <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
+                  <TairoTableHeading v-if="!isPrint" uppercase spaced>
+                    Journal
+                  </TairoTableHeading>
+                  <TairoTableHeading v-if="!isPrint" uppercase spaced>
+                    Pièce
+                  </TairoTableHeading>
+                  <TairoTableHeading uppercase spaced> Ref </TairoTableHeading>
+                  <TairoTableHeading uppercase spaced>
+                    Motif
+                  </TairoTableHeading>
+                  <TairoTableHeading uppercase spaced>
+                    Montant
+                  </TairoTableHeading>
+
+                  <TairoTableHeading uppercase spaced>
+                    Beneficiaire
+                  </TairoTableHeading>
+                  <TairoTableHeading uppercase spaced>
+                    Ordonateur
+                  </TairoTableHeading>
+                  <TairoTableHeading uppercase spaced>
+                    Societé
+                  </TairoTableHeading>
+
+                  <TairoTableHeading v-if="!isPrint" uppercase spaced
+                    >Docs</TairoTableHeading
+                  >
+                  <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
+                  <TairoTableHeading v-if="!isPrint" uppercase spaced
+                    >Action</TairoTableHeading
+                  >
+                </template>
+
+                <TairoTableRow v-if="selected.length > 0" :hoverable="false">
+                  <TairoTableCell
+                    colspan="6"
+                    class="bg-success-100 text-success-700 dark:bg-success-700 dark:text-success-100 p-4"
+                  >
+                    You have selected {{ selected.length }} items of the total
+                    {{ data?.total }} items.
+                    <a
+                      href="#"
+                      class="outline-none hover:underline focus:underline"
+                      >Click here to everything</a
+                    >
+                  </TairoTableCell>
+                </TairoTableRow>
+
+                <TairoTableRow v-for="item in data?.data" :key="item.id">
+                  <TairoTableCell v-if="!isPrint" spaced>
+                    <div class="flex items-center">
+                      <BaseCheckbox
+                        v-model="selected"
+                        :value="item.id"
+                        :name="`item-checkbox-${item.id}`"
+                        shape="rounded"
+                        class="text-primary-500"
+                      />
+                    </div>
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    <NuxtLink
+                      class="text-primary-500 underline-offset-4 hover:underline"
+                      :to="'/bo/accountancy/accounting-docs/view-' + item._id"
+                    >
+                      {{ item.code }}
+                    </NuxtLink>
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    {{ new Date(item.date).toLocaleDateString('fr-FR') }}
+                  </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" light spaced>
+                    {{ item.journal?.code }}
+                  </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" light spaced>
+                    {{ item.docType?.label }}
+                  </TairoTableCell>
+
+                  <TairoTableCell light spaced>
+                    {{ item.ref ?? item.invoiceNumber }}
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    {{ item.label }}
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    {{
+                      new Intl.NumberFormat().format(
+                        Math.ceil(item.amount ?? 0),
+                      )
+                    }}
+                    XAF
+                  </TairoTableCell>
+
+                  <TairoTableCell spaced>
+                    <div class="flex items-center">
+                      <BaseAvatar
+                        :src="
+                          item.beneficiary?.logo ?? '/img/avatars/company.svg'
+                        "
+                        :text="item.initials"
+                        :class="getRandomColor()"
+                      />
+                      <div v-if="item.beneficiary" class="ms-3 leading-none">
+                        <h4 class="font-sans text-sm font-medium">
+                          {{ item.beneficiary?.firstName }}
+                          {{ item.beneficiary?.lastName }}
+                        </h4>
+                        <p class="text-muted-400 font-sans text-xs">
+                          {{ item.beneficiary?.email }}
+                        </p>
+                      </div>
+                      <div v-else class="ms-3 leading-none">
+                        {{ item.extBeneficiary }}
+                      </div>
+                    </div>
+                  </TairoTableCell>
+                  <TairoTableCell spaced>
+                    <div class="flex items-center">
+                      <BaseAvatar
+                        :src="
+                          item.authorizer?.logo ?? '/img/avatars/company.svg'
+                        "
+                        :text="item.initials"
+                        :class="getRandomColor()"
+                      />
+                      <div class="ms-3 leading-none">
+                        <h4 class="font-sans text-sm font-medium">
+                          {{ item.authorizer?.firstName }}
+                          {{ item.authorizer?.lastName }}
+                        </h4>
+                        <p class="text-muted-400 font-sans text-xs">
+                          {{ item.authorizer?.email }}
+                        </p>
+                      </div>
+                    </div>
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    {{ item.org.name }}
+                  </TairoTableCell>
+
+                  <TairoTableCell v-if="!isPrint" light spaced>
+                    <a
+                      v-if="item.contractUrl"
+                      class="mx-1 text-white bg-muted-600 p-2 rounded"
+                      :href="'/' + item.contractUrl"
+                      target="_blank"
+                      >C</a
+                    >
+                    <a
+                      v-if="item.invoice?.url"
+                      class="mx-1 text-white bg-muted-600 p-2 rounded"
+                      :href="'/' + item.invoice?.url"
+                      target="_blank"
+                      >F</a
+                    >
+                  </TairoTableCell>
+                  <TairoTableCell spaced class="capitalize">
+                    <BaseTag
+                      v-if="item.validator"
+                      color="success"
+                      flavor="pastel"
+                      shape="full"
+                      condensed
+                      class="font-medium"
+                    >
+                      Confirmée
+                    </BaseTag>
+                    <BaseTag
+                      v-else
+                      color="warning"
+                      flavor="pastel"
+                      shape="full"
+                      condensed
+                      class="font-medium"
+                    >
+                      Non confirmée
+                    </BaseTag>
+                  </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" spaced>
+                    <div class="flex">
+                      <BaseButtonAction
+                        class="mx-2"
+                        :to="'/bo/accountancy/accounting-docs/view-' + item._id"
+                        muted
+                      >
+                        <Icon name="lucide:eye" class="h-4 w-4"
+                      /></BaseButtonAction>
+                      <BaseButtonAction
+                        :to="'/bo/accountancy/accounting-docs/edit-' + item._id"
+                      >
+                        <Icon name="lucide:edit" class="h-4 w-4" s
+                      /></BaseButtonAction>
+                      <BaseButtonAction
+                        @click="confirmDeletePackage(item)"
+                        class="mx-2"
+                        :disabled="
+                          authStore.user.appRole?.name != UserRole.superAdmin &&
+                          authStore.user.appRole?.name != UserRole.accountancy
+                        "
+                      >
+                        <Icon name="lucide:trash" class="h-4 w-4 text-red-500"
+                      /></BaseButtonAction>
+                    </div>
+                  </TairoTableCell>
+                </TairoTableRow>
+                <TairoTableRow class="border !border-t-2" v-if="isPrint">
+                  <TairoTableCell spaced> </TairoTableCell>
+                  <TairoTableCell light spaced> </TairoTableCell>
+                  <TairoTableCell light spaced> </TairoTableCell>
+                  <TairoTableCell light spaced>Total: </TairoTableCell>
+
+                  <TairoTableCell v-if="!isPrint" light spaced>
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    {{
+                      new Intl.NumberFormat().format(
+                        Math.ceil(
+                          data.data
+                            .map((item) => item.amount)
+                            .reduce((accumulator, currentValue) => {
+                              return accumulator + currentValue
+                            }, 0) ?? 0,
+                        ),
+                      )
+                    }}
+                    XAF
+                  </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" light spaced>
+                  </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" light spaced>
+                  </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" light spaced>
+                  </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" spaced> </TairoTableCell>
+                </TairoTableRow>
+              </TairoTable>
+            </div>
+            <div v-if="!isPrint" class="mt-6">
+              <BasePagination
+                :total-items="data?.total ?? 0"
+                :item-per-page="perPage"
+                :current-page="page"
+                shape="curved"
+              />
+            </div>
           </div>
         </div>
       </div>
     </TairoContentWrapper>
+
+    <!-- Modal import new report -->
+    <TairoModal
+      :open="isModalSalesReportOpen"
+      size="xl"
+      @close="isModalSalesReportOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Rapport des dépenses
+          </h3>
+
+          <BaseButtonClose @click="isModalSalesReportOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <BaseCard class="w-full">
+        <form
+          method="POST"
+          action=""
+          class="divide-muted-200 dark:divide-muted-700"
+        >
+          <div
+            shape="curved"
+            class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
+          >
+            <div class="mx-auto flex w-full flex-col">
+              <div>
+                <div class="col-span-12 sm:col-span-6 mt-2">
+                  <Field
+                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    name="report.org"
+                  >
+                    <BaseListbox
+                      label="Société"
+                      :items="orgs.data"
+                      :classes="{
+                        wrapper: '!w-60',
+                      }"
+                      :properties="{
+                        value: '_id',
+                        label: 'name',
+                        sublabel: 'email',
+                        media: '',
+                      }"
+                      v-model="currentOrg"
+                      :error="errorMessage"
+                      @update:model-value="handleChange"
+                      @blur="handleBlur"
+                    />
+                  </Field>
+                </div>
+                <div class="col-span-12 md:col-span-6 py-5">
+                  <Field
+                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    name="report.team"
+                  >
+                    <BaseSelect
+                      label="Equipe"
+                      icon="ph:funnel"
+                      v-model="currentTeam"
+                      :error="errorMessage"
+                      @update:model-value="handleChange"
+                      @blur="handleBlur"
+                    >
+                      <option value="douala">Douala</option>
+                      <option value="yaounde">Yaoundé</option>
+                    </BaseSelect>
+                  </Field>
+                </div>
+                <div class="flex justify-between pt-5">
+                  <div class="col-span-12 md:col-span-6 mt-2">
+                    <label for="start">Date debut: </label>
+                    <input
+                      type="date"
+                      id="start"
+                      name="report-start"
+                      v-model="startDate"
+                    />
+                  </div>
+                  <div class="col-span-12 md:col-span-6 mt-2">
+                    <label for="start">Date de fin: </label>
+                    <input
+                      type="date"
+                      id="end"
+                      name="report-start"
+                      v-model="endDate"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </BaseCard>
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalSalesReportOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="printSalesReport()"
+            >
+              Visualiser
+            </BaseButton>
+          </div>
+        </div>
+      </template>
+    </TairoModal>
 
     <!-- Modal delete -->
     <TairoModal

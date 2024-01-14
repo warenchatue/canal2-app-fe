@@ -102,7 +102,6 @@ const zodSchema = z
       _id: z.string().optional(),
       code: z.string().min(1, VALIDATION_TEXT.CODE_REQUIRED),
       label: z.string(),
-      journal: z.string(),
       position: z.union([z.literal('d'), z.literal('c')]),
       description: z.string(),
     }),
@@ -127,7 +126,6 @@ const initialValues = computed<FormInput>(() => ({
   account: {
     code: '',
     label: '',
-    journal: '',
     description: '',
     position: 'c',
   },
@@ -349,8 +347,8 @@ const onSubmit = handleSubmit(
           color="primary"
           class="w-full sm:w-48"
           :disabled="
-            authStore.user.appRole.name != UserRole.sale &&
-            authStore.user.appRole.name != UserRole.mediaPlanner &&
+            authStore.user.appRole.name != UserRole.billing &&
+            authStore.user.appRole.name != UserRole.accountancy &&
             authStore.user.appRole.name != UserRole.superAdmin
           "
         >
@@ -397,18 +395,12 @@ const onSubmit = handleSubmit(
                     />
                   </div>
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Code </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>
+                  Numéro de compte
+                </TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>
                   Libellé
-                </TairoTableHeading>
-
-                <TairoTableHeading uppercase spaced>
-                  Position
-                </TairoTableHeading>
-
-                <TairoTableHeading uppercase spaced>
-                  Journal
                 </TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>
@@ -460,20 +452,6 @@ const onSubmit = handleSubmit(
                     </span>
                   </div>
                 </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
-                      {{ item.position }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
-                      {{ item.journal }}
-                    </span>
-                  </div>
-                </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
@@ -493,8 +471,8 @@ const onSubmit = handleSubmit(
                     /></BaseButtonAction>
                     <BaseButtonAction
                       :disabled="
-                        authStore.user.appRole.name != UserRole.sale &&
-                        authStore.user.appRole.name != UserRole.mediaPlanner &&
+                        authStore.user.appRole.name != UserRole.billing &&
+                        authStore.user.appRole.name != UserRole.accountancy &&
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
                       @click="editAccount(item)"
@@ -504,6 +482,8 @@ const onSubmit = handleSubmit(
                     <BaseButtonAction
                       @click="confirmDeleteAccount(item)"
                       :disabled="
+                        authStore.user.appRole.name != UserRole.billing &&
+                        authStore.user.appRole.name != UserRole.accountancy &&
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
                       class="mx-2"
@@ -567,7 +547,7 @@ const onSubmit = handleSubmit(
                       name="account.code"
                     >
                       <BaseInput
-                        label="Code"
+                        label="Numéro de compte"
                         icon="ph:file-duotone"
                         placeholder=""
                         :model-value="field.value"
@@ -612,33 +592,6 @@ const onSubmit = handleSubmit(
                       >
                         <option value="d">Debit</option>
                         <option value="c">Credit</option>
-                      </BaseSelect>
-                    </Field>
-                  </div>
-                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-12">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="account.journal"
-                    >
-                      <BaseSelect
-                        label="Journal *"
-                        icon="ph:funnel"
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      >
-                        <option value="purchaseJournal">
-                          Journal des achats
-                        </option>
-                        <option value="saleJournal">Journal des ventes</option>
-                        <option value="treasuryJournal">
-                          Journaux de tresorerie
-                        </option>
-                        <option value="otherOperationJournal">
-                          Journal des operations diverses
-                        </option>
                       </BaseSelect>
                     </Field>
                   </div>
@@ -707,7 +660,7 @@ const onSubmit = handleSubmit(
             class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
           >
             Supprimer
-            <span class="text-red-500">{{ currentAccount?.name }}</span> ?
+            <span class="text-red-500">{{ currentAccount?.label }}</span> ?
           </h3>
 
           <p

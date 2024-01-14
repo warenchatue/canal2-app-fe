@@ -23,14 +23,14 @@ export default defineEventHandler(async (event) => {
     }
   } else if (action == 'findAllFilters') {
     const response = await findAll(token)
-    var startTime = new Date(startDate).getTime()
-    var endTime = new Date(endDate).getTime()
+    var startTime = new Date(new Date(startDate).toLocaleDateString()).getTime()
+    var endTime = new Date(new Date(endDate).toLocaleDateString()).getTime()
     response.data = response.data.filter((e: any) => {
       var itemTime = new Date(new Date(e.date).toLocaleDateString()).getTime()
 
       return (
         e.org._id == org &&
-        e.team == team &&
+        (team.length > 1 ? e.team == team : true) &&
         itemTime >= startTime &&
         itemTime <= endTime
       )
@@ -77,7 +77,7 @@ function filterData(
   if (!filter) {
     return data
       .sort(function (a, b) {
-        return a.code < b.code ? 1 : -1
+        return a.date < b.date ? 1 : -1
       })
       .slice(offset, offset + perPage)
   }
@@ -90,7 +90,7 @@ function filterData(
       )
     })
     .sort(function (a, b) {
-      return a.code < b.code ? 1 : -1
+      return a.date < b.date ? 1 : -1
     })
     .slice(offset, offset + perPage)
 }
