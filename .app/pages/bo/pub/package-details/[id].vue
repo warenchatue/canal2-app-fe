@@ -291,6 +291,29 @@ function checkEmptyPlanning(h: any) {
   }
 }
 
+function totalPerHour(h: any) {
+  var plannedSpots = data.value?.data?.plannings?.filter(
+    (p: any) =>
+      moment(p.date).format('M/yyyy HH:mm') ==
+      activeDate.value.getMonth() +
+        1 +
+        '/' +
+        activeDate.value.getFullYear() +
+        ' ' +
+        h.name,
+  )
+  return plannedSpots.length
+}
+
+function totalPerMonth() {
+  var plannedSpots = data.value?.data?.plannings?.filter(
+    (p: any) =>
+      moment(p.date).format('M/yyyy') ==
+      activeDate.value.getMonth() + 1 + '/' + activeDate.value.getFullYear(),
+  )
+  return plannedSpots.length
+}
+
 function checkSpot(d: number, hour: string) {
   const hourArray = hour.split(':')
   var date = new Date(
@@ -317,9 +340,9 @@ function checkSpot(d: number, hour: string) {
       return [plannedSpots[0].product.tag, 'warning', plannedSpots[0]._id]
     }
 
-    console.log(dateP)
-    console.log(dateNow)
-    console.log('')
+    // console.log(dateP)
+    // console.log(dateNow)
+    // console.log('')
     if (datePTime < dateNowTime) {
       console.log('danger')
     } else {
@@ -852,12 +875,16 @@ const onSubmit = handleSubmit(
 
             <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
               <Icon name="ph:globe" class="h-5 w-5" />
-              <BaseText size="sm">Pays: {{data?.data?.announcer.country?.name}}</BaseText>
+              <BaseText size="sm"
+                >Pays: {{ data?.data?.announcer.country?.name }}</BaseText
+              >
             </div>
 
             <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
               <Icon name="ph:globe" class="h-5 w-5" />
-              <BaseText size="sm">Adresse: {{data?.data?.announcer?.address}}</BaseText>
+              <BaseText size="sm"
+                >Adresse: {{ data?.data?.announcer?.address }}</BaseText
+              >
             </div>
 
             <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
@@ -1690,10 +1717,14 @@ const onSubmit = handleSubmit(
               {{ activeDate.getFullYear() }}</span
             ></BaseText
           >
-
           <BaseText size="sm"
             >Total Commandés :
             <span class="text-primary-500">{{ data?.data?.quantities }} </span>
+          </BaseText>
+
+          <BaseText size="sm"
+            >Total du mois :
+            <span class="text-primary-500">{{ totalPerMonth() }} </span>
           </BaseText>
 
           <BaseText size="sm"
@@ -1808,6 +1839,13 @@ const onSubmit = handleSubmit(
                     >{{ dayOfWeek(d)[0] }}
                   </span>
                 </BaseHeading>
+                <div
+                  class="text-muted-800 dark:text-white pb-2 pt-2 !w-10 flex justify-center border-r"
+                >
+                  <span class="text-center text-[10px] px-auto pr-1"
+                    >Total
+                  </span>
+                </div>
               </div>
               <div class="border-b-2 flex justify-start py-0">
                 <BaseHeading
@@ -1821,12 +1859,30 @@ const onSubmit = handleSubmit(
                 >
                   <span class="text-center py-2">{{ d }}</span>
                 </BaseHeading>
+                <BaseHeading
+                  as="h4"
+                  size="sm"
+                  weight="light"
+                  lead="tight"
+                  class="text-muted-800 dark:text-white pb-2 pt-1 !w-10 border-r flex justify-center"
+                >
+                  <span class="text-center py-2">#</span>
+                </BaseHeading>
               </div>
 
               <div class="border-b-2 flex justify-start">
                 <BaseHeading
                   v-for="d in activeDays"
                   :key="d"
+                  as="h4"
+                  size="sm"
+                  weight="light"
+                  lead="tight"
+                  class="text-muted-800 dark:text-white pb-2 !w-10 flex justify-center border-r"
+                >
+                  <span class="text-center py-2"> # </span>
+                </BaseHeading>
+                <BaseHeading
                   as="h4"
                   size="sm"
                   weight="light"
@@ -1868,6 +1924,11 @@ const onSubmit = handleSubmit(
                         checkSpot(d, h.code)[0]
                       }}</span>
                     </BaseButton>
+                  </div>
+                  <div
+                    class="text-muted-800 dark:text-white -mt-1 !w-10 flex justify-center items-center border-r"
+                  >
+                    {{ totalPerHour(h) }}
                   </div>
                 </div>
               </div>
