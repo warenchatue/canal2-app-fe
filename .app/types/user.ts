@@ -5,6 +5,7 @@ export enum UserRole {
   sale = 'Commercial',
   saleTag = 'commercial',
   respSaleTag = 'resp-commercial',
+  adminSale = 'admin-Commercial',
   billing = 'Facturation',
   billingTag = 'facturation',
   respBillingTag = 'resp-facturation',

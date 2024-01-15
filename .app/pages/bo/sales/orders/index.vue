@@ -30,6 +30,7 @@ const toaster = useToaster()
 // Check if can have access
 if (
   authStore.user.appRole?.name != UserRole.sale &&
+  authStore.user.appRole?.name != UserRole.adminSale &&
   authStore.user.appRole?.name != UserRole.billing &&
   authStore.user.appRole?.name != UserRole.admin &&
   authStore.user.appRole?.name != UserRole.accountancy &&
@@ -71,9 +72,6 @@ const { data, pending } = await useFetch('/api/sales/orders', {
 
 const { data: allUsers } = await useFetch('/api/users', {
   query,
-})
-const commercials = allUsers.value?.data.filter((e: any) => {
-  return e.appRole?.name == UserRole.sale
 })
 
 function confirmDeletePackage(spotPackage: any) {

@@ -44,6 +44,7 @@ const dates = ref({
 // Check if can have access
 if (
   authStore.user.appRole?.name != UserRole.sale &&
+    authStore.user.appRole?.name != UserRole.adminSale &&
   authStore.user.appRole?.name != UserRole.billing &&
   authStore.user.appRole?.name != UserRole.admin &&
   authStore.user.appRole?.name != UserRole.accountancy &&

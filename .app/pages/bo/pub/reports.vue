@@ -31,6 +31,8 @@ const toaster = useToaster()
 // Check if can have access
 if (
   authStore.user.appRole.name != UserRole.sale &&
+  authStore.user.appRole?.name != UserRole.adminSale &&
+  authStore.user.appRole?.name != UserRole.admin &&
   authStore.user.appRole.name != UserRole.superAdmin
 ) {
   toaster.clearAll()
@@ -803,7 +805,9 @@ const onSubmit = handleSubmit(
                   {{ item.label }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  {{ item.order?.manager?.firstName ?? item.creator?.firstName }}
+                  {{
+                    item.order?.manager?.firstName ?? item.creator?.firstName
+                  }}
                   {{ item.order?.manager?.lastName ?? item.creator?.lastName }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
