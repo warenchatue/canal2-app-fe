@@ -22,7 +22,7 @@ const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(10)
+const perPage = ref(50)
 const isModalNewPackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
@@ -140,7 +140,9 @@ const { data: allUsers } = await useFetch('/api/users', {
   query,
 })
 const adminsUser = allUsers.value?.data.filter((e: any) => {
-  return e.appRole?.name == UserRole.admin
+  return (
+    e.appRole?.name == UserRole.admin || e.appRole?.name == UserRole.superAdmin
+  )
 })
 function editPackage(campaign: any) {
   isModalNewPackageOpen.value = true
@@ -153,6 +155,7 @@ function editPackage(campaign: any) {
   setFieldValue('campaign.numberProducts', campaign.numberProducts)
   setFieldValue('campaign.period', campaign.period)
   setFieldValue('campaign.org', campaign.org)
+  setFieldValue('campaign.adminValidator', campaign.adminValidator)
   setFieldValue('campaign.invoice', {
     id: campaign.invoice._id,
     name: campaign.invoice.code,
@@ -168,7 +171,6 @@ function editPackage(campaign: any) {
     name: campaign.announcer.name,
     text: campaign.announcer.phone,
   })
-  setFieldValue('campaign.adminValidator', campaign.adminValidator)
 }
 
 function confirmDeletePackage(campaign: any) {

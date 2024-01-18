@@ -44,7 +44,7 @@ const dates = ref({
 // Check if can have access
 if (
   authStore.user.appRole?.name != UserRole.sale &&
-    authStore.user.appRole?.name != UserRole.adminSale &&
+  authStore.user.appRole?.name != UserRole.adminSale &&
   authStore.user.appRole?.name != UserRole.billing &&
   authStore.user.appRole?.name != UserRole.admin &&
   authStore.user.appRole?.name != UserRole.accountancy &&
@@ -159,6 +159,10 @@ const finalOrders = allOrders.value?.data.filter((e: any) => {
 
 const paymentAccounts = accounts.value?.data.filter((e: any) => {
   return e.position == 'd'
+})
+
+const saleAccounts = accounts.value?.data.filter((e: any) => {
+  return e.code == '7011'
 })
 
 const pageType = computed(() => route.params.type)
@@ -305,6 +309,7 @@ async function addInvoicePayment() {
       data: {
         invoiceId: currentOrderInvoice.value._id,
         invoiceCode: currentOrderInvoice.value.code,
+        city: currentOrderInvoice.value.team,
       },
     },
   })
@@ -1178,7 +1183,7 @@ const onSubmit = handleSubmit(
         </BaseButton>
       </template>
       <form method="POST" action="" @submit.prevent="onSubmit">
-        <div class="mx-auto max-w-5xl py-5">
+        <div class="mx-auto max-w-7xl py-5">
           <div class="mb-4 flex items-center justify-between">
             <div>
               <BaseHeading as="h2" size="xl" weight="medium" lead="none">
@@ -1927,6 +1932,10 @@ const onSubmit = handleSubmit(
                             {{ item.id + 1 }}
                           </td>
                           <td
+                            v-if="!isPrint"
+                            class="text-muted-800 dark:text-muted-400 text-left text-[9px] sm:table-cell"
+                          ></td>
+                          <td
                             style="white-space: pre-wrap; word-wrap: break-word"
                             class="text-muted-800 dark:text-muted-400 !w-48 px-3 py-4 text-left font-medium text-[9px] sm:table-cell"
                           >
@@ -1974,7 +1983,7 @@ const onSubmit = handleSubmit(
                             </p>
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right font-medium text-xs sm:pe-6 md:pe-0"
+                            class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right font-medium text-[10px] sm:pe-6 md:pe-0"
                           >
                             {{
                               new Intl.NumberFormat('fr-FR').format(
@@ -2085,7 +2094,7 @@ const onSubmit = handleSubmit(
                                 >
                                   <BaseListbox
                                     label=""
-                                    :items="accounts.data"
+                                    :items="saleAccounts"
                                     :classes="{
                                       wrapper: 'w-16',
                                     }"
@@ -2178,7 +2187,7 @@ const onSubmit = handleSubmit(
                             <div></div>
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right text-sm sm:pe-6 md:pe-0"
+                            class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right text-[10px] sm:pe-6 md:pe-0"
                           >
                             {{
                               new Intl.NumberFormat('fr-FR').format(

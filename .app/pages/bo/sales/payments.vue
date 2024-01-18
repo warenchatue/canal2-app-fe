@@ -859,6 +859,9 @@ const onSubmit = handleSubmit(
                   <TairoTableHeading uppercase spaced>
                     Montant règlement
                   </TairoTableHeading>
+                  <TairoTableHeading uppercase spaced>
+                    Ville
+                  </TairoTableHeading>
                   <TairoTableHeading v-if="!isPrint" uppercase spaced
                     >Statut</TairoTableHeading
                   >
@@ -941,6 +944,9 @@ const onSubmit = handleSubmit(
                       )
                     }}
                     XAF
+                  </TairoTableCell>
+                  <TairoTableCell light spaced
+                    >{{ item.data?.city?.toUpperCase() ?? 'DOUALA' }}
                   </TairoTableCell>
 
                   <TairoTableCell v-if="!isPrint" spaced class="capitalize">

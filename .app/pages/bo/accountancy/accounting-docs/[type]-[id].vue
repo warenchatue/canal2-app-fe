@@ -1814,11 +1814,14 @@ const onSubmit = handleSubmit(
                     </div>
                   </div>
                 </div>
-                <div class="mt-2 p-8 flex justify-end">
+                <div class="mt-2 p-8 flex justify-between">
                   <div class="dark:text-muted-400">
                     <BaseParagraph size="xs">
-                      Le service comptable
+                      Signature Bénéficiaire
                     </BaseParagraph>
+                  </div>
+                  <div class="dark:text-muted-400">
+                    <BaseParagraph size="xs"> Signature Caisse </BaseParagraph>
                   </div>
                 </div>
                 <footer

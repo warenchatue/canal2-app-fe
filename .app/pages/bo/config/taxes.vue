@@ -489,7 +489,8 @@ const onSubmit = handleSubmit(
                     <BaseButtonAction
                       :disabled="
                         authStore.user.appRole.name != UserRole.sale &&
-                        authStore.user.appRole.name != UserRole.mediaPlanner &&
+                        authStore.user.appRole.name != UserRole.accountancy &&
+                        authStore.user.appRole.name != UserRole.admin &&
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
                       @click="editTax(item)"

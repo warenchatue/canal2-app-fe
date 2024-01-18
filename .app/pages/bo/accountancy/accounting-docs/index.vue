@@ -813,6 +813,10 @@ const onSubmit = handleSubmit(
                   </TairoTableHeading>
 
                   <TairoTableHeading uppercase spaced>
+                    Ville
+                  </TairoTableHeading>
+
+                  <TairoTableHeading uppercase spaced>
                     Beneficiaire
                   </TairoTableHeading>
                   <TairoTableHeading uppercase spaced>
@@ -879,8 +883,12 @@ const onSubmit = handleSubmit(
                   <TairoTableCell light spaced>
                     {{ item.ref ?? item.invoiceNumber }}
                   </TairoTableCell>
-                  <TairoTableCell light spaced>
-                    {{ item.label }}
+                  <TairoTableCell
+                    style="white-space: pre-wrap; word-wrap: break-word"
+                    light
+                    spaced
+                  >
+                    <div class="!w-64">{{ item.label }}</div>
                   </TairoTableCell>
                   <TairoTableCell light spaced>
                     {{
@@ -889,6 +897,9 @@ const onSubmit = handleSubmit(
                       )
                     }}
                     XAF
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    {{ item.team.toUpperCase() }}
                   </TairoTableCell>
 
                   <TairoTableCell spaced>

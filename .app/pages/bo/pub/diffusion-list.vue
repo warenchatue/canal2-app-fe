@@ -26,7 +26,10 @@ const filter = ref('')
 const perPage = ref(25)
 const isModalImportPlaylistOpen = ref(false)
 const isModalConfirmDiffusionOpen = ref(false)
+const isModalNewPlanningOpen = ref(false)
 const playedHour = ref('')
+const currentHour = ref({})
+const isEdit = ref(false)
 
 const initialDates = {
   start: new Date(),
@@ -67,6 +70,31 @@ const query = computed(() => {
 const { data, pending, error, refresh } = await useFetch('/api/pub/plannings', {
   query,
 })
+
+const { data: allHours } = await useFetch('/api/pub/hours', {
+  query,
+})
+
+const transformedAllHours = allHours.value?.data.map((e: any) => {
+  const invoice = {
+    id: e._id,
+    name: e.code,
+  }
+  return invoice
+})
+
+function filterItems(query?: string, items?: any[]) {
+  if (!query || !items) {
+    return items ?? []
+  }
+
+  // search by name or text
+  return items.filter((item) => {
+    const nameMatches = item?.name?.toLowerCase().includes(query.toLowerCase())
+    // const textMatches = item?.text?.toLowerCase().includes(query.toLowerCase())
+    return nameMatches
+  })
+}
 
 const inputPlayListFile = ref<FileList | null>(null)
 const payListFile = ref<File | null>(null)
@@ -111,6 +139,16 @@ const success = ref(false)
 function selectPlanning(planning: any) {
   isModalConfirmDiffusionOpen.value = true
   loading.value = true
+  setTimeout(() => {
+    currentPlanning.value = planning
+    loading.value = false
+  }, 10)
+}
+
+function editPlanning(planning: any) {
+  isModalNewPlanningOpen.value = true
+  loading.value = true
+  isEdit.value = true
   setTimeout(() => {
     currentPlanning.value = planning
     loading.value = false
@@ -188,6 +226,61 @@ async function updatePosition(curP: any, isInc: boolean) {
     toaster.show({
       title: 'Success',
       message: `Position mise à jour !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    filter.value = 'planning'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Oops',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+}
+
+async function updateHour() {
+  const query2 = computed(() => {
+    return {
+      action: 'updatePlanning',
+      token: token.value,
+      id: currentPlanning.value._id,
+    }
+  })
+  const hourArray = currentHour.value?.name.split(':')
+  var date = new Date(
+    new Date(currentPlanning.value?.date).getFullYear(),
+    new Date(currentPlanning.value?.date).getMonth(),
+    parseInt(new Date(currentPlanning.value?.date).getDate()),
+    parseInt(hourArray[0]),
+    parseInt(hourArray[1]),
+  )
+
+  const response = await useFetch('/api/pub/plannings', {
+    method: 'put',
+    headers: { 'Content-Type': 'application/json' },
+    query: query2,
+    body: {
+      ...currentPlanning.value,
+      hour: currentHour.value.id,
+      product: currentPlanning.value.product._id,
+      date: date.toISOString(),
+      position: date.toISOString(),
+    },
+  })
+
+  if (response.data?.value?.success) {
+    success.value = true
+    isModalNewPlanningOpen.value = false
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Heure mise à jour !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
@@ -571,7 +664,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+7.8%</span>
+              <span>+0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -612,7 +705,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-danger-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>-2.7%</span>
+              <span>-0%</span>
               <Icon name="lucide:trending-down" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en baisse</span>
             </div>
@@ -653,7 +746,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+4.5%</span>
+              <span>+0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -694,7 +787,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+4.5%</span>
+              <span>+0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -944,23 +1037,32 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
 
                 <TairoTableCell spaced>
-                  <BaseButtonAction
-                    @click.prevent="selectPlanning(item)"
-                    muted
-                    :disabled="
-                      authStore.user.appRole.name != UserRole.broadcast &&
-                      authStore.user.appRole.name != UserRole.superAdmin
-                    "
-                    :class="{
-                      '!text-orange-400':
-                        item.isManualPlay == false && item.isAutoPlay == false,
-                      '!text-success-500':
-                        item.isManualPlay == true || item.isAutoPlay == true,
-                    }"
-                  >
-                    <Icon name="lucide:check" class="h-4 w-4" />
-                    valider</BaseButtonAction
-                  >
+                  <div class="flex justify-center">
+                    <BaseButtonAction
+                      class="mx-2"
+                      @click.prevent="editPlanning(item)"
+                    >
+                      <Icon name="lucide:edit" class="h-4 w-4" />
+                    </BaseButtonAction>
+                    <BaseButtonAction
+                      @click.prevent="selectPlanning(item)"
+                      muted
+                      :disabled="
+                        authStore.user.appRole.name != UserRole.broadcast &&
+                        authStore.user.appRole.name != UserRole.superAdmin
+                      "
+                      :class="{
+                        '!text-orange-400':
+                          item.isManualPlay == false &&
+                          item.isAutoPlay == false,
+                        '!text-success-500':
+                          item.isManualPlay == true || item.isAutoPlay == true,
+                      }"
+                    >
+                      <Icon name="lucide:check" class="h-4 w-4" />
+                      valider</BaseButtonAction
+                    >
+                  </div>
                 </TairoTableCell>
               </TairoTableRow>
             </TairoTable>
@@ -1203,6 +1305,83 @@ const onSubmit = handleSubmit(
               color="primary"
               flavor="solid"
               @click="confirmDiffusion(currentPlanning)"
+              >Valider</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal new planning -->
+    <TairoModal
+      :open="isModalNewPlanningOpen"
+      size="sm"
+      @close="isModalNewPlanningOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            {{ isEdit ? 'Mise à jour planning': 'Nouveau planning' }}  
+          </h3>
+
+          <BaseButtonClose @click="isModalNewPlanningOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <h3
+            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
+          >
+            Diffusion de:
+            <span class="text-primary-500">{{
+              currentPlanning?.product?.message
+            }}</span>
+            à
+            <span class="text-primary-500">{{
+              currentPlanning?.hour?.code
+            }}</span>
+            ?
+          </h3>
+          <div class="ltablet:col-span-6 col-span-12 lg:col-span-6 my-2">
+            <BaseAutocomplete
+              v-model="currentHour"
+              :error="errorMessage"
+              :disabled="isSubmitting"
+              :items="transformedAllHours"
+              :display-value="(item: any) => item.name || ''"
+              :filter-items="filterItems"
+              icon="lucide:clock"
+              placeholder="e.g. 07:25"
+              label="Heure"
+              clearable
+              :clear-value="''"
+            >
+              <template #empty="value"> Aucun resultat </template>
+            </BaseAutocomplete>
+          </div>
+
+          <p
+            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est reversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalNewPlanningOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton color="primary" flavor="solid" @click="updateHour()"
               >Valider</BaseButton
             >
           </div>

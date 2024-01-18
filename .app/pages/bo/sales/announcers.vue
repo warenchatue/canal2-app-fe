@@ -685,7 +685,7 @@ const onSubmit = handleSubmit(
     <!-- Modal new Announcer -->
     <TairoModal
       :open="isModalNewAnnouncerOpen"
-      size="xl"
+      size="3xl"
       @close="isModalNewAnnouncerOpen = false"
     >
       <template #header>
@@ -733,7 +733,7 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                  <div class="col-span-12 md:col-span-6">
+                  <div class="col-span-12 md:col-span-4">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="announcer.email"
@@ -750,7 +750,7 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                  <div class="col-span-12 md:col-span-6">
+                  <div class="col-span-12 md:col-span-4">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="announcer.phone"
@@ -767,7 +767,7 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                  <div class="col-span-12 md:col-span-6">
+                  <div class="col-span-12 md:col-span-4">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="announcer.rc"
@@ -801,7 +801,7 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                  <div class="col-span-12 md:col-span-12">
+                  <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="announcer.niu"
@@ -820,7 +820,7 @@ const onSubmit = handleSubmit(
                   </div>
                 </div>
                 <div class="grid grid-cols-12 gap-4 mt-4">
-                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                  <div class="ltablet:col-span-4 col-span-12 lg:col-span-4">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="announcer.country"
@@ -842,7 +842,7 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                  <div class="col-span-12 md:col-span-6">
+                  <div class="col-span-12 md:col-span-4">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="announcer.city"
@@ -859,7 +859,7 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                  <div class="col-span-12 md:col-span-12">
+                  <div class="col-span-12 md:col-span-4">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="announcer.address"
@@ -876,7 +876,7 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                  <div class="ltablet:col-span-4 col-span-12 lg:col-span-4">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="announcer.type"
@@ -895,7 +895,7 @@ const onSubmit = handleSubmit(
                       </BaseSelect>
                     </Field>
                   </div>
-                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                  <div class="ltablet:col-span-4 col-span-12 lg:col-span-4">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="announcer.status"
@@ -914,7 +914,7 @@ const onSubmit = handleSubmit(
                       </BaseSelect>
                     </Field>
                   </div>
-                  <div class="ltablet:col-span-12 col-span-12 lg:col-span-12">
+                  <div class="ltablet:col-span-4 col-span-4 lg:col-span-4">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="announcer.category"

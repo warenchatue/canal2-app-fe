@@ -251,7 +251,7 @@ export default defineAppConfig({
             activePath: '/bo/creation',
             children: [
               {
-                name: 'Taxes',
+                name: 'Impots et Taxes',
                 to: '/bo/config/taxes',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
