@@ -65,8 +65,12 @@ const query = computed(() => {
   }
 })
 
-const { data, pending, error, refresh } = await useFetch('/api/pub/hours', {
+const { data, pending, refresh } = await useFetch('/api/pub/hours', {
   query,
+})
+
+watch(route, value => {
+  refresh()
 })
 
 const selected = ref<number[]>([])

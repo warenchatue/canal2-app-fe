@@ -31,6 +31,7 @@ const isPrint = ref(false)
 const toaster = useToaster()
 const currentOrg = ref('')
 const currentTeam = ref('')
+const isLoading = ref(false)
 const dates = ref({
   start: new Date(),
   end: new Date(),
@@ -175,7 +176,7 @@ function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
     selected.value = []
   } else {
-    selected.value = data.value?.data.map((item) => item.id) ?? []
+    selected.value = data.value?.data?.map((item) => item._id) ?? []
   }
 }
 
@@ -222,6 +223,9 @@ const success = ref(false)
           color="primary"
           class="w-full sm:w-52"
           to="/bo/sales/orders/new-invoice-0"
+          @click="isLoading = true"
+          :loading="isLoading"
+          :disabled="isLoading"
         >
           <Icon name="ph:plus" class="h-4 w-4" />
           <span>Nouvelle facture</span>
@@ -554,13 +558,13 @@ const success = ref(false)
                   </TairoTableCell>
                 </TairoTableRow>
 
-                <TairoTableRow v-for="item in data?.data" :key="item.id">
+                <TairoTableRow v-for="item in data?.data" :key="item._id">
                   <TairoTableCell v-if="!isPrint" spaced>
                     <div class="flex items-center">
                       <BaseCheckbox
                         v-model="selected"
-                        :value="item.id"
-                        :name="`item-checkbox-${item.id}`"
+                        :value="item._id"
+                        :name="`item-checkbox-${item._id}`"
                         shape="rounded"
                         class="text-primary-500"
                       />
@@ -574,8 +578,11 @@ const success = ref(false)
                       {{ item.code }}
                     </NuxtLink>
                   </TairoTableCell>
-                  <TairoTableCell spaced class="!w-64">
-                    <div class="flex items-center">
+                  <TairoTableCell>
+                    <div
+                      style="white-space: pre-wrap; word-wrap: break-word"
+                      class="flex items-center"
+                    >
                       <BaseAvatar
                         v-if="!isPrint"
                         :src="
@@ -584,7 +591,7 @@ const success = ref(false)
                         :text="item.initials"
                         :class="getRandomColor()"
                       />
-                      <div class="ms-3 leading-none">
+                      <div class="!w-40 ms-3 leading-none">
                         <p
                           class="font-sans text-xs !w-64 break-words font-medium"
                         >

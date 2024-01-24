@@ -7,6 +7,7 @@ import {
 } from './config/routes-rules'
 
 export default defineNuxtConfig({
+  ssr: true,
   extends: [
     /**
      * App layers: these are the layers that contains specific features
@@ -78,7 +79,7 @@ export default defineNuxtConfig({
       // nuxt-seo-kit config
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL,
       siteName: 'DinoEs by Digital Innova',
-      siteDescription: 'Schedule platform',
+      siteDescription: 'ERP platform',
       language: 'fr',
     },
   },
@@ -105,7 +106,7 @@ export default defineNuxtConfig({
   nitro: {
     prerender: {
       crawlLinks: false,
-      routes: ['/', '/dashboards'],
+      routes: [],
     },
     esbuild: {
       options: {

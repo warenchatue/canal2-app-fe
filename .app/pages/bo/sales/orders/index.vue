@@ -27,6 +27,7 @@ const isModalDeletePackageOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
 const isEdit = ref(false)
 const toaster = useToaster()
+const isLoading = ref(false)
 // Check if can have access
 if (
   authStore.user.appRole?.name != UserRole.sale &&
@@ -129,7 +130,7 @@ function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
     selected.value = []
   } else {
-    selected.value = data.value?.data.map((item) => item.id) ?? []
+    selected.value = data.value?.data.map((item) => item._id) ?? []
   }
 }
 
@@ -470,6 +471,9 @@ const onSubmit = handleSubmit(
           color="primary"
           class="w-full sm:w-52"
           to="/bo/sales/orders/new-order-0"
+          @click="isLoading = true"
+          :loading="isLoading"
+          :disabled="isLoading"
         >
           <Icon name="ph:plus" class="h-4 w-4" />
           <span>Nouvau devis</span>
@@ -712,13 +716,13 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
               </TairoTableRow>
 
-              <TairoTableRow v-for="item in data?.data" :key="item.id">
+              <TairoTableRow v-for="item in data?.data" :key="item._id">
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseCheckbox
                       v-model="selected"
-                      :value="item.id"
-                      :name="`item-checkbox-${item.id}`"
+                      :value="item._id"
+                      :name="`item-checkbox-${item._id}`"
                       shape="rounded"
                       class="text-primary-500"
                     />
@@ -733,13 +737,16 @@ const onSubmit = handleSubmit(
                   </NuxtLink>
                 </TairoTableCell>
                 <TairoTableCell spaced>
-                  <div class="flex items-center">
+                  <div
+                    style="white-space: pre-wrap; word-wrap: break-word"
+                    class="flex items-center"
+                  >
                     <BaseAvatar
                       :src="item.announcer?.logo ?? '/img/avatars/company.svg'"
                       :text="item.initials"
                       :class="getRandomColor()"
                     />
-                    <div class="ms-3 leading-none">
+                    <div class="!w-40 ms-3 leading-none">
                       <h4 class="font-sans text-sm font-medium">
                         {{ item.announcer?.name }}
                       </h4>

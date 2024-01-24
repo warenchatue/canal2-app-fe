@@ -95,10 +95,6 @@ const query = computed(() => {
   }
 })
 
-const { data } = await useFetch('/api/pub/packages', {
-  query,
-})
-
 const { data: allOrders } = await useFetch('/api/sales/orders', {
   query,
 })
@@ -150,7 +146,11 @@ const transformedAnnouncers = announcers.value?.data.map((e: any) => {
 })
 
 const commercials = allUsers.value?.data.filter((e: any) => {
-  return e.appRole?.name == UserRole.sale
+  return (
+    e.appRole?.name == UserRole.sale ||
+    e.appRole?.name == UserRole.billing ||
+    e.appRole?.name == UserRole.admin
+  )
 })
 
 const finalOrders = allOrders.value?.data.filter((e: any) => {
@@ -1140,6 +1140,7 @@ const onSubmit = handleSubmit(
           color="primary"
           class="w-full sm:w-40"
           @click="onSubmit"
+          :disabled="isSubmitting"
         >
           <Icon name="ph:pen" class="h-4 w-4" />
           <span>Créer</span>
@@ -1338,7 +1339,7 @@ const onSubmit = handleSubmit(
                         <BaseHeading
                           as="h1"
                           size="2xl"
-                          weight="semibold"
+                          weight="bold"
                           lead="none"
                         >
                           {{ pageValue == 'order' ? 'Devis' : 'Facture' }} No:
@@ -1346,14 +1347,15 @@ const onSubmit = handleSubmit(
                       </div>
                     </div>
                     <div class="flex gap-12">
-                      <div
-                        class="text-muted-500 dark:text-muted-400 text-sm font-light"
-                      >
-                        <p
-                          class="text-muted-800 dark:text-muted-100 text-xl font-bold"
+                      <div class="text-muted-900 dark:text-muted-400 text-sm">
+                        <BaseHeading
+                          as="h1"
+                          size="2xl"
+                          weight="bold"
+                          lead="none"
                         >
                           {{ currentOrderInvoice?.code }}
-                        </p>
+                        </BaseHeading>
                       </div>
                     </div>
                   </div>
@@ -1376,7 +1378,7 @@ const onSubmit = handleSubmit(
                         </BaseHeading>
                         <BaseParagraph
                           size="sm"
-                          class="text-muted-800 dark:text-muted-400 font-semibold"
+                          class="text-muted-800 dark:text-muted-400 font-semibold !w-64"
                         >
                           {{ currentOrderInvoice?.announcer?.name }}
                         </BaseParagraph>
@@ -2221,7 +2223,7 @@ const onSubmit = handleSubmit(
                             <span v-if="item.label === 'Montant Dû'"
                               >{{
                                 new Intl.NumberFormat('fr-FR').format(
-                                  item.value - (currentOrderInvoice?.paid ?? 0),
+                                  item.value,
                                 )
                               }}
                               XAF</span

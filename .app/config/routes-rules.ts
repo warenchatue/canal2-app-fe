@@ -1,6 +1,5 @@
-import { isProduction } from 'std-env'
-
-const staticAssetsRule = isProduction
+const isProd = false
+const staticAssetsRule = isProd
   ? {
       headers: {
         'Cache-Control': 'public, max-age=31536000',
@@ -8,7 +7,7 @@ const staticAssetsRule = isProduction
     }
   : {}
 
-const staticPageRule = isProduction
+const staticPageRule = isProd
   ? {
       prerender: true,
       cache: {
@@ -27,22 +26,9 @@ export const demoRules = {
   '/img/**': staticAssetsRule,
   '/shiki/**': staticAssetsRule,
   '/api/**': staticAssetsRule,
-  '/dashboards/**': staticPageRule,
-  '/layouts/**': staticPageRule,
-  '/admin/**': staticPageRule,
-  '/donations/**': staticPageRule,
-  '/funds-raising/**': staticPageRule,
-  '/funds-raising/**/**': staticPageRule,
-  '/org/**': staticPageRule,
-  '/auth/**': staticPageRule,
 }
 
 export const landingRules = {
   '/_ipx/**': staticAssetsRule,
   '/': staticPageRule,
-  '/app': staticPageRule,
-}
-
-export const documentationRules = {
-  '/documentation/**': staticPageRule,
 }

@@ -1723,11 +1723,6 @@ const onSubmit = handleSubmit(
           </BaseText>
 
           <BaseText size="sm"
-            >Total du mois :
-            <span class="text-primary-500">{{ totalPerMonth() }} </span>
-          </BaseText>
-
-          <BaseText size="sm"
             >Période :
             <span class="text-primary-500">{{ data.data?.period }}</span>
           </BaseText>
@@ -1818,6 +1813,19 @@ const onSubmit = handleSubmit(
                     class="text-muted-800 dark:text-white pb-2 pt-2 text-center"
                   >
                     <span>{{ h.name }}</span>
+                  </BaseHeading>
+                </div>
+              </div>
+              <div>
+                <div class="border-b-2">
+                  <BaseHeading
+                    as="h4"
+                    size="sm"
+                    weight="light"
+                    lead="tight"
+                    class="text-muted-800 dark:text-white pb-2 pt-2 text-center"
+                  >
+                    <span>Total</span>
                   </BaseHeading>
                 </div>
               </div>
@@ -1931,6 +1939,28 @@ const onSubmit = handleSubmit(
                     {{ totalPerHour(h) }}
                   </div>
                 </div>
+              </div>
+              <div class="border-b-2 flex justify-start">
+                <BaseHeading
+                  v-for="d in activeDays"
+                  :key="d"
+                  as="h4"
+                  size="sm"
+                  weight="light"
+                  lead="tight"
+                  class="text-muted-800 dark:text-white pb-2 !w-10 flex justify-center border-r"
+                >
+                  <span class="text-center py-2"> # </span>
+                </BaseHeading>
+                <BaseHeading
+                  as="h4"
+                  size="sm"
+                  weight="light"
+                  lead="tight"
+                  class="text-muted-900 dark:text-white pb-2 !w-10 flex justify-center border-r"
+                >
+                  <span class="text-center py-2"> {{ totalPerMonth() }} </span>
+                </BaseHeading>
               </div>
             </BaseCard>
             <div v-if="true" class="flex justify-between py-4">

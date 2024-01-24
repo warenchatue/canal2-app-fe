@@ -815,6 +815,7 @@ const onSubmit = handleSubmit(
                 <TairoTableHeading uppercase spaced>Montant</TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>Payé</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Solde</TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Agents</TairoTableHeading>
@@ -891,6 +892,15 @@ const onSubmit = handleSubmit(
                 <TairoTableCell light spaced>
                   {{
                     new Intl.NumberFormat().format(Math.ceil(item.paid ?? 0))
+                  }}
+                  XAF
+                </TairoTableCell>
+
+                <TairoTableCell light spaced>
+                  {{
+                    new Intl.NumberFormat().format(
+                      Math.ceil((item.amount ?? 0) - (item.paid ?? 0)),
+                    )
                   }}
                   XAF
                 </TairoTableCell>

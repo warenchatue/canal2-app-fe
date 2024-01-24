@@ -154,7 +154,7 @@ async function findToday(token: string) {
       },
     },
   ).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
 
@@ -168,7 +168,7 @@ async function findAll(token: string) {
       'Content-type': 'application/json',
     },
   }).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
 
@@ -185,7 +185,7 @@ async function findAllStats(token: string) {
       },
     },
   ).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
 

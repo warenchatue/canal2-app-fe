@@ -32,6 +32,7 @@ const currentTeam = ref('')
 const startDate = ref(new Date())
 const endDate = ref(new Date())
 const toaster = useToaster()
+const isLoading = ref(false)
 
 // Check if can have access
 if (
@@ -175,7 +176,7 @@ function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
     selected.value = []
   } else {
-    selected.value = data.value?.data.map((item) => item.id) ?? []
+    selected.value = data.value?.data.map((item) => item._id) ?? []
   }
 }
 
@@ -524,6 +525,9 @@ const onSubmit = handleSubmit(
           color="primary"
           class="w-full sm:w-52"
           to="/bo/accountancy/accounting-docs/new-0"
+          @click="isLoading = true"
+          :loading="isLoading"
+          :disabled="isLoading"
         >
           <Icon name="ph:plus" class="h-4 w-4" />
           <span>Nouvelle pièce</span>
@@ -850,13 +854,13 @@ const onSubmit = handleSubmit(
                   </TairoTableCell>
                 </TairoTableRow>
 
-                <TairoTableRow v-for="item in data?.data" :key="item.id">
+                <TairoTableRow v-for="item in data?.data" :key="item._id">
                   <TairoTableCell v-if="!isPrint" spaced>
                     <div class="flex items-center">
                       <BaseCheckbox
                         v-model="selected"
-                        :value="item.id"
-                        :name="`item-checkbox-${item.id}`"
+                        :value="item._id"
+                        :name="`item-checkbox-${item._id}`"
                         shape="rounded"
                         class="text-primary-500"
                       />

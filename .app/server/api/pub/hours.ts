@@ -82,7 +82,7 @@ async function findAll(token: string) {
       'Content-type': 'application/json',
     },
   }).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
 

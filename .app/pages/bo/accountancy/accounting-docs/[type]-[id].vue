@@ -838,6 +838,7 @@ const onSubmit = handleSubmit(
           color="primary"
           class="w-full sm:w-40"
           @click="onSubmit"
+          :disabled="isSubmitting"
         >
           <Icon name="ph:pen" class="h-4 w-4" />
           <span>Créer</span>
