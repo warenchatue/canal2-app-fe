@@ -25,12 +25,15 @@ const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(10)
 const isModalDeletePackageOpen = ref(false)
+const isModalCopyInvoiceOpen = ref(false)
+const isModalDoitInvoiceOpen = ref(false)
 const isModalSalesReportOpen = ref(false)
 const isEdit = ref(false)
 const isPrint = ref(false)
 const toaster = useToaster()
 const currentOrg = ref('')
 const currentTeam = ref('')
+const currentPackage = ref({})
 const isLoading = ref(false)
 const dates = ref({
   start: new Date(),
@@ -88,6 +91,10 @@ const { data: orgs } = await useFetch('/api/admin/orgs', {
 function confirmDeletePackage(invoice: any) {
   isModalDeletePackageOpen.value = true
   isEdit.value = false
+  currentPackage.value = invoice
+}
+
+function updateCurrentInvoice(invoice: any) {
   currentPackage.value = invoice
 }
 
@@ -167,6 +174,85 @@ async function deletePackage(invoice: any) {
   }
 }
 
+async function copyInvoice(invoice: any) {
+  const query2 = computed(() => {
+    return {
+      action: 'copyInvoice',
+      token: token.value,
+      id: invoice._id,
+    }
+  })
+
+  const response = await useFetch('/api/sales/invoices', {
+    method: 'put',
+    headers: { 'Content-Type': 'application/json' },
+    query: query2,
+  })
+
+  if (response.data?.value?.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Facture Dupliquée !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalCopyInvoiceOpen.value = false
+    filter.value = 'invoice'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Oops',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+}
+async function updateInvoiceIsDoit(invoice: any) {
+  const query2 = computed(() => {
+    return {
+      action: 'updateInvoiceIsDoit',
+      token: token.value,
+      id: invoice._id,
+    }
+  })
+
+  const response = await useFetch('/api/sales/invoices', {
+    method: 'put',
+    headers: { 'Content-Type': 'application/json' },
+    query: query2,
+  })
+
+  if (response.data?.value?.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Facture transformée !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalDoitInvoiceOpen.value = false
+    filter.value = 'invoice'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Oops',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+}
+
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
   return selected.value.length === data.value?.data.length
@@ -179,8 +265,6 @@ function toggleAllVisibleSelection() {
     selected.value = data.value?.data?.map((item) => item._id) ?? []
   }
 }
-
-const currentPackage = ref({})
 
 const success = ref(false)
 </script>
@@ -544,8 +628,32 @@ const success = ref(false)
                 </template>
 
                 <TairoTableRow v-if="selected.length > 0" :hoverable="false">
+                  <TairoTableCell colspan="3" class="p-4">
+                    <BaseButtonAction
+                      v-if="selected.length == 1"
+                      @click="isModalCopyInvoiceOpen = true"
+                      class="mx-2"
+                    >
+                      <Icon
+                        name="lucide:copy"
+                        class="h-4 w-4 mr-2 text-orange-500"
+                      />
+                      Dupliquer</BaseButtonAction
+                    >
+                    <BaseButtonAction
+                      v-if="selected.length == 1"
+                      @click="isModalDoitInvoiceOpen = true"
+                      class="mx-2"
+                    >
+                      <Icon
+                        name="lucide:file"
+                        class="h-4 w-4 mr-2 text-orange-500"
+                      />
+                      Transformer en facture d'avoir</BaseButtonAction
+                    >
+                  </TairoTableCell>
                   <TairoTableCell
-                    colspan="6"
+                    colspan="4"
                     class="bg-success-100 text-success-700 dark:bg-success-700 dark:text-success-100 p-4"
                   >
                     You have selected {{ selected.length }} items of the total
@@ -567,6 +675,7 @@ const success = ref(false)
                         :name="`item-checkbox-${item._id}`"
                         shape="rounded"
                         class="text-primary-500"
+                        @click="updateCurrentInvoice(item)"
                       />
                     </div>
                   </TairoTableCell>
@@ -591,10 +700,8 @@ const success = ref(false)
                         :text="item.initials"
                         :class="getRandomColor()"
                       />
-                      <div class="!w-40 ms-3 leading-none">
-                        <p
-                          class="font-sans text-xs !w-64 break-words font-medium"
-                        >
+                      <div class="!w-48 ms-3">
+                        <p class="font-sans text-xs font-medium">
                           {{ item.announcer?.name }}
                         </p>
                         <p
@@ -998,6 +1105,118 @@ const success = ref(false)
               flavor="solid"
               @click="deletePackage(currentPackage)"
               >Suppimer</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal Copy -->
+    <TairoModal
+      :open="isModalCopyInvoiceOpen"
+      size="sm"
+      @close="isModalCopyInvoiceOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Copie d'une facture
+          </h3>
+
+          <BaseButtonClose @click="isModalCopyInvoiceOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <h3
+            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
+          >
+            Dupliquer la facture sélèctionnée
+            <span class="text-red-500"></span> ?
+          </h3>
+
+          <p
+            class="font-alt text-muted-700 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est irreversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalCopyInvoiceOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="copyInvoice(currentPackage)"
+              >Proceder</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal Doit -->
+    <TairoModal
+      :open="isModalDoitInvoiceOpen"
+      size="sm"
+      @close="isModalDoitInvoiceOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Transformation en facture d'avoir
+          </h3>
+
+          <BaseButtonClose @click="isModalDoitInvoiceOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <h3
+            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
+          >
+            Transformer cette facture en facture d'avoir
+            <span class="text-red-500"></span> ?
+          </h3>
+
+          <p
+            class="font-alt text-muted-700 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est irreversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalDoitInvoiceOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="updateInvoiceIsDoit(currentPackage)"
+              >Proceder</BaseButton
             >
           </div>
         </div>

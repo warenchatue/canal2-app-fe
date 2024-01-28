@@ -66,6 +66,12 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event)
     const data = await addInvoicePayment(id, body, token)
     return { data: data, success: true }
+  } else if (action == 'copyInvoice') {
+    const data = await copyInvoice(id, token)
+    return { data: data, success: true }
+  } else if (action == 'updateInvoiceIsDoit') {
+    const data = await updateInvoiceIsDoit(id, token)
+    return { data: data, success: true }
   } else if (action == 'delete') {
     const data = await deleteInvoice(id, token)
     return { data: data, success: true }
@@ -173,6 +179,40 @@ async function addInvoicePayment(id: string, body: any, token: string) {
         'Content-type': 'application/json',
       },
       body: body,
+    },
+  ).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
+}
+
+async function copyInvoice(id: string, token: string) {
+  console.log('copyInvoice ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/invoices/' + id + '/copy',
+    {
+      method: 'put',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
+}
+
+async function updateInvoiceIsDoit(id: string, token: string) {
+  console.log('updateInvoiceIsDoit ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/invoices/' + id + '/doit',
+    {
+      method: 'put',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
     },
   ).catch((error) => console.log(error))
   console.log(data)

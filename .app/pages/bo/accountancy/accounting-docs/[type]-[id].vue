@@ -94,10 +94,6 @@ const query = computed(() => {
   }
 })
 
-const { data } = await useFetch('/api/pub/packages', {
-  query,
-})
-
 const { data: orgs } = await useFetch('/api/admin/orgs', {
   query,
 })
@@ -1514,7 +1510,8 @@ const onSubmit = handleSubmit(
                   <div class="px-2 w-full">
                     <table
                       v-if="
-                        (isPrint && currentAccountingDoc?.items.length != 0) ||
+                        (!isPrint &&
+                          currentAccountingDoc?.items?.length != 0) ||
                         !isPrint
                       "
                       class="divide-muted-200 dark:divide-muted-700 min-w-full divide-y"

@@ -235,12 +235,6 @@ function printOrder() {
   }, 1000)
 }
 
-function confirmDeleteOrder(order: any) {
-  isModalDeletePackageOpen.value = true
-  isEdit.value = false
-  currentPackage.value = order
-}
-
 function viewOrder() {
   setTimeout(() => {
     isPrint.value = !isPrint.value
@@ -303,6 +297,7 @@ async function addInvoicePayment() {
     query: query2,
     body: {
       ...curInvoicePaymentForm.value,
+
       paymentAccount: curInvoicePaymentForm.value.paymentAccount._id,
       org: currentOrg?.value?._id,
       announcer: currentOrderInvoice?.value?.announcer._id,
@@ -803,7 +798,7 @@ const totalData = computed(() => {
       value: Math.ceil(vatValue),
     },
     {
-      label: 'Montant Dû',
+      label: 'Montant TTC',
       value: Math.ceil(total),
     },
   ]
@@ -945,6 +940,12 @@ const onSubmit = handleSubmit(
       } else if (pageValue.value == 'invoice') {
         let totalPaid = 0
         if (isEdit.value == true) {
+          totalPaid = currentOrderInvoice.value?.transactions
+            ?.map((item) => item.amount)
+            .reduce((acc, item) => {
+              return acc + item
+            }, 0)
+
           const query2 = computed(() => {
             return {
               action: 'updateInvoice',
@@ -1985,7 +1986,7 @@ const onSubmit = handleSubmit(
                             </p>
                           </td>
                           <td
-                            class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right font-medium text-[10px] sm:pe-6 md:pe-0"
+                            class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right font-medium text-[9px] sm:pe-6 md:pe-0"
                           >
                             {{
                               new Intl.NumberFormat('fr-FR').format(
@@ -2213,14 +2214,14 @@ const onSubmit = handleSubmit(
                             colspan="4"
                             class="ps-3 pt-2 text-right"
                             :class="
-                              item.label === 'Montant Dû'
+                              item.label === 'Montant TTC'
                                 ? 'text-[10px] text-primary-800 border-muted-400 dark:border-muted-700 border-t font-bold dark:text-primary-500'
                                 : item.label === 'Total HT'
                                 ? 'text-[10px] border-muted-400 dark:border-muted-700 text-muted-800 font-bold dark:text-muted-200/70 border-t'
                                 : 'text-[10px] text-muted-800 dark:text-muted-200/70 font-bold'
                             "
                           >
-                            <span v-if="item.label === 'Montant Dû'"
+                            <span v-if="item.label === 'Montant TTC'"
                               >{{
                                 new Intl.NumberFormat('fr-FR').format(
                                   item.value,
