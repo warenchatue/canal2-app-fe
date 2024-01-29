@@ -37,7 +37,11 @@ export default defineEventHandler(async (event) => {
     }
   } else if (action == 'findAll') {
     const data = await findAll(token)
-    return { data: filterData(data, filter, page, perPage), success: true }
+    return {
+      total: data.length,
+      data: filterData(data, filter, page, perPage),
+      success: true,
+    }
   } else if (action == 'createSimpleDonation') {
     const body = await readBody(event)
     const data = await createSimpleDonation(token, body)

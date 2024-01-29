@@ -576,7 +576,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalItems }}</span>
+                <span>{{ data?.total }}</span>
               </BaseHeading>
             </div>
             <div

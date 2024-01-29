@@ -336,6 +336,51 @@ async function addInvoicePayment() {
   }
 }
 
+async function addInvoiceTaxes() {
+  const query2 = computed(() => {
+    return {
+      action: 'addInvoiceTaxes',
+      token: token.value,
+      id: currentOrderInvoice.value._id,
+    }
+  })
+
+  const response = await useFetch('/api/sales/invoices', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    query: query2,
+    body: {
+      ...curInvoiceTaxForm.value,
+      date: dates.value.start,
+    },
+  })
+
+  if (response.data?.value?.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Taxe crée !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalCreateTaxOpen.value = false
+    filter.value = 'taxes'
+    filter.value = ''
+    location.reload()
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Oops',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+}
+
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
   return selected.value.length === data.value?.data.length
@@ -695,16 +740,12 @@ const curInvoicePaymentForm = ref({
 })
 
 const curInvoiceTaxForm = ref({
-  taxes: [],
+  account: {},
   label: '',
   amount:
     (currentOrderInvoice.value?.tva ?? 0) +
     (currentOrderInvoice.value?.tsp ?? 0),
-  tva: currentOrderInvoice.value?.tva ?? 0,
-
-  tsp: currentOrderInvoice.value?.tsp ?? 0,
   date: '',
-  currency: '',
 })
 
 const totalData = computed(() => {
@@ -2415,6 +2456,67 @@ const onSubmit = handleSubmit(
                             {{ item.code ?? '-' }}
                           </td>
                         </tr>
+                        <tr
+                          v-if="currentOrderInvoice?.taxes?.length > 0"
+                          :key="i"
+                          class="border-muted-200 dark:border-muted-700 border-b"
+                        >
+                          <td
+                            v-if="!isPrint"
+                            class="py-2 pe-3 ps-4 text-center text-sm sm:ps-6 md:ps-0"
+                          >
+                            <div
+                              class="text-muted-800 dark:text-muted-100 font-medium"
+                            >
+                              <BaseButtonAction
+                                disabled
+                                @click="deleteOrderItem(i)"
+                              >
+                                <Icon
+                                  name="lucide:trash"
+                                  class="h-4 w-4 text-red-500"
+                                />
+                              </BaseButtonAction>
+                            </div>
+                          </td>
+                          <td
+                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-[9px] sm:table-cell"
+                          >
+                            {{ currentOrderInvoice?.transactions?.length + 1 }}
+                          </td>
+                          <td
+                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-[9px] sm:table-cell"
+                          >
+                            {{
+                              new Date(
+                                currentOrderInvoice?.taxes[0].date,
+                              ).toLocaleDateString('fr-FR')
+                            }}
+                          </td>
+                          <td
+                            class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-[9px] sm:table-cell"
+                          >
+                            {{
+                              new Intl.NumberFormat('fr-FR').format(
+                                currentOrderInvoice?.taxes.length > 1
+                                  ? currentOrderInvoice?.taxes[0].amount +
+                                      currentOrderInvoice?.taxes[1].amount
+                                  : currentOrderInvoice?.taxes[0].amount,
+                              )
+                            }}
+                            XAF
+                          </td>
+                          <td
+                            class="px-3 py-2 text-center text-[9px] sm:table-cell"
+                          >
+                            Impots et taxes retenus à la source
+                          </td>
+                          <td
+                            class="px-3 py-2 text-center text-[9px] sm:table-cell"
+                          >
+                            {{ currentOrderInvoice.taxes[0]?.label ?? '-' }}
+                          </td>
+                        </tr>
                       </tbody>
                     </table>
                   </div>
@@ -2890,7 +2992,7 @@ const onSubmit = handleSubmit(
                   <div class="grid grid-cols-12 gap-4">
                     <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
                       <BaseListbox
-                        v-model="curInvoiceTaxForm.taxes"
+                        v-model="curInvoiceTaxForm.account"
                         label="Taxes"
                         :items="taxes.data"
                         placeholder=""
@@ -2903,7 +3005,6 @@ const onSubmit = handleSubmit(
                           label: 'code',
                           sublabel: 'value',
                         }"
-                        multiple
                       />
                     </div>
                     <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
@@ -3032,7 +3133,7 @@ const onSubmit = handleSubmit(
             <BaseButton
               color="primary"
               flavor="solid"
-              @click="addInvoicePayment()"
+              @click="addInvoiceTaxes()"
             >
               Créer
             </BaseButton>

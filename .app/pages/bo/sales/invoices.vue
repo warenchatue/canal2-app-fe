@@ -755,13 +755,17 @@ const success = ref(false)
                     XAF
                   </TairoTableCell>
                   <TairoTableCell light spaced>
-                    {{
-                      new Intl.NumberFormat().format(
-                        Math.ceil(item.amount - item.paid ?? 0) > 0
-                          ? Math.ceil(item.amount - item.paid ?? 0)
-                          : 0,
-                      )
-                    }}
+                    <span v-if="item.taxes.length > 0">(ANR) 0</span>
+                    <span v-else>
+                      {{
+                        new Intl.NumberFormat().format(
+                          Math.ceil(item.amount - item.paid ?? 0) > 0
+                            ? Math.ceil(item.amount - item.paid ?? 0)
+                            : 0,
+                        )
+                      }}</span
+                    >
+
                     XAF
                   </TairoTableCell>
                   <TairoTableCell v-if="!isPrint" light spaced>

@@ -1035,7 +1035,7 @@ const onSubmit = handleSubmit(
             <div class="mt-6">
               <BasePagination
                 v-if="!isPrint"
-                :total-items="data?.data.length ?? 0"
+                :total-items="data?.total ?? 0"
                 :item-per-page="perPage"
                 :current-page="page"
                 shape="curved"

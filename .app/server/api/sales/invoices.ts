@@ -46,10 +46,10 @@ export default defineEventHandler(async (event) => {
   } else if (action == 'findAllUnpaid') {
     const response = await findAll(token)
     response.data = response.data.filter((e: any) => {
-      return (e.amount - e.paid ?? 0) > 0
+      return (e.amount - e.paid ?? 0) > 0 && e.taxes.length == 0
     })
     return {
-      total: response.metaData.totalItems,
+      total: response.data.length,
       metaData: response.metaData,
       data: filterData(response.data, filter, page, perPage),
     }
@@ -65,6 +65,10 @@ export default defineEventHandler(async (event) => {
   } else if (action == 'addInvoicePayment') {
     const body = await readBody(event)
     const data = await addInvoicePayment(id, body, token)
+    return { data: data, success: true }
+  } else if (action == 'addInvoiceTaxes') {
+    const body = await readBody(event)
+    const data = await addInvoiceTaxes(id, body, token)
     return { data: data, success: true }
   } else if (action == 'copyInvoice') {
     const data = await copyInvoice(id, token)
@@ -172,6 +176,24 @@ async function addInvoicePayment(id: string, body: any, token: string) {
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
     runtimeConfig.env.apiUrl + '/invoices/' + id + '/addPayment',
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+      body: body,
+    },
+  ).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
+}
+
+async function addInvoiceTaxes(id: string, body: any, token: string) {
+  console.log('addInvoiceTaxes ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/invoices/' + id + '/addTax',
     {
       method: 'PUT',
       headers: {
