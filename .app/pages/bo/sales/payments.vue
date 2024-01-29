@@ -609,7 +609,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalItems }}</span>
+                <span>{{ data?.data?.length ?? 0 }}</span>
               </BaseHeading>
             </div>
             <div
@@ -632,7 +632,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-700 dark:text-muted-400"
               >
-                <span>Soldés</span>
+                <span>En Especes</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -650,7 +650,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalAnnouncers }}</span>
+                <span>0</span>
               </BaseHeading>
             </div>
             <div
@@ -673,7 +673,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-700 dark:text-muted-400"
               >
-                <span>En attente</span>
+                <span>Par Chèque</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -691,7 +691,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalSpots }}</span>
+                <span>0</span>
               </BaseHeading>
             </div>
             <div
@@ -732,7 +732,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalFiles }}</span>
+                <span>0</span>
               </BaseHeading>
             </div>
             <div
@@ -1035,7 +1035,7 @@ const onSubmit = handleSubmit(
             <div class="mt-6">
               <BasePagination
                 v-if="!isPrint"
-                :total-items="data?.total ?? 0"
+                :total-items="data?.data.length ?? 0"
                 :item-per-page="perPage"
                 :current-page="page"
                 shape="curved"

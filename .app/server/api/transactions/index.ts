@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
 
       return (
         e.org._id == org &&
-        (team.length > 1 ? e.team == team : true) &&
+        (team.length > 1 ? e.data?.city == team : true) &&
         itemTime >= startTime &&
         itemTime <= endTime
       )

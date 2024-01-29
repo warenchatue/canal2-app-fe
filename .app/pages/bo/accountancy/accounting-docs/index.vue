@@ -136,7 +136,7 @@ async function deleteOrder(order: any) {
     }
   })
 
-  const response = await useFetch('/api/sales/orders', {
+  const response = await useFetch('/api/accountancy/accounting-docs', {
     method: 'delete',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
@@ -147,13 +147,13 @@ async function deleteOrder(order: any) {
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Devi supprimé !`,
+      message: `Bon supprimé !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
     })
     isModalDeletePackageOpen.value = false
-    filter.value = 'order'
+    filter.value = 'accountng doc'
     filter.value = ''
   } else {
     toaster.clearAll()
@@ -1194,7 +1194,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Suppression d'un devis
+            Suppression d'un Bon de caisse
           </h3>
 
           <BaseButtonClose @click="isModalDeletePackageOpen = false" />

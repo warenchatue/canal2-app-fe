@@ -34,6 +34,7 @@ const isModalCreatePackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
 const isModalCreatePaymentOpen = ref(false)
+const isModalCreateTaxOpen = ref(false)
 const currentOrg = ref({})
 const packageId = ref('')
 const selectedOrder = ref({})
@@ -355,14 +356,6 @@ function filterItems(query?: string, items?: any[]) {
     // const textMatches = item?.text?.toLowerCase().includes(query.toLowerCase())
     return nameMatches
   })
-}
-
-function toggleAllVisibleSelection() {
-  if (isAllVisibleSelected.value) {
-    selected.value = []
-  } else {
-    selected.value = data.value?.data.map((item) => item.id) ?? []
-  }
 }
 
 const currentPackage = ref({})
@@ -701,6 +694,19 @@ const curInvoicePaymentForm = ref({
   currency: '',
 })
 
+const curInvoiceTaxForm = ref({
+  taxes: [],
+  label: '',
+  amount:
+    (currentOrderInvoice.value?.tva ?? 0) +
+    (currentOrderInvoice.value?.tsp ?? 0),
+  tva: currentOrderInvoice.value?.tva ?? 0,
+
+  tsp: currentOrderInvoice.value?.tsp ?? 0,
+  date: '',
+  currency: '',
+})
+
 const totalData = computed(() => {
   const subtotal = orderData.value.reduce((acc, item) => {
     return acc + item.quantity * item.rate
@@ -977,6 +983,14 @@ const onSubmit = handleSubmit(
                 totalData.value.length > 0
                   ? totalData.value[totalData.value.length - 4].value
                   : 0,
+              tsp:
+                totalData.value.length > 0
+                  ? totalData.value[totalData.value.length - 3].value
+                  : 0,
+              tva:
+                totalData.value.length > 0
+                  ? totalData.value[totalData.value.length - 2].value
+                  : 0,
               amount:
                 totalData.value.length > 0
                   ? totalData.value[totalData.value.length - 1].value
@@ -1016,6 +1030,14 @@ const onSubmit = handleSubmit(
               amountHT:
                 totalData.value.length > 0
                   ? totalData.value[totalData.value.length - 4].value
+                  : 0,
+              tsp:
+                totalData.value.length > 0
+                  ? totalData.value[totalData.value.length - 3].value
+                  : 0,
+              tva:
+                totalData.value.length > 0
+                  ? totalData.value[totalData.value.length - 2].value
                   : 0,
               amount:
                 totalData.value.length > 0
@@ -1206,11 +1228,22 @@ const onSubmit = handleSubmit(
                 @click="isModalCreatePaymentOpen = true"
                 condensed
                 shape="xl"
-                class="!w-48"
+                class="!w-48 !font-semibold"
                 data-tooltip="Ajouter un règlement"
               >
-                <Icon name="ph:money-duotone" class="h-4 w-4 px-1" /> Ajouter un
+                <Icon name="ph:money-duotone" class="h-4 w-6 px-1" /> Ajouter un
                 reglement
+              </BaseButtonIcon>
+              <BaseButtonIcon
+                v-if="pageValue == 'invoice' && pageType == 'edit'"
+                @click="isModalCreateTaxOpen = true"
+                condensed
+                shape="xl"
+                class="!w-48 !font-semibold"
+                data-tooltip="Ajouter une retenue"
+              >
+                <Icon name="ph:money-duotone" class="h-4 w-6 px-1" /> Ajouter
+                une retenue
               </BaseButtonIcon>
               <BaseButtonIcon
                 v-if="
@@ -1227,7 +1260,7 @@ const onSubmit = handleSubmit(
                 shape="xl"
                 data-tooltip="Modifier"
               >
-                <Icon name="ph:eye-duotone" class="h-4 w-4 px-1" />
+                <Icon name="ph:eye-duotone" class="h-4 w-6 px-1" />
                 Modifier
               </BaseButtonIcon>
               <BaseButtonIcon
@@ -1246,27 +1279,27 @@ const onSubmit = handleSubmit(
                 shape="xl"
                 data-tooltip="Modifier"
               >
-                <Icon name="ph:eye-duotone" class="h-4 w-4 px-1" />
+                <Icon name="ph:eye-duotone" class="h-4 w-6 px-1" />
                 Modifier
               </BaseButtonIcon>
               <BaseButtonIcon
                 @click="viewOrder()"
                 condensed
-                class="!w-32"
+                class="!w-32 !font-semibold"
                 shape="xl"
                 data-tooltip="Prévisualiser"
               >
-                <Icon name="ph:eye-duotone" class="h-4 w-4 px-1" />
+                <Icon name="ph:eye-duotone" class="h-4 w-6 px-1" />
                 Prévisualiser
               </BaseButtonIcon>
               <BaseButtonIcon
                 condensed
-                class="!w-32"
+                class="!w-32 !font-semibold"
                 shape="xl"
                 @click="printOrder()"
                 data-tooltip="Imprimer"
               >
-                <Icon name="ph:printer-duotone" class="h-4 w-4 px-1" /> Imprimer
+                <Icon name="ph:printer-duotone" class="h-4 w-6 px-1" /> Imprimer
               </BaseButtonIcon>
             </div>
           </div>
@@ -2740,10 +2773,9 @@ const onSubmit = handleSubmit(
                       name="operation.label"
                     >
                       <BaseInput
-                        label="Refence"
+                        label="Reference"
                         icon="ph:note"
-                        disabled
-                        placeholder="Ex: CSH/2023/0001"
+                        placeholder="Ex: cheque N_001"
                         v-model="curInvoicePaymentForm.label"
                         :error="errorMessage"
                         :disabled="isSubmitting"
@@ -2811,6 +2843,189 @@ const onSubmit = handleSubmit(
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
             <BaseButton @click="isModalCreatePaymentOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="addInvoicePayment()"
+            >
+              Créer
+            </BaseButton>
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal create Tax -->
+    <TairoModal
+      :open="isModalCreateTaxOpen"
+      size="xl"
+      @close="isModalCreateTaxOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Nouvelle retenue
+          </h3>
+
+          <BaseButtonClose @click="isModalCreateTaxOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <BaseCard class="w-full">
+        <div class="divide-muted-200 dark:divide-muted-700">
+          <div
+            shape="curved"
+            class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
+          >
+            <div class="mx-auto flex w-full flex-col">
+              <div>
+                <div>
+                  <div class="grid grid-cols-12 gap-4">
+                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
+                      <BaseListbox
+                        v-model="curInvoiceTaxForm.taxes"
+                        label="Taxes"
+                        :items="taxes.data"
+                        placeholder=""
+                        :multiple-label="
+                              (value: any[], labelProperty?: string) => { 
+                                if (value.length === 0) { return 'Vide'; } else if (value.length > 2) { return `${value.length} elements`; } else if (value.length > 1) { return labelProperty ? String(value?.[0]?.[labelProperty]) +'; '+String(value?.[1]?.[labelProperty]) :  String(value?.[0])+' : '+String(value?.[1]);  } 
+                                return labelProperty ? String(value?.[0]?.[labelProperty]) :  String(value?.[0])+' : '+String(value?.[1]); }"
+                        :properties="{
+                          value: '_id',
+                          label: 'code',
+                          sublabel: 'value',
+                        }"
+                        multiple
+                      />
+                    </div>
+                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
+                      <DatePicker
+                        v-model.range="dates"
+                        :min-date="new Date('2022-01-01')"
+                        mode="date"
+                        hide-time-header
+                        trim-weeks
+                      >
+                        <template #default="{ inputValue, inputEvents }">
+                          <div class="flex w-full flex-col gap-4 sm:flex-row">
+                            <div class="relative grow">
+                              <Field
+                                v-slot="{
+                                  field,
+                                  errorMessage,
+                                  handleChange,
+                                  handleBlur,
+                                }"
+                                name="event.startDateTime"
+                              >
+                                <BaseInput
+                                  shape="rounded"
+                                  label="Date de l'operation"
+                                  icon="ph:calendar-blank-duotone"
+                                  :value="inputValue.start"
+                                  v-on="inputEvents.start"
+                                  :classes="{
+                                    input: '!h-11 !ps-11',
+                                    icon: '!h-11 !w-11',
+                                  }"
+                                  :model-value="field.value"
+                                  :error="errorMessage"
+                                  :disabled="isSubmitting"
+                                  type="text"
+                                  @update:model-value="handleChange"
+                                  @blur="handleBlur"
+                                />
+                              </Field>
+                            </div>
+                          </div>
+                        </template>
+                      </DatePicker>
+                    </div>
+                  </div>
+                  <div class="col-span-12 sm:col-span-6 mt-2">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="operation.label"
+                    >
+                      <BaseInput
+                        label="Reference"
+                        icon="ph:note"
+                        placeholder="Ex: CSH/2023/0001"
+                        v-model="curInvoiceTaxForm.label"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        type="text"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <!-- <div class="grid grid-cols-12 gap-4 mt-2">
+                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
+                      <Field
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
+                        name="operation.currency"
+                      >
+                        <BaseListbox
+                          label="Devise"
+                          :items="currenciesData?.data"
+                          :properties="{
+                            value: '_id',
+                            label: 'name',
+                            sublabel: 'rate',
+                            media: '',
+                          }"
+                         v-model="curInvoicePaymentForm.currency"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+                  </div> -->
+                  <div class="col-span-12 sm:col-span-6 mt-2">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="operation.amount"
+                    >
+                      <BaseInput
+                        label="Montant"
+                        icon="ph:money"
+                        placeholder="Ex: 500 000 000"
+                        v-model="curInvoiceTaxForm.amount"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        type="number"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </BaseCard>
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalCreateTaxOpen = false"
               >Annuler</BaseButton
             >
 
