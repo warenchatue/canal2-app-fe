@@ -5,11 +5,11 @@ import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Impots & Taxes',
+  title: 'Pièces Comptables et Comptes Rattachés',
   preview: {
-    title: 'Impots & Taxes',
-    description: 'Gestion desImpots Taxes',
-    categories: ['bo', 'Taxes'],
+    title: 'Pièces Comptables et Comptes Rattachés',
+    description: 'Gestion des Comptes rattachés',
+    categories: ['bo', 'accountancy', 'journals'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -23,9 +23,10 @@ const appStore = useAppStore()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(10)
-const isModalNewTaxOpen = ref(false)
-const isModalDeleteTaxOpen = ref(false)
+const isModalNewAccountOpen = ref(false)
+const isModalDeleteAccountOpen = ref(false)
 const isEdit = ref(false)
+const journalAccounts = ref([])
 
 const toaster = useToaster()
 // Check if can have access
@@ -65,11 +66,18 @@ const query = computed(() => {
 })
 
 const { data, pending, error, refresh } = await useFetch(
-  '/api/accountancy/taxes',
+  '/api/accountancy/journals',
   {
     query,
   },
 )
+const { data: orgs } = await useFetch('/api/admin/orgs', {
+  query,
+})
+
+const { data: allAccounts } = await useFetch('/api/accountancy/accounts', {
+  query,
+})
 
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
@@ -84,7 +92,7 @@ function toggleAllVisibleSelection() {
   }
 }
 
-const currentTax = ref({})
+const currentAccount = ref({})
 const chatEl = ref<HTMLElement>()
 const expanded = ref(true)
 const loading = ref(false)
@@ -98,28 +106,26 @@ const VALIDATION_TEXT = {
 // It's used to define the shape that the form data will have
 const zodSchema = z
   .object({
-    tax: z.object({
+    journal: z.object({
       _id: z.string().optional(),
       code: z.string().min(1, VALIDATION_TEXT.CODE_REQUIRED),
-      value: z.number(),
-      name: z.string(),
-      description: z.string(),
-      category: z
+      label: z.string(),
+      accounts: z.string().optional(),
+      org: z
         .object({
           _id: z.string(),
           name: z.string(),
-          description: z.string(),
         })
-        .optional()
-        .nullable(),
+        .optional(),
+      description: z.string().optional(),
     }),
   })
   .superRefine((data, ctx) => {
-    if (!data.tax.name) {
+    if (!data.journal.code) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: VALIDATION_TEXT.CODE_REQUIRED,
-        path: ['tax.code'],
+        path: ['journal.code'],
       })
     }
   })
@@ -130,17 +136,11 @@ type FormInput = z.infer<typeof zodSchema>
 
 const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
-  avatar: null,
-  tax: {
+  journal: {
     code: '',
-    name: '',
-    value: 0,
+    label: '',
     description: '',
-    category: {
-      _id: '',
-      name: '',
-      description: '',
-    },
+    position: 'c',
   },
 }))
 
@@ -161,37 +161,38 @@ const {
 
 const success = ref(false)
 
-function editTax(tax: any) {
-  isModalNewTaxOpen.value = true
+function editAccount(journal: any) {
+  isModalNewAccountOpen.value = true
   isEdit.value = true
-  setFieldValue('tax._id', tax._id)
-  setFieldValue('tax.code', tax.code)
-  setFieldValue('tax.name', tax.name)
-  setFieldValue('tax.value', tax.value)
-  setFieldValue('tax.description', tax.description)
+  setFieldValue('journal._id', journal._id)
+  setFieldValue('journal.code', journal.code)
+  setFieldValue('journal.label', journal.label)
+  setFieldValue('journal.org', journal.org)
+  setFieldValue('journal.description', journal.description)
+  journalAccounts.value = journal.accounts
 }
 
-function selectTax(tax: any) {
-  currentTax.value = tax
+function selectAccount(tax: any) {
+  currentAccount.value = tax
   expanded.value = false
 }
 
-function confirmDeleteTax(tax: any) {
-  isModalDeleteTaxOpen.value = true
+function confirmDeleteAccount(tax: any) {
+  isModalDeleteAccountOpen.value = true
   isEdit.value = false
-  currentTax.value = tax
+  currentAccount.value = tax
 }
 
-async function deleteTax(tax: any) {
+async function deleteAccount(account: any) {
   const query2 = computed(() => {
     return {
       action: 'delete',
       token: token.value,
-      id: tax._id,
+      id: account._id,
     }
   })
 
-  const response = await useFetch('/api/accountancy/taxes', {
+  const response = await useFetch('/api/accountancy/journals', {
     method: 'delete',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
@@ -202,13 +203,13 @@ async function deleteTax(tax: any) {
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Taxe supprimée !`,
+      message: `Compte supprimé !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
     })
-    isModalDeleteTaxOpen.value = false
-    filter.value = 'tax'
+    isModalDeleteAccountOpen.value = false
+    filter.value = 'account'
     filter.value = ''
   } else {
     toaster.clearAll()
@@ -227,45 +228,47 @@ const onSubmit = handleSubmit(
   async (values) => {
     success.value = false
     // here you have access to the validated form values
-    console.log('tax-create-success', values)
+    console.log('journal-create-success', values)
 
     try {
       const isSuccess = ref(false)
       if (isEdit.value == true) {
         const query2 = computed(() => {
           return {
-            action: 'updateTax',
+            action: 'updateJournal',
             token: token.value,
-            id: values.tax._id,
+            id: values.journal._id,
           }
         })
 
-        const response = await useFetch('/api/accountancy/taxes', {
+        const response = await useFetch('/api/accountancy/journals', {
           method: 'put',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.tax,
-            category: undefined,
+            ...values.journal,
+            org: values.journal.org?._id,
+            accounts: journalAccounts.value?.map((item) => item._id) ?? [],
           },
         })
         isSuccess.value = response.data.value?.success
       } else {
         const query2 = computed(() => {
           return {
-            action: 'createTax',
+            action: 'createJournal',
             token: token.value,
           }
         })
 
-        const response = await useFetch('/api/accountancy/taxes', {
+        const response = await useFetch('/api/accountancy/journals', {
           method: 'post',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.tax,
+            ...values.journal,
+            org: values.journal.org?._id,
+            accounts: journalAccounts.value?.map((item) => item._id) ?? [],
             _id: undefined,
-            category: undefined,
           },
         })
         isSuccess.value = response.data.value?.success
@@ -275,12 +278,13 @@ const onSubmit = handleSubmit(
         toaster.clearAll()
         toaster.show({
           title: 'Success',
-          message: isEdit.value == false ? `Taxe créé !` : `Taxe mis à jour`,
+          message:
+            isEdit.value == false ? `Compte créé !` : `Compte mis à jour`,
           color: 'success',
           icon: 'ph:check',
           closable: true,
         })
-        isModalNewTaxOpen.value = false
+        isModalNewAccountOpen.value = false
         resetForm()
         filter.value = 'tax'
         filter.value = ''
@@ -335,7 +339,7 @@ const onSubmit = handleSubmit(
         <BaseInput
           v-model="filter"
           icon="lucide:search"
-          placeholder="Filtrer opera..."
+          placeholder="Filtrer journaux..."
           :classes="{
             wrapper: 'w-full sm:w-auto',
           }"
@@ -355,17 +359,17 @@ const onSubmit = handleSubmit(
           <option :value="100">100 per page</option>
         </BaseSelect>
         <BaseButton
-          @click=";(isModalNewTaxOpen = true), (isEdit = false)"
+          @click=";(isModalNewAccountOpen = true), (isEdit = false)"
           color="primary"
           class="w-full sm:w-48"
           :disabled="
-            authStore.user.appRole.name != UserRole.sale &&
-            authStore.user.appRole.name != UserRole.mediaPlanner &&
+            authStore.user.appRole.name != UserRole.billing &&
+            authStore.user.appRole.name != UserRole.accountancy &&
             authStore.user.appRole.name != UserRole.superAdmin
           "
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
-          <span>Nouvelle Taxe</span>
+          <span>Nouveau Journal</span>
         </BaseButton>
       </template>
 
@@ -409,9 +413,17 @@ const onSubmit = handleSubmit(
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Code </TairoTableHeading>
 
-                <TairoTableHeading uppercase spaced> Nom </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>
+                  Libellé
+                </TairoTableHeading>
 
-                <TairoTableHeading uppercase spaced> Valeur </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>
+                  Société
+                </TairoTableHeading>
+
+                <TairoTableHeading uppercase spaced>
+                  Comptes
+                </TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>
                   Description
@@ -458,17 +470,25 @@ const onSubmit = handleSubmit(
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
-                      {{ item.name }}
+                      {{ item.label }}
                     </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
-                      {{ item.value }}
+                      {{ item.org?.name }}
                     </span>
                   </div>
                 </TairoTableCell>
+                <TairoTableCell light spaced>
+                  <div class="flex items-center">
+                    <span class="text-muted-400 font-sans text-xs">
+                      {{ item.accounts?.map((item) => item.code) }}
+                    </span>
+                  </div>
+                </TairoTableCell>
+
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
@@ -481,25 +501,25 @@ const onSubmit = handleSubmit(
                   <div class="flex">
                     <BaseButtonAction
                       class="mx-2"
-                      @click.prevent="selectTax(item)"
+                      @click.prevent="selectAccount(item)"
                       muted
                     >
                       <Icon name="lucide:eye" class="h-4 w-4"
                     /></BaseButtonAction>
                     <BaseButtonAction
                       :disabled="
-                        authStore.user.appRole.name != UserRole.sale &&
+                        authStore.user.appRole.name != UserRole.billing &&
                         authStore.user.appRole.name != UserRole.accountancy &&
-                        authStore.user.appRole.name != UserRole.admin &&
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
-                      @click="editTax(item)"
+                      @click="editAccount(item)"
                     >
                       <Icon name="lucide:edit" class="h-4 w-4"
                     /></BaseButtonAction>
                     <BaseButtonAction
-                      @click="confirmDeleteTax(item)"
+                      @click="confirmDeleteAccount(item)"
                       :disabled="
+                        authStore.user.appRole.name != UserRole.accountancy &&
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
                       class="mx-2"
@@ -523,11 +543,11 @@ const onSubmit = handleSubmit(
       </div>
     </TairoContentWrapper>
 
-    <!-- Modal new Taxe -->
+    <!-- Modal new Account -->
     <TairoModal
-      :open="isModalNewTaxOpen"
+      :open="isModalNewAccountOpen"
       size="xl"
-      @close="isModalNewTaxOpen = false"
+      @close="isModalNewAccountOpen = false"
     >
       <template #header>
         <!-- Header -->
@@ -535,10 +555,10 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            {{ isEdit == true ? 'Mise à jour' : 'Nouvelle' }} Taxe
+            {{ isEdit == true ? 'Mise à jour' : 'Nouveau' }} Journal
           </h3>
 
-          <BaseButtonClose @click="isModalNewTaxOpen = false" />
+          <BaseButtonClose @click="isModalNewAccountOpen = false" />
         </div>
       </template>
 
@@ -560,7 +580,7 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="tax.code"
+                      name="journal.code"
                     >
                       <BaseInput
                         label="Code"
@@ -578,10 +598,10 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="tax.name"
+                      name="journal.label"
                     >
                       <BaseInput
-                        label="Nom"
+                        label="Libellé"
                         icon="ph:file-duotone"
                         placeholder=""
                         :model-value="field.value"
@@ -592,19 +612,49 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                  <div class="col-span-12 md:col-span-12">
+
+                  <div class="col-span-12 sm:col-span-12 mt-2">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="tax.value"
+                      name="journal.accounts"
                     >
-                      <BaseInput
-                        label="Valeur"
-                        icon="ph:file-duotone"
+                      <BaseListbox
+                        v-model="journalAccounts"
+                        label="Comptes"
+                        :items="allAccounts.data"
                         placeholder=""
-                        type="number"
-                        :model-value="field.value"
+                        :multiple-label="
+                              (value: any[], labelProperty?: string) => { 
+                                if (value.length === 0) { return 'Vide'; } else if (value.length > 2) {return `${value.length} elements`; } else if (value.length > 1) {return String(value?.[0]?.[labelProperty])+', '+String(value?.[1]?.[labelProperty]); } 
+                                return labelProperty ? String(value?.[0]?.[labelProperty]) :  String(value?.[0])+' : '+String(value?.[1]); }"
+                        :properties="{
+                          value: '_id',
+                          label: 'code',
+                          sublabel: 'label',
+                        }"
+                        multiple
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 sm:col-span-12 mt-2">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="journal.org"
+                    >
+                      <BaseListbox
+                        label="Société"
+                        :items="orgs.data"
+                        :classes="{
+                          wrapper: '!w-60',
+                        }"
+                        :properties="{
+                          value: '_id',
+                          label: 'name',
+                          sublabel: 'email',
+                          media: '',
+                        }"
+                        v-model="currentOrg"
                         :error="errorMessage"
-                        :disabled="isSubmitting"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
                       />
@@ -613,7 +663,7 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="tax.description"
+                      name="journal.description"
                     >
                       <BaseInput
                         label="Description"
@@ -637,7 +687,9 @@ const onSubmit = handleSubmit(
         <!-- Footer -->
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
-            <BaseButton @click="isModalNewTaxOpen = false">Annuler</BaseButton>
+            <BaseButton @click="isModalNewAccountOpen = false"
+              >Annuler</BaseButton
+            >
 
             <BaseButton color="primary" flavor="solid" @click="onSubmit">
               {{ isEdit == true ? 'Modifier' : 'Créer' }}
@@ -649,9 +701,9 @@ const onSubmit = handleSubmit(
 
     <!-- Modal delete -->
     <TairoModal
-      :open="isModalDeleteTaxOpen"
+      :open="isModalDeleteAccountOpen"
       size="sm"
-      @close="isModalDeleteTaxOpen = false"
+      @close="isModalDeleteAccountOpen = false"
     >
       <template #header>
         <!-- Header -->
@@ -659,10 +711,10 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Suppression d'une taxe
+            Suppression d'un Journal
           </h3>
 
-          <BaseButtonClose @click="isModalDeleteTaxOpen = false" />
+          <BaseButtonClose @click="isModalDeleteAccountOpen = false" />
         </div>
       </template>
 
@@ -673,7 +725,7 @@ const onSubmit = handleSubmit(
             class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
           >
             Supprimer
-            <span class="text-red-500">{{ currentTax?.name }}</span> ?
+            <span class="text-red-500">{{ currentAccount?.name }}</span> ?
           </h3>
 
           <p
@@ -688,14 +740,14 @@ const onSubmit = handleSubmit(
         <!-- Footer -->
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
-            <BaseButton @click="isModalDeleteTaxOpen = false"
+            <BaseButton @click="isModalDeleteAccountOpen = false"
               >Annuler</BaseButton
             >
 
             <BaseButton
               color="primary"
               flavor="solid"
-              @click="deleteTax(currentTax)"
+              @click="deleteAccount(currentAccount)"
               >Suppimer</BaseButton
             >
           </div>
@@ -710,7 +762,7 @@ const onSubmit = handleSubmit(
     >
       <div class="flex h-16 w-full items-center justify-between px-8">
         <BaseHeading tag="h3" size="lg" class="text-muted-800 dark:text-white">
-          <span>Détails Taxe</span>
+          <span>Détails Journal</span>
         </BaseHeading>
         <BaseButtonIcon small @click="expanded = true">
           <Icon name="lucide:arrow-right" class="pointer-events-none h-4 w-4" />
@@ -751,18 +803,18 @@ const onSubmit = handleSubmit(
         <div v-else class="mt-8" @click.>
           <div class="flex items-center justify-center">
             <BaseAvatar
-              :src="currentTax?.logo"
-              :text="currentTax.initials"
+              :src="currentAccount?.logo"
+              :text="currentAccount.initials"
               :class="getRandomColor()"
               size="2xl"
             />
           </div>
           <div class="text-center">
             <BaseHeading tag="h3" size="lg" class="mt-4">
-              <span>{{ currentTax?.name }}</span>
+              <span>{{ currentAccount?.name }}</span>
             </BaseHeading>
             <BaseParagraph size="sm" class="text-muted-400">
-              <span>{{ currentTax?.description }}</span>
+              <span>{{ currentAccount?.description }}</span>
             </BaseParagraph>
             <div class="my-4">
               <BaseParagraph

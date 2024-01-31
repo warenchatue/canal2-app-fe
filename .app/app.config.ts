@@ -233,7 +233,12 @@ export default defineAppConfig({
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Types Pièces C.',
+                name: 'P.C & Cptes rattachés',
+                to: '/bo/accountancy/doc-accounts',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Types P.C.',
                 to: '/bo/accountancy/doc-types',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
