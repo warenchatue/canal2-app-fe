@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
   title: 'DInoES',
-  description: 'Système de plannification des spots publicitaires',
+  description: 'Plateforme Digitale du Groupe CHATUE',
   breadcrumb: {
     label: 'DInoES',
   },

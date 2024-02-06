@@ -382,6 +382,7 @@ const onSubmit = handleSubmit(
           :disabled="
             authStore.user.appRole.name != UserRole.sale &&
             authStore.user.appRole.name != UserRole.billing &&
+            authStore.user.appRole.name != UserRole.admin &&
             authStore.user.appRole.name != UserRole.superAdmin
           "
         >

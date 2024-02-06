@@ -527,6 +527,7 @@ function editOrderInvoiceFile(currentOrderInvoice: any) {
     setFieldValue('order._id', currentOrderInvoice._id)
     setFieldValue('order.label', currentOrderInvoice.label)
     setFieldValue('order.description', currentOrderInvoice.description)
+    setFieldValue('order.team', currentOrderInvoice.team)
     setFieldValue('order.announcer', {
       id: currentOrderInvoice.announcer._id,
       name: currentOrderInvoice.announcer.name,

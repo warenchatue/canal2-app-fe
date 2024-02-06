@@ -49,12 +49,12 @@ useHead({
         route.meta.description ||
           (route.meta.preview
             ? `${route.meta.preview?.title} - ${route.meta.preview?.description}`
-            : 'Nuxt & Tailwind CSS dashboard system'),
+            : 'Digital Innova Enterprise Solution'),
       )}&url=${encodeURIComponent(
         'https://media.cssninja.io/content/products/logos/tairo-text-white.svg',
       )}&previewUrl=${encodeURIComponent(
         `https://tairo.cssninja.io${
-          route.meta.preview?.src || '/img/screens/documentation-hub.png'
+          route.meta.preview?.src || '/uploads/logos/c2.png'
         }`,
       )}`,
     },

@@ -51,8 +51,8 @@ function filterData(
   const filterRe = new RegExp(filter, 'i')
   return data
     .filter((item) => {
-      return [item.name, item.email, item.status].some((item) =>
-        item.match(filterRe),
+      return [item.code, item.org.name, item.announcer.name, item.team].some(
+        (item) => item.match(filterRe),
       )
     })
     .sort(function (a, b) {
