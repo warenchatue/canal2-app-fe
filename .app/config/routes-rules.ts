@@ -10,7 +10,7 @@ const staticAssetsRule = isProduction
 
 const staticPageRule = isProduction
   ? {
-      // prerender: false,
+      prerender: false,
       // cache: {
       //   maxAge: 0,
       //   swr: false,
@@ -18,7 +18,7 @@ const staticPageRule = isProduction
       // },
       headers: {
         'Cache-Control':
-          'public, max-age=0, s-maxage=0, stale-while-revalidate=0, stale-if-error=0',
+          'public, max-age=3600, s-maxage=3600, stale-while-revalidate=3600, stale-if-error=3600',
       },
     }
   : {}
