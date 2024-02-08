@@ -1,5 +1,6 @@
-const isProd = false
-const staticAssetsRule = isProd
+import { isProduction } from 'std-env'
+
+const staticAssetsRule = isProduction
   ? {
       headers: {
         'Cache-Control': 'public, max-age=31536000',
@@ -7,9 +8,9 @@ const staticAssetsRule = isProd
     }
   : {}
 
-const staticPageRule = isProd
+const staticPageRule = isProduction
   ? {
-      prerender: true,
+      prerender: false,
       cache: {
         maxAge: 3600,
         swr: true,

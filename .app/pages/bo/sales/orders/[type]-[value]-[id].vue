@@ -220,8 +220,8 @@ if (pageType.value == 'view' || pageType.value == 'edit') {
 
 watch(selectedOrder, (value) => {
   setTimeout(() => {
-    editOrderInvoiceFile(value)
-  }, 1000)
+    editOrderInvoiceFile(value, true)
+  }, 500)
 })
 
 function printOrder() {
@@ -422,6 +422,7 @@ const zodSchema = z
       _id: z.string().optional(),
       label: z.string().optional(),
       description: z.string().optional(),
+      note: z.string().optional(),
       amount: z.number(),
       team: z.string().optional(),
       pending: z.number(),
@@ -520,20 +521,24 @@ const {
 
 const success = ref(false)
 
-function editOrderInvoiceFile(currentOrderInvoice: any) {
-  dates.value.start = new Date(currentOrderInvoice.date)
-  dates.value.end = new Date(currentOrderInvoice.date)
+function editOrderInvoiceFile(currentOrderInvoice: any, isFromOrder = false) {
+  if (isFromOrder == false) {
+    dates.value.start = new Date(currentOrderInvoice.date)
+    dates.value.end = new Date(currentOrderInvoice.date)
+  }
   setTimeout(() => {
     setFieldValue('order._id', currentOrderInvoice._id)
     setFieldValue('order.label', currentOrderInvoice.label)
     setFieldValue('order.description', currentOrderInvoice.description)
+    setFieldValue('order.note', currentOrderInvoice.note)
     setFieldValue('order.team', currentOrderInvoice.team)
     setFieldValue('order.announcer', {
       id: currentOrderInvoice.announcer._id,
       name: currentOrderInvoice.announcer.name,
-      text: currentOrderInvoice.announcer.phone,
     })
-    setFieldValue('order.commercial', currentOrderInvoice.manager)
+    if (isFromOrder == false) {
+      setFieldValue('order.commercial', currentOrderInvoice.manager)
+    }
     setFieldValue('order.status', currentOrderInvoice.status)
     setFieldValue('order.paymentMethod', currentOrderInvoice.paymentMethod)
     setFieldValue(
@@ -1878,6 +1883,30 @@ const onSubmit = handleSubmit(
                           >
                             <BaseInput
                               label="Référence"
+                              icon="ph:file-duotone"
+                              placeholder=""
+                              :model-value="field.value"
+                              :error="errorMessage"
+                              :disabled="isSubmitting"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
+                            />
+                          </Field>
+                        </div>
+                          <div
+                          class="ltablet:col-span-12 col-span-12 lg:col-span-6"
+                        >
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="order.note"
+                          >
+                            <BaseInput
+                              label="Note"
                               icon="ph:file-duotone"
                               placeholder=""
                               :model-value="field.value"

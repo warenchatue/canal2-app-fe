@@ -83,7 +83,8 @@ function filterData(
       console.log(item.amount)
       return [
         item.amount.toString(),
-        `${item.author?.lastName}`,
+        `${item.announcer?.name}`,
+        `${item.author?.lastName} ${item.author?.firstName}`,
         `${item.date}`,
       ].some((item) => item.match(filterRe))
     })
@@ -121,7 +122,7 @@ async function findAll(token: string) {
       'Content-type': 'application/json',
     },
   }).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
 
   return Promise.resolve(data)
 }
