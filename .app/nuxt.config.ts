@@ -1,56 +1,15 @@
 import { isProduction } from 'std-env'
 
-import {
-  demoRules,
-  // documentationRules,
-  landingRules,
-} from './config/routes-rules'
+import { appRules, landingRules } from './config/routes-rules'
 
 export default defineNuxtConfig({
   ssr: true,
   extends: [
-    /**
-     * App layers: these are the layers that contains specific features
-     * - landing: contains landing pages
-     * - documentation: contains all /documentation pages
-     */
     '../layers/landing',
-    // process.env.ENABLE_DOCUMENTATION && '../layers/documentation',
-
-    /**
-     * This extends the base Tairo layer.
-     *
-     * Alternatively you can use the following:
-     * 'github:cssninjaStudio/tairo/layers/xxx#v1.0.0'
-     *
-     * And set GIGET_AUTH=<github_token> in your .env file
-     *
-     * This would allows you to create an empty git repository
-     * with only your source code and no demo.
-     */
     '../layers/tairo-layout-collapse',
     '../layers/tairo',
-
-    /**
-     * This is an additional layer that adds SEO features.
-     *
-     * Can be used either to prevent indexing,
-     * or to add custom meta tags to improve referencing.
-     * @see https://github.com/harlan-zw/nuxt-seo-kit
-     */
-    // 'nuxt-seo-kit',
   ],
-  modules: [
-    /**
-     * Swiper is a nuxt module that allows us to use swiper in nuxt
-     * wich is a carousel component used in the demo
-     * @see https://github.com/cpreston321/nuxt-swiper
-     */
-    'nuxt-swiper',
-    '@pinia/nuxt',
-    '@pinia-plugin-persistedstate/nuxt',
-    // '@nuxtjs/moment',
-  ],
+  modules: ['nuxt-swiper', '@pinia/nuxt', '@pinia-plugin-persistedstate/nuxt'],
 
   imports: {
     dirs: ['./stores'],
@@ -84,9 +43,8 @@ export default defineNuxtConfig({
     },
   },
   routeRules: {
-    ...demoRules,
+    ...appRules,
     ...landingRules,
-    // ...(process.env.ENABLE_DOCUMENTATION ? documentationRules : {}),
   },
 
   // build configuration
@@ -106,7 +64,7 @@ export default defineNuxtConfig({
   nitro: {
     prerender: {
       crawlLinks: false,
-      routes: [],
+      routes: ['/'],
     },
     esbuild: {
       options: {

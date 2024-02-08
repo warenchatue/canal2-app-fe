@@ -23,7 +23,7 @@ const staticPageRule = isProduction
     }
   : {}
 
-export const demoRules = {
+export const appRules = {
   '/img/**': staticAssetsRule,
   '/shiki/**': staticAssetsRule,
   '/api/**': staticAssetsRule,
