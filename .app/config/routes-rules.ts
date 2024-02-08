@@ -27,9 +27,13 @@ export const appRules = {
   '/img/**': staticAssetsRule,
   '/shiki/**': staticAssetsRule,
   '/api/**': staticAssetsRule,
-  '/dashboards/**': staticPageRule,
-  '/bo/**': staticPageRule,
-  '/admin/**': staticPageRule,
+  '/dashboards': staticPageRule,
+  '/bo/pub/**': staticPageRule,
+  '/bo/sales/**': staticPageRule,
+  '/bo/accountancy/**': staticPageRule,
+  '/bo/config/**': staticPageRule,
+  'bo/admin/**': staticPageRule,
+  'bo/profile/**': staticPageRule,
   '/auth/**': staticPageRule,
 }
 
