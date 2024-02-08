@@ -32,8 +32,8 @@ export const appRules = {
   '/bo/sales/**': staticPageRule,
   '/bo/accountancy/**': staticPageRule,
   '/bo/config/**': staticPageRule,
-  'bo/admin/**': staticPageRule,
-  'bo/profile/**': staticPageRule,
+  '/bo/admin/**': staticPageRule,
+  '/bo/profile/**': staticPageRule,
   '/auth/**': staticPageRule,
 }
 
