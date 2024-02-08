@@ -36,5 +36,6 @@ export const appRules = {
 export const landingRules = {
   '/_ipx/**': staticAssetsRule,
   '/': staticPageRule,
-  '/**': staticPageRule,
+  '/contact': staticPageRule,
+  '/about': staticPageRule,
 }
