@@ -11,15 +11,18 @@ const staticAssetsRule = isProduction
 const staticPageRule = isProduction
   ? {
       prerender: false,
-      // cache: {
-      //   maxAge: 0,
-      //   swr: false,
-      //   staleMaxAge: -1,
-      // },
-      headers: {
-        'Cache-Control':
-          'public, max-age=3600, s-maxage=3600, stale-while-revalidate=3600, stale-if-error=3600',
+      cache: {
+        maxAge: 0,
+        swr: false,
+        staleMaxAge: 0,
       },
+      headers: {
+        'Cache-Control': 'max-age=0',
+      },
+      // headers: {
+      //   'Cache-Control':
+      //     'public, max-age=3600, s-maxage=3600, stale-while-revalidate=3600, stale-if-error=3600',
+      // },
     }
   : {}
 
