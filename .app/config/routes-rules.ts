@@ -10,15 +10,15 @@ const staticAssetsRule = isProduction
 
 const staticPageRule = isProduction
   ? {
-      prerender: false,
-      cache: {
-        maxAge: 0,
-        swr: true,
-        staleMaxAge: 0,
-      },
+      // prerender: false,
+      // cache: {
+      //   maxAge: 0,
+      //   swr: false,
+      //   staleMaxAge: -1,
+      // },
       headers: {
         'Cache-Control':
-          'public, max-age=0, s-maxage=0, stale-while-revalidate=3600, stale-if-error=3600',
+          'public, max-age=0, s-maxage=0, stale-while-revalidate=0, stale-if-error=0',
       },
     }
   : {}
