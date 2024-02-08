@@ -3,7 +3,7 @@ import { isProduction } from 'std-env'
 const staticAssetsRule = isProduction
   ? {
       headers: {
-        'Cache-Control': 'must-revalidate, max-age=0',
+        'Cache-Control': 'public, max-age=0, must-revalidate',
       },
     }
   : {}
@@ -12,12 +12,13 @@ const staticPageRule = isProduction
   ? {
       prerender: false,
       cache: {
-        maxAge: 3600,
+        maxAge: 0,
         swr: true,
-        staleMaxAge: 3600,
+        staleMaxAge: 0,
       },
       headers: {
-        'Cache-Control': 'must-revalidate, max-age=0',
+        'Cache-Control':
+          'public, max-age=0, s-maxage=0, must-revalidate, stale-while-revalidate=3600, stale-if-error=3600',
       },
     }
   : {}
