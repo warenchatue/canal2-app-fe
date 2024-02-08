@@ -27,6 +27,10 @@ export const appRules = {
   '/img/**': staticAssetsRule,
   '/shiki/**': staticAssetsRule,
   '/api/**': staticAssetsRule,
+  '/dashboards/**': staticPageRule,
+  '/bo/**': staticPageRule,
+  '/admin/**': staticPageRule,
+  '/auth/**': staticPageRule,
 }
 
 export const landingRules = {
