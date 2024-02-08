@@ -12,13 +12,13 @@ const staticPageRule = isProduction
   ? {
       prerender: false,
       cache: {
-        maxAge: 3600,
+        maxAge: 0,
         swr: true,
-        staleMaxAge: 3600,
+        staleMaxAge: 0,
       },
       headers: {
         'Cache-Control':
-          'public, max-age=3600, s-maxage=3600, stale-while-revalidate=3600, stale-if-error=3600',
+          'public, max-age=0, s-maxage=0, stale-while-revalidate=3600, stale-if-error=3600',
       },
     }
   : {}
@@ -28,8 +28,11 @@ export const appRules = {
   '/shiki/**': staticAssetsRule,
   '/api/**': staticAssetsRule,
   '/dashboards': staticPageRule,
+  '/bo/pub': staticPageRule,
   '/bo/pub/**': staticPageRule,
+  '/bo/sales': staticPageRule,
   '/bo/sales/**': staticPageRule,
+  '/bo/accountancy/': staticPageRule,
   '/bo/accountancy/**': staticPageRule,
   '/bo/config/**': staticPageRule,
   '/bo/admin/**': staticPageRule,
