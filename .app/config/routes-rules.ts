@@ -12,13 +12,13 @@ const staticPageRule = isProduction
   ? {
       prerender: false,
       cache: {
-        maxAge: 0,
+        maxAge: 3600,
         swr: true,
         staleMaxAge: 3600,
       },
       headers: {
         'Cache-Control':
-          'public, max-age=0, s-maxage=3600, stale-while-revalidate=3600, stale-if-error=3600',
+          'public, max-age=0, s-maxage=0, stale-while-revalidate=3600, stale-if-error=3600',
       },
     }
   : {}
