@@ -25,6 +25,7 @@ const dynamicPageRule = isProduction
   ? {
       prerender: false,
       ssr: true,
+      cache: {},
     }
   : {}
 
