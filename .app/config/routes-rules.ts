@@ -23,7 +23,7 @@ const dynamicAPIRule = isProduction
 
 const dynamicPageRule = isProduction
   ? {
-      swr: true,
+      cache: {},
     }
   : {}
 
