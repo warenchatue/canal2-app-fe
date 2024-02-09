@@ -24,8 +24,10 @@ const dynamicAPIRule = isProduction
 const dynamicPageRule = isProduction
   ? {
       prerender: false,
-      ssr: true,
-      cache: {},
+      cache: {
+        ssr: true,
+        swr: true,
+      },
     }
   : {}
 
