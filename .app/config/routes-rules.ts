@@ -24,16 +24,16 @@ const dynamicAPIRule = isProduction
 const dynamicPageRule = isProduction
   ? {
       prerender: false,
-      cache: {
-        maxAge: 3600,
-        swr: true,
-        ssr: true,
-        staleMaxAge: 3600,
-      },
-      headers: {
-        'Cache-Control':
-          'public, max-age=3600, s-maxage=3600, stale-while-revalidate=3600, stale-if-error=3600',
-      },
+      // cache: {
+      //   maxAge: 3600,
+      //   swr: true,
+      //   ssr: true,
+      //   staleMaxAge: 3600,
+      // },
+      // headers: {
+      //   'Cache-Control':
+      //     'public, max-age=3600, s-maxage=3600, stale-while-revalidate=3600, stale-if-error=3600',
+      // },
     }
   : {}
 
