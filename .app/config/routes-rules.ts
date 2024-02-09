@@ -24,6 +24,7 @@ const dynamicAPIRule = isProduction
 const dynamicPageRule = isProduction
   ? {
       prerender: false,
+      ssr: true,
       // cache: {
       //   maxAge: 3600,
       //   swr: true,
