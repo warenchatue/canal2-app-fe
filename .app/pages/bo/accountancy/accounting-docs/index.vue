@@ -38,8 +38,8 @@ const isLoading = ref(false)
 if (
   authStore.user.appRole?.name != UserRole.sale &&
   authStore.user.appRole?.name != UserRole.billing &&
-  authStore.user.appRole?.name != UserRole.admin &&
   authStore.user.appRole?.name != UserRole.accountancy &&
+  authStore.user.appRole?.name != UserRole.admin &&
   authStore.user.appRole?.name != UserRole.superAdmin
 ) {
   toaster.clearAll()

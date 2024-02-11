@@ -272,7 +272,7 @@ export default defineAppConfig({
               },
               {
                 name: 'Plan de Tiers',
-                to: '/bo/accountancy/journals',
+                // to: '/bo/accountancy/third-parties',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
             ],

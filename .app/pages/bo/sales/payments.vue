@@ -10,7 +10,7 @@ definePageMeta({
   preview: {
     title: 'Règlements',
     description: 'Règlements factures',
-    categories: ['bo', 'spots', 'orders'],
+    categories: ['bo', 'sales', 'payments'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -24,12 +24,13 @@ const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(10)
 const isPrint = ref(false)
-const isModalNewPackageOpen = ref(false)
-const isModalDeletePackageOpen = ref(false)
+const isModalNewPaymentOpen = ref(false)
+const isModalDeletePaymentOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
 const isModalPaymentsReportOpen = ref(false)
 const isEdit = ref(false)
 const toaster = useToaster()
+const currentPayment = ref({})
 const currentOrg = ref('')
 const currentTeam = ref('')
 const dates = ref({
@@ -121,22 +122,37 @@ async function printSalesReport() {
   }, 500)
 }
 
-function confirmDeletePackage(invoice: any) {
-  isModalDeletePackageOpen.value = true
-  isEdit.value = false
-  currentPackage.value = invoice
+function confirmEditPayment(payment: any) {
+  isModalNewPaymentOpen.value = true
+  isEdit.value = true
+  currentPayment.value = payment
+  setFieldValue('payment._id', payment._id)
+  setFieldValue('payment.amount', payment.amount)
+  setFieldValue('payment.status', payment.status)
+  setFieldValue('payment.announcer', payment.announcer)
+  setFieldValue('payment.org', payment.org)
+  setFieldValue('payment.author', payment.author)
+  setFieldValue('payment.data.invoiceId', payment.data.invoiceId)
+  setFieldValue('payment.data.invoiceCode', payment.data.invoiceCode)
+  setFieldValue('payment.data.city', payment.data.city)
 }
 
-async function deletePackage(invoice: any) {
+function confirmDeletePayment(payment: any) {
+  isModalDeletePaymentOpen.value = true
+  isEdit.value = false
+  currentPayment.value = payment
+}
+
+async function deletePayment(payment: any) {
   const query2 = computed(() => {
     return {
-      action: 'delete',
+      action: 'deleteWithInvoice',
       token: token.value,
-      id: invoice._id,
+      id: payment._id,
     }
   })
 
-  const response = await useFetch('/api/sales/invoices', {
+  const response = await useFetch('/api/transactions', {
     method: 'delete',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
@@ -147,13 +163,13 @@ async function deletePackage(invoice: any) {
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Facture supprimée !`,
+      message: `Transaction supprimée !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
     })
-    isModalDeletePackageOpen.value = false
-    filter.value = 'invoice'
+    isModalDeletePaymentOpen.value = false
+    filter.value = 'payment'
     filter.value = ''
   } else {
     toaster.clearAll()
@@ -180,8 +196,6 @@ function toggleAllVisibleSelection() {
   }
 }
 
-const currentPackage = ref({})
-
 // This is the object that will contain the validation messages
 const ONE_MB = 1000000
 const VALIDATION_TEXT = {
@@ -195,54 +209,50 @@ const VALIDATION_TEXT = {
 // It's used to define the shape that the form data will have
 const zodSchema = z
   .object({
-    spotPackage: z.object({
+    payment: z.object({
       _id: z.string().optional(),
-      label: z.string().min(1, VALIDATION_TEXT.LABEL_REQUIRED),
-      status: z
-        .union([
-          z.literal('onHold'),
-          z.literal('confirmed'),
-          z.literal('paid'),
-          z.literal('closed'),
-        ])
-        .optional(),
-      period: z.string(),
-      invoice: z
+      amount: z.number(),
+      status: z.string(),
+      data: z
         .object({
-          label: z.string(),
-          amount: z.number(),
-          pending: z.number(),
-          totalSpotsPaid: z.number(),
-          url: z.string(),
+          invoiceId: z.string(),
+          invoiceCode: z.string(),
+          city: z.string(),
         })
         .optional()
         .nullable(),
       announcer: z
         .object({
           _id: z.string(),
-          email: z.string(),
+          email: z.string().optional(),
           name: z.string(),
-          photo: z.string().optional(),
         })
         .optional()
         .nullable(),
-      commercial: z
+      author: z
         .object({
           _id: z.string(),
-          email: z.string(),
+          email: z.string().optional(),
           lastName: z.string(),
-          photo: z.string().optional(),
+        })
+        .optional()
+        .nullable(),
+      org: z
+        .object({
+          _id: z.string(),
+          name: z.string(),
+          email: z.string().optional(),
         })
         .optional()
         .nullable(),
     }),
   })
   .superRefine((data, ctx) => {
-    if (!data.spotPackage.label) {
+    if (!data.payment.amount) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: VALIDATION_TEXT.LABEL_REQUIRED,
-        path: ['spotPackage.label'],
+        path: ['payment.label'],
       })
     }
   })
@@ -254,24 +264,16 @@ type FormInput = z.infer<typeof zodSchema>
 const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
   avatar: null,
-  spotPackage: {
-    label: '',
-    period: '',
+  payment: {
+    amount: 0,
     status: 'onHold',
-    invoice: {
-      label: '',
-      amount: 0,
-      pending: 0,
-      totalSpotsPaid: 0,
-      url: '',
-    },
     announcer: {
       _id: '',
       email: '',
       name: '',
       flag: '',
     },
-    commercial: {
+    author: {
       _id: authStore.user._id ?? '',
       email: authStore.user.email ?? '',
       lastName: authStore.user.firstName + ' ' + authStore.user.lastName,
@@ -296,181 +298,66 @@ const {
 })
 
 const success = ref(false)
-
-async function confirmOrder() {
-  const query4 = computed(() => {
-    return {
-      action: 'updatePackage',
-      token: token.value,
-      id: currentPackage.value._id,
-    }
-  })
-  if (authStore.user?.appRole?.tag == UserRole.respSaleTag) {
-    currentPackage.value.orderValidator = authStore.user._id
-  } else if (authStore.user.appRole?.tag == UserRole.respBillingTag) {
-    currentPackage.value.billValidator = authStore.user._id
-  } else if (authStore.user.appRole?.name == UserRole.admin) {
-    currentPackage.value.adminValidator = authStore.user._id
-  }
-
-  const response = await useFetch('/api/pub/packages', {
-    method: 'put',
-    headers: { 'Content-Type': 'application/json' },
-    query: query4,
-    body: { ...currentPackage.value },
-  })
-
-  if (response.data?.value?.success) {
-    success.value = true
-    toaster.clearAll()
-    toaster.show({
-      title: 'Success',
-      message: `Commande confirmée !`,
-      color: 'success',
-      icon: 'ph:check',
-      closable: true,
-    })
-    isModalConfirmOrderOpen.value = false
-    filter.value = 'order'
-    filter.value = ''
-  } else {
-    toaster.clearAll()
-    toaster.show({
-      title: 'Oops',
-      message: `Une erreur est survenue !`,
-      color: 'danger',
-      icon: 'ph:check',
-      closable: true,
-    })
-  }
-}
-
 // This is where you would send the form data to the server
 const onSubmit = handleSubmit(
   async (values) => {
     success.value = false
 
     // here you have access to the validated form values
-    console.log('package-create-success', values)
-    const contractUrl =
-      isEdit.value == true ? ref(currentPackage.contractUrl ?? '') : ref('')
-    const invoiceUrl =
-      isEdit.value == true ? ref(currentPackage.invoice?.url ?? '') : ref('')
-
+    console.log('payment-create-success', values)
     try {
       const isSuccess = ref(false)
-
-      // upload contract file
-      if (orderContractFile.value != null) {
-        const fd = new FormData()
-        fd.append('0', orderContractFile.value)
-        const query3 = computed(() => {
-          return {
-            action: 'new-single-file',
-            dir: 'uploads/ordersFiles/contracts',
-            token: token.value,
-          }
-        })
-
-        const { data: uploadData, refresh } = await useFetch(
-          '/api/files/upload',
-          {
-            method: 'POST',
-            query: query3,
-            body: fd,
-          },
-        )
-        console.log(uploadData)
-        if (uploadData.value?.success == false) {
-          contractUrl.value = ''
-          toaster.show({
-            title: 'Oops',
-            message: `Une erreur est survenue lors de l'importation de des fichiers !`,
-            color: 'danger',
-            icon: 'ph:check',
-            closable: true,
-          })
-        } else {
-          contractUrl.value = uploadData.value.fileName
-        }
-      }
-
-      // upload invoice file
-      if (orderInvoiceFile.value != null) {
-        const fd = new FormData()
-        fd.append('0', orderInvoiceFile.value)
-        const query3 = computed(() => {
-          return {
-            action: 'new-single-file',
-            dir: 'uploads/ordersFiles/invoices',
-            token: token.value,
-          }
-        })
-
-        const { data: uploadData, refresh } = await useFetch(
-          '/api/files/upload',
-          {
-            method: 'POST',
-            query: query3,
-            body: fd,
-          },
-        )
-        console.log(uploadData)
-        if (uploadData.value?.success == false) {
-          invoiceUrl.value = ''
-          toaster.show({
-            title: 'Oops',
-            message: `Une erreur est survenue lors de l'importation de des fichiers !`,
-            color: 'danger',
-            icon: 'ph:check',
-            closable: true,
-          })
-        } else {
-          invoiceUrl.value = uploadData.value.fileName
-        }
-      }
 
       if (isEdit.value == true) {
         const query2 = computed(() => {
           return {
-            action: 'updatePackage',
+            action: 'updatePayment',
             token: token.value,
-            id: values.spotPackage._id,
+            id: values.payment._id,
           }
         })
 
-        const response = await useFetch('/api/pub/packages', {
-          method: 'put',
+        const response = await useFetch('/api/transactions', {
+          method: 'post',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.spotPackage,
-            announcer: values.spotPackage?.announcer?._id,
-            manager: values.spotPackage?.commercial?._id,
-            invoice: { ...values.spotPackage?.invoice, url: invoiceUrl.value },
-            contractUrl,
+            ...currentPayment.value,
+            announcer: currentPayment.value?.announcer?._id,
+            author: currentPayment.value?.author?._id,
+            org: currentPayment.value?.org?._id,
+            paymentAccount: currentPayment.value?.paymentAccount?._id,
+            status: values.payment.status,
+            data: {
+              ...currentPayment.value.data,
+              city: values.payment.data?.city,
+            },
           },
         })
         isSuccess.value = response.data.value?.success
       } else {
         const query2 = computed(() => {
           return {
-            action: 'createPackage',
+            action: 'createPayment',
             token: token.value,
           }
         })
 
-        const response = await useFetch('/api/pub/packages', {
+        const response = await useFetch('/api/transactions', {
           method: 'post',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.spotPackage,
-            announcer: values.spotPackage?.announcer?._id,
-            manager: values.spotPackage?.commercial?._id,
-            _id: undefined,
-            invoice: { ...values.spotPackage?.invoice, url: invoiceUrl.value },
-            contractUrl,
+            ...currentPayment.value,
+            announcer: currentPayment.value?.announcer?._id,
+            author: currentPayment.value?.author?._id,
+            org: currentPayment.value?.org?._id,
+            paymentAccount: currentPayment.value?.paymentAccount?._id,
+            status: values.payment.status,
+            data: {
+              ...currentPayment.value.data,
+              city: values.payment.data?.city,
+            },
           },
         })
         isSuccess.value = response.data.value?.success
@@ -481,14 +368,14 @@ const onSubmit = handleSubmit(
         toaster.show({
           title: 'Success',
           message:
-            isEdit.value == false ? `Package créé !` : `Package mis à jour`,
+            isEdit.value == false ? `Payment créé !` : `Payment mis à jour`,
           color: 'success',
           icon: 'ph:check',
           closable: true,
         })
-        isModalNewPackageOpen.value = false
+        isModalNewPaymentOpen.value = false
         resetForm()
-        filter.value = 'spotPackage'
+        filter.value = 'payment'
         filter.value = ''
       } else {
         toaster.clearAll()
@@ -569,12 +456,7 @@ const onSubmit = handleSubmit(
           <Icon name="ph:file" class="h-4 w-4" />
           <span>Rapports</span>
         </BaseButton>
-        <BaseButton
-          :disabled="true"
-          color="primary"
-          class="w-full sm:w-52"
-          to="/bo/sales/orders/new-invoice-0"
-        >
+        <BaseButton :disabled="true" color="primary" class="w-full sm:w-52">
           <Icon name="ph:plus" class="h-4 w-4" />
           <span>Nouveau</span>
         </BaseButton>
@@ -951,24 +833,24 @@ const onSubmit = handleSubmit(
 
                   <TairoTableCell v-if="!isPrint" spaced class="capitalize">
                     <BaseTag
-                      v-if="item.state === 'trashed'"
-                      color="muted"
+                      v-if="item.status === 'completed'"
+                      color="success"
                       flavor="pastel"
                       shape="full"
                       condensed
                       class="font-medium"
                     >
-                      {{ item.state }}
+                      {{ item.status }}
                     </BaseTag>
                     <BaseTag
-                      v-else-if="item.state === 'active'"
+                      v-else-if="item.status === 'onHold'"
                       color="warning"
                       flavor="pastel"
                       shape="full"
                       condensed
                       class="font-medium"
                     >
-                      {{ item.state }}
+                      {{ item.status }}
                     </BaseTag>
                   </TairoTableCell>
                   <TairoTableCell v-if="!isPrint" spaced>
@@ -981,12 +863,19 @@ const onSubmit = handleSubmit(
                         <Icon name="lucide:eye" class="h-4 w-4"
                       /></BaseButtonAction>
                       <BaseButtonAction
-                        :to="'/bo/sales/orders/edit-invoice-' + item._id"
+                        :disabled="
+                          authStore.user.appRole?.name != UserRole.billing &&
+                          authStore.user.appRole?.name !=
+                            UserRole.accountancy &&
+                          authStore.user.appRole?.name != UserRole.admin &&
+                          authStore.user.appRole?.name != UserRole.superAdmin
+                        "
+                        @click="confirmEditPayment(item)"
                       >
                         <Icon name="lucide:edit" class="h-4 w-4"
                       /></BaseButtonAction>
                       <BaseButtonAction
-                        @click="confirmDeletePackage(item)"
+                        @click="confirmDeletePayment(item)"
                         class="mx-2"
                         :disabled="
                           authStore.user.appRole?.name != UserRole.superAdmin
@@ -1048,9 +937,9 @@ const onSubmit = handleSubmit(
 
     <!-- Modal delete -->
     <TairoModal
-      :open="isModalDeletePackageOpen"
+      :open="isModalDeletePaymentOpen"
       size="sm"
-      @close="isModalDeletePackageOpen = false"
+      @close="isModalDeletePaymentOpen = false"
     >
       <template #header>
         <!-- Header -->
@@ -1058,10 +947,10 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Suppression d'une facture
+            Suppression d'un paiement
           </h3>
 
-          <BaseButtonClose @click="isModalDeletePackageOpen = false" />
+          <BaseButtonClose @click="isModalDeletePaymentOpen = false" />
         </div>
       </template>
 
@@ -1071,8 +960,11 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
           >
-            Supprimer
-            <span class="text-red-500">{{ currentPackage?.label }}</span> ?
+            Supprimer le payment pour la facture
+            <span class="text-red-500">{{
+              currentPayment.data.invoiceCode ?? ''
+            }}</span>
+            ?
           </h3>
 
           <p
@@ -1087,14 +979,14 @@ const onSubmit = handleSubmit(
         <!-- Footer -->
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
-            <BaseButton @click="isModalDeletePackageOpen = false"
+            <BaseButton @click="isModalDeletePaymentOpen = false"
               >Annuler</BaseButton
             >
 
             <BaseButton
               color="primary"
               flavor="solid"
-              @click="deletePackage(currentPackage)"
+              @click="deletePayment(currentPayment)"
               >Suppimer</BaseButton
             >
           </div>
@@ -1215,6 +1107,131 @@ const onSubmit = handleSubmit(
               @click="printSalesReport()"
             >
               Imprimer
+            </BaseButton>
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal import edit payment -->
+    <TairoModal
+      :open="isModalNewPaymentOpen"
+      size="xl"
+      @close="isModalNewPaymentOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Mise à jour paiment
+          </h3>
+
+          <BaseButtonClose @click="isModalNewPaymentOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <BaseCard class="w-full">
+        <form
+          method="POST"
+          action=""
+          class="divide-muted-200 dark:divide-muted-700"
+          @submit.prevent="onSubmit"
+        >
+          <div
+            shape="curved"
+            class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
+          >
+            <div class="mx-auto flex w-full flex-col">
+              <div>
+                <div class="col-span-12 md:col-span-6">
+                  <Field
+                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    name="payment.amount"
+                  >
+                    <BaseInput
+                      label="Montant"
+                      icon="ph:money-duotone"
+                      placeholder=""
+                      :model-value="field.value"
+                      :error="errorMessage"
+                      :disabled="true"
+                      @update:model-value="handleChange"
+                      @blur="handleBlur"
+                    />
+                  </Field>
+                </div>
+                <div class="col-span-12 md:col-span-6">
+                  <Field
+                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    name="payment.data.invoiceCode"
+                  >
+                    <BaseInput
+                      label="Numéro de Facture"
+                      icon="ph:file-duotone"
+                      placeholder=""
+                      :model-value="field.value"
+                      :error="errorMessage"
+                      :disabled="true"
+                      @update:model-value="handleChange"
+                      @blur="handleBlur"
+                    />
+                  </Field>
+                </div>
+                <div class="col-span-12 md:col-span-6">
+                  <Field
+                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    name="payment.data.city"
+                  >
+                    <BaseSelect
+                      label="Ville"
+                      icon="ph:funnel"
+                      :model-value="field.value"
+                      :error="errorMessage"
+                      @update:model-value="handleChange"
+                      @blur="handleBlur"
+                    >
+                      <option value="douala">Douala</option>
+                      <option value="yaounde">Yaoundé</option>
+                    </BaseSelect>
+                  </Field>
+                </div>
+                <div class="col-span-12 md:col-span-6">
+                  <Field
+                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    name="payment.status"
+                  >
+                    <BaseSelect
+                      label="Statut"
+                      icon="ph:funnel"
+                      :model-value="field.value"
+                      :error="errorMessage"
+                      @update:model-value="handleChange"
+                      @blur="handleBlur"
+                    >
+                      <option value="onHold">En Attente</option>
+                      <option value="completed">Success</option>
+                      <option value="failed">Echec</option>
+                    </BaseSelect>
+                  </Field>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </BaseCard>
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalNewPaymentOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton color="primary" flavor="solid" @click="onSubmit">
+              {{ isEdit == true ? 'Modifier' : 'Créer' }}
             </BaseButton>
           </div>
         </div>

@@ -162,9 +162,9 @@ const paymentAccounts = accounts.value?.data.filter((e: any) => {
   return e.position == 'd'
 })
 
-const saleAccounts = accounts.value?.data.filter((e: any) => {
-  return e.code == '7011'
-})
+// const saleAccounts = accounts.value?.data.filter((e: any) => {
+//   return e.code == '7011'
+// })
 
 const pageType = computed(() => route.params.type)
 const pageValue = computed(() => route.params.value)
@@ -298,7 +298,7 @@ async function addInvoicePayment() {
     query: query2,
     body: {
       ...curInvoicePaymentForm.value,
-
+      status: 'completed',
       paymentAccount: curInvoicePaymentForm.value.paymentAccount._id,
       org: currentOrg?.value?._id,
       announcer: currentOrderInvoice?.value?.announcer._id,
@@ -683,7 +683,7 @@ function addOrderItem() {
     id: 0,
     article: '',
     description: '',
-    account: '',
+    account: '7011',
     quantity: 0,
     unit: 'unité(s)',
     rate: 0,
@@ -715,7 +715,7 @@ const curOrderItem = ref({
   id: 0,
   article: '',
   description: '',
-  account: '',
+  account: '7011',
   quantity: 0,
   unit: 'unité(s)',
   rate: 0,
@@ -1893,7 +1893,7 @@ const onSubmit = handleSubmit(
                             />
                           </Field>
                         </div>
-                          <div
+                        <div
                           class="ltablet:col-span-12 col-span-12 lg:col-span-6"
                         >
                           <Field
@@ -1954,13 +1954,13 @@ const onSubmit = handleSubmit(
                           >
                             Description
                           </th>
-                          <th
+                          <!-- <th
                             v-if="!isPrint"
                             scope="col"
                             class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-[9px] font-bold sm:ps-6 md:ps-0"
                           >
                             Compte
-                          </th>
+                          </th> -->
                           <th
                             scope="col"
                             class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-[9px] font-bold sm:table-cell"
@@ -1972,7 +1972,7 @@ const onSubmit = handleSubmit(
                             scope="col"
                             class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-[9px] font-bold sm:table-cell"
                           >
-                            U.M
+                            Unité de mesure
                           </th>
                           <th
                             scope="col"
@@ -2050,12 +2050,12 @@ const onSubmit = handleSubmit(
                               {{ item.description }}
                             </p>
                           </td>
-                          <td
+                          <!-- <td
                             v-if="!isPrint"
                             class="px-3 py-4 text-center text-[9px] sm:table-cell"
                           >
                             7011
-                          </td>
+                          </td> -->
                           <td
                             class="text-muted-800 dark:text-muted-400 px-1 py-4 text-center font-medium text-[9px] sm:table-cell"
                           >
@@ -2183,7 +2183,7 @@ const onSubmit = handleSubmit(
                               autogrow
                             />
                           </td>
-                          <td
+                          <!-- <td
                             class="hidden px-3 py-4 text-right text-sm sm:table-cell"
                           >
                             <div class="flex justify-center">
@@ -2220,7 +2220,7 @@ const onSubmit = handleSubmit(
                                 </Field>
                               </div>
                             </div>
-                          </td>
+                          </td> -->
                           <td
                             class="hidden px-3 py-4 text-right text-sm sm:table-cell"
                           >

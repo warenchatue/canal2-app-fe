@@ -31,7 +31,6 @@ const toaster = useToaster()
 // Check if can have access
 if (
   authStore.user.appRole.name != UserRole.mediaPlanner &&
-  authStore.user.appRole?.name != UserRole.adminSale &&
   authStore.user.appRole?.name != UserRole.admin &&
   authStore.user.appRole.name != UserRole.superAdmin
 ) {
@@ -98,9 +97,9 @@ const { data: announcers } = await useFetch('/api/sales/announcers', {
   query: query2,
 })
 
-const { data: allOrders } = await useFetch('/api/sales/orders', {
-  query: query2,
-})
+// const { data: allOrders } = await useFetch('/api/sales/orders', {
+//   query: query2,
+// })
 
 const { data: allInvoices } = await useFetch('/api/sales/invoices', {
   query: query2,
@@ -118,14 +117,14 @@ const transformedAnnouncers = announcers.value?.data.map((e: any) => {
   return invoice
 })
 
-const transformedOrders = allOrders.value?.data.map((e: any) => {
-  const invoice = {
-    id: e._id,
-    name: e.code,
-    text: e.createdAt,
-  }
-  return invoice
-})
+// const transformedOrders = allOrders.value?.data.map((e: any) => {
+//   const invoice = {
+//     id: e._id,
+//     name: e.code,
+//     text: e.createdAt,
+//   }
+//   return invoice
+// })
 
 const transformedInvoices = allInvoices.value?.data.map((e: any) => {
   const invoice = {
@@ -974,35 +973,6 @@ const onSubmit = handleSubmit(
                         label="Facture"
                         clearable
                         :clear-value="''"
-                      >
-                        <template #empty="value">
-                          <!-- Use destruct to keep what you need -->
-                          <div v-if="value.query.length < 3">
-                            Saisissez au-moins 3 caractères
-                          </div>
-                          <div v-else>Aucun resultat.</div>
-                        </template>
-                      </BaseAutocomplete>
-                    </Field>
-                  </div>
-                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="campaign.order"
-                    >
-                      <BaseAutocomplete
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                        :items="transformedOrders"
-                        :display-value="(item: any) => item.name || ''"
-                        :filter-items="filterItems"
-                        icon="lucide:file"
-                        placeholder="e.g. DEV/2023"
-                        label="Devis"
-                        clearable
                       >
                         <template #empty="value">
                           <!-- Use destruct to keep what you need -->

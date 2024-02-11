@@ -443,14 +443,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span
-                >{{
-                  Math.ceil(
-                    (data.metaData?.totalDiffused / data.metaData?.totalToday) *
-                      100,
-                  )
-                }}%</span
-              >
+              <span>+0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -491,15 +484,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-danger-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span
-                >{{
-                  Math.ceil(
-                    (data.metaData?.totalNotDiffused /
-                      data.metaData?.totalToday) *
-                      100,
-                  )
-                }}%</span
-              >
+              <span>-0%</span>
               <Icon name="lucide:trending-down" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en baisse</span>
             </div>
@@ -540,14 +525,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span
-                >{{
-                  Math.ceil(
-                    (data.metaData?.totalPending / data.metaData?.totalToday) *
-                      100,
-                  )
-                }}%</span
-              >
+              <span>+O% </span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -588,12 +566,14 @@ const onSubmit = handleSubmit(
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>{{
+              <span
+                >{{
                   Math.ceil(
                     (data.metaData?.totalToday / data.metaData?.totalToday) *
                       100,
                   )
-                }}%</span>
+                }}%</span
+              >
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>

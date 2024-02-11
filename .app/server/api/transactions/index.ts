@@ -7,6 +7,7 @@ export default defineEventHandler(async (event) => {
   const txnId = (query.txnId as string) || ''
   const token = (query.token as string) || ''
   const org = (query.org as string) || ''
+  const id = (query.id as string) || ''
   const team = (query.team as string) || ''
   const startDate = (query.startDate as string) || ''
   const endDate = (query.endDate as string) || ''
@@ -42,17 +43,12 @@ export default defineEventHandler(async (event) => {
       data: filterData(data, filter, page, perPage),
       success: true,
     }
-  } else if (action == 'createSimpleDonation') {
+  } else if (action == 'updatePayment') {
     const body = await readBody(event)
-    const data = await createSimpleDonation(token, body)
+    const data = await updatePayment(id, body, token)
     return { data: data, success: true }
-  } else if (action == 'addPaymentMethod') {
-    const body = await readBody(event)
-    const data = await addPaymentMethod(txnId, body, token)
-    return { data: data, success: true }
-  } else if (action == 'addExternalTxn') {
-    const body = await readBody(event)
-    const data = await addExternalTxn(txnId, body, token)
+  } else if (action == 'deleteWithInvoice') {
+    const data = await deleteWithInvoice(id, token)
     return { data: data, success: true }
   } else if (action == 'details') {
     const data = await getTxn(txnId)
@@ -165,18 +161,18 @@ async function addPaymentMethod(txnId: string, body: any, token: string) {
   return Promise.resolve(data)
 }
 
-async function addExternalTxn(txnId: string, body: any, token: string) {
+async function updatePayment(id: string, body: any, token: string) {
   const runtimeConfig = useRuntimeConfig()
-  console.log('addExternalTxn, Token:' + token)
+  console.log('updatePayment, Token:' + token)
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/transactions/externalTxn/' + txnId,
+    runtimeConfig.env.apiUrl + '/transactions/' + id,
     {
       method: 'PATCH',
       headers: {
         Authorization: 'Bearer ' + token,
         'Content-type': 'application/json',
       },
-      body: { _txn: body },
+      body: body,
     },
   ).catch((error) => console.log(error))
   console.log(data)
@@ -186,4 +182,21 @@ async function addExternalTxn(txnId: string, body: any, token: string) {
 
 async function getTxn(id: String) {
   return {}
+}
+
+async function deleteWithInvoice(id: string, token: string) {
+  console.log('deleteTxn ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/transactions/' + id + '/with-invoice',
+    {
+      method: 'DELETE',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
 }
