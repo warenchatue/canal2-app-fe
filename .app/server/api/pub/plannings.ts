@@ -63,6 +63,11 @@ export default defineEventHandler(async (event) => {
     console.log(body)
     const data = await createPlanning(packageId, orderCode, body, token)
     return { data: data, success: true }
+  } else if (action == 'createPlannings') {
+    const body = await readBody(event)
+    console.log(body)
+    const data = await createPlannings(packageId, orderCode, body, token)
+    return { data: data, success: true }
   } else if (action == 'updatePlanning') {
     const body = await readBody(event)
     console.log(body)
@@ -209,6 +214,28 @@ async function createPlanning(
     },
   ).catch((error) => console.log(error))
   console.log(data)
+  return Promise.resolve(data)
+}
+async function createPlannings(
+  packageId: string,
+  orderCode: string,
+  body: any,
+  token: string,
+) {
+  console.log('createPlannings ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/plannings/' + packageId + '/bulk',
+    {
+      method: 'post',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+      body: body.plannings,
+    },
+  ).catch((error) => console.log(error))
+  // console.log(data)
   return Promise.resolve(data)
 }
 

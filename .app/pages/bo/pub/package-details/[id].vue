@@ -73,6 +73,8 @@ const activeDate = ref(new Date())
 const activeDay = ref('')
 const activePlanningId = ref('')
 const activeHour = ref({})
+const isActionLoading = ref(false)
+const activeEnd = ref({ day: undefined, step: 1 })
 var activeDays = ref(
   new Date(
     activeDate.value.getFullYear(),
@@ -132,34 +134,51 @@ function openSpotPlanningModal(day: string, hour: any, planningId: string) {
   activeDay.value = day
   activeHour.value = hour
   activePlanningId.value = planningId
+  activeEnd.value.day = parseInt(day)
   isModalNewSpotPlanningOpen.value = true
 }
+
 async function addSpotToPlanning() {
   console.log('Adding product to the planning')
+  isActionLoading.value = true
   const hourArray = activeHour.value?.code.split(':')
-  var date = new Date(
-    activeDate.value.getFullYear(),
-    activeDate.value.getMonth(),
-    parseInt(activeDay.value),
-    parseInt(hourArray[0]),
-    parseInt(hourArray[1]),
-  )
 
-  console.log(date.toISOString())
+  let newPlannings = []
+  const myActiveDay = parseInt(activeDay.value)
+  const myActiveEndDay = parseInt(activeEnd.value.day)
+  const myActiveEndStep = parseInt(activeEnd.value.step)
 
-  const spotPlanning = {
-    product: activeProduct.value._id,
-    hour: activeHour.value._id,
-    date: date.toISOString(),
-    position: date.toISOString(),
-    isManualPlay: false,
-    isAutoPlay: false,
+  for (
+    let myDay = myActiveDay;
+    myDay <= myActiveEndDay;
+    myDay += myActiveEndStep
+  ) {
+    console.log(myDay)
+    var date = new Date(
+      activeDate.value.getFullYear(),
+      activeDate.value.getMonth(),
+      myDay,
+      parseInt(hourArray[0]),
+      parseInt(hourArray[1]),
+    )
+
+    // console.log(date.toISOString())
+
+    newPlannings.push({
+      _id: undefined,
+      product: activeProduct.value._id,
+      hour: activeHour.value._id,
+      date: date.toISOString(),
+      position: date.toISOString(),
+      isManualPlay: false,
+      isAutoPlay: false,
+    })
   }
 
   try {
     const isSuccess = ref(false)
     const response = await $fetch(
-      '/api/pub/plannings?action=createPlanning&token=' +
+      '/api/pub/plannings?action=createPlannings&token=' +
         token.value +
         '&packageId=' +
         data.value?.data?._id +
@@ -169,23 +188,22 @@ async function addSpotToPlanning() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: {
-          ...spotPlanning,
-          _id: undefined,
+          plannings: newPlannings,
         },
       },
     )
 
-    console.log(response)
+    // console.log(response)
     isSuccess.value = response?.success
     if (isSuccess.value == true) {
       success.value = true
-      data.value?.data?.plannings.push(response.data)
+      data.value?.data?.plannings?.push(...response.data)
       toaster.clearAll()
       toaster.show({
         title: 'Success',
         message:
           isEdit.value == false
-            ? `Produit ajouté au planning !`
+            ? `Produit(s) ajouté(s) au planning !`
             : `Produit mis à jour`,
         color: 'success',
         icon: 'ph:check',
@@ -213,9 +231,10 @@ async function addSpotToPlanning() {
     })
     // return
   }
-  console.log(data.value?.data?.plannings)
+  // console.log(data.value?.data?.plannings)
 
   isModalNewSpotPlanningOpen.value = false
+  isActionLoading.value = false
 }
 async function deleteSpotToPlanning() {
   console.log('Deleting product from the planning')
@@ -344,9 +363,9 @@ function checkSpot(d: number, hour: string) {
     // console.log(dateNow)
     // console.log('')
     if (datePTime < dateNowTime) {
-      console.log('danger')
+      // console.log('danger')
     } else {
-      console.log('pas danger')
+      // console.log('pas danger')
     }
 
     if (
@@ -1600,6 +1619,58 @@ const onSubmit = handleSubmit(
                     v-if="activeProduct._id != ''"
                     class="grid grid-cols-12 gap-4 mt-4"
                   >
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
+                        name="planning.obs"
+                      >
+                        <BaseInput
+                          label="Jour de Fin"
+                          type="number"
+                          icon="ph:file"
+                          placeholder=""
+                          v-model="activeEnd.day"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
+                        name="planning.obs"
+                      >
+                        <BaseInput
+                          label="Pas"
+                          type="number"
+                          icon="ph:file"
+                          placeholder=""
+                          v-model="activeEnd.step"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+                  </div>
+                  <div
+                    v-if="activeProduct._id != ''"
+                    class="grid grid-cols-12 gap-4 mt-4"
+                  >
                     <div class="col-span-12 md:col-span-12">
                       <Field
                         v-slot="{
@@ -1640,6 +1711,8 @@ const onSubmit = handleSubmit(
             <BaseButton
               color="primary"
               flavor="solid"
+              :disabled="isActionLoading"
+              :loading="isActionLoading"
               @click="addSpotToPlanning()"
             >
               Valider
@@ -2039,14 +2112,14 @@ const onSubmit = handleSubmit(
                 name="lucide:printer"
                 class="pointer-events-none h-4 w-4 mx-2"
               />
-              Imprimer le planning</BaseButton
+              Planning</BaseButton
             >
             <BaseButton @click="printPlanning('certificate')">
               <Icon
                 name="lucide:printer"
                 class="pointer-events-none h-4 w-4 mx-2"
               />
-              Imprimer le certificat de diffusion</BaseButton
+              Certificat de diffusion</BaseButton
             >
             <BaseButton
               :color="data.data?.validator ? 'success' : 'warning'"

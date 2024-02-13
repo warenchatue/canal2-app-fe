@@ -80,8 +80,7 @@ function filterData(
       return [
         item.amount.toString(),
         `${item.announcer?.name}`,
-        `${item.author?.lastName} ${item.author?.firstName}`,
-        `${item.date}`,
+        `${item.code}`,
       ].some((item) => item.match(filterRe))
     })
     .sort(function (a, b) {

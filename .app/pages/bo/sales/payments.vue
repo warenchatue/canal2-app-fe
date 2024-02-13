@@ -127,8 +127,10 @@ function confirmEditPayment(payment: any) {
   isEdit.value = true
   currentPayment.value = payment
   setFieldValue('payment._id', payment._id)
+  setFieldValue('payment.code', payment.code)
   setFieldValue('payment.amount', payment.amount)
   setFieldValue('payment.status', payment.status)
+  setFieldValue('payment.message', payment.message)
   setFieldValue('payment.announcer', payment.announcer)
   setFieldValue('payment.org', payment.org)
   setFieldValue('payment.author', payment.author)
@@ -211,8 +213,10 @@ const zodSchema = z
   .object({
     payment: z.object({
       _id: z.string().optional(),
+      code: z.string().optional(),
       amount: z.number(),
       status: z.string(),
+      message: z.string().optional(),
       data: z
         .object({
           invoiceId: z.string(),
@@ -328,6 +332,7 @@ const onSubmit = handleSubmit(
             org: currentPayment.value?.org?._id,
             paymentAccount: currentPayment.value?.paymentAccount?._id,
             status: values.payment.status,
+            message: values.payment.message,
             data: {
               ...currentPayment.value.data,
               city: values.payment.data?.city,
@@ -354,6 +359,7 @@ const onSubmit = handleSubmit(
             org: currentPayment.value?.org?._id,
             paymentAccount: currentPayment.value?.paymentAccount?._id,
             status: values.payment.status,
+            message: values.payment.message,
             data: {
               ...currentPayment.value.data,
               city: values.payment.data?.city,
@@ -783,13 +789,16 @@ const onSubmit = handleSubmit(
                     {{ new Date(item.createdAt).toLocaleDateString('fr-FR') }}
                   </TairoTableCell>
                   <TairoTableCell spaced>
-                    <div class="flex items-center">
+                    <div
+                      style="white-space: pre-wrap; word-wrap: break-word"
+                      class="flex items-center"
+                    >
                       <BaseAvatar
                         :src="item.author?.logo ?? '/img/avatars/company.svg'"
                         :text="item.initials"
                         :class="getRandomColor()"
                       />
-                      <div class="ms-3 leading-none">
+                      <div class="!w-48 ms-3">
                         <h4 class="font-sans text-sm font-medium">
                           {{ item.announcer?.name }}
                         </h4>
@@ -1145,7 +1154,24 @@ const onSubmit = handleSubmit(
             class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
           >
             <div class="mx-auto flex w-full flex-col">
-              <div>
+              <div class="grid grid-cols-12 gap-4 mt-4">
+                <div class="col-span-12 md:col-span-6">
+                  <Field
+                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    name="payment.code"
+                  >
+                    <BaseInput
+                      label="Reference"
+                      icon="ph:money-duotone"
+                      placeholder=""
+                      :model-value="field.value"
+                      :error="errorMessage"
+                      :disabled="true"
+                      @update:model-value="handleChange"
+                      @blur="handleBlur"
+                    />
+                  </Field>
+                </div>
                 <div class="col-span-12 md:col-span-6">
                   <Field
                     v-slot="{ field, errorMessage, handleChange, handleBlur }"
@@ -1198,6 +1224,7 @@ const onSubmit = handleSubmit(
                     </BaseSelect>
                   </Field>
                 </div>
+
                 <div class="col-span-12 md:col-span-6">
                   <Field
                     v-slot="{ field, errorMessage, handleChange, handleBlur }"
@@ -1215,6 +1242,21 @@ const onSubmit = handleSubmit(
                       <option value="completed">Success</option>
                       <option value="failed">Echec</option>
                     </BaseSelect>
+                  </Field>
+                </div>
+                <div class="col-span-12 md:col-span-12">
+                  <Field
+                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    name="payment.message"
+                  >
+                    <BaseTextarea
+                      :model-value="field.value"
+                      label="Notes importantes"
+                      shape="rounded"
+                      placeholder="..."
+                      rows="4"
+                      autogrow
+                    />
                   </Field>
                 </div>
               </div>
