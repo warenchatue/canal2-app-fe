@@ -1,7 +1,7 @@
 lockfileVersion: '6.0'
 
 overrides:
-  consola: 3.1.0
+  consola: 3.2.3
 
 importers:
 
@@ -1292,7 +1292,7 @@ packages:
     resolution: {integrity: sha512-iwZ5NY6m2MNBAFaRp5OSjRdd+vk/XFbBqN0wtmpFtcoYHyzpUxy2fU38KWnXXmgP7Vi4mFOJ8SExZnL0cdlEtQ==}
     dependencies:
       '@nuxt/kit': 3.4.1
-      consola: 3.1.0
+      consola: 3.2.3
       defu: 6.1.2
       destr: 1.2.2
       detab: 3.0.2
@@ -1348,7 +1348,7 @@ packages:
     engines: {node: ^14.16.0 || ^16.11.0 || ^17.0.0 || ^18.0.0 || ^19.0.0}
     dependencies:
       '@nuxt/kit': 3.4.3
-      consola: 3.1.0
+      consola: 3.2.3
       defu: 6.1.2
       h3: 1.6.4
       image-meta: 0.1.1
@@ -1369,7 +1369,7 @@ packages:
     dependencies:
       '@nuxt/schema': 3.4.1
       c12: 1.4.1
-      consola: 3.1.0
+      consola: 3.2.3
       defu: 6.1.2
       globby: 13.1.4
       hash-sum: 2.0.0
@@ -1395,7 +1395,7 @@ packages:
     dependencies:
       '@nuxt/schema': 3.4.2
       c12: 1.4.2
-      consola: 3.1.0
+      consola: 3.2.3
       defu: 6.1.2
       globby: 13.2.2
       hash-sum: 2.0.0
@@ -1422,7 +1422,7 @@ packages:
     dependencies:
       '@nuxt/schema': 3.4.3
       c12: 1.4.1
-      consola: 3.1.0
+      consola: 3.2.3
       defu: 6.1.2
       globby: 13.1.4
       hash-sum: 2.0.0
@@ -1448,7 +1448,7 @@ packages:
     dependencies:
       '@nuxt/schema': 3.5.0
       c12: 1.4.1
-      consola: 3.1.0
+      consola: 3.2.3
       defu: 6.1.2
       globby: 13.1.4
       hash-sum: 2.0.0
@@ -1474,7 +1474,7 @@ packages:
     dependencies:
       '@nuxt/schema': 3.6.5
       c12: 1.4.2
-      consola: 3.1.0
+      consola: 3.2.3
       defu: 6.1.2
       globby: 13.2.2
       hash-sum: 2.0.0
@@ -1605,7 +1605,7 @@ packages:
       '@nuxt/kit': 3.6.5
       chalk: 5.2.0
       ci-info: 3.8.0
-      consola: 3.1.0
+      consola: 3.2.3
       create-require: 1.1.1
       defu: 6.1.2
       destr: 1.2.2
@@ -3863,8 +3863,9 @@ packages:
   /concat-map@0.0.1:
     resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
 
-  /consola@3.1.0:
-    resolution: {integrity: sha512-rrrJE6rP0qzl/Srg+C9x/AE5Kxfux7reVm1Wh0wCjuXvih6DqZgqDZe8auTD28fzJ9TF0mHlSDrPpWlujQRo1Q==}
+  /consola@3.2.3:
+    resolution: {integrity: sha512-I5qxpzLv+sJhTVEoLYNcTW+bThDCPsit0vLNKShZx6rLtpilNpmmeTPaeqJb9ZE9dV3DGaeby6Vuhrw38WjeyQ==}
+    engines: {node: ^14.18.0 || >=16.10.0}
 
   /console-browserify@1.2.0:
     resolution: {integrity: sha512-ZMkYO/LkF17QvCPqM0gxw8yUzigAOZOSWSHg91FH6orS7vcEj5dVZTidN2fQ14yBSdg97RqhSNwLUXInd52OTA==}
@@ -6113,7 +6114,7 @@ packages:
     hasBin: true
     requiresBuild: true
     dependencies:
-      consola: 3.1.0
+      consola: 3.2.3
       defu: 6.1.2
       destr: 1.2.2
       etag: 1.8.1
@@ -7838,7 +7839,7 @@ packages:
       chalk: 5.2.0
       chokidar: 3.5.3
       citty: 0.1.1
-      consola: 3.1.0
+      consola: 3.2.3
       cookie-es: 1.0.0
       defu: 6.1.2
       destr: 1.2.2
