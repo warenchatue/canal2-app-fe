@@ -22,7 +22,7 @@ const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(25)
+const perPage = ref(50)
 const isModalImportPlaylistOpen = ref(false)
 const isModalConfirmDiffusionOpen = ref(false)
 const playedHour = ref('')
@@ -560,7 +560,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data.metaData?.totalToday }}</span>
+                <span>{{ data?.metaData?.totalToday ?? 0 }}</span>
               </BaseHeading>
             </div>
             <div

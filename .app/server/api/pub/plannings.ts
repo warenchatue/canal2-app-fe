@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
   } else if (action == 'findToday') {
     const response = await findToday(token)
     return {
-      total: response.metaData.totalItems,
+      total: response.data.length,
       metaData: response.metaData,
       data: filterData(
         response.data,
@@ -105,16 +105,16 @@ function filterData(
   const filterRe = new RegExp(filter, 'i')
   const filteredData = data.filter((item) => {
     if (startDate && !filter) {
-      console.log('Start date: ' + startDate)
-      console.log('Item date: ' + item.date)
+      // console.log('Start date: ' + startDate)
+      // console.log('Item date: ' + item.date)
       var itemTime = new Date(
         new Date(item.date).toLocaleDateString(),
       ).getTime()
-      console.log('itemTime: ' + itemTime)
+      // console.log('itemTime: ' + itemTime)
       var startTime = new Date(startDate).getTime()
-      console.log('startTime: ' + startTime)
+      // console.log('startTime: ' + startTime)
       var endTime = new Date(endDate).getTime()
-      console.log('endTime: ' + endTime)
+      // console.log('endTime: ' + endTime)
 
       return itemTime >= startTime && itemTime <= endTime
     } else if (filter) {

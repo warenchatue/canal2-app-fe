@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Factures Non soldés',
+  title: 'Factures non soldés',
   preview: {
     title: 'Factures Non soldés',
     description: 'Factures | Commandes',
@@ -25,8 +25,19 @@ const perPage = ref(10)
 const isModalNewPackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
+const isModalUnpaidReportOpen = ref(false)
+const currentOrg = ref('')
+const currentTeam = ref('')
 const isEdit = ref(false)
+const isPrint = ref(false)
 const toaster = useToaster()
+const dates = ref({
+  start: new Date(),
+  end: new Date(),
+})
+const startDate = ref(new Date())
+const endDate = ref(new Date())
+
 // Check if can have access
 if (
   authStore.user.appRole?.name != UserRole.billing &&
@@ -64,36 +75,58 @@ const query = computed(() => {
   }
 })
 
+const query2 = computed(() => {
+  return {
+    filter: filter.value,
+    perPage: perPage.value,
+    page: page.value,
+    action: 'findAll',
+    token: token.value,
+  }
+})
+
 const { data, pending } = await useFetch('/api/sales/invoices', {
   query,
 })
 
-const { data: announcers } = await useFetch('/api/sales/announcers', {
-  query,
+const { data: orgs } = await useFetch('/api/admin/orgs', {
+  query: query2,
 })
 
-const { data: allUsers } = await useFetch('/api/users', {
-  query,
-})
-const commercials = allUsers.value?.data.filter((e: any) => {
-  return e.appRole?.name == UserRole.sale
-})
-function editPackage(spotPackage: any) {
-  isModalNewPackageOpen.value = true
-  isEdit.value = true
-  currentPackage.value = spotPackage
-  setFieldValue('spotPackage._id', spotPackage._id)
-  setFieldValue('spotPackage.label', spotPackage.label)
-  setFieldValue('spotPackage.announcer', spotPackage.announcer)
-  setFieldValue('spotPackage.commercial', spotPackage.manager)
-  setFieldValue('spotPackage.status', spotPackage.status)
-  setFieldValue('spotPackage.invoice.amount', spotPackage.invoice.amount)
-  setFieldValue('spotPackage.invoice.label', spotPackage.invoice.label)
-  setFieldValue('spotPackage.invoice.pending', spotPackage.invoice.pending)
-  setFieldValue(
-    'spotPackage.invoice.totalSpotsPaid',
-    spotPackage.invoice.totalSpotsPaid,
-  )
+function openReportModal() {
+  setTimeout(() => {
+    isModalUnpaidReportOpen.value = true
+  }, 500)
+}
+
+async function printUnpaidReport() {
+  const queryP = computed(() => {
+    return {
+      filter: filter.value,
+      perPage: perPage.value,
+      page: page.value,
+      org: currentOrg.value._id,
+      team: currentTeam.value,
+      startDate: startDate.value,
+      endDate: endDate.value,
+      action: 'findAllUnpaidFilters',
+      token: token.value,
+    }
+  })
+
+  const { data: reportData } = await useFetch('/api/sales/invoices', {
+    query: queryP,
+  })
+  data.value = reportData.value
+  isPrint.value = true
+  setTimeout(() => {
+    var printContents = document.getElementById('print-unpaid-report').innerHTML
+    var originalContents = document.body.innerHTML
+    document.body.innerHTML = printContents
+    window.print()
+    document.body.innerHTML = originalContents
+    location.reload()
+  }, 500)
 }
 
 function confirmDeletePackage(invoice: any) {
@@ -524,6 +557,14 @@ const onSubmit = handleSubmit(
         />
       </template>
       <template #right>
+        <BaseButton
+          color="primary"
+          class="w-full sm:w-52"
+          @click="openReportModal()"
+        >
+          <Icon name="ph:file" class="h-4 w-4" />
+          <span>Rapports</span>
+        </BaseButton>
         <BaseSelect
           v-model="perPage"
           label=""
@@ -599,7 +640,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-700 dark:text-muted-400"
               >
-                <span>Montant</span>
+                <span>Montant total</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -617,7 +658,14 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalAnnouncers }}</span>
+                <span
+                  >{{
+                    new Intl.NumberFormat().format(
+                      data?.metaData?.totalSelection ?? 0,
+                    )
+                  }}
+                  XAF</span
+                >
               </BaseHeading>
             </div>
             <div
@@ -640,7 +688,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-700 dark:text-muted-400"
               >
-                <span>En recouvrement</span>
+                <span>Montant selection</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -658,7 +706,20 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalSpots }}</span>
+                <span>
+                  {{
+                    new Intl.NumberFormat().format(
+                      Math.ceil(
+                        data.data
+                          .map((item) => item.amount)
+                          .reduce((accumulator, currentValue) => {
+                            return accumulator + currentValue
+                          }, 0) ?? 0,
+                      ),
+                    )
+                  }}
+                  XAF</span
+                >
               </BaseHeading>
             </div>
             <div
@@ -712,209 +773,504 @@ const onSubmit = handleSubmit(
           </BaseCard>
         </div>
       </div>
-      <div>
-        <div v-if="!pending && data?.data.length === 0">
-          <BasePlaceholderPage
-            title="No matching results"
-            subtitle="Looks like we couldn't find any matching results for your search terms. Try other search terms."
-          >
-            <template #image>
-              <img
-                class="block dark:hidden"
-                src="/img/illustrations/placeholders/flat/placeholder-search-4.svg"
-                alt="Placeholder image"
-              />
-              <img
-                class="hidden dark:block"
-                src="/img/illustrations/placeholders/flat/placeholder-search-4-dark.svg"
-                alt="Placeholder image"
-              />
-            </template>
-          </BasePlaceholderPage>
-        </div>
-        <div v-else>
-          <div class="w-full">
-            <TairoTable shape="rounded">
-              <template #header>
-                <TairoTableHeading uppercase spaced class="p-4">
-                  <div class="flex items-center">
-                    <BaseCheckbox
-                      :model-value="isAllVisibleSelected"
-                      :indeterminate="
-                        selected.length > 0 && !isAllVisibleSelected
-                      "
-                      name="table-1-main"
-                      shape="rounded"
-                      class="text-primary-500"
-                      @click="toggleAllVisibleSelection"
-                    />
-                  </div>
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Code</TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Annonceur
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Societé
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Vendeur
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Total </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Dû </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Docs</TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
-              </template>
-
-              <TairoTableRow v-if="selected.length > 0" :hoverable="false">
-                <TairoTableCell
-                  colspan="6"
-                  class="bg-success-100 text-success-700 dark:bg-success-700 dark:text-success-100 p-4"
-                >
-                  You have selected {{ selected.length }} items of the total
-                  {{ data?.total }} items.
-                  <a
-                    href="#"
-                    class="outline-none hover:underline focus:underline"
-                    >Click here to everything</a
-                  >
-                </TairoTableCell>
-              </TairoTableRow>
-
-              <TairoTableRow v-for="item in data?.data" :key="item.id">
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <BaseCheckbox
-                      v-model="selected"
-                      :value="item.id"
-                      :name="`item-checkbox-${item.id}`"
-                      shape="rounded"
-                      class="text-primary-500"
-                    />
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <NuxtLink
-                    class="text-primary-500 underline-offset-4 hover:underline"
-                    :to="'/bo/sales/orders/view-invoice-' + item._id"
-                  >
-                    {{ item.code }}
-                  </NuxtLink>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <BaseAvatar
-                      :src="item.announcer?.logo ?? '/img/avatars/company.svg'"
-                      :text="item.initials"
-                      :class="getRandomColor()"
-                    />
-                    <div class="ms-3 leading-none">
-                      <h4 class="font-sans text-sm font-medium">
-                        {{ item.announcer?.name }}
-                      </h4>
-                      <p class="text-muted-400 font-sans text-xs">
-                        {{ item.announcer?.code }}
-                      </p>
-                    </div>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{ new Date(item.date).toLocaleDateString('fr-FR') }}
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{ item.org.name }}
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{ item.manager?.lastName }}
-                  {{ item.manager?.firstName }}
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{
-                    new Intl.NumberFormat().format(Math.ceil(item.amount ?? 0))
-                  }}
-                  XAF
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{
-                    new Intl.NumberFormat().format(
-                      Math.ceil(item.amount - item.paid ?? 0) > 0
-                        ? Math.ceil(item.amount - item.paid ?? 0)
-                        : 0,
-                    )
-                  }}
-                  XAF
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <a
-                    v-if="item.contractUrl"
-                    class="mx-1 text-white bg-muted-600 p-2 rounded"
-                    :href="'/' + item.order.contractUrl"
-                    target="_blank"
-                    >C</a
-                  >
-                </TairoTableCell>
-                <TairoTableCell spaced class="capitalize">
-                  <BaseTag
-                    v-if="item.state === 'trashed'"
-                    color="muted"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    {{ item.state }}
-                  </BaseTag>
-                  <BaseTag
-                    v-else-if="item.state === 'active'"
-                    color="warning"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    {{ item.state }}
-                  </BaseTag>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex">
-                    <BaseButtonAction
-                      class="mx-2"
-                      :to="'/bo/sales/orders/view-invoice-' + item._id"
-                      muted
-                    >
-                      <Icon name="lucide:eye" class="h-4 w-4"
-                    /></BaseButtonAction>
-                    <BaseButtonAction
-                      disabled
-                      :to="'/bo/sales/orders/edit-invoice-' + item._id"
-                    >
-                      <Icon name="lucide:edit" class="h-4 w-4"
-                    /></BaseButtonAction>
-                    <BaseButtonAction
-                      @click="confirmDeletePackage(item)"
-                      class="mx-2"
-                      disabled
-                    >
-                      <Icon name="lucide:trash" class="h-4 w-4 text-red-500"
-                    /></BaseButtonAction>
-                  </div>
-                </TairoTableCell>
-              </TairoTableRow>
-            </TairoTable>
-          </div>
-          <div class="mt-6">
-            <BasePagination
-              :total-items="data?.total ?? 0"
-              :item-per-page="perPage"
-              :current-page="page"
-              shape="curved"
+      <div id="print-unpaid-report" class="mx-1">
+        <div
+          v-if="isPrint"
+          class="flex justify-between items-center border-b-2 py-1"
+        >
+          <div shape="straight" class="">
+            <img
+              v-if="currentOrg?.logo?.includes('r2')"
+              class="h-16 pb-1 fit-content"
+              :src="currentOrg.logo"
             />
+            <img v-else class="h-32 max fit-content" :src="currentOrg.logo" />
+          </div>
+          <div class="flex justify-end">
+            <div>
+              <h5
+                class="font-heading text-right text-muted-900 text-xs font-medium leading-6 dark:text-white"
+              >
+                {{ currentOrg?.name ?? '' }}
+              </h5>
+              <h5
+                class="font-heading text-right text-muted-900 text-xs font-medium leading-6 dark:text-white"
+              >
+                {{ currentOrg?.email ?? '' }}
+              </h5>
+              <h5
+                class="font-heading text-right text-muted-900 text-xs font-medium leading-6 dark:text-white"
+              >
+                {{ currentOrg?.address ?? '' }}
+              </h5>
+            </div>
+          </div>
+        </div>
+        <div v-if="isPrint" shape="straight" class="border border-t-1"></div>
+        <h4
+          v-if="isPrint"
+          class="font-heading text-muted-900 text-xs font-medium pb-2 pt-1 px-2 leading-6 dark:text-white"
+        >
+          Etat des factures impayés du
+          {{ new Date(startDate).toLocaleDateString('fr-FR') }} au
+          {{ new Date(endDate).toLocaleDateString('fr-FR') }} Pour la ville de
+          {{ currentTeam ? currentTeam.toUpperCase() : 'Douala et Yaounde' }} de
+          la société
+          {{ currentOrg?.name ?? '' }}
+        </h4>
+        <h5
+          v-if="isPrint"
+          class="font-heading text-muted-900 text-xs font-medium leading-6 py-1 px-2 dark:text-white"
+        >
+          Fait par {{ authStore.user.firstName }} {{ authStore.user.lastName }}
+        </h5>
+        <div>
+          <div v-if="!pending && data?.data.length === 0">
+            <BasePlaceholderPage
+              title="No matching results"
+              subtitle="Looks like we couldn't find any matching results for your search terms. Try other search terms."
+            >
+              <template #image>
+                <img
+                  class="block dark:hidden"
+                  src="/img/illustrations/placeholders/flat/placeholder-search-4.svg"
+                  alt="Placeholder image"
+                />
+                <img
+                  class="hidden dark:block"
+                  src="/img/illustrations/placeholders/flat/placeholder-search-4-dark.svg"
+                  alt="Placeholder image"
+                />
+              </template>
+            </BasePlaceholderPage>
+          </div>
+          <div v-else>
+            <div class="w-full">
+              <TairoTable shape="rounded">
+                <template #header>
+                  <TairoTableHeading
+                    v-if="!isPrint"
+                    uppercase
+                    spaced
+                    class="p-4"
+                  >
+                    <div class="flex items-center">
+                      <BaseCheckbox
+                        :model-value="isAllVisibleSelected"
+                        :indeterminate="
+                          selected.length > 0 && !isAllVisibleSelected
+                        "
+                        name="table-1-main"
+                        shape="rounded"
+                        class="text-primary-500"
+                        @click="toggleAllVisibleSelection"
+                      />
+                    </div>
+                  </TairoTableHeading>
+                  <TairoTableHeading uppercase spaced>Code</TairoTableHeading>
+                  <TairoTableHeading uppercase spaced>
+                    Annonceur
+                  </TairoTableHeading>
+                  <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
+                  <TairoTableHeading uppercase spaced>
+                    Societé
+                  </TairoTableHeading>
+                  <TairoTableHeading uppercase spaced>
+                    Vendeur
+                  </TairoTableHeading>
+                  <TairoTableHeading uppercase spaced>
+                    Total HT
+                  </TairoTableHeading>
+                  <TairoTableHeading uppercase spaced>
+                    Total TTC
+                  </TairoTableHeading>
+                  <TairoTableHeading uppercase spaced> Dû </TairoTableHeading>
+                  <TairoTableHeading v-if="!isPrint" uppercase spaced
+                    >Docs</TairoTableHeading
+                  >
+                  <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
+                  <TairoTableHeading v-if="!isPrint" uppercase spaced
+                    >Action</TairoTableHeading
+                  >
+                </template>
+
+                <TairoTableRow v-if="selected.length > 0" :hoverable="false">
+                  <TairoTableCell
+                    colspan="6"
+                    class="bg-success-100 text-success-700 dark:bg-success-700 dark:text-success-100 p-4"
+                  >
+                    You have selected {{ selected.length }} items of the total
+                    {{ data?.total }} items.
+                    <a
+                      href="#"
+                      class="outline-none hover:underline focus:underline"
+                      >Click here to everything</a
+                    >
+                  </TairoTableCell>
+                </TairoTableRow>
+
+                <TairoTableRow v-for="item in data?.data" :key="item.id">
+                  <TairoTableCell v-if="!isPrint" spaced>
+                    <div class="flex items-center">
+                      <BaseCheckbox
+                        v-model="selected"
+                        :value="item.id"
+                        :name="`item-checkbox-${item.id}`"
+                        shape="rounded"
+                        class="text-primary-500"
+                      />
+                    </div>
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    <NuxtLink
+                      class="text-primary-500 underline-offset-4 hover:underline"
+                      :to="'/bo/sales/orders/view-invoice-' + item._id"
+                    >
+                      {{ item.code }}
+                    </NuxtLink>
+                  </TairoTableCell>
+                  <TairoTableCell spaced>
+                    <div class="flex items-center">
+                      <BaseAvatar
+                        :src="
+                          item.announcer?.logo ?? '/img/avatars/company.svg'
+                        "
+                        :text="item.initials"
+                        :class="getRandomColor()"
+                      />
+                      <div class="ms-3 leading-none">
+                        <h4 class="font-sans text-sm font-medium">
+                          {{ item.announcer?.name }}
+                        </h4>
+                        <p class="text-muted-400 font-sans text-xs">
+                          {{ item.announcer?.code }}
+                        </p>
+                      </div>
+                    </div>
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    {{ new Date(item.date).toLocaleDateString('fr-FR') }}
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    {{ item.org.name }}
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    {{ item.manager?.lastName }}
+                    {{ item.manager?.firstName }}
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    {{
+                      new Intl.NumberFormat().format(
+                        Math.ceil(item.amountHT ?? 0),
+                      )
+                    }}
+                    XAF
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    {{
+                      new Intl.NumberFormat().format(
+                        Math.ceil(item.amount ?? 0),
+                      )
+                    }}
+                    XAF
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    {{
+                      new Intl.NumberFormat().format(
+                        Math.ceil(item.amount - item.paid ?? 0) > 0
+                          ? Math.ceil(item.amount - item.paid ?? 0)
+                          : 0,
+                      )
+                    }}
+                    XAF
+                  </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" light spaced>
+                    <a
+                      v-if="item.contractUrl"
+                      class="mx-1 text-white bg-muted-600 p-2 rounded"
+                      :href="'/' + item.order.contractUrl"
+                      target="_blank"
+                      >C</a
+                    >
+                  </TairoTableCell>
+                  <TairoTableCell spaced class="capitalize">
+                    <BaseTag
+                      v-if="item.state === 'trashed'"
+                      color="muted"
+                      flavor="pastel"
+                      shape="full"
+                      condensed
+                      class="font-medium"
+                    >
+                      {{ item.state }}
+                    </BaseTag>
+                    <BaseTag
+                      v-else-if="item.state === 'active'"
+                      color="warning"
+                      flavor="pastel"
+                      shape="full"
+                      condensed
+                      class="font-medium"
+                    >
+                      {{ item.state }}
+                    </BaseTag>
+                  </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" spaced>
+                    <div class="flex">
+                      <BaseButtonAction
+                        class="mx-2"
+                        :to="'/bo/sales/orders/view-invoice-' + item._id"
+                        muted
+                      >
+                        <Icon name="lucide:eye" class="h-4 w-4"
+                      /></BaseButtonAction>
+                      <BaseButtonAction
+                        disabled
+                        :to="'/bo/sales/orders/edit-invoice-' + item._id"
+                      >
+                        <Icon name="lucide:edit" class="h-4 w-4"
+                      /></BaseButtonAction>
+                      <BaseButtonAction
+                        @click="confirmDeletePackage(item)"
+                        class="mx-2"
+                        disabled
+                      >
+                        <Icon name="lucide:trash" class="h-4 w-4 text-red-500"
+                      /></BaseButtonAction>
+                    </div>
+                  </TairoTableCell>
+                </TairoTableRow>
+                <TairoTableRow class="border !border-t-2" v-if="isPrint">
+                  <TairoTableCell light spaced> </TairoTableCell>
+                  <TairoTableCell light spaced> </TairoTableCell>
+                  <TairoTableCell light spaced> </TairoTableCell>
+                  <TairoTableCell light spaced> </TairoTableCell>
+                  <TairoTableCell spaced> </TairoTableCell>
+                  <TairoTableCell light spaced> Total: </TairoTableCell>
+
+                  <TairoTableCell light spaced>
+                    {{
+                      new Intl.NumberFormat().format(
+                        Math.ceil(
+                          data.data
+                            .map((item) => item.amountHT)
+                            .reduce((accumulator, currentValue) => {
+                              return accumulator + currentValue
+                            }, 0) ?? 0,
+                        ),
+                      )
+                    }}
+                    XAF
+                  </TairoTableCell>
+                  <TairoTableCell v-if="false" light spaced>
+                    {{
+                      new Intl.NumberFormat().format(
+                        Math.ceil(
+                          data.data
+                            .map((item) => item.tva)
+                            .reduce((accumulator, currentValue) => {
+                              return accumulator + currentValue
+                            }, 0) ?? 0,
+                        ),
+                      )
+                    }}
+                    XAF
+                  </TairoTableCell>
+                  <TairoTableCell v-if="false" light spaced>
+                    {{
+                      new Intl.NumberFormat().format(
+                        Math.ceil(
+                          data.data
+                            .map((item) => item.tsp)
+                            .reduce((accumulator, currentValue) => {
+                              return accumulator + currentValue
+                            }, 0) ?? 0,
+                        ),
+                      )
+                    }}
+                    XAF
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    {{
+                      new Intl.NumberFormat().format(
+                        Math.ceil(
+                          data.data
+                            .map((item) => item.amount)
+                            .reduce((accumulator, currentValue) => {
+                              return accumulator + currentValue
+                            }, 0) ?? 0,
+                        ),
+                      )
+                    }}
+                    XAF
+                  </TairoTableCell>
+                  <TairoTableCell v-if="false" light spaced>
+                    {{
+                      new Intl.NumberFormat().format(
+                        Math.ceil(
+                          data.data
+                            .map((item) => item.paid)
+                            .reduce((accumulator, currentValue) => {
+                              return accumulator + currentValue
+                            }, 0) ?? 0,
+                        ),
+                      )
+                    }}
+                    XAF
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    {{
+                      new Intl.NumberFormat().format(
+                        Math.ceil(
+                          data.data
+                            .map((item) => item.amount - item.paid ?? 0)
+                            .reduce((accumulator, currentValue) => {
+                              return accumulator + currentValue
+                            }, 0) ?? 0,
+                        ),
+                      )
+                    }}
+                    XAF
+                  </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" light spaced>
+                  </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" light spaced>
+                  </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" spaced> </TairoTableCell>
+                </TairoTableRow>
+              </TairoTable>
+            </div>
+            <div v-if="!isPrint" class="mt-6">
+              <BasePagination
+                :total-items="data?.total ?? 0"
+                :item-per-page="perPage"
+                :current-page="page"
+                shape="curved"
+              />
+            </div>
           </div>
         </div>
       </div>
     </TairoContentWrapper>
+
+    <!-- Modal new unpaid report -->
+    <TairoModal
+      :open="isModalUnpaidReportOpen"
+      size="xl"
+      @close="isModalUnpaidReportOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Rapport des impayés
+          </h3>
+
+          <BaseButtonClose @click="isModalUnpaidReportOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <BaseCard class="w-full">
+        <form
+          method="POST"
+          action=""
+          class="divide-muted-200 dark:divide-muted-700"
+        >
+          <div
+            shape="curved"
+            class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
+          >
+            <div class="mx-auto flex w-full flex-col">
+              <div>
+                <div class="col-span-12 sm:col-span-6 mt-2">
+                  <Field
+                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    name="report.org"
+                  >
+                    <BaseListbox
+                      label="Société"
+                      :items="orgs.data"
+                      :classes="{
+                        wrapper: '!w-60',
+                      }"
+                      :properties="{
+                        value: '_id',
+                        label: 'name',
+                        sublabel: 'email',
+                        media: '',
+                      }"
+                      v-model="currentOrg"
+                      :error="errorMessage"
+                      @update:model-value="handleChange"
+                      @blur="handleBlur"
+                    />
+                  </Field>
+                </div>
+                <div class="col-span-12 md:col-span-6 py-5">
+                  <Field
+                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    name="report.team"
+                  >
+                    <BaseSelect
+                      label="Equipe"
+                      icon="ph:funnel"
+                      v-model="currentTeam"
+                      :error="errorMessage"
+                      @update:model-value="handleChange"
+                      @blur="handleBlur"
+                    >
+                      <option value="douala">Douala</option>
+                      <option value="yaounde">Yaoundé</option>
+                    </BaseSelect>
+                  </Field>
+                </div>
+                <div class="flex justify-between pt-5">
+                  <div class="col-span-12 md:col-span-6 mt-2">
+                    <label for="start">Date debut: </label>
+                    <input
+                      type="date"
+                      id="start"
+                      name="report-start"
+                      v-model="startDate"
+                    />
+                  </div>
+                  <div class="col-span-12 md:col-span-6 mt-2">
+                    <label for="start">Date de fin: </label>
+                    <input
+                      type="date"
+                      id="end"
+                      name="report-start"
+                      v-model="endDate"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </BaseCard>
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalUnpaidReportOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="printUnpaidReport()"
+            >
+              Imprimer
+            </BaseButton>
+          </div>
+        </div>
+      </template>
+    </TairoModal>
 
     <!-- Modal delete -->
     <TairoModal

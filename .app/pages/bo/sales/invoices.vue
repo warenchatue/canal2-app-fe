@@ -481,7 +481,7 @@ const success = ref(false)
           </BaseCard>
         </div>
       </div>
-      <div id="print-sales-report" class="mx-2">
+      <div id="print-sales-report" class="mx-1">
         <div
           v-if="isPrint"
           class="flex justify-between items-center border-b-2 py-1"

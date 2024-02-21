@@ -23,18 +23,23 @@ const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(25)
+const perPage = ref(100)
 const isModalImportPlaylistOpen = ref(false)
 const isModalConfirmDiffusionOpen = ref(false)
+const isModalDiffusionListOpen = ref(false)
 const isModalNewPlanningOpen = ref(false)
 const playedHour = ref('')
 const currentHour = ref({})
+const currentOrg = ref('')
 const isEdit = ref(false)
-
+const isPrint = ref(false)
 const initialDates = {
   start: new Date(),
   end: new Date(),
 }
+
+const startDate = ref(new Date())
+const endDate = ref(new Date())
 
 const dates = ref(initialDates)
 
@@ -75,6 +80,10 @@ const { data: allHours } = await useFetch('/api/pub/hours', {
   query,
 })
 
+const { data: orgs } = await useFetch('/api/admin/orgs', {
+  query,
+})
+
 const transformedAllHours = allHours.value?.data.map((e: any) => {
   const invoice = {
     id: e._id,
@@ -82,6 +91,26 @@ const transformedAllHours = allHours.value?.data.map((e: any) => {
   }
   return invoice
 })
+
+function openReportModal() {
+  setTimeout(() => {
+    isModalDiffusionListOpen.value = true
+  }, 500)
+}
+
+async function printDiffusionList() {
+  isPrint.value = true
+  setTimeout(() => {
+    var printContents = document.getElementById(
+      'print-diffusion-list',
+    ).innerHTML
+    var originalContents = document.body.innerHTML
+    document.body.innerHTML = printContents
+    window.print()
+    document.body.innerHTML = originalContents
+    location.reload()
+  }, 500)
+}
 
 function filterItems(query?: string, items?: any[]) {
   if (!query || !items) {
@@ -614,7 +643,21 @@ const onSubmit = handleSubmit(
           <option :value="25">25 per page</option>
           <option :value="50">50 per page</option>
           <option :value="100">100 per page</option>
+          <option :value="250">250 per page</option>
+          <option :value="500">500 per page</option>
         </BaseSelect>
+        <BaseButton
+          :disabled="
+            authStore.user.appRole.name != UserRole.broadcast &&
+            authStore.user.appRole.name != UserRole.superAdmin
+          "
+          @click="openReportModal()"
+          color="primary"
+          class="w-full sm:w-48"
+        >
+          <Icon name="lucide:printer" class="h-4 w-4" />
+          <span>Export conducteur</span>
+        </BaseButton>
         <BaseButton
           :disabled="
             authStore.user.appRole.name != UserRole.broadcast &&
@@ -625,7 +668,7 @@ const onSubmit = handleSubmit(
           class="w-full sm:w-48"
         >
           <Icon name="lucide:import" class="h-4 w-4" />
-          <span>Importer playlist</span>
+          <span>Import playlist</span>
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">
@@ -794,124 +837,193 @@ const onSubmit = handleSubmit(
           </BaseCard>
         </div>
       </div>
-      <div>
-        <div v-if="!pending && data?.data.length === 0">
-          <BasePlaceholderPage
-            title="No matching results"
-            subtitle="Looks like we couldn't find any matching results for your search terms. Try other search terms."
-          >
-            <template #image>
-              <img
-                class="block dark:hidden"
-                src="/img/illustrations/placeholders/flat/placeholder-search-4.svg"
-                alt="Placeholder image"
-              />
-              <img
-                class="hidden dark:block"
-                src="/img/illustrations/placeholders/flat/placeholder-search-4-dark.svg"
-                alt="Placeholder image"
-              />
-            </template>
-          </BasePlaceholderPage>
+      <div id="print-diffusion-list" class="mx-1">
+        <div
+          v-if="isPrint"
+          class="flex justify-between items-center border-b-2 py-1"
+        >
+          <div shape="straight" class="">
+            <img
+              v-if="currentOrg?.logo?.includes('r2')"
+              class="h-16 pb-1 fit-content"
+              :src="currentOrg.logo"
+            />
+            <img v-else class="h-32 max fit-content" :src="currentOrg.logo" />
+          </div>
+          <div class="flex justify-end">
+            <div>
+              <h5
+                class="font-heading text-right text-muted-900 text-xs font-medium leading-6 dark:text-white"
+              >
+                {{ currentOrg?.name ?? '' }}
+              </h5>
+              <h5
+                class="font-heading text-right text-muted-900 text-xs font-medium leading-6 dark:text-white"
+              >
+                {{ currentOrg?.email ?? '' }}
+              </h5>
+              <h5
+                class="font-heading text-right text-muted-900 text-xs font-medium leading-6 dark:text-white"
+              >
+                {{ currentOrg?.address ?? '' }}
+              </h5>
+            </div>
+          </div>
         </div>
-        <div v-else>
-          <div class="w-full">
-            <TairoTable shape="rounded">
-              <template #header>
-                <TairoTableHeading uppercase spaced class="p-4">
-                  <div class="flex items-center">
-                    <BaseCheckbox
-                      :model-value="isAllVisibleSelected"
-                      :indeterminate="
-                        selected.length > 0 && !isAllVisibleSelected
-                      "
-                      name="table-1-main"
-                      shape="rounded"
-                      class="text-primary-500"
-                      @click="toggleAllVisibleSelection"
-                    />
-                  </div>
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Pos </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Heure </TairoTableHeading>
-                <!-- <TairoTableHeading uppercase spaced> Pos </TairoTableHeading> -->
-                <TairoTableHeading uppercase spaced>
-                  Annonceur
-                </TairoTableHeading>
-
-                <TairoTableHeading uppercase spaced>
-                  Produit
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced
-                  >Titre du message</TairoTableHeading
-                >
-                <TairoTableHeading uppercase spaced>Durée</TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Fichier</TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
+        <div class="justify-center">
+          <h1
+            v-if="isPrint"
+            class="font-heading text-muted-900 text-xl text-center font-bold pb-2 pt-1 px-2 leading-6 dark:text-white"
+          >
+            Conducteur Publicitaire
+          </h1>
+          <h4
+            v-if="isPrint"
+            class="font-heading text-muted-900 text-md font-medium text-center pb-2 pt-1 px-2 leading-6 dark:text-white"
+          >
+            Periode de l'export: du
+            {{ new Date(initialDates.start).toLocaleDateString('fr-FR') }} au
+            {{ new Date(initialDates.end).toLocaleDateString('fr-FR') }}
+          </h4>
+          <h5
+            v-if="isPrint"
+            class="font-heading text-muted-900 text-xs font-medium text-center leading-6 py-1 px-2 dark:text-white"
+          >
+            Fait par {{ authStore.user.firstName }}
+            {{ authStore.user.lastName }}
+          </h5>
+        </div>
+        <div>
+          <div v-if="!pending && data?.data.length === 0">
+            <BasePlaceholderPage
+              title="No matching results"
+              subtitle="Looks like we couldn't find any matching results for your search terms. Try other search terms."
+            >
+              <template #image>
+                <img
+                  class="block dark:hidden"
+                  src="/img/illustrations/placeholders/flat/placeholder-search-4.svg"
+                  alt="Placeholder image"
+                />
+                <img
+                  class="hidden dark:block"
+                  src="/img/illustrations/placeholders/flat/placeholder-search-4-dark.svg"
+                  alt="Placeholder image"
+                />
               </template>
+            </BasePlaceholderPage>
+          </div>
+          <div v-else>
+            <div class="w-full">
+              <TairoTable shape="rounded">
+                <template #header>
+                  <TairoTableHeading
+                    v-if="!isPrint"
+                    uppercase
+                    spaced
+                    class="p-4"
+                  >
+                    <div class="flex items-center">
+                      <BaseCheckbox
+                        :model-value="isAllVisibleSelected"
+                        :indeterminate="
+                          selected.length > 0 && !isAllVisibleSelected
+                        "
+                        name="table-1-main"
+                        shape="rounded"
+                        class="text-primary-500"
+                        @click="toggleAllVisibleSelection"
+                      />
+                    </div>
+                  </TairoTableHeading>
+                  <TairoTableHeading v-if="!isPrint" uppercase spaced>
+                    Pos
+                  </TairoTableHeading>
+                  <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
+                  <TairoTableHeading uppercase spaced>
+                    Heure
+                  </TairoTableHeading>
+                  <!-- <TairoTableHeading uppercase spaced> Pos </TairoTableHeading> -->
+                  <TairoTableHeading uppercase spaced>
+                    Annonceur
+                  </TairoTableHeading>
 
-              <TairoTableRow v-if="selected.length > 0" :hoverable="false">
-                <TairoTableCell
-                  colspan="6"
-                  class="bg-success-100 text-success-700 dark:bg-success-700 dark:text-success-100 p-4"
-                >
-                  You have selected {{ selected.length }} items of the total
-                  {{ data?.total }} items.
-                  <a
-                    href="#"
-                    class="outline-none hover:underline focus:underline"
-                    >Click here to everything</a
+                  <TairoTableHeading uppercase spaced>
+                    Produit
+                  </TairoTableHeading>
+                  <TairoTableHeading uppercase spaced
+                    >Titre du message</TairoTableHeading
                   >
-                </TairoTableCell>
-              </TairoTableRow>
+                  <TairoTableHeading uppercase spaced>Durée</TairoTableHeading>
+                  <TairoTableHeading v-if="!isPrint" uppercase spaced
+                    >Fichier</TairoTableHeading
+                  >
+                  <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
+                  <TairoTableHeading v-if="!isPrint" uppercase spaced
+                    >Action</TairoTableHeading
+                  >
+                </template>
 
-              <TairoTableRow v-for="item in data?.data" :key="item.id">
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <BaseCheckbox
-                      v-model="selected"
-                      :value="item.id"
-                      :name="`item-checkbox-${item.id}`"
-                      shape="rounded"
-                      class="text-primary-500"
-                    />
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <BaseButtonAction
-                    class="mx-1"
-                    @click.prevent="updatePosition(item, false)"
+                <TairoTableRow v-if="selected.length > 0" :hoverable="false">
+                  <TairoTableCell
+                    colspan="6"
+                    class="bg-success-100 text-success-700 dark:bg-success-700 dark:text-success-100 p-4"
                   >
-                    <Icon name="lucide:arrow-up" class="h-4 w-3" />
-                  </BaseButtonAction>
-                  <BaseButtonAction
-                    class="mx-1"
-                    @click.prevent="updatePosition(item, true)"
-                  >
-                    <Icon name="lucide:arrow-down" class="h-4 w-3" />
-                  </BaseButtonAction>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span
-                      class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                    You have selected {{ selected.length }} items of the total
+                    {{ data?.total }} items.
+                    <a
+                      href="#"
+                      class="outline-none hover:underline focus:underline"
+                      >Click here to everything</a
                     >
-                      {{ new Date(item.date).toLocaleDateString('fr-FR') }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span
-                      class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                  </TairoTableCell>
+                </TairoTableRow>
+
+                <TairoTableRow v-for="item in data?.data" :key="item.id">
+                  <TairoTableCell v-if="!isPrint" spaced>
+                    <div class="flex items-center">
+                      <BaseCheckbox
+                        v-model="selected"
+                        :value="item.id"
+                        :name="`item-checkbox-${item.id}`"
+                        shape="rounded"
+                        class="text-primary-500"
+                      />
+                    </div>
+                  </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" spaced>
+                    <BaseButtonAction
+                      class="mx-1"
+                      @click.prevent="updatePosition(item, false)"
                     >
-                      {{ new Date(item.date).toLocaleTimeString('fr-FR') }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-                <!-- <TairoTableCell spaced>
+                      <Icon name="lucide:arrow-up" class="h-4 w-3" />
+                    </BaseButtonAction>
+                    <BaseButtonAction
+                      class="mx-1"
+                      @click.prevent="updatePosition(item, true)"
+                    >
+                      <Icon name="lucide:arrow-down" class="h-4 w-3" />
+                    </BaseButtonAction>
+                  </TairoTableCell>
+                  <TairoTableCell spaced>
+                    <div class="flex items-center">
+                      <span
+                        class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                      >
+                        {{ new Date(item.date).toLocaleDateString('fr-FR') }}
+                      </span>
+                    </div>
+                  </TairoTableCell>
+                  <TairoTableCell spaced>
+                    <div class="flex items-center">
+                      <span
+                        class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                      >
+                        {{ new Date(item.date).toLocaleTimeString('fr-FR') }}
+                      </span>
+                    </div>
+                  </TairoTableCell>
+                  <!-- <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span
                       class="text-muted-600 dark:text-muted-300 font-sans text-base"
@@ -920,111 +1032,113 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell> -->
 
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <BaseAvatar
-                      :src="
-                        item.product?.announcer?.logo ??
-                        '/img/avatars/company.svg'
-                      "
-                      :text="item.initials"
-                      :class="getRandomColor()"
-                    />
-                    <div class="ms-3 leading-none">
-                      <h4 class="font-sans text-sm font-medium">
-                        {{ item.product?.package?.announcer?.name }}
-                      </h4>
-                      <p class="text-muted-400 font-sans text-xs">
-                        {{ item.product?.package?.announcer?.email }}
-                      </p>
+                  <TairoTableCell spaced>
+                    <div class="flex items-center">
+                      <BaseAvatar
+                        :src="
+                          item.product?.announcer?.logo ??
+                          '/img/avatars/company.svg'
+                        "
+                        :text="item.initials"
+                        :class="getRandomColor()"
+                      />
+                      <div class="ms-3 leading-none">
+                        <h4 class="font-sans text-sm font-medium">
+                          {{ item.product?.package?.announcer?.name }}
+                        </h4>
+                        <p class="text-muted-400 font-sans text-xs">
+                          {{ item.product?.package?.announcer?.email }}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </TairoTableCell>
+                  </TairoTableCell>
 
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span
-                      class="text-muted-600 dark:text-muted-300 font-sans text-base"
-                    >
-                      {{ item.product.product }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <div class="flex items-center">
-                    <BaseText
-                      size="sm"
-                      class="hover:cursor-pointer"
-                      @click="
-                        handleClipboard(
-                          item.product.message + '[' + item.code + ']',
-                        )
-                      "
-                    >
+                  <TairoTableCell spaced>
+                    <div class="flex items-center">
                       <span
-                        class="text-muted-600 dark:text-muted-300 font-sans text-base px-1"
+                        class="text-muted-600 dark:text-muted-300 font-sans text-base"
                       >
-                        {{ item.product.message }} [{{ item.code }}]
-                      </span></BaseText
-                    >
-                    <Icon name="ph:link-duotone" class="h-5 w-5" />
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span
-                      class="text-muted-600 dark:text-muted-300 font-sans text-base"
-                    >
-                      {{ item.product.duration ?? '50s' }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex">
-                    <a
-                      v-if="item.product?.file"
-                      class="text-white bg-muted-600 px-2 py-1 rounded"
-                      :href="'/' + item.product?.file"
-                      target="_blank"
-                    >
-                      <Icon name="lucide:eye" class="h-4 w-4"
-                    /></a>
+                        {{ item.product.product }}
+                      </span>
+                    </div>
+                  </TairoTableCell>
+                  <TairoTableCell light spaced>
+                    <div class="flex items-center">
+                      <BaseText
+                        size="sm"
+                        class="hover:cursor-pointer"
+                        @click="
+                          handleClipboard(
+                            item.product.message + '[' + item.code + ']',
+                          )
+                        "
+                      >
+                        <span
+                          class="text-muted-600 dark:text-muted-300 font-sans text-base px-1"
+                        >
+                          {{ item.product.message }} [{{ item.code }}]
+                        </span></BaseText
+                      >
+                      <Icon name="ph:link-duotone" class="h-5 w-5" />
+                    </div>
+                  </TairoTableCell>
+                  <TairoTableCell spaced>
+                    <div class="flex items-center">
+                      <span
+                        class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                      >
+                        {{ item.product.duration ?? '50s' }}
+                      </span>
+                    </div>
+                  </TairoTableCell>
+                  <TairoTableCell v-if="!isPrint" spaced>
+                    <div class="flex">
+                      <a
+                        v-if="item.product?.file"
+                        class="text-white bg-muted-600 px-2 py-1 rounded"
+                        :href="'/' + item.product?.file"
+                        target="_blank"
+                      >
+                        <Icon name="lucide:eye" class="h-4 w-4"
+                      /></a>
 
-                    <BaseButtonAction
-                      v-if="item.product?.file"
-                      class="mx-4"
-                      @click.prevent="
-                        downloadProductFile(item.product?.file, item)
+                      <BaseButtonAction
+                        v-if="item.product?.file"
+                        class="mx-4"
+                        @click.prevent="
+                          downloadProductFile(item.product?.file, item)
+                        "
+                      >
+                        <Icon name="lucide:download" class="h-4 w-4" />
+                      </BaseButtonAction>
+                    </div>
+                  </TairoTableCell>
+                  <TairoTableCell spaced class="capitalize">
+                    <BaseTag
+                      v-if="
+                        item.isManualPlay == true || item.isAutoPlay == true
                       "
+                      color="success"
+                      flavor="pastel"
+                      shape="full"
+                      condensed
+                      class="font-medium"
                     >
-                      <Icon name="lucide:download" class="h-4 w-4" />
-                    </BaseButtonAction>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell spaced class="capitalize">
-                  <BaseTag
-                    v-if="item.isManualPlay == true || item.isAutoPlay == true"
-                    color="success"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    Diffusé
-                  </BaseTag>
-                  <BaseTag
-                    v-else-if="
-                      item.isManualPlay == false && item.isAutoPlay == false
-                    "
-                    color="warning"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    Non Diffusé
-                  </BaseTag>
-                  <!-- <BaseTag
+                      Diffusé
+                    </BaseTag>
+                    <BaseTag
+                      v-else-if="
+                        item.isManualPlay == false && item.isAutoPlay == false
+                      "
+                      color="warning"
+                      flavor="pastel"
+                      shape="full"
+                      condensed
+                      class="font-medium"
+                    >
+                      Non Diffusé
+                    </BaseTag>
+                    <!-- <BaseTag
                     v-else-if="item.status === 'offline'"
                     color="muted"
                     flavor="pastel"
@@ -1034,50 +1148,153 @@ const onSubmit = handleSubmit(
                   >
                     {{ item.status }}
                   </BaseTag> -->
-                </TairoTableCell>
+                  </TairoTableCell>
 
-                <TairoTableCell spaced>
-                  <div class="flex justify-center">
-                    <BaseButtonAction
-                      class="mx-2"
-                      @click.prevent="editPlanning(item)"
-                    >
-                      <Icon name="lucide:edit" class="h-4 w-4" />
-                    </BaseButtonAction>
-                    <BaseButtonAction
-                      @click.prevent="selectPlanning(item)"
-                      muted
-                      :disabled="
-                        authStore.user.appRole.name != UserRole.broadcast &&
-                        authStore.user.appRole.name != UserRole.superAdmin
-                      "
-                      :class="{
-                        '!text-orange-400':
-                          item.isManualPlay == false &&
-                          item.isAutoPlay == false,
-                        '!text-success-500':
-                          item.isManualPlay == true || item.isAutoPlay == true,
-                      }"
-                    >
-                      <Icon name="lucide:check" class="h-4 w-4" />
-                      valider</BaseButtonAction
-                    >
-                  </div>
-                </TairoTableCell>
-              </TairoTableRow>
-            </TairoTable>
-          </div>
-          <div class="mt-6">
-            <BasePagination
-              :total-items="data?.total ?? 0"
-              :item-per-page="perPage"
-              :current-page="page"
-              shape="curved"
-            />
+                  <TairoTableCell v-if="!isPrint" spaced>
+                    <div class="flex justify-center">
+                      <BaseButtonAction
+                        class="mx-2"
+                        @click.prevent="editPlanning(item)"
+                      >
+                        <Icon name="lucide:edit" class="h-4 w-4" />
+                      </BaseButtonAction>
+                      <BaseButtonAction
+                        @click.prevent="selectPlanning(item)"
+                        muted
+                        :disabled="
+                          authStore.user.appRole.name != UserRole.broadcast &&
+                          authStore.user.appRole.name != UserRole.superAdmin
+                        "
+                        :class="{
+                          '!text-orange-400':
+                            item.isManualPlay == false &&
+                            item.isAutoPlay == false,
+                          '!text-success-500':
+                            item.isManualPlay == true ||
+                            item.isAutoPlay == true,
+                        }"
+                      >
+                        <Icon name="lucide:check" class="h-4 w-4" />
+                        valider</BaseButtonAction
+                      >
+                    </div>
+                  </TairoTableCell>
+                </TairoTableRow>
+              </TairoTable>
+            </div>
+            <div v-if="!isPrint" class="mt-6">
+              <BasePagination
+                :total-items="data?.total ?? 0"
+                :item-per-page="perPage"
+                :current-page="page"
+                shape="curved"
+              />
+            </div>
           </div>
         </div>
       </div>
     </TairoContentWrapper>
+
+    <!-- Modal export diffusion list -->
+    <TairoModal
+      :open="isModalDiffusionListOpen"
+      size="xl"
+      @close="isModalDiffusionListOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Conducteur publicitaire
+          </h3>
+
+          <BaseButtonClose @click="isModalDiffusionListOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <BaseCard class="w-full">
+        <form
+          method="POST"
+          action=""
+          class="divide-muted-200 dark:divide-muted-700"
+        >
+          <div
+            shape="curved"
+            class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
+          >
+            <div class="mx-auto flex w-full flex-col">
+              <div>
+                <div class="col-span-12 sm:col-span-6 mt-2">
+                  <Field
+                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    name="report.org"
+                  >
+                    <BaseListbox
+                      label="Société"
+                      :items="orgs.data"
+                      :classes="{
+                        wrapper: '!w-60',
+                      }"
+                      :properties="{
+                        value: '_id',
+                        label: 'name',
+                        sublabel: 'email',
+                        media: '',
+                      }"
+                      v-model="currentOrg"
+                      :error="errorMessage"
+                      @update:model-value="handleChange"
+                      @blur="handleBlur"
+                    />
+                  </Field>
+                </div>
+                <div class="flex justify-between pt-5">
+                  <div class="col-span-12 md:col-span-6 mt-2">
+                    <label for="start">Date debut: </label>
+                    <input
+                      type="date"
+                      id="start"
+                      name="report-start"
+                      v-model="startDate"
+                    />
+                  </div>
+                  <div class="col-span-12 md:col-span-6 mt-2">
+                    <label for="start">Date de fin: </label>
+                    <input
+                      type="date"
+                      id="end"
+                      name="report-start"
+                      v-model="endDate"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </BaseCard>
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalDiffusionListOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="printDiffusionList()"
+            >
+              Imprimer
+            </BaseButton>
+          </div>
+        </div>
+      </template>
+    </TairoModal>
 
     <!-- Modal import playlist -->
     <TairoModal
@@ -1324,7 +1541,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            {{ isEdit ? 'Mise à jour planning': 'Nouveau planning' }}  
+            {{ isEdit ? 'Mise à jour planning' : 'Nouveau planning' }}
           </h3>
 
           <BaseButtonClose @click="isModalNewPlanningOpen = false" />

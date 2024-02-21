@@ -48,10 +48,44 @@ export default defineEventHandler(async (event) => {
     response.data = response.data.filter((e: any) => {
       return (e.amount - e.paid ?? 0) > 0 && e.taxes.length == 0
     })
+    let totalSelection = 0
+    for (let index = 0; index < response.data.length; index++) {
+      totalSelection += response.data[index].amount - response.data[index].paid
+    }
+    response.metaData.totalSelection = totalSelection
+
     return {
       total: response.data.length,
       metaData: response.metaData,
       data: filterData(response.data, filter, page, perPage),
+    }
+  } else if (action == 'findAllUnpaidFilters') {
+    const response = await findAll(token)
+    var startTime = new Date(new Date(startDate).toLocaleDateString()).getTime()
+    var endTime = new Date(new Date(endDate).toLocaleDateString()).getTime()
+    response.data = response.data.filter((e: any) => {
+      var itemTime = new Date(new Date(e.date).toLocaleDateString()).getTime()
+
+      return (
+        e.org._id == org &&
+        (team.length > 1 ? e.team == team : true) &&
+        itemTime >= startTime &&
+        itemTime <= endTime
+      )
+    })
+    response.data = response.data.filter((e: any) => {
+      return (e.amount - e.paid ?? 0) > 0 && e.taxes.length == 0
+    })
+    let totalSelection = 0
+    for (let index = 0; index < response.data.length; index++) {
+      totalSelection += response.data[index].amount - response.data[index].paid
+    }
+    response.metaData.totalSelection = totalSelection
+
+    return {
+      total: response.metaData.totalItems,
+      metaData: response.metaData,
+      data: filterData(response.data, filter, page, 1000),
     }
   } else if (action == 'createInvoice') {
     const body = await readBody(event)
@@ -100,9 +134,12 @@ function filterData(
 
   return data
     .filter((item) => {
-      return [item.code, item.org.name, item.announcer.name, item.team].some(
-        (item) => item.match(filterRe),
-      )
+      return [
+        item.code ?? '',
+        item.org?.name ?? '',
+        item.announcer?.name ?? '',
+        item.team ?? '',
+      ].some((item) => item.match(filterRe))
     })
     .sort(function (a, b) {
       return a.code < b.code ? 1 : -1
