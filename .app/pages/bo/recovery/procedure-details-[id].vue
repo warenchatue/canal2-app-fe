@@ -25,7 +25,6 @@ const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(10)
 const token = useCookie('token')
-
 const toaster = useToaster()
 // Check if can have access
 if (
