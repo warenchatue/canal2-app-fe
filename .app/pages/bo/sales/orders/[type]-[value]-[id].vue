@@ -236,9 +236,9 @@ function printOrder() {
   }, 1000)
 }
 
-function viewOrder() {
+async function viewOrder() {
   setTimeout(() => {
-    // isPrint.value = !isPrint.value
+    isPrint.value = !isPrint.value
     editOrderInvoiceFile(currentOrderInvoice.value)
   }, 500)
 }
