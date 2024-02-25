@@ -27,7 +27,7 @@ const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(12000)
 const isEdit = ref(false)
-const isPrint = ref(false)
+const isPrint = ref(true)
 const currentOrderInvoice = ref({})
 const token = useCookie('token')
 const isModalCreatePackageOpen = ref(false)
@@ -162,10 +162,6 @@ const paymentAccounts = accounts.value?.data.filter((e: any) => {
   return e.position == 'd'
 })
 
-// const saleAccounts = accounts.value?.data.filter((e: any) => {
-//   return e.code == '7011'
-// })
-
 const pageType = computed(() => route.params.type)
 const pageValue = computed(() => route.params.value)
 const pageId = computed(() => route.params.id)
@@ -226,14 +222,14 @@ watch(selectedOrder, (value) => {
 
 function printOrder() {
   isPrint.value = true
-  // setTimeout(() => {
-  // var printContents = document.getElementById('print-invoice').innerHTML
-  // var originalContents = document.body.innerHTML
-  // document.body.innerHTML = printContents
-  // window.print()
-  // document.body.innerHTML = originalContents
-  // location.reload()
-  // }, 500)
+  setTimeout(() => {
+    var printContents = document.getElementById('print-invoice').innerHTML
+    var originalContents = document.body.innerHTML
+    document.body.innerHTML = printContents
+    window.print()
+    document.body.innerHTML = originalContents
+    location.reload()
+  }, 1000)
 }
 
 async function viewOrder() {
