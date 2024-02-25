@@ -1,5 +1,3 @@
-import { isProduction } from 'std-env'
-
 import { appRules, landingRules } from './config/routes-rules'
 
 export default defineNuxtConfig({
@@ -50,15 +48,15 @@ export default defineNuxtConfig({
   // build configuration
   hooks: {
     'vite:extendConfig'(config, { isClient }) {
-      if (isProduction && isClient) {
-        // @ts-ignore
-        config.build.rollupOptions.output.entryFileNames = '_nuxt/e/[hash].js'
-        // @ts-ignore
-        config.build.rollupOptions.output.chunkFileNames = '_nuxt/c/[hash].js'
-        // @ts-ignore
-        config.build.rollupOptions.output.assetFileNames =
-          '_nuxt/a/[hash][extname]'
-      }
+      // if (isProduction && isClient) {
+      //   // @ts-ignore
+      //   config.build.rollupOptions.output.entryFileNames = '_nuxt/e/[hash].js'
+      //   // @ts-ignore
+      //   config.build.rollupOptions.output.chunkFileNames = '_nuxt/c/[hash].js'
+      //   // @ts-ignore
+      //   config.build.rollupOptions.output.assetFileNames =
+      //     '_nuxt/a/[hash][extname]'
+      // }
     },
   },
   nitro: {
