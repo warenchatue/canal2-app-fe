@@ -225,15 +225,15 @@ watch(selectedOrder, (value) => {
 })
 
 function printOrder() {
-  // isPrint.value = true
+  isPrint.value = true
   // setTimeout(() => {
-  var printContents = document.getElementById('print-invoice').innerHTML
-  var originalContents = document.body.innerHTML
-  document.body.innerHTML = printContents
-  window.print()
-  document.body.innerHTML = originalContents
-  location.reload()
-  // }, 1000)
+  // var printContents = document.getElementById('print-invoice').innerHTML
+  // var originalContents = document.body.innerHTML
+  // document.body.innerHTML = printContents
+  // window.print()
+  // document.body.innerHTML = originalContents
+  // location.reload()
+  // }, 500)
 }
 
 async function viewOrder() {
