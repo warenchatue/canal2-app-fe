@@ -238,7 +238,7 @@ function printOrder() {
 
 function viewOrder() {
   setTimeout(() => {
-    isPrint.value = !isPrint.value
+    // isPrint.value = !isPrint.value
     editOrderInvoiceFile(currentOrderInvoice.value)
   }, 500)
 }
