@@ -1,4 +1,5 @@
 import { isProduction } from 'std-env'
+
 import { appRules, landingRules } from './config/routes-rules'
 
 export default defineNuxtConfig({
