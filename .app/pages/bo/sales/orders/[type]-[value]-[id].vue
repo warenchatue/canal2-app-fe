@@ -96,12 +96,22 @@ const query = computed(() => {
   }
 })
 
+const queryLight = computed(() => {
+  return {
+    filter: filter.value,
+    perPage: perPage.value,
+    page: page.value,
+    action: 'findAllLight',
+    token: token.value,
+  }
+})
+
 const { data: allOrders } = await useFetch('/api/sales/orders', {
   query,
 })
 
 const { data: announcers } = await useFetch('/api/sales/announcers', {
-  query,
+  query: queryLight,
 })
 
 const { data: articles } = await useFetch('/api/sales/articles', {
@@ -117,7 +127,7 @@ const { data: taxes } = await useFetch('/api/accountancy/taxes', {
 })
 
 const { data: accounts } = await useFetch('/api/accountancy/accounts', {
-  query,
+  query: queryLight,
 })
 
 const { data: paymentMethods } = await useFetch(
@@ -1228,7 +1238,7 @@ const onSubmit = handleSubmit(
           <Icon name="ph:file" class="h-4 w-4" />
           <span>Planning</span>
         </BaseButton> -->
-        <BaseButton
+        <!-- <BaseButton
           v-if="isEdit && !packageId"
           color="info"
           class="w-full sm:w-32"
@@ -1236,7 +1246,7 @@ const onSubmit = handleSubmit(
         >
           <Icon name="ph:file" class="h-4 w-4" />
           <span>Planning</span>
-        </BaseButton>
+        </BaseButton> -->
         <BaseButton
           v-if="isEdit"
           :disabled="currentOrderInvoice.validator ? true : false"

@@ -16,6 +16,12 @@ export default defineEventHandler(async (event) => {
       total: data.length,
       data: filterData(data, filter, page, perPage),
     }
+  } else if (action == 'findAllLight') {
+    const data = await findAllLight(token)
+    return {
+      total: data.length,
+      data: filterData(data, filter, page, perPage),
+    }
   } else if (action == 'createAccount') {
     const body = await readBody(event)
     console.log(body)
@@ -75,6 +81,22 @@ async function findAll(token: string) {
       'Content-type': 'application/json',
     },
   }).catch((error) => console.log(error))
+  // console.log(data)
+  return Promise.resolve(data)
+}
+async function findAllLight(token: string) {
+  console.log('findAllLight ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/accounts/all/light',
+    {
+      method: 'get',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
   // console.log(data)
   return Promise.resolve(data)
 }
