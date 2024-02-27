@@ -94,6 +94,16 @@ const query = computed(() => {
   }
 })
 
+const queryLight = computed(() => {
+  return {
+    filter: filter.value,
+    perPage: perPage.value,
+    page: page.value,
+    action: 'findAllLight',
+    token: token.value,
+  }
+})
+
 const { data: orgs } = await useFetch('/api/admin/orgs', {
   query,
 })
@@ -102,9 +112,18 @@ const { data: allJournals } = await useFetch('/api/accountancy/journals', {
   query,
 })
 
-const { data: allAccounts } = await useFetch('/api/accountancy/accounts', {
-  query,
-})
+const { data: allAccounts, pending: pendingAccounts } = await useFetch(
+  '/api/accountancy/accounts',
+  {
+    query: queryLight,
+    lazy: true,
+    transform: (els) => {
+      return els.data?.map((el: any) => {
+        return { id: el._id, name: el.code + ' : ' + el.label }
+      })
+    },
+  },
+)
 
 const { data: allDocTypes } = await useFetch('/api/accountancy/doc-types', {
   query,
@@ -120,14 +139,6 @@ const transformedUsers = allUsers.value?.data.map((e: any) => {
     name: e.firstName + ' ' + e.lastName,
   }
   return user
-})
-
-const transformedAccounts = allAccounts.value?.data.map((e: any) => {
-  const account = {
-    id: e._id,
-    name: e.code + ' : ' + e.label,
-  }
-  return account
 })
 
 const transformedDocTypes = allDocTypes.value?.data.map((e: any) => {
@@ -1684,10 +1695,10 @@ const onSubmit = handleSubmit(
                                   <BaseAutocomplete
                                     v-model="curAccountingDocItem.account"
                                     :error="errorMessage"
-                                    :disabled="isSubmitting"
+                                    :disabled="isSubmitting || pendingAccounts"
                                     @update:model-value="handleChange"
                                     @blur="handleBlur"
-                                    :items="transformedAccounts"
+                                    :items="allAccounts"
                                     :display-value="(item: any) => item.name || ''"
                                     :filter-items="filterItems"
                                     icon="ph:money-duotone"

@@ -71,9 +71,6 @@ const { data, pending } = await useFetch('/api/sales/orders', {
   query,
 })
 
-// const { data: allUsers } = await useFetch('/api/users', {
-//   query,
-// })
 
 function confirmDeletePackage(spotPackage: any) {
   isModalDeletePackageOpen.value = true

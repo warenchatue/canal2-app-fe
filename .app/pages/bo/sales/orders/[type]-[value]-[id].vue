@@ -110,9 +110,13 @@ const { data: allOrders } = await useFetch('/api/sales/orders', {
   query,
 })
 
-const { data: announcers } = await useFetch('/api/sales/announcers', {
-  query: queryLight,
-})
+const { data: announcers, pending: pendingAnnouncer } = await useFetch(
+  '/api/sales/announcers',
+  {
+    query: queryLight,
+    lazy: true,
+  },
+)
 
 const { data: articles } = await useFetch('/api/sales/articles', {
   query,
@@ -126,9 +130,18 @@ const { data: taxes } = await useFetch('/api/accountancy/taxes', {
   query,
 })
 
-const { data: accounts } = await useFetch('/api/accountancy/accounts', {
-  query: queryLight,
-})
+const { data: accounts, pending: pendingAccounts } = await useFetch(
+  '/api/accountancy/accounts',
+  {
+    query: queryLight,
+    lazy: true,
+    transform: (els) => {
+      return els.data?.filter((el: any) => {
+        return el.position == 'd'
+      })
+    },
+  },
+)
 
 const { data: paymentMethods } = await useFetch(
   '/api/accountancy/payment-methods',
@@ -148,14 +161,6 @@ const { data: allUsers } = await useFetch('/api/users', {
   query,
 })
 
-const transformedAnnouncers = announcers.value?.data.map((e: any) => {
-  const invoice = {
-    id: e._id,
-    name: e.name,
-  }
-  return invoice
-})
-
 const commercials = allUsers.value?.data.filter((e: any) => {
   return (
     e.appRole?.name == UserRole.sale ||
@@ -166,10 +171,6 @@ const commercials = allUsers.value?.data.filter((e: any) => {
 
 const finalOrders = allOrders.value?.data.filter((e: any) => {
   return e.validator
-})
-
-const paymentAccounts = accounts.value?.data.filter((e: any) => {
-  return e.position == 'd'
 })
 
 const pageType = computed(() => route.params.type)
@@ -1646,10 +1647,10 @@ const onSubmit = handleSubmit(
                             <BaseAutocomplete
                               :model-value="field.value"
                               :error="errorMessage"
-                              :disabled="isSubmitting"
+                              :disabled="isSubmitting || pendingAnnouncer"
                               @update:model-value="handleChange"
                               @blur="handleBlur"
-                              :items="transformedAnnouncers"
+                              :items="announcers?.data"
                               :display-value="(item: any) => item.name || ''"
                               :filter-items="filterItems"
                               icon="lucide:user"
@@ -2847,7 +2848,7 @@ const onSubmit = handleSubmit(
                     <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
                       <BaseListbox
                         label="Journal des reglements"
-                        :items="paymentAccounts"
+                        :items="accounts"
                         :properties="{
                           value: '_id',
                           label: 'label',
@@ -2855,7 +2856,7 @@ const onSubmit = handleSubmit(
                         }"
                         v-model="curInvoicePaymentForm.paymentAccount"
                         :error="errorMessage"
-                        :disabled="isSubmitting"
+                        :disabled="isSubmitting || pendingAccounts"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
                       />

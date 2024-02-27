@@ -67,8 +67,18 @@ const query2 = computed(() => {
   }
 })
 
-const { data: announcersData } = await useFetch('/api/sales/announcers', {
-  query: query2,
+const query3 = computed(() => {
+  return {
+    filter: filter.value,
+    perPage: 5000,
+    page: page.value,
+    action: 'findAll',
+    token: token.value,
+  }
+})
+
+const { data: packagesData } = await useFetch('/api/pub/packages', {
+  query: query3,
 })
 
 const lineSpots = reactive(useLineSpots())
@@ -672,7 +682,7 @@ function useBarSalesProfit() {
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Annonceurs</span>
+                <span>Total Campagnes</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -690,7 +700,7 @@ function useBarSalesProfit() {
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ announcersData?.total }}</span>
+                <span>{{ packagesData?.data?.length ?? 0 }}</span>
               </BaseHeading>
             </div>
             <div

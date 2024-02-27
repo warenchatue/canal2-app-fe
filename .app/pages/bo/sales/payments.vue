@@ -887,6 +887,8 @@ const onSubmit = handleSubmit(
                         @click="confirmDeletePayment(item)"
                         class="mx-2"
                         :disabled="
+                          authStore.user.appRole?.name !=
+                            UserRole.accountancy &&
                           authStore.user.appRole?.name != UserRole.superAdmin
                         "
                       >

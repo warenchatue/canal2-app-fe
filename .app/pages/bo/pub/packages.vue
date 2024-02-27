@@ -82,9 +82,19 @@ const query = computed(() => {
 const query2 = computed(() => {
   return {
     filter: filter.value,
-    perPage: 12000,
+    perPage: 1000,
     page: page.value,
     action: 'findAll',
+    token: token.value,
+  }
+})
+
+const queryLight = computed(() => {
+  return {
+    filter: filter.value,
+    perPage: 12000,
+    page: page.value,
+    action: 'findAllLight',
     token: token.value,
   }
 })
@@ -93,46 +103,31 @@ const { data, pending } = await useFetch('/api/pub/packages', {
   query,
 })
 
-const { data: announcers } = await useFetch('/api/sales/announcers', {
-  query: query2,
-})
+const { data: announcers, pending: pendingAnnouncer } = await useFetch(
+  '/api/sales/announcers',
+  {
+    query: queryLight,
+    lazy: true,
+  },
+)
 
-// const { data: allOrders } = await useFetch('/api/sales/orders', {
-//   query: query2,
-// })
-
-const { data: allInvoices } = await useFetch('/api/sales/invoices', {
-  query: query2,
-})
+const { data: allInvoices, pending: pendingInvoices } = await useFetch(
+  '/api/sales/invoices',
+  {
+    query: query2,
+    lazy: true,
+    transform: (els) => {
+      return els.data?.map((el) => ({
+        name: el.code,
+        id: el._id,
+        text: new Date(el.createdAt).toLocaleDateString(),
+      }))
+    },
+  },
+)
 
 const { data: orgs } = await useFetch('/api/admin/orgs', {
   query,
-})
-
-const transformedAnnouncers = announcers.value?.data.map((e: any) => {
-  const invoice = {
-    id: e._id,
-    name: e.name,
-  }
-  return invoice
-})
-
-// const transformedOrders = allOrders.value?.data.map((e: any) => {
-//   const invoice = {
-//     id: e._id,
-//     name: e.code,
-//     text: e.createdAt,
-//   }
-//   return invoice
-// })
-
-const transformedInvoices = allInvoices.value?.data.map((e: any) => {
-  const invoice = {
-    id: e._id,
-    name: e.code,
-    text: e.createdAt,
-  }
-  return invoice
 })
 
 const { data: allUsers } = await useFetch('/api/users', {
@@ -155,20 +150,15 @@ function editPackage(campaign: any) {
   setFieldValue('campaign.period', campaign.period)
   setFieldValue('campaign.org', campaign.org)
   setFieldValue('campaign.adminValidator', campaign.adminValidator)
-  setFieldValue('campaign.invoice', {
-    id: campaign.invoice._id,
-    name: campaign.invoice.code,
-    text: campaign.invoice.createdAt,
-  })
-  setFieldValue('campaign.order', {
-    id: campaign.order._id,
-    name: campaign.order.code,
-    text: campaign.order.createdAt,
-  })
   setFieldValue('campaign.announcer', {
     id: campaign.announcer._id,
     name: campaign.announcer.name,
     text: campaign.announcer.phone,
+  })
+  setFieldValue('campaign.invoice', {
+    id: campaign.invoice._id,
+    name: campaign.invoice.code,
+    text: campaign.invoice.createdAt,
   })
 }
 
@@ -962,10 +952,10 @@ const onSubmit = handleSubmit(
                       <BaseAutocomplete
                         :model-value="field.value"
                         :error="errorMessage"
-                        :disabled="isSubmitting"
+                        :disabled="isSubmitting || pendingInvoices"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
-                        :items="transformedInvoices"
+                        :items="allInvoices"
                         :display-value="(item: any) => item.name || ''"
                         :filter-items="filterItems"
                         icon="lucide:file"
@@ -992,10 +982,10 @@ const onSubmit = handleSubmit(
                       <BaseAutocomplete
                         :model-value="field.value"
                         :error="errorMessage"
-                        :disabled="isSubmitting"
+                        :disabled="isSubmitting || pendingAnnouncer"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
-                        :items="transformedAnnouncers"
+                        :items="announcers.data"
                         :display-value="(item: any) => item.name || ''"
                         :filter-items="filterItems"
                         icon="lucide:file"
