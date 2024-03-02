@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Calendar } from 'v-calendar'
 import { Field } from 'vee-validate'
 
 import 'v-calendar/dist/style.css'

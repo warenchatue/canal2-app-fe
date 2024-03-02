@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
-import { Field, useForm } from 'vee-validate'
+import { useForm } from 'vee-validate'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
@@ -15,6 +15,8 @@ definePageMeta({
     order: 44,
   },
 })
+
+const fakeItems = ref([])
 
 const authStore = useAuthStore()
 const route = useRoute()
@@ -69,8 +71,8 @@ const query = computed(() => {
 
 const { data, pending } = await useFetch('/api/sales/orders', {
   query,
+  lazy: true,
 })
-
 
 function confirmDeletePackage(spotPackage: any) {
   isModalDeletePackageOpen.value = true
@@ -506,7 +508,10 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalItems }}</span>
+                <span v-if="!pending">{{ data?.metaData?.totalItems }}</span>
+                <span v-else
+                  ><BasePlaceload class="h-3 w-10 rounded-lg"
+                /></span>
               </BaseHeading>
             </div>
             <div
@@ -547,7 +552,10 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ 0 }}</span>
+                <span v-if="!pending">{{ 0 }}</span>
+                <span v-else
+                  ><BasePlaceload class="h-3 w-10 rounded-lg"
+                /></span>
               </BaseHeading>
             </div>
             <div
@@ -588,7 +596,10 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ 0 }}</span>
+                <span v-if="!pending">{{ 0 }}</span>
+                <span v-else
+                  ><BasePlaceload class="h-3 w-10 rounded-lg"
+                /></span>
               </BaseHeading>
             </div>
             <div
@@ -629,7 +640,12 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalAnnouncers }}</span>
+                <span v-if="!pending">{{
+                  data?.metaData?.totalAnnouncers
+                }}</span>
+                <span v-else
+                  ><BasePlaceload class="h-3 w-10 rounded-lg"
+                /></span>
               </BaseHeading>
             </div>
             <div
@@ -661,6 +677,56 @@ const onSubmit = handleSubmit(
               />
             </template>
           </BasePlaceholderPage>
+        </div>
+        <div v-else-if="pending">
+          <TairoTableRow v-for="index in 5" :key="index">
+            <TairoTableCell spaced>
+              <div class="flex items-center">
+                <BaseCheckbox
+                  v-model="fakeItems"
+                  :value="`placeload-item-checkbox-${index}`"
+                  rounded="full"
+                  color="primary"
+                />
+              </div>
+            </TairoTableCell>
+            <TairoTableCell spaced>
+              <BasePlaceload class="h-3 w-24 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell spaced>
+              <div class="flex items-center gap-2">
+                <BasePlaceload class="size-8 shrink-0 rounded-full" />
+                <div class="space-y-1">
+                  <BasePlaceload class="h-2 w-[70px] rounded-lg" />
+                  <BasePlaceload class="h-2 w-[50px] rounded-lg" />
+                </div>
+              </div>
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell spaced>
+              <BasePlaceload class="h-8 w-16 rounded-lg" />
+            </TairoTableCell>
+          </TairoTableRow>
         </div>
         <div v-else>
           <div class="w-full">
