@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
-import { Field, useFieldError, useForm } from 'vee-validate'
+import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
@@ -16,13 +16,15 @@ definePageMeta({
   },
 })
 
+const fakeItems = ref([])
+
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(25)
+const perPage = ref(10)
 const isModalNewAnnouncerOpen = ref(false)
 const isModalDeleteAnnouncerOpen = ref(false)
 const isModalImportAnnouncerOpen = ref(false)
@@ -73,6 +75,7 @@ const { data, pending, error, refresh } = await useFetch(
   '/api/sales/announcers',
   {
     query,
+    lazy: true,
   },
 )
 
@@ -435,6 +438,8 @@ const onSubmit = handleSubmit(
           <option :value="25">25 per page</option>
           <option :value="50">50 per page</option>
           <option :value="100">100 per page</option>
+          <option :value="250">250 per page</option>
+          <option :value="500">500 per page</option>
         </BaseSelect>
         <BaseButton
           @click=";(isModalNewAnnouncerOpen = true), (isEdit = false)"
@@ -486,6 +491,53 @@ const onSubmit = handleSubmit(
             </template>
           </BasePlaceholderPage>
         </div>
+        <div class="w-full" v-else-if="pending">
+          <TairoTableRow v-for="index in 5" :key="index">
+            <TairoTableCell spaced>
+              <div class="flex items-center">
+                <BaseCheckbox
+                  v-model="fakeItems"
+                  :value="`placeload-item-checkbox-${index}`"
+                  rounded="full"
+                  color="primary"
+                />
+              </div>
+            </TairoTableCell>
+            <TairoTableCell spaced>
+              <BasePlaceload class="h-3 w-24 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell spaced>
+              <div class="flex items-center gap-2">
+                <BasePlaceload class="size-8 shrink-0 rounded-full" />
+                <div class="space-y-1">
+                  <BasePlaceload class="h-2 w-[70px] rounded-lg" />
+                  <BasePlaceload class="h-2 w-[50px] rounded-lg" />
+                </div>
+              </div>
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-16 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-16 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-16 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+          </TairoTableRow>
+        </div>
         <div v-else>
           <div class="w-full">
             <TairoTable shape="rounded">
@@ -511,8 +563,8 @@ const onSubmit = handleSubmit(
                 </TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced> Tel </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> R/C </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> N/C </TairoTableHeading>
+                <!-- <TairoTableHeading uppercase spaced> R/C </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> N/C </TairoTableHeading> -->
                 <TairoTableHeading uppercase spaced>
                   Categorie
                 </TairoTableHeading>
@@ -555,14 +607,17 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <BaseAvatar
+                  <div
+                    style="white-space: pre-wrap; word-wrap: break-word"
+                    class="flex items-center"
+                  >
+                    <!-- <BaseAvatar
                       :src="item.logo ?? '/img/avatars/company.svg'"
                       :text="item.initials"
                       :class="getRandomColor()"
-                    />
+                    /> -->
                     <div class="ms-3 leading-none">
-                      <h4 class="font-sans text-sm font-medium">
+                      <h4 class="font-sans !w-48 text-sm font-medium">
                         {{ item.name }}
                       </h4>
                       <p class="text-muted-400 font-sans text-xs">
@@ -579,7 +634,7 @@ const onSubmit = handleSubmit(
                     </span>
                   </div>
                 </TairoTableCell>
-                <TairoTableCell spaced>
+                <!-- <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
                       {{ item.rc }}
@@ -592,7 +647,7 @@ const onSubmit = handleSubmit(
                       {{ item.nc }}
                     </span>
                   </div>
-                </TairoTableCell>
+                </TairoTableCell> -->
                 <TairoTableCell light spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">

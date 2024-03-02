@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Field } from 'vee-validate';
-import { UserRole } from '~/types/user';
+import { Field } from 'vee-validate'
+import { UserRole } from '~/types/user'
 
 definePageMeta({
   title: 'Factures',
@@ -83,8 +83,9 @@ const { data, pending } = await useFetch('/api/sales/invoices', {
   lazy: true,
 })
 
-const { data: orgs } = await useFetch('/api/admin/orgs', {
+const { data: orgs, pending: pendingOrg } = await useFetch('/api/admin/orgs', {
   query,
+  lazy: true,
 })
 
 function confirmDeletePackage(invoice: any) {
@@ -1037,12 +1038,13 @@ const success = ref(false)
           >
             <div class="mx-auto flex w-full flex-col">
               <div>
-                <div class="col-span-12 sm:col-span-6 mt-2">
+                <div v-if="!pendingOrg" class="col-span-12 sm:col-span-6 mt-2">
                   <Field
                     v-slot="{ field, errorMessage, handleChange, handleBlur }"
                     name="report.org"
                   >
                     <BaseListbox
+                      :disabled="pendingOrg"
                       label="Société"
                       :items="orgs.data"
                       :classes="{
