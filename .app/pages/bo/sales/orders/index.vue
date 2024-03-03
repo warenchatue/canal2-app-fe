@@ -69,7 +69,7 @@ const query = computed(() => {
   }
 })
 
-const { data, pending } = await useFetch('/api/sales/orders', {
+const { data, pending, refresh } = await useFetch('/api/sales/orders', {
   query,
   lazy: true,
 })
@@ -277,14 +277,11 @@ const onSubmit = handleSubmit(
           }
         })
 
-        const { data: uploadData, refresh } = await useFetch(
-          '/api/files/upload',
-          {
-            method: 'POST',
-            query: query3,
-            body: fd,
-          },
-        )
+        const { data: uploadData } = await useFetch('/api/files/upload', {
+          method: 'POST',
+          query: query3,
+          body: fd,
+        })
         console.log(uploadData)
         if (uploadData.value?.success == false) {
           contractUrl.value = ''
@@ -312,14 +309,11 @@ const onSubmit = handleSubmit(
           }
         })
 
-        const { data: uploadData, refresh } = await useFetch(
-          '/api/files/upload',
-          {
-            method: 'POST',
-            query: query3,
-            body: fd,
-          },
-        )
+        const { data: uploadData } = await useFetch('/api/files/upload', {
+          method: 'POST',
+          query: query3,
+          body: fd,
+        })
         console.log(uploadData)
         if (uploadData.value?.success == false) {
           invoiceUrl.value = ''
@@ -476,6 +470,15 @@ const onSubmit = handleSubmit(
         >
           <Icon name="ph:plus" class="h-4 w-4" />
           <span>Nouvau devis</span>
+        </BaseButton>
+        <BaseButton
+          data-tooltip="Raffraichir la page"
+          color="primary"
+          class="w-full sm:w-16"
+          @click="refresh"
+        >
+          <Icon name="ph:arrows-clockwise" class="h-6 w-6" />
+          <span></span>
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">

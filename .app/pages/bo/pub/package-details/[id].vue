@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
-import { Field, useFieldError, useForm } from 'vee-validate'
+import moment from 'moment'
+import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
-import moment from 'moment'
 
 definePageMeta({
   title: 'Produits - Annonceur',
@@ -22,9 +22,10 @@ const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(40)
+const perPage = ref(50)
 const token = useCookie('token')
-
+const app = useAppStore()
+const packageId = computed(() => route.params.id)
 const toaster = useToaster()
 // Check if can have access
 if (
@@ -42,6 +43,14 @@ if (
   router.back()
 }
 
+const query = computed(() => {
+  return {
+    action: 'findOne',
+    id: packageId.value,
+    token: token.value,
+  }
+})
+
 const queryHours = computed(() => {
   return {
     filter: filter.value,
@@ -52,8 +61,20 @@ const queryHours = computed(() => {
   }
 })
 
+const { data, pending, error, refresh } = await useFetch('/api/pub/packages', {
+  query,
+})
+
 const { data: hoursData } = await useFetch('/api/pub/hours', {
   query: queryHours,
+})
+
+watch([filter, perPage], () => {
+  router.push({
+    query: {
+      page: undefined,
+    },
+  })
 })
 
 const isModalNewSpotOpen = ref(false)
@@ -389,32 +410,6 @@ function checkSpot(d: number, hour: string) {
   }
 }
 
-watch([filter, perPage], () => {
-  router.push({
-    query: {
-      page: undefined,
-    },
-  })
-})
-
-const app = useAppStore()
-const packageId = computed(() => route.params.id)
-const query = computed(() => {
-  return {
-    action: 'findOne',
-    id: packageId.value,
-    token: token.value,
-  }
-})
-
-const { data, pending, error, refresh } = await useFetch('/api/pub/packages', {
-  query,
-})
-
-if (data.value) {
-  console.log(data.value)
-}
-
 function editSpot(product: any) {
   isModalNewSpotOpen.value = true
   isEdit.value = true
@@ -507,7 +502,7 @@ async function importProductFile() {
       }
     })
 
-    const { data: uploadData, refresh } = await useFetch('/api/files/upload', {
+    const { data: uploadData } = await useFetch('/api/files/upload', {
       method: 'POST',
       query: query3,
       body: fd,
@@ -649,14 +644,11 @@ async function confirmPlanning() {
         }
       })
 
-      const { data: uploadData, refresh } = await useFetch(
-        '/api/files/upload',
-        {
-          method: 'post',
-          query,
-          body: fd,
-        },
-      )
+      const { data: uploadData } = await useFetch('/api/files/upload', {
+        method: 'post',
+        query,
+        body: fd,
+      })
       if (!uploadData.value?.success) {
         slug.value = ''
         toaster.clearAll()
@@ -766,7 +758,7 @@ const onSubmit = handleSubmit(
     success.value = false
 
     // here you have access to the validated form values
-    console.log('spot-product-success', values)
+    console.log('campaign-product-success', values)
 
     try {
       const isSuccess = ref(false)
@@ -821,7 +813,8 @@ const onSubmit = handleSubmit(
         })
         isModalNewSpotOpen.value = false
         resetForm()
-        location.reload()
+        // location.reload()
+        refresh()
         filter.value = 'product'
         filter.value = ''
       } else {
@@ -962,11 +955,13 @@ const onSubmit = handleSubmit(
           <span>Nouveau Produit</span>
         </BaseButton>
         <BaseButton
-          @click="router.push('/bo/pub/package-details/' + data.data?._id)"
+          data-tooltip="Raffraichir la page"
           color="primary"
-          class="w-full sm:w-8"
+          class="w-full sm:w-16"
+          @click="refresh"
         >
-          <Icon name="carbon:tropical-storm-tracks" class="h-4 w-4" />
+          <Icon name="ph:arrows-clockwise" class="h-6 w-6" />
+          <span></span>
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">

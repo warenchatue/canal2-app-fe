@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useForm } from 'vee-validate'
+import 'vue-select/dist/vue-select.css'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
-import 'vue-select/dist/vue-select.css'
 
 definePageMeta({
   title: 'Campagnes Publicitaires',
@@ -16,6 +16,8 @@ definePageMeta({
     order: 44,
   },
 })
+
+const fakeItems = ref([])
 
 const authStore = useAuthStore()
 const route = useRoute()
@@ -99,8 +101,9 @@ const queryLight = computed(() => {
   }
 })
 
-const { data, pending } = await useFetch('/api/pub/packages', {
+const { data, pending, refresh } = await useFetch('/api/pub/packages', {
   query,
+  lazy: true,
 })
 
 const { data: announcers, pending: pendingAnnouncer } = await useFetch(
@@ -546,6 +549,15 @@ const onSubmit = handleSubmit(
           <Icon name="ph:plus" class="h-4 w-4" />
           <span>Nouvelle campagne</span>
         </BaseButton>
+        <BaseButton
+          data-tooltip="Raffraichir la page"
+          color="primary"
+          class="w-full sm:w-16"
+          @click="refresh"
+        >
+          <Icon name="ph:arrows-clockwise" class="h-6 w-6" />
+          <span></span>
+        </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">
         <!-- Stat tile -->
@@ -577,7 +589,10 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalItems }}</span>
+                <span v-if="!pending">{{ data?.metaData?.totalItems }}</span>
+                <span v-else
+                  ><BasePlaceload class="h-3 w-10 rounded-lg"
+                /></span>
               </BaseHeading>
             </div>
             <div
@@ -618,7 +633,12 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalAnnouncers }}</span>
+                <span v-if="!pending">{{
+                  data?.metaData?.totalAnnouncers
+                }}</span>
+                <span v-else
+                  ><BasePlaceload class="h-3 w-10 rounded-lg"
+                /></span>
               </BaseHeading>
             </div>
             <div
@@ -659,7 +679,10 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalSpots }}</span>
+                <span v-if="!pending">{{ data?.metaData?.totalSpots }}</span>
+                <span v-else
+                  ><BasePlaceload class="h-3 w-10 rounded-lg"
+                /></span>
               </BaseHeading>
             </div>
             <div
@@ -700,7 +723,10 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalFiles }}</span>
+                <span v-if="!pending">{{ data?.metaData?.totalFiles }}</span>
+                <span v-else
+                  ><BasePlaceload class="h-3 w-10 rounded-lg"
+                /></span>
               </BaseHeading>
             </div>
             <div
@@ -732,6 +758,56 @@ const onSubmit = handleSubmit(
               />
             </template>
           </BasePlaceholderPage>
+        </div>
+        <div v-else-if="pending">
+          <TairoTableRow v-for="index in 5" :key="index">
+            <TairoTableCell spaced>
+              <div class="flex items-center">
+                <BaseCheckbox
+                  v-model="fakeItems"
+                  :value="`placeload-item-checkbox-${index}`"
+                  rounded="full"
+                  color="primary"
+                />
+              </div>
+            </TairoTableCell>
+            <TairoTableCell spaced>
+              <BasePlaceload class="h-3 w-24 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell spaced>
+              <div class="flex items-center gap-2">
+                <BasePlaceload class="size-8 shrink-0 rounded-full" />
+                <div class="space-y-1">
+                  <BasePlaceload class="h-2 w-[70px] rounded-lg" />
+                  <BasePlaceload class="h-2 w-[50px] rounded-lg" />
+                </div>
+              </div>
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell spaced>
+              <BasePlaceload class="h-8 w-16 rounded-lg" />
+            </TairoTableCell>
+          </TairoTableRow>
         </div>
         <div v-else>
           <div class="w-full">
