@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
-import { Field, useForm } from 'vee-validate'
+import { ToWords } from 'to-words'
 import { DatePicker } from 'v-calendar'
+import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
-import moment from 'moment'
-import { ToWords } from 'to-words'
 
 definePageMeta({
   title: 'Bons de Caisses',
@@ -500,7 +499,7 @@ async function confirmAccountingDoc() {
       id: currentAccountingDoc.value._id,
     }
   })
-  currentAccountingDoc.value.validator = authStore.user._id
+  const userValidator = authStore.user._id
 
   const response = await useFetch('/api/accountancy/accounting-docs', {
     method: 'put',
@@ -508,6 +507,7 @@ async function confirmAccountingDoc() {
     query: query4,
     body: {
       ...currentAccountingDoc.value,
+      validator: userValidator,
       beneficiary: values.accountingDoc?.beneficiary?.id ?? undefined,
       authorizer: values.accountingDoc?.authorizer?.id ?? undefined,
     },
@@ -524,9 +524,8 @@ async function confirmAccountingDoc() {
       closable: true,
     })
     isModalConfirmOrderOpen.value = false
-    filter.value = 'order'
-    filter.value = ''
-    location.reload()
+    currentAccountingDoc.value.validator = authStore.user._id
+    // location.reload()
   } else {
     toaster.clearAll()
     toaster.show({

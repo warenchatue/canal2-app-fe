@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
-import { Field, useForm } from 'vee-validate'
-import { DatePicker } from 'v-calendar'
-import { z } from 'zod'
-import { UserRole } from '~/types/user'
 import moment from 'moment'
 import { ToWords } from 'to-words'
+import { DatePicker } from 'v-calendar'
+import { Field, useForm } from 'vee-validate'
+import { z } from 'zod'
+import { UserRole } from '~/types/user'
 
 definePageMeta({
   title: 'Devis & Factures',
@@ -28,6 +28,7 @@ const filter = ref('')
 const perPage = ref(12000)
 const isEdit = ref(false)
 const isPrint = ref(false)
+const isLoading = ref(false)
 const currentOrderInvoice = ref({})
 const token = useCookie('token')
 const isModalCreatePackageOpen = ref(false)
@@ -176,7 +177,6 @@ const finalOrders = allOrders.value?.data.filter((e: any) => {
 const pageType = computed(() => route.params.type)
 const pageValue = computed(() => route.params.value)
 const pageId = computed(() => route.params.id)
-
 let pageTitle = ''
 if (pageType.value == 'new') {
   if (pageValue.value == 'order') {
@@ -186,6 +186,11 @@ if (pageType.value == 'new') {
   }
 }
 if (pageType.value == 'view' || pageType.value == 'edit') {
+  if (pageValue.value == 'order') {
+    pageTitle = 'Mise à jour Devis'
+  } else if (pageValue.value == 'invoice') {
+    pageTitle = 'Mise à jour Facture'
+  }
   const query = computed(() => {
     return {
       filter: filter.value,
@@ -196,6 +201,7 @@ if (pageType.value == 'view' || pageType.value == 'edit') {
       token: token.value,
     }
   })
+
   if (pageValue.value == 'order') {
     const { data: singleOrder } = await useFetch('/api/sales/orders', {
       query,
@@ -206,7 +212,6 @@ if (pageType.value == 'view' || pageType.value == 'edit') {
       editOrderInvoiceFile(currentOrderInvoice.value)
     }
   } else if (pageValue.value == 'invoice') {
-    pageTitle = 'Mise à jour Facture'
     const { data: singleOrder } = await useFetch('/api/sales/invoices', {
       query,
     })
@@ -241,6 +246,61 @@ function printOrder() {
     document.body.innerHTML = originalContents
     location.reload()
   }, 1000)
+}
+
+async function refreshData() {
+  const query = computed(() => {
+    return {
+      filter: filter.value,
+      perPage: perPage.value,
+      page: page.value,
+      action: 'findOne',
+      id: pageId.value,
+      token: token.value,
+    }
+  })
+  if (pageValue.value == 'order') {
+    // const { data: singleOrder } = await useFetch('/api/sales/orders', {
+    //   query,
+    // })
+    const singleOrder = await $fetch(
+      '/api/sales/orders?action=findOne&token=' +
+        token.value +
+        '&id=' +
+        pageId.value,
+      {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      },
+    )
+    if (singleOrder.value?.success) {
+      currentOrderInvoice.value = singleOrder.value?.data
+      packageId.value = currentOrderInvoice.value?.package?._id ?? undefined
+      editOrderInvoiceFile(currentOrderInvoice.value)
+    }
+  } else if (pageValue.value == 'invoice') {
+    // const { data: singleOrder } = await useFetch('/api/sales/invoices', {
+    //   query,
+    // })
+    const singleOrder = await $fetch(
+      '/api/sales/invoices?action=findOne&token=' +
+        token.value +
+        '&id=' +
+        pageId.value,
+      {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      },
+    )
+    console.log(singleOrder)
+    if (singleOrder?.success) {
+      currentOrderInvoice.value = singleOrder?.data
+      packageId.value =
+        currentOrderInvoice.value.order?.package?._id ?? undefined
+      selectedOrder.value = currentOrderInvoice.value.order
+      editOrderInvoiceFile(currentOrderInvoice.value)
+    }
+  }
 }
 
 async function viewOrder() {
@@ -299,6 +359,8 @@ async function addInvoicePayment() {
     }
   })
 
+  isLoading.value = true
+
   const response = await useFetch('/api/sales/invoices', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -316,7 +378,6 @@ async function addInvoicePayment() {
       },
     },
   })
-
   if (response.data?.value?.success) {
     success.value = true
     toaster.clearAll()
@@ -328,9 +389,11 @@ async function addInvoicePayment() {
       closable: true,
     })
     isModalCreatePaymentOpen.value = false
-    filter.value = 'payment'
-    filter.value = ''
-    location.reload()
+    isLoading.value = false
+    currentOrderInvoice.value.transactions =
+      response.data?.value.data.transactions
+    // location.reload()
+    // await refreshData()
   } else {
     toaster.clearAll()
     toaster.show({
@@ -504,7 +567,7 @@ async function confirmOrder() {
       id: currentOrderInvoice.value._id,
     }
   })
-  currentOrderInvoice.value.validator = authStore.user._id
+  const userValidator = authStore.user._id
 
   const response = await useFetch(
     pageValue.value == 'order' ? '/api/sales/orders' : '/api/sales/invoices',
@@ -512,7 +575,7 @@ async function confirmOrder() {
       method: 'put',
       headers: { 'Content-Type': 'application/json' },
       query: query4,
-      body: { ...currentOrderInvoice.value },
+      body: { ...currentOrderInvoice.value, validator: userValidator },
     },
   )
 
@@ -528,9 +591,8 @@ async function confirmOrder() {
       closable: true,
     })
     isModalConfirmOrderOpen.value = false
-    filter.value = 'order'
-    filter.value = ''
-    location.reload()
+    // location.reload()
+    currentOrderInvoice.value.validator = authStore.user._id
   } else {
     toaster.clearAll()
     toaster.show({
@@ -733,7 +795,6 @@ const curOrderItem = ref({
 watch(curOrderItem, (value) => {
   setTimeout(() => {
     console.log('value')
-    console.log(value)
     if (curOrderItem.value.article != value.article) {
       curOrderItem.value.rate = value.article.price
     }
@@ -892,14 +953,11 @@ const onSubmit = handleSubmit(
             }
           })
 
-          const { data: uploadData, refresh } = await useFetch(
-            '/api/files/upload',
-            {
-              method: 'POST',
-              query: query3,
-              body: fd,
-            },
-          )
+          const { data: uploadData } = await useFetch('/api/files/upload', {
+            method: 'POST',
+            query: query3,
+            body: fd,
+          })
           console.log(uploadData)
           if (uploadData.value?.success == false) {
             contractUrl.value = ''
@@ -2985,6 +3043,8 @@ const onSubmit = handleSubmit(
             >
 
             <BaseButton
+              :disabled="isLoading"
+              :loading="isLoading"
               color="primary"
               flavor="solid"
               @click="addInvoicePayment()"

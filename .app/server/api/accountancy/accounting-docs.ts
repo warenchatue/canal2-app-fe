@@ -108,7 +108,7 @@ async function findOne(id: string, token: string) {
       },
     },
   ).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
 

@@ -74,10 +74,13 @@ const query = computed(() => {
   }
 })
 
-const { data, pending } = await useFetch('/api/accountancy/accounting-docs', {
-  query,
-  lazy: true,
-})
+const { data, pending, refresh } = await useFetch(
+  '/api/accountancy/accounting-docs',
+  {
+    query,
+    lazy: true,
+  },
+)
 
 const { data: orgs, pending: pendingOrg } = await useFetch('/api/admin/orgs', {
   query,
@@ -328,14 +331,11 @@ const onSubmit = handleSubmit(
           }
         })
 
-        const { data: uploadData, refresh } = await useFetch(
-          '/api/files/upload',
-          {
-            method: 'POST',
-            query: query3,
-            body: fd,
-          },
-        )
+        const { data: uploadData } = await useFetch('/api/files/upload', {
+          method: 'POST',
+          query: query3,
+          body: fd,
+        })
         console.log(uploadData)
         if (uploadData.value?.success == false) {
           contractUrl.value = ''
@@ -363,14 +363,11 @@ const onSubmit = handleSubmit(
           }
         })
 
-        const { data: uploadData, refresh } = await useFetch(
-          '/api/files/upload',
-          {
-            method: 'POST',
-            query: query3,
-            body: fd,
-          },
-        )
+        const { data: uploadData } = await useFetch('/api/files/upload', {
+          method: 'POST',
+          query: query3,
+          body: fd,
+        })
         console.log(uploadData)
         if (uploadData.value?.success == false) {
           invoiceUrl.value = ''
@@ -519,7 +516,7 @@ const onSubmit = handleSubmit(
         </BaseSelect>
         <BaseButton
           color="primary"
-          class="w-full sm:w-52"
+          class="w-full sm:w-40"
           @click="openReportModal()"
         >
           <Icon name="ph:file" class="h-4 w-4" />
@@ -535,6 +532,15 @@ const onSubmit = handleSubmit(
         >
           <Icon name="ph:plus" class="h-4 w-4" />
           <span>Nouvelle pièce</span>
+        </BaseButton>
+        <BaseButton
+          data-tooltip="Raffraichir la page"
+          color="primary"
+          class="w-full sm:w-16"
+          @click="refresh"
+        >
+          <Icon name="ph:arrows-clockwise" class="h-6 w-6" />
+          <span></span>
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">

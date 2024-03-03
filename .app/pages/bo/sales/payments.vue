@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { DatePicker } from 'v-calendar'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
@@ -17,6 +16,8 @@ definePageMeta({
   },
 })
 
+const fakeItems = ref([])
+
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
@@ -26,7 +27,6 @@ const perPage = ref(10)
 const isPrint = ref(false)
 const isModalNewPaymentOpen = ref(false)
 const isModalDeletePaymentOpen = ref(false)
-const isModalConfirmOrderOpen = ref(false)
 const isModalPaymentsReportOpen = ref(false)
 const isEdit = ref(false)
 const toaster = useToaster()
@@ -76,8 +76,9 @@ const query = computed(() => {
   }
 })
 
-const { data, pending } = await useFetch('/api/transactions', {
+const { data, pending, refresh } = await useFetch('/api/transactions', {
   query,
+  lazy: true,
 })
 
 const { data: orgs } = await useFetch('/api/admin/orgs', {
@@ -456,7 +457,7 @@ const onSubmit = handleSubmit(
         </BaseSelect>
         <BaseButton
           color="primary"
-          class="w-full sm:w-52"
+          class="w-full sm:w-40"
           @click="openReportModal()"
         >
           <Icon name="ph:file" class="h-4 w-4" />
@@ -465,6 +466,15 @@ const onSubmit = handleSubmit(
         <BaseButton :disabled="true" color="primary" class="w-full sm:w-52">
           <Icon name="ph:plus" class="h-4 w-4" />
           <span>Nouveau</span>
+        </BaseButton>
+        <BaseButton
+          data-tooltip="Raffraichir la page"
+          color="primary"
+          class="w-full sm:w-16"
+          @click="refresh"
+        >
+          <Icon name="ph:arrows-clockwise" class="h-6 w-6" />
+          <span></span>
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">
@@ -497,7 +507,10 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.data?.length ?? 0 }}</span>
+                <span v-if="!pending">{{ data?.data?.length ?? 0 }}</span>
+                <span v-else
+                  ><BasePlaceload class="h-3 w-10 rounded-lg"
+                /></span>
               </BaseHeading>
             </div>
             <div
@@ -538,7 +551,10 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>0</span>
+                <span v-if="!pending">0</span>
+                <span v-else
+                  ><BasePlaceload class="h-3 w-10 rounded-lg"
+                /></span>
               </BaseHeading>
             </div>
             <div
@@ -579,7 +595,10 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>0</span>
+                <span v-if="!pending">0</span>
+                <span v-else
+                  ><BasePlaceload class="h-3 w-10 rounded-lg"
+                /></span>
               </BaseHeading>
             </div>
             <div
@@ -620,7 +639,10 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>0</span>
+                <span v-if="!pending">0</span>
+                <span v-else
+                  ><BasePlaceload class="h-3 w-10 rounded-lg"
+                /></span>
               </BaseHeading>
             </div>
             <div
@@ -704,6 +726,56 @@ const onSubmit = handleSubmit(
                 />
               </template>
             </BasePlaceholderPage>
+          </div>
+          <div v-else-if="pending">
+            <TairoTableRow v-for="index in 5" :key="index">
+              <TairoTableCell spaced>
+                <div class="flex items-center">
+                  <BaseCheckbox
+                    v-model="fakeItems"
+                    :value="`placeload-item-checkbox-${index}`"
+                    rounded="full"
+                    color="primary"
+                  />
+                </div>
+              </TairoTableCell>
+              <TairoTableCell spaced>
+                <BasePlaceload class="h-3 w-24 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell spaced>
+                <div class="flex items-center gap-2">
+                  <BasePlaceload class="size-8 shrink-0 rounded-full" />
+                  <div class="space-y-1">
+                    <BasePlaceload class="h-2 w-[70px] rounded-lg" />
+                    <BasePlaceload class="h-2 w-[50px] rounded-lg" />
+                  </div>
+                </div>
+              </TairoTableCell>
+              <TairoTableCell light spaced>
+                <BasePlaceload class="h-3 w-12 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell light spaced>
+                <BasePlaceload class="h-3 w-12 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell light spaced>
+                <BasePlaceload class="h-3 w-12 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell light spaced>
+                <BasePlaceload class="h-3 w-12 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell light spaced>
+                <BasePlaceload class="h-3 w-12 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell light spaced>
+                <BasePlaceload class="h-3 w-12 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell light spaced>
+                <BasePlaceload class="h-3 w-12 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell spaced>
+                <BasePlaceload class="h-8 w-16 rounded-lg" />
+              </TairoTableCell>
+            </TairoTableRow>
           </div>
           <div v-else>
             <div class="w-full">
@@ -823,7 +895,7 @@ const onSubmit = handleSubmit(
                     {{ item.org.name }}
                   </TairoTableCell>
                   <TairoTableCell light spaced>
-                    {{ item.paymentAccount.label }}
+                    {{ item.paymentAccount?.label }}
                   </TairoTableCell>
                   <TairoTableCell light spaced>
                     {{ item.author?.firstName }}
