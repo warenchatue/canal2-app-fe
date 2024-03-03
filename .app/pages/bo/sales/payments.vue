@@ -126,7 +126,6 @@ function confirmEditPayment(payment: any) {
   currentPayment.value = payment
   setFieldValue('payment._id', payment._id)
   setFieldValue('payment.code', payment.code)
-  setFieldValue('payment.date', payment.date)
   setFieldValue('payment.amount', payment.amount)
   setFieldValue('payment.status', payment.status)
   setFieldValue('payment.message', payment.message)
@@ -136,6 +135,7 @@ function confirmEditPayment(payment: any) {
   setFieldValue('payment.data.invoiceId', payment.data.invoiceId)
   setFieldValue('payment.data.invoiceCode', payment.data.invoiceCode)
   setFieldValue('payment.data.city', payment.data.city)
+  startDate.value = payment.date
 }
 
 function confirmDeletePayment(payment: any) {
