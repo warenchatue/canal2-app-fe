@@ -805,10 +805,9 @@ const curInvoicePaymentForm = ref({
   paymentAccount: {},
   label: '',
   amount:
-    currentOrderInvoice.value?.amount ??
-    0 - currentOrderInvoice.value?.paid ??
-    0,
-  date: '',
+    (currentOrderInvoice.value?.amount ?? 0) -
+    (currentOrderInvoice.value?.paid ?? 0),
+  date: new Date(),
   currency: '',
 })
 
@@ -818,7 +817,7 @@ const curInvoiceTaxForm = ref({
   amount:
     (currentOrderInvoice.value?.tva ?? 0) +
     (currentOrderInvoice.value?.tsp ?? 0),
-  date: '',
+  date: new Date(),
 })
 
 const totalData = computed(() => {
@@ -2526,9 +2525,9 @@ const onSubmit = handleSubmit(
                             class="text-muted-800 dark:text-muted-400 px-3 py-2 text-center text-[9px] sm:table-cell"
                           >
                             {{
-                              new Date(item.createdAt).toLocaleDateString(
-                                'fr-FR',
-                              )
+                              new Date(
+                                item.date ?? item.createdAt,
+                              ).toLocaleDateString('fr-FR')
                             }}
                           </td>
                           <td
@@ -2921,7 +2920,7 @@ const onSubmit = handleSubmit(
                     </div>
                     <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
                       <DatePicker
-                        v-model.range="dates"
+                        v-model="curInvoicePaymentForm.date"
                         :min-date="new Date('2022-01-01')"
                         mode="date"
                         hide-time-header
@@ -2943,8 +2942,8 @@ const onSubmit = handleSubmit(
                                   shape="rounded"
                                   label="Date de l'operation"
                                   icon="ph:calendar-blank-duotone"
-                                  :value="inputValue.start"
-                                  v-on="inputEvents.start"
+                                  :value="inputValue"
+                                  v-on="inputEvents"
                                   :classes="{
                                     input: '!h-11 !ps-11',
                                     icon: '!h-11 !w-11',
@@ -3105,7 +3104,7 @@ const onSubmit = handleSubmit(
                     </div>
                     <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
                       <DatePicker
-                        v-model.range="dates"
+                        v-model="curInvoiceTaxForm.date"
                         :min-date="new Date('2022-01-01')"
                         mode="date"
                         hide-time-header
@@ -3127,8 +3126,8 @@ const onSubmit = handleSubmit(
                                   shape="rounded"
                                   label="Date de l'operation"
                                   icon="ph:calendar-blank-duotone"
-                                  :value="inputValue.start"
-                                  v-on="inputEvents.start"
+                                  :value="inputValue"
+                                  v-on="inputEvents"
                                   :classes="{
                                     input: '!h-11 !ps-11',
                                     icon: '!h-11 !w-11',

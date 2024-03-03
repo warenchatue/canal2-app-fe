@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
+import { DatePicker } from 'v-calendar'
 import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
@@ -33,10 +34,6 @@ const toaster = useToaster()
 const currentPayment = ref({})
 const currentOrg = ref('')
 const currentTeam = ref('')
-const dates = ref({
-  start: new Date(),
-  end: new Date(),
-})
 const startDate = ref(new Date())
 const endDate = ref(new Date())
 // Check if can have access
@@ -129,6 +126,7 @@ function confirmEditPayment(payment: any) {
   currentPayment.value = payment
   setFieldValue('payment._id', payment._id)
   setFieldValue('payment.code', payment.code)
+  setFieldValue('payment.date', payment.date)
   setFieldValue('payment.amount', payment.amount)
   setFieldValue('payment.status', payment.status)
   setFieldValue('payment.message', payment.message)
@@ -215,6 +213,7 @@ const zodSchema = z
     payment: z.object({
       _id: z.string().optional(),
       code: z.string().optional(),
+      date: z.string().optional(),
       amount: z.number(),
       status: z.string(),
       message: z.string().optional(),
@@ -276,7 +275,6 @@ const initialValues = computed<FormInput>(() => ({
       _id: '',
       email: '',
       name: '',
-      flag: '',
     },
     author: {
       _id: authStore.user._id ?? '',
@@ -334,6 +332,7 @@ const onSubmit = handleSubmit(
             paymentAccount: currentPayment.value?.paymentAccount?._id,
             status: values.payment.status,
             message: values.payment.message,
+            date: startDate.value,
             data: {
               ...currentPayment.value.data,
               city: values.payment.data?.city,
@@ -858,7 +857,11 @@ const onSubmit = handleSubmit(
                     </div>
                   </TairoTableCell>
                   <TairoTableCell light spaced>
-                    {{ new Date(item.createdAt).toLocaleDateString('fr-FR') }}
+                    {{
+                      new Date(item.date ?? item.createdAt).toLocaleDateString(
+                        'fr-FR',
+                      )
+                    }}
                   </TairoTableCell>
                   <TairoTableCell spaced>
                     <div
@@ -1297,6 +1300,47 @@ const onSubmit = handleSubmit(
                       <option value="yaounde">Yaoundé</option>
                     </BaseSelect>
                   </Field>
+                </div>
+                <div class="col-span-12 md:col-span-6">
+                  <DatePicker
+                    v-model="startDate"
+                    mode="date"
+                    hide-time-header
+                    trim-weeks
+                  >
+                    <template #default="{ inputValue, inputEvents }">
+                      <div class="flex w-full flex-col gap-4 sm:flex-row">
+                        <div class="relative grow">
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="payment.date"
+                          >
+                            <BaseInput
+                              label="Date"
+                              icon="ph:calendar-blank-duotone"
+                              :value="inputValue"
+                              v-on="inputEvents"
+                              :classes="{
+                                input: '!h-11 !ps-11',
+                                icon: '!h-11 !w-11',
+                              }"
+                              :model-value="field.value"
+                              :error="errorMessage"
+                              :disabled="isSubmitting"
+                              type="text"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
+                            />
+                          </Field>
+                        </div>
+                      </div>
+                    </template>
+                  </DatePicker>
                 </div>
 
                 <div class="col-span-12 md:col-span-6">
