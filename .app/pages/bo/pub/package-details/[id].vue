@@ -24,7 +24,6 @@ const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(50)
 const token = useCookie('token')
-const app = useAppStore()
 const packageId = computed(() => route.params.id)
 const toaster = useToaster()
 // Check if can have access
@@ -96,6 +95,9 @@ const activePlanningId = ref('')
 const activeHour = ref({})
 const isActionLoading = ref(false)
 const activeEnd = ref({ day: undefined, step: 1 })
+const isCapturePagePlanning = ref(false)
+const isCapturePageCertificate = ref(false)
+const contentToPrint = ref('')
 var activeDays = ref(
   new Date(
     activeDate.value.getFullYear(),
@@ -116,8 +118,13 @@ function addMonth() {
     0,
   ).getDate()
 
-  console.log(date.getMonth() + 1)
-  console.log(activeDays)
+  // console.log(date.getMonth() + 1)
+  // console.log(activeDays)
+  setTimeout(() => {
+    if (isCapturePagePlanning.value || isCapturePageCertificate.value) {
+      contentToPrint.value += document.getElementById('planningPrint').innerHTML
+    }
+  }, 500)
 }
 
 function removeMonth() {
@@ -129,8 +136,8 @@ function removeMonth() {
     date.getMonth() + 1,
     0,
   ).getDate()
-  console.log(date.getMonth())
-  console.log(activeDays)
+  // console.log(date.getMonth())
+  // console.log(activeDays)
 }
 
 function dayOfWeek(d: number) {
@@ -477,9 +484,15 @@ function printPlanning(typeDoc: string) {
   setTimeout(() => {
     var printContents = document.getElementById('planningPrint').innerHTML
     var originalContents = document.body.innerHTML
-    document.body.innerHTML = printContents
+    if (contentToPrint.value) {
+      document.body.innerHTML = contentToPrint.value
+    } else {
+      document.body.innerHTML = printContents
+    }
     window.print()
     document.body.innerHTML = originalContents
+    isCapturePagePlanning.value = false
+    isCapturePageCertificate.value = false
     location.reload()
   }, 500)
 }
@@ -2102,6 +2115,26 @@ const onSubmit = handleSubmit(
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
             <BaseButton @click="isModalPlanningOpen = false">Fermer</BaseButton>
+            <BaseButton
+              @click=";(isCapturePagePlanning = true), (isPrintPlanning = true)"
+            >
+              <Icon
+                name="lucide:camera"
+                class="pointer-events-none h-4 w-4 mx-2"
+              />
+              Début Capture Planning</BaseButton
+            >
+            <BaseButton
+              @click="
+                ;(isCapturePageCertificate = false), (isPrintCertificate = true)
+              "
+            >
+              <Icon
+                name="lucide:camera"
+                class="pointer-events-none h-4 w-4 mx-2"
+              />
+              Debut Capture Certificat</BaseButton
+            >
             <BaseButton @click="printPlanning('planning')">
               <Icon
                 name="lucide:printer"
@@ -2116,6 +2149,7 @@ const onSubmit = handleSubmit(
               />
               Certificat de diffusion</BaseButton
             >
+
             <BaseButton
               :color="data.data?.validator ? 'success' : 'warning'"
               flavor="solid"
@@ -2129,6 +2163,29 @@ const onSubmit = handleSubmit(
                 data.data?.validator ? 'Planning validé' : 'Valider le planning'
               }}
             </BaseButton>
+            <div
+              v-if="
+                isCapturePageCertificate == true ||
+                isCapturePagePlanning == true
+              "
+            >
+              <BaseButton
+                @click="removeMonth()"
+                color="primary"
+                class="w-full sm:w-20"
+              >
+                <Icon name="lucide:chevron-left" class="h-6 w-6" />
+                <span></span>
+              </BaseButton>
+              <BaseButton
+                @click="addMonth()"
+                color="primary"
+                class="w-full sm:w-20 mx-2"
+              >
+                <Icon name="lucide:chevron-right" class="h-6 w-6" />
+                <span></span>
+              </BaseButton>
+            </div>
           </div>
         </div>
       </template>
