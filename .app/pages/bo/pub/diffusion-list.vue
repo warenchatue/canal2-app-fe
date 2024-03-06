@@ -31,6 +31,7 @@ const isModalConfirmDiffusionOpen = ref(false)
 const isModalDiffusionListOpen = ref(false)
 const isModalDiffusionElementOpen = ref(false)
 const isModalNewPlanningOpen = ref(false)
+const isModalDeletePlanningOpen = ref(false)
 const playedHour = ref('')
 const currentHour = ref({})
 const currentYear = ref()
@@ -325,6 +326,69 @@ function editPlanning(planning: any) {
   }, 10)
 }
 
+function confirmDeletePlanning(planning: any) {
+  isModalDeletePlanningOpen.value = true
+  loading.value = true
+  isEdit.value = false
+  setTimeout(() => {
+    currentPlanning.value = planning
+    loading.value = false
+  }, 10)
+}
+
+async function deletePlanning() {
+  isActionLoading.value = true
+  try {
+    const isSuccess = ref(false)
+    const response = await $fetch(
+      '/api/pub/plannings?action=delete&token=' +
+        token.value +
+        '&id=' +
+        currentPlanning.value._id,
+      {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      },
+    )
+
+    isSuccess.value = response?.success
+    if (isSuccess.value == true) {
+      success.value = true
+      refreshPlanning()
+      toaster.clearAll()
+      toaster.show({
+        title: 'Success',
+        message: 'Planning supprimé du conducteur !',
+        color: 'success',
+        icon: 'ph:check',
+        closable: true,
+      })
+    } else {
+      toaster.clearAll()
+      toaster.show({
+        title: 'Désolé',
+        message: `Une erreur est survenue !`,
+        color: 'danger',
+        icon: 'ph:check',
+        closable: true,
+      })
+    }
+  } catch (error: any) {
+    console.log(error)
+    toaster.clearAll()
+    toaster.show({
+      title: 'Désolé!',
+      message: 'Veuillez examiner les erreurs dans le formulaire',
+      color: 'danger',
+      icon: 'lucide:alert-triangle',
+      closable: true,
+    })
+    // return
+  }
+  isActionLoading.value = false
+  isModalDeletePlanningOpen.value = false
+}
+
 async function confirmDiffusion(planning: any) {
   const query2 = computed(() => {
     return {
@@ -415,6 +479,7 @@ async function updatePosition(curP: any, isInc: boolean) {
 }
 
 async function updateHour() {
+  isActionLoading.value = true
   const query2 = computed(() => {
     return {
       action: 'updatePlanning',
@@ -467,6 +532,7 @@ async function updateHour() {
       closable: true,
     })
   }
+  isActionLoading.value = false
 }
 
 function downloadProductFile(uri: string, item: any) {
@@ -1283,7 +1349,7 @@ const onSubmit = handleSubmit(
                       class="flex items-center"
                     >
                       <NuxtLink
-                        class="text-primary-500 !w-48 underline-offset-4 hover:underline"
+                        class="text-primary-500 !w-40 underline-offset-4 hover:underline"
                         :to="
                           '/bo/pub/package-details/' +
                           item.product?.package?._id
@@ -1296,11 +1362,11 @@ const onSubmit = handleSubmit(
                   <TairoTableCell light spaced>
                     <div
                       style="white-space: pre-wrap; word-wrap: break-word"
-                      class="flex items-center"
+                      class=""
                     >
                       <BaseText
                         size="sm"
-                        class="hover:cursor-pointer"
+                        class="hover:cursor-pointer !w-40"
                         @click="
                           handleClipboard(
                             item.product.message + '[' + item.code + ']',
@@ -1308,16 +1374,15 @@ const onSubmit = handleSubmit(
                         "
                       >
                         <span
-                          class="text-muted-600 !w-48 dark:text-muted-300 font-sans text-sm px-1"
+                          class="text-muted-600 dark:text-muted-300 font-sans !w-40 !text-sm px-1"
                         >
                           {{ item.product.message }} [{{ item.code }}]
-                        </span></BaseText
-                      >
-                      <Icon
-                        v-if="!isPrint"
-                        name="ph:link-duotone"
-                        class="h-5 w-5"
-                      />
+                        </span>
+                        <Icon
+                          v-if="!isPrint"
+                          name="ph:link-duotone"
+                          class="h-5 w-5"
+                      /></BaseText>
                     </div>
                   </TairoTableCell>
                   <TairoTableCell spaced>
@@ -1391,12 +1456,6 @@ const onSubmit = handleSubmit(
                   <TairoTableCell v-if="!isPrint" spaced>
                     <div class="flex justify-center">
                       <BaseButtonAction
-                        class="mx-2"
-                        @click.prevent="editPlanning(item)"
-                      >
-                        <Icon name="lucide:edit" class="h-4 w-4" />
-                      </BaseButtonAction>
-                      <BaseButtonAction
                         @click.prevent="selectPlanning(item)"
                         muted
                         :disabled="
@@ -1415,6 +1474,21 @@ const onSubmit = handleSubmit(
                         <Icon name="lucide:check" class="h-4 w-4" />
                         valider</BaseButtonAction
                       >
+                      <BaseButtonAction
+                        class="mx-2"
+                        @click.prevent="editPlanning(item)"
+                      >
+                        <Icon name="lucide:edit" class="h-4 w-4" />
+                      </BaseButtonAction>
+                      <BaseButtonAction
+                        class="mx-2"
+                        @click.prevent="confirmDeletePlanning(item)"
+                      >
+                        <Icon
+                          name="lucide:trash"
+                          class="h-4 w-4 text-danger-500"
+                        />
+                      </BaseButtonAction>
                     </div>
                   </TairoTableCell>
                 </TairoTableRow>
@@ -1959,7 +2033,7 @@ const onSubmit = handleSubmit(
       </template>
     </TairoModal>
 
-    <!-- Modal new planning -->
+    <!-- Modal Edit planning -->
     <TairoModal
       :open="isModalNewPlanningOpen"
       size="sm"
@@ -2028,7 +2102,76 @@ const onSubmit = handleSubmit(
               >Annuler</BaseButton
             >
 
-            <BaseButton color="primary" flavor="solid" @click="updateHour()"
+            <BaseButton
+              :disabled="isActionLoading"
+              :loading="isActionLoading"
+              color="primary"
+              flavor="solid"
+              @click="updateHour()"
+              >Valider</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal delete spot -->
+    <TairoModal
+      :open="isModalDeletePlanningOpen"
+      size="sm"
+      @close="isModalDeletePlanningOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Delete Planning
+          </h3>
+
+          <BaseButtonClose @click="isModalDeletePlanningOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <h3
+            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
+          >
+            Voulez-vous supprimer la diffusion de
+            <span class="text-primary-500">{{
+              currentPlanning?.product?.message
+            }}</span>
+            à
+            <span class="text-primary-500">{{
+              new Date(currentPlanning?.date).toLocaleTimeString('fr-FR')
+            }}</span>
+            ?
+          </h3>
+          <p
+            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est reversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalDeletePlanningOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              :disabled="isActionLoading"
+              :loading="isActionLoading"
+              color="danger"
+              flavor="solid"
+              @click="deletePlanning(currentPlanning)"
               >Valider</BaseButton
             >
           </div>
