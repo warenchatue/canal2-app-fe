@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
-import { Field, useFieldError, useForm } from 'vee-validate'
+import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
@@ -200,7 +200,7 @@ async function deleteAccount(account: any) {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -275,7 +275,7 @@ const onSubmit = handleSubmit(
       } else {
         toaster.clearAll()
         toaster.show({
-          title: 'Oops',
+          title: 'Désolé',
           message: `Une erreur est survenue !`,
           color: 'danger',
           icon: 'ph:check',
@@ -290,7 +290,7 @@ const onSubmit = handleSubmit(
       })
       toaster.clearAll()
       toaster.show({
-        title: 'Oops!',
+        title: 'Désolé!',
         message: 'Veuillez examiner les erreurs dans le formulaire',
         color: 'danger',
         icon: 'lucide:alert-triangle',

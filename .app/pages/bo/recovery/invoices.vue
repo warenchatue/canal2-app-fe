@@ -177,7 +177,7 @@ async function deletePackage(invoice: any) {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -355,7 +355,7 @@ async function confirmOrder() {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -403,7 +403,7 @@ const onSubmit = handleSubmit(
         if (uploadData.value?.success == false) {
           contractUrl.value = ''
           toaster.show({
-            title: 'Oops',
+            title: 'Désolé',
             message: `Une erreur est survenue lors de l'importation de des fichiers !`,
             color: 'danger',
             icon: 'ph:check',
@@ -438,7 +438,7 @@ const onSubmit = handleSubmit(
         if (uploadData.value?.success == false) {
           invoiceUrl.value = ''
           toaster.show({
-            title: 'Oops',
+            title: 'Désolé',
             message: `Une erreur est survenue lors de l'importation de des fichiers !`,
             color: 'danger',
             icon: 'ph:check',
@@ -512,7 +512,7 @@ const onSubmit = handleSubmit(
       } else {
         toaster.clearAll()
         toaster.show({
-          title: 'Oops',
+          title: 'Désolé',
           message: `Une erreur est survenue !`,
           color: 'danger',
           icon: 'ph:check',
@@ -527,7 +527,7 @@ const onSubmit = handleSubmit(
       })
       toaster.clearAll()
       toaster.show({
-        title: 'Oops!',
+        title: 'Désolé!',
         message: 'Veuillez examiner les erreurs dans le formulaire',
         color: 'danger',
         icon: 'lucide:alert-triangle',
@@ -1156,8 +1156,7 @@ const onSubmit = handleSubmit(
                     }}
                     XAF
                   </TairoTableCell>
-                  <TairoTableCell light spaced>
-                  </TairoTableCell>
+                  <TairoTableCell light spaced> </TairoTableCell>
                   <TairoTableCell v-if="!isPrint" light spaced>
                   </TairoTableCell>
                   <TairoTableCell v-if="!isPrint" spaced> </TairoTableCell>

@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import { toTypedSchema } from '@vee-validate/zod'
-import { Field, useFieldError, useForm } from 'vee-validate'
-import { z } from 'zod'
-import { UserRole } from '~/types/user'
-import moment from 'moment'
 import { DatePicker } from 'v-calendar'
+import { Field } from 'vee-validate'
+import { UserRole } from '~/types/user'
 
 definePageMeta({
   title: 'Detail - Dossier de recouvrement',
@@ -139,7 +136,7 @@ async function importProductFile() {
       } else {
         toaster.clearAll()
         toaster.show({
-          title: 'Oops',
+          title: 'Désolé',
           message: `Une erreur est survenue lors de la mise à jour du produit !`,
           color: 'danger',
           icon: 'ph:check',
@@ -150,7 +147,7 @@ async function importProductFile() {
       slug.value = ''
       toaster.clearAll()
       toaster.show({
-        title: 'Oops',
+        title: 'Désolé',
         message: `Une erreur est survenue lors de l'importation du fichier !`,
         color: 'danger',
         icon: 'ph:check',
@@ -271,7 +268,7 @@ async function updateProcedure() {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',

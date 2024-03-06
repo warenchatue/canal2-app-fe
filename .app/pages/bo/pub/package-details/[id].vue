@@ -233,7 +233,7 @@ async function addSpotToPlanning() {
     } else {
       toaster.clearAll()
       toaster.show({
-        title: 'Oops',
+        title: 'Désolé',
         message: `Une erreur est survenue !`,
         color: 'danger',
         icon: 'ph:check',
@@ -244,7 +244,7 @@ async function addSpotToPlanning() {
     console.log(error)
     toaster.clearAll()
     toaster.show({
-      title: 'Oops!',
+      title: 'Désolé!',
       message: 'Veuillez examiner les erreurs dans le formulaire',
       color: 'danger',
       icon: 'lucide:alert-triangle',
@@ -292,7 +292,7 @@ async function deleteSpotToPlanning() {
     } else {
       toaster.clearAll()
       toaster.show({
-        title: 'Oops',
+        title: 'Désolé',
         message: `Une erreur est survenue !`,
         color: 'danger',
         icon: 'ph:check',
@@ -303,7 +303,7 @@ async function deleteSpotToPlanning() {
     console.log(error)
     toaster.clearAll()
     toaster.show({
-      title: 'Oops!',
+      title: 'Désolé!',
       message: 'Veuillez examiner les erreurs dans le formulaire',
       color: 'danger',
       icon: 'lucide:alert-triangle',
@@ -457,7 +457,7 @@ async function deleteSpot(product: any) {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -539,7 +539,7 @@ async function importProductFile() {
       } else {
         toaster.clearAll()
         toaster.show({
-          title: 'Oops',
+          title: 'Désolé',
           message: `Une erreur est survenue lors de la mise à jour du produit !`,
           color: 'danger',
           icon: 'ph:check',
@@ -550,7 +550,7 @@ async function importProductFile() {
       slug.value = ''
       toaster.clearAll()
       toaster.show({
-        title: 'Oops',
+        title: 'Désolé',
         message: `Une erreur est survenue lors de l'importation du fichier !`,
         color: 'danger',
         icon: 'ph:check',
@@ -653,7 +653,7 @@ async function confirmPlanning() {
         slug.value = ''
         toaster.clearAll()
         toaster.show({
-          title: 'Oops',
+          title: 'Désolé',
           message: `Une erreur est survenue lors de l'importation de la signature !`,
           color: 'danger',
           icon: 'ph:check',
@@ -692,7 +692,7 @@ async function confirmPlanning() {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -820,7 +820,7 @@ const onSubmit = handleSubmit(
       } else {
         toaster.clearAll()
         toaster.show({
-          title: 'Oops',
+          title: 'Désolé',
           message: `Une erreur est survenue !`,
           color: 'danger',
           icon: 'ph:check',
@@ -835,7 +835,7 @@ const onSubmit = handleSubmit(
       })
       toaster.clearAll()
       toaster.show({
-        title: 'Oops!',
+        title: 'Désolé!',
         message: 'Veuillez examiner les erreurs dans le formulaire',
         color: 'danger',
         icon: 'lucide:alert-triangle',

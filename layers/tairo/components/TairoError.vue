@@ -12,7 +12,7 @@ const title = computed(() => {
     return 'Page not found'
   }
 
-  return 'Oops... Something went wrong'
+  return 'Désolé... Something went wrong'
 })
 
 const description = computed(() => {

@@ -341,7 +341,7 @@ async function deletePackage(spotPackage: any) {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -397,7 +397,7 @@ async function addInvoicePayment() {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -442,7 +442,7 @@ async function addInvoiceTaxes() {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -510,7 +510,7 @@ async function createPackage() {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -550,7 +550,7 @@ async function addPackageOrder(id: string) {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -596,7 +596,7 @@ async function confirmOrder() {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -632,7 +632,7 @@ const currentPackage = ref({})
 // This is the object that will contain the validation messages
 const ONE_MB = 1000000
 const VALIDATION_TEXT = {
-  LABEL_REQUIRED: "Label can't be empty",
+  LABEL_REQUIRED: 'Ce champ est obligatoire',
   PHONE_REQUIRED: "Phone number can't be empty",
   EMAIL_REQUIRED: "Email address can't be empty",
   COUNTRY_REQUIRED: 'Please select a country',
@@ -698,6 +698,13 @@ const zodSchema = z
         message: VALIDATION_TEXT.LABEL_REQUIRED,
         path: ['order.paymentMethod'],
       })
+      if (!data.order.announcer) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: VALIDATION_TEXT.LABEL_REQUIRED,
+          path: ['order.announcer'],
+        })
+      }
     }
   })
 
@@ -961,7 +968,7 @@ const onSubmit = handleSubmit(
           if (uploadData.value?.success == false) {
             contractUrl.value = ''
             toaster.show({
-              title: 'Oops',
+              title: 'Désolé',
               message: `Une erreur est survenue lors de l'importation de des fichiers !`,
               color: 'danger',
               icon: 'ph:check',
@@ -1185,7 +1192,7 @@ const onSubmit = handleSubmit(
       } else {
         toaster.clearAll()
         toaster.show({
-          title: 'Oops',
+          title: 'Désolé',
           message: `Une erreur est survenue !`,
           color: 'danger',
           icon: 'ph:check',
@@ -1200,7 +1207,7 @@ const onSubmit = handleSubmit(
       })
       toaster.clearAll()
       toaster.show({
-        title: 'Oops!',
+        title: 'Désolé!',
         message: 'Veuillez examiner les erreurs dans le formulaire',
         color: 'danger',
         icon: 'lucide:alert-triangle',

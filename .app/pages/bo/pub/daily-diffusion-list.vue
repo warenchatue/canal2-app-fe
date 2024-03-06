@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
-import { Field, useForm } from 'vee-validate'
 import { DatePicker } from 'v-calendar'
+import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
@@ -145,7 +145,7 @@ async function confirmDiffusion(planning: any) {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -199,7 +199,7 @@ async function importPlayList() {
       slug.value = ''
       toaster.clearAll()
       toaster.show({
-        title: 'Oops',
+        title: 'Désolé',
         message: `Une erreur est survenue lors de l'importation de la playlist !`,
         color: 'danger',
         icon: 'ph:check',
@@ -330,7 +330,7 @@ const onSubmit = handleSubmit(
 
         toaster.clearAll()
         toaster.show({
-          title: 'Oops!',
+          title: 'Désolé!',
           message: 'Please review the errors in the form',
           color: 'danger',
           icon: 'lucide:alert-triangle',

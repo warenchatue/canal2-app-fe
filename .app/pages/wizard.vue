@@ -122,7 +122,7 @@ const { handleSubmit, currentStep } = createMultiStepForm<
 
     toaster.clearAll()
     toaster.show({
-      title: 'Oops!',
+      title: 'Désolé!',
       message: error.message,
       color: 'danger',
       icon: 'lucide:alert-triangle',

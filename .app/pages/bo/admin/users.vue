@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
-import { Field, useFieldError, useForm } from 'vee-validate'
+import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
 
 definePageMeta({
@@ -242,7 +242,7 @@ async function updatePassword() {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -282,7 +282,7 @@ async function deleteUser(user: any) {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -357,7 +357,7 @@ const onSubmit = handleSubmit(
 
         toaster.clearAll()
         toaster.show({
-          title: 'Oops!',
+          title: 'Désolé!',
           message: 'Please review the errors in the form',
           color: 'danger',
           icon: 'lucide:alert-triangle',

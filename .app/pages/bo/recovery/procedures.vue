@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
-import { Field, useForm } from 'vee-validate'
-import { z } from 'zod'
 import { DatePicker } from 'v-calendar'
-import { UserRole } from '~/types/user'
+import { Field, useForm } from 'vee-validate'
 import 'vue-select/dist/vue-select.css'
+import { z } from 'zod'
+import { UserRole } from '~/types/user'
 
 definePageMeta({
   title: 'Recouvrements',
@@ -233,7 +233,7 @@ async function deletePackage(recoveryProcedure: any) {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -408,7 +408,7 @@ async function confirmOrder() {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -497,7 +497,7 @@ const onSubmit = handleSubmit(
       } else {
         toaster.clearAll()
         toaster.show({
-          title: 'Oops',
+          title: 'Désolé',
           message: `Une erreur est survenue !`,
           color: 'danger',
           icon: 'ph:check',
@@ -512,7 +512,7 @@ const onSubmit = handleSubmit(
       })
       toaster.clearAll()
       toaster.show({
-        title: 'Oops!',
+        title: 'Désolé!',
         message: 'Veuillez examiner les erreurs dans le formulaire',
         color: 'danger',
         icon: 'lucide:alert-triangle',

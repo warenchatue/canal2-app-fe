@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import moment from 'moment'
 import { toTypedSchema } from '@vee-validate/zod'
-import { Field, useForm } from 'vee-validate'
+import moment from 'moment'
 import { DatePicker } from 'v-calendar'
+import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Planning de diffusion',
+  title: 'Conducteur PUB',
   preview: {
-    title: 'Planning de diffusion',
+    title: 'Conducteur PUB',
     description: '',
     categories: ['bo', 'pub', 'diffusion-list'],
     src: '/img/screens/layouts-table-list-1.png',
@@ -17,6 +17,8 @@ definePageMeta({
     order: 44,
   },
 })
+
+const fakeItems = ref([])
 
 const authStore = useAuthStore()
 const route = useRoute()
@@ -27,12 +29,19 @@ const perPage = ref(100)
 const isModalImportPlaylistOpen = ref(false)
 const isModalConfirmDiffusionOpen = ref(false)
 const isModalDiffusionListOpen = ref(false)
+const isModalDiffusionElementOpen = ref(false)
 const isModalNewPlanningOpen = ref(false)
 const playedHour = ref('')
 const currentHour = ref({})
+const currentYear = ref()
+const currentMonth = ref()
+const currentDay = ref()
+const currentCampaign = ref({})
+const currentProduct = ref({})
 const currentOrg = ref('')
 const isEdit = ref(false)
 const isPrint = ref(false)
+const isActionLoading = ref(false)
 const initialDates = {
   start: new Date(),
   end: new Date(),
@@ -72,8 +81,24 @@ const query = computed(() => {
   }
 })
 
-const { data, pending, error, refresh } = await useFetch('/api/pub/plannings', {
+const query2 = computed(() => {
+  return {
+    filter: filter.value,
+    perPage: 1000,
+    page: page.value,
+    action: 'findAll',
+    token: token.value,
+  }
+})
+
+const {
+  data,
+  pending,
+  error,
+  refresh: refreshPlanning,
+} = await useFetch('/api/pub/plannings', {
   query,
+  lazy: true,
 })
 
 const { data: allHours } = await useFetch('/api/pub/hours', {
@@ -91,6 +116,28 @@ const transformedAllHours = allHours.value?.data.map((e: any) => {
   }
   return invoice
 })
+
+const { data: allPackages, pending: pendingPackages } = await useFetch(
+  '/api/pub/packages',
+  {
+    query: query2,
+    lazy: true,
+    transform: (els) => {
+      return els.data?.map((el) => ({
+        name: el.label,
+        id: el._id,
+        text: el.code,
+        products: el.products,
+      }))
+    },
+  },
+)
+
+function openElementModal() {
+  setTimeout(() => {
+    isModalDiffusionElementOpen.value = true
+  }, 500)
+}
 
 function openReportModal() {
   setTimeout(() => {
@@ -111,7 +158,101 @@ async function printDiffusionList() {
     location.reload()
   }, 500)
 }
+async function addSpotToPlanning() {
+  console.log('Adding product to the planning')
+  isActionLoading.value = true
+  const hourArray = currentHour.value?.name.split(':')
 
+  let newPlannings = []
+  const myActiveDay = parseInt(currentDay.value)
+  const myActiveEndDay = parseInt(currentDay.value)
+  const myActiveEndStep = 1
+
+  for (
+    let myDay = myActiveDay;
+    myDay <= myActiveEndDay;
+    myDay += myActiveEndStep
+  ) {
+    console.log(myDay)
+    var date = new Date(
+      parseInt(currentYear.value),
+      currentMonth.value,
+      myDay,
+      parseInt(hourArray[0]),
+      parseInt(hourArray[1]),
+    )
+
+    // console.log(date.toISOString())
+
+    newPlannings.push({
+      _id: undefined,
+      product: currentProduct.value._id,
+      hour: currentHour.value._id,
+      date: date.toISOString(),
+      position: date.toISOString(),
+      isManualPlay: false,
+      isAutoPlay: false,
+    })
+  }
+
+  try {
+    const isSuccess = ref(false)
+    const response = await $fetch(
+      '/api/pub/plannings?action=createPlannings&token=' +
+        token.value +
+        '&packageId=' +
+        currentCampaign.value?.id +
+        '&orderCode=' +
+        currentCampaign.value?.text,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: {
+          plannings: newPlannings,
+        },
+      },
+    )
+
+    // console.log(response)
+    isSuccess.value = response?.success
+    if (isSuccess.value == true) {
+      success.value = true
+      refreshPlanning()
+      toaster.clearAll()
+      toaster.show({
+        title: 'Success',
+        message: `Produit(s) ajouté(s) au conducteur !`,
+        color: 'success',
+        icon: 'ph:check',
+        closable: true,
+      })
+    } else {
+      toaster.clearAll()
+      toaster.show({
+        title: 'Désolé',
+        message: `Une erreur est survenue !`,
+        color: 'danger',
+        icon: 'ph:check',
+        closable: true,
+      })
+    }
+  } catch (error: any) {
+    console.log(error)
+    toaster.clearAll()
+    toaster.show({
+      title: 'Désolé!',
+      message: 'Veuillez examiner les erreurs dans le formulaire',
+      color: 'danger',
+      icon: 'lucide:alert-triangle',
+      closable: true,
+    })
+    // return
+  }
+  // console.log(data.value?.data?.plannings)
+
+  isModalDiffusionElementOpen.value = false
+  isActionLoading.value = false
+}
 function filterItems(query?: string, items?: any[]) {
   if (!query || !items) {
     return items ?? []
@@ -220,7 +361,7 @@ async function confirmDiffusion(planning: any) {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -264,7 +405,7 @@ async function updatePosition(curP: any, isInc: boolean) {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -319,7 +460,7 @@ async function updateHour() {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -387,7 +528,7 @@ async function importPlayList() {
       slug.value = ''
       toaster.clearAll()
       toaster.show({
-        title: 'Oops',
+        title: 'Désolé',
         message: `Une erreur est survenue lors de l'importation de la playlist !`,
         color: 'danger',
         icon: 'ph:check',
@@ -518,7 +659,7 @@ const onSubmit = handleSubmit(
 
         toaster.clearAll()
         toaster.show({
-          title: 'Oops!',
+          title: 'Désolé!',
           message: 'Please review the errors in the form',
           color: 'danger',
           icon: 'lucide:alert-triangle',
@@ -568,7 +709,7 @@ const onSubmit = handleSubmit(
             wrapper: 'w-full sm:w-auto',
           }"
         />
-        <div class="col-span-12 mx-2 -mt-6">
+        <div class="col-span-12 mx-1 -mt-6">
           <DatePicker
             v-model.range="dates"
             :masks="masks"
@@ -584,7 +725,7 @@ const onSubmit = handleSubmit(
                     name="event.startDateTime"
                   >
                     <BaseInput
-                      shape="curved"
+                      shape="rounded"
                       label="Date debut"
                       icon="ph:calendar-blank-duotone"
                       :value="inputValue.start"
@@ -608,7 +749,7 @@ const onSubmit = handleSubmit(
                     name="event.endDateTime"
                   >
                     <BaseInput
-                      shape="curved"
+                      shape="rounded"
                       label="Date fin"
                       icon="ph:calendar-blank-duotone"
                       :value="inputValue.end"
@@ -651,24 +792,38 @@ const onSubmit = handleSubmit(
             authStore.user.appRole.name != UserRole.broadcast &&
             authStore.user.appRole.name != UserRole.superAdmin
           "
-          @click="openReportModal()"
+          @click="openElementModal()"
           color="primary"
-          class="w-full sm:w-48"
+          class="w-full sm:w-20"
         >
-          <Icon name="lucide:printer" class="h-4 w-4" />
-          <span>Export conducteur</span>
+          <Icon name="lucide:plus" class="h-4 w-4" />
+          <span>Elt</span>
         </BaseButton>
         <BaseButton
+          data-tooltip="Exporter le conducteur"
+          :disabled="
+            authStore.user.appRole.name != UserRole.broadcast &&
+            authStore.user.appRole.name != UserRole.superAdmin
+          "
+          @click="openReportModal()"
+          color="primary"
+          class="w-full sm:w-28"
+        >
+          <Icon name="lucide:printer" class="h-4 w-4" />
+          <span>Exporter</span>
+        </BaseButton>
+        <BaseButton
+          data-tooltip="Importer une playlist"
           :disabled="
             authStore.user.appRole.name != UserRole.broadcast &&
             authStore.user.appRole.name != UserRole.superAdmin
           "
           @click="isModalImportPlaylistOpen = true"
           color="primary"
-          class="w-full sm:w-48"
+          class="w-full sm:w-20"
         >
           <Icon name="lucide:import" class="h-4 w-4" />
-          <span>Import playlist</span>
+          <span>PL</span>
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">
@@ -690,7 +845,7 @@ const onSubmit = handleSubmit(
                 class="bg-success-100 text-success-500 dark:bg-success-500/20 dark:text-success-400 dark:border-success-500 dark:border-2"
                 shape="full"
               >
-                <Icon name="ph:money" class="h-5 w-5" />
+                <Icon name="ph:target" class="h-5 w-5" />
               </BaseIconBox>
             </div>
             <div class="mb-2">
@@ -701,7 +856,10 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalDiffused }}</span>
+                <span v-if="!pending">{{ data?.metaData?.totalDiffused }}</span>
+                <span v-else
+                  ><BasePlaceload class="h-3 w-10 rounded-lg"
+                /></span>
               </BaseHeading>
             </div>
             <div
@@ -731,7 +889,7 @@ const onSubmit = handleSubmit(
                 class="bg-yellow-100 text-yellow-500 dark:border-2 dark:border-yellow-500 dark:bg-yellow-500/20 dark:text-yellow-400"
                 shape="full"
               >
-                <Icon name="ph:money" class="h-5 w-5" />
+                <Icon name="ph:target" class="h-5 w-5" />
               </BaseIconBox>
             </div>
             <div class="mb-2">
@@ -742,7 +900,12 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalNotDiffused }}</span>
+                <span v-if="!pending">{{
+                  data?.metaData?.totalNotDiffused
+                }}</span>
+                <span v-else
+                  ><BasePlaceload class="h-3 w-10 rounded-lg"
+                /></span>
               </BaseHeading>
             </div>
             <div
@@ -772,7 +935,7 @@ const onSubmit = handleSubmit(
                 class="bg-primary-100 text-primary-500 dark:bg-primary-500/20 dark:text-primary-400 dark:border-primary-500 dark:border-2"
                 shape="full"
               >
-                <Icon name="ph:money" class="h-5 w-5" />
+                <Icon name="ph:target" class="h-5 w-5" />
               </BaseIconBox>
             </div>
             <div class="mb-2">
@@ -783,7 +946,10 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalPending }}</span>
+                <span v-if="!pending">{{ data?.metaData?.totalPending }}</span>
+                <span v-else
+                  ><BasePlaceload class="h-3 w-10 rounded-lg"
+                /></span>
               </BaseHeading>
             </div>
             <div
@@ -813,7 +979,7 @@ const onSubmit = handleSubmit(
                 class="bg-primary-100 text-primary-500 dark:bg-primary-500/20 dark:text-primary-400 dark:border-primary-500 dark:border-2"
                 shape="full"
               >
-                <Icon name="ph:money" class="h-5 w-5" />
+                <Icon name="ph:target" class="h-5 w-5" />
               </BaseIconBox>
             </div>
             <div class="mb-2">
@@ -824,7 +990,10 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalToday }}</span>
+                <span v-if="!pending">{{ data?.metaData?.totalToday }}</span>
+                <span v-else
+                  ><BasePlaceload class="h-3 w-10 rounded-lg"
+                /></span>
               </BaseHeading>
             </div>
             <div
@@ -913,6 +1082,56 @@ const onSubmit = handleSubmit(
               </template>
             </BasePlaceholderPage>
           </div>
+          <div v-else-if="pending">
+            <TairoTableRow v-for="index in 5" :key="index">
+              <TairoTableCell spaced>
+                <div class="flex items-center">
+                  <BaseCheckbox
+                    v-model="fakeItems"
+                    :value="`placeload-item-checkbox-${index}`"
+                    rounded="full"
+                    color="primary"
+                  />
+                </div>
+              </TairoTableCell>
+              <TairoTableCell spaced>
+                <BasePlaceload class="h-3 w-24 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell spaced>
+                <div class="flex items-center gap-2">
+                  <BasePlaceload class="size-8 shrink-0 rounded-full" />
+                  <div class="space-y-1">
+                    <BasePlaceload class="h-2 w-[70px] rounded-lg" />
+                    <BasePlaceload class="h-2 w-[50px] rounded-lg" />
+                  </div>
+                </div>
+              </TairoTableCell>
+              <TairoTableCell light spaced>
+                <BasePlaceload class="h-3 w-12 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell light spaced>
+                <BasePlaceload class="h-3 w-12 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell light spaced>
+                <BasePlaceload class="h-3 w-12 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell light spaced>
+                <BasePlaceload class="h-3 w-12 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell light spaced>
+                <BasePlaceload class="h-3 w-12 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell light spaced>
+                <BasePlaceload class="h-3 w-12 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell light spaced>
+                <BasePlaceload class="h-3 w-12 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell spaced>
+                <BasePlaceload class="h-8 w-16 rounded-lg" />
+              </TairoTableCell>
+            </TairoTableRow>
+          </div>
           <div v-else>
             <div class="w-full">
               <TairoTable shape="rounded">
@@ -958,7 +1177,9 @@ const onSubmit = handleSubmit(
                   <TairoTableHeading v-if="!isPrint" uppercase spaced
                     >Fichier</TairoTableHeading
                   >
-                  <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
+                  <TairoTableHeading v-if="!isPrint" uppercase spaced
+                    >Statut</TairoTableHeading
+                  >
                   <TairoTableHeading v-if="!isPrint" uppercase spaced
                     >Action</TairoTableHeading
                   >
@@ -984,8 +1205,8 @@ const onSubmit = handleSubmit(
                     <div class="flex items-center">
                       <BaseCheckbox
                         v-model="selected"
-                        :value="item.id"
-                        :name="`item-checkbox-${item.id}`"
+                        :value="item._id"
+                        :name="`item-checkbox-${item._id}`"
                         shape="rounded"
                         class="text-primary-500"
                       />
@@ -993,16 +1214,16 @@ const onSubmit = handleSubmit(
                   </TairoTableCell>
                   <TairoTableCell v-if="!isPrint" spaced>
                     <BaseButtonAction
-                      class="mx-1"
+                      class="mx-1 !p-1"
                       @click.prevent="updatePosition(item, false)"
                     >
-                      <Icon name="lucide:arrow-up" class="h-4 w-3" />
+                      <Icon name="lucide:arrow-up" class="h-4 w-4" />
                     </BaseButtonAction>
                     <BaseButtonAction
-                      class="mx-1"
+                      class="mx-1 !p-1"
                       @click.prevent="updatePosition(item, true)"
                     >
-                      <Icon name="lucide:arrow-down" class="h-4 w-3" />
+                      <Icon name="lucide:arrow-down" class="h-4 w-4" />
                     </BaseButtonAction>
                   </TairoTableCell>
                   <TairoTableCell spaced>
@@ -1033,16 +1254,19 @@ const onSubmit = handleSubmit(
                 </TairoTableCell> -->
 
                   <TairoTableCell spaced>
-                    <div class="flex items-center">
-                      <BaseAvatar
+                    <div
+                      style="white-space: pre-wrap; word-wrap: break-word"
+                      class="flex items-center"
+                    >
+                      <!-- <BaseAvatar
                         :src="
                           item.product?.announcer?.logo ??
                           '/img/avatars/company.svg'
                         "
                         :text="item.initials"
                         :class="getRandomColor()"
-                      />
-                      <div class="ms-3 leading-none">
+                      /> -->
+                      <div class="ms-3 !w-48 leading-none">
                         <h4 class="font-sans text-sm font-medium">
                           {{ item.product?.package?.announcer?.name }}
                         </h4>
@@ -1054,16 +1278,26 @@ const onSubmit = handleSubmit(
                   </TairoTableCell>
 
                   <TairoTableCell spaced>
-                    <div class="flex items-center">
-                      <span
-                        class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                    <div
+                      style="white-space: pre-wrap; word-wrap: break-word"
+                      class="flex items-center"
+                    >
+                      <NuxtLink
+                        class="text-primary-500 !w-48 underline-offset-4 hover:underline"
+                        :to="
+                          '/bo/pub/package-details/' +
+                          item.product?.package?._id
+                        "
                       >
                         {{ item.product.product }}
-                      </span>
+                      </NuxtLink>
                     </div>
                   </TairoTableCell>
                   <TairoTableCell light spaced>
-                    <div class="flex items-center">
+                    <div
+                      style="white-space: pre-wrap; word-wrap: break-word"
+                      class="flex items-center"
+                    >
                       <BaseText
                         size="sm"
                         class="hover:cursor-pointer"
@@ -1074,12 +1308,16 @@ const onSubmit = handleSubmit(
                         "
                       >
                         <span
-                          class="text-muted-600 dark:text-muted-300 font-sans text-base px-1"
+                          class="text-muted-600 !w-48 dark:text-muted-300 font-sans text-sm px-1"
                         >
                           {{ item.product.message }} [{{ item.code }}]
                         </span></BaseText
                       >
-                      <Icon name="ph:link-duotone" class="h-5 w-5" />
+                      <Icon
+                        v-if="!isPrint"
+                        name="ph:link-duotone"
+                        class="h-5 w-5"
+                      />
                     </div>
                   </TairoTableCell>
                   <TairoTableCell spaced>
@@ -1113,7 +1351,7 @@ const onSubmit = handleSubmit(
                       </BaseButtonAction>
                     </div>
                   </TairoTableCell>
-                  <TairoTableCell spaced class="capitalize">
+                  <TairoTableCell v-if="!isPrint" spaced class="capitalize">
                     <BaseTag
                       v-if="
                         item.isManualPlay == true || item.isAutoPlay == true
@@ -1290,6 +1528,198 @@ const onSubmit = handleSubmit(
               @click="printDiffusionList()"
             >
               Imprimer
+            </BaseButton>
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal new diffusion element -->
+    <TairoModal
+      :open="isModalDiffusionElementOpen"
+      size="xl"
+      @close="isModalDiffusionElementOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Nouvel Element du Conducteur
+          </h3>
+
+          <BaseButtonClose @click="isModalDiffusionElementOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <BaseCard class="w-full">
+        <form
+          method="POST"
+          action=""
+          class="divide-muted-200 dark:divide-muted-700"
+        >
+          <div
+            shape="curved"
+            class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
+          >
+            <div class="mx-auto flex w-full flex-col">
+              <div class="grid grid-cols-12 gap-4">
+                <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                  <BaseAutocomplete
+                    v-model="currentCampaign"
+                    :error="errorMessage"
+                    :disabled="isSubmitting"
+                    :items="allPackages"
+                    :display-value="(item: any) => item.name || ''"
+                    :filter-items="filterItems"
+                    icon="lucide:target"
+                    placeholder="e.g. Diffusion spot"
+                    label="Campagne"
+                    clearable
+                    :clear-value="''"
+                  >
+                    <template #empty="value"> Aucun resultat </template>
+                  </BaseAutocomplete>
+                </div>
+
+                <div
+                  v-if="currentCampaign.id"
+                  class="col-span-12 sm:col-span-6"
+                >
+                  <Field
+                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    name="report.product"
+                  >
+                    <BaseListbox
+                      label="Produit"
+                      :items="currentCampaign?.products"
+                      :classes="{
+                        wrapper: '!w-60',
+                      }"
+                      :properties="{
+                        value: '_id',
+                        label: 'message',
+                        sublabel: 'tag',
+                        media: '',
+                      }"
+                      v-model="currentProduct"
+                      :error="errorMessage"
+                      @update:model-value="handleChange"
+                      @blur="handleBlur"
+                    />
+                  </Field>
+                </div>
+                <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                  <Field
+                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    name="campaign.year"
+                  >
+                    <BaseSelect
+                      v-model="currentYear"
+                      label="Année *"
+                      icon="ph:funnel"
+                      :error="errorMessage"
+                      @update:model-value="handleChange"
+                      @blur="handleBlur"
+                    >
+                      <option value="2024">2024</option>
+                      <option value="2023">2023</option>
+                    </BaseSelect>
+                  </Field>
+                </div>
+                <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
+                  <Field
+                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    name="campaign.month"
+                  >
+                    <BaseSelect
+                      v-model="currentMonth"
+                      label="Mois *"
+                      icon="ph:funnel"
+                      :error="errorMessage"
+                      @update:model-value="handleChange"
+                      @blur="handleBlur"
+                    >
+                      <option value="00">Janvier</option>
+                      <option value="01">Fevrier</option>
+                      <option value="02">Mars</option>
+                      <option value="03">Avril</option>
+                      <option value="04">Mai</option>
+                      <option value="05">Juin</option>
+                      <option value="06">Juillet</option>
+                      <option value="07">Aûut</option>
+                      <option value="08">Septembre</option>
+                      <option value="09">Octobre</option>
+                      <option value="10">Novembre</option>
+                      <option value="11">Décembre</option>
+                    </BaseSelect>
+                  </Field>
+                </div>
+
+                <div
+                  v-if="currentCampaign.id"
+                  class="ltablet:col-span-6 col-span-12 lg:col-span-6"
+                >
+                  <BaseAutocomplete
+                    v-model="currentHour"
+                    :error="errorMessage"
+                    :disabled="isSubmitting"
+                    :items="transformedAllHours"
+                    :display-value="(item: any) => item.name || ''"
+                    :filter-items="filterItems"
+                    icon="lucide:clock"
+                    placeholder="e.g. 07:25"
+                    label="Heure"
+                    clearable
+                    :clear-value="''"
+                  >
+                    <template #empty="value"> Aucun resultat </template>
+                  </BaseAutocomplete>
+                </div>
+                <div
+                  v-if="currentCampaign.id"
+                  class="ltablet:col-span-6 col-span-12 lg:col-span-6"
+                >
+                  <Field
+                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    name="jour"
+                  >
+                    <BaseInput
+                      v-model="currentDay"
+                      label="Jour"
+                      icon="ph:file"
+                      placeholder=""
+                      :error="errorMessage"
+                      :disabled="isSubmitting"
+                      type="number"
+                      @update:model-value="handleChange"
+                      @blur="handleBlur"
+                    />
+                  </Field>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </BaseCard>
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalDiffusionElementOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              :disabled="isActionLoading"
+              :loading="isActionLoading"
+              color="primary"
+              flavor="solid"
+              @click="addSpotToPlanning()"
+            >
+              Créer
             </BaseButton>
           </div>
         </div>

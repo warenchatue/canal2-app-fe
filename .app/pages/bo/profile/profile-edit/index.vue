@@ -189,7 +189,7 @@ const onSubmit = handleSubmit(
 
         toaster.clearAll()
         toaster.show({
-          title: 'Oops!',
+          title: 'Désolé!',
           message: 'Please review the errors in the form',
           color: 'danger',
           icon: 'lucide:alert-triangle',

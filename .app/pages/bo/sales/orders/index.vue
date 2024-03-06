@@ -111,7 +111,7 @@ async function deleteOrder(order: any) {
   } else {
     toaster.clearAll()
     toaster.show({
-      title: 'Oops',
+      title: 'Désolé',
       message: `Une erreur est survenue !`,
       color: 'danger',
       icon: 'ph:check',
@@ -286,7 +286,7 @@ const onSubmit = handleSubmit(
         if (uploadData.value?.success == false) {
           contractUrl.value = ''
           toaster.show({
-            title: 'Oops',
+            title: 'Désolé',
             message: `Une erreur est survenue lors de l'importation de des fichiers !`,
             color: 'danger',
             icon: 'ph:check',
@@ -318,7 +318,7 @@ const onSubmit = handleSubmit(
         if (uploadData.value?.success == false) {
           invoiceUrl.value = ''
           toaster.show({
-            title: 'Oops',
+            title: 'Désolé',
             message: `Une erreur est survenue lors de l'importation de des fichiers !`,
             color: 'danger',
             icon: 'ph:check',
@@ -392,7 +392,7 @@ const onSubmit = handleSubmit(
       } else {
         toaster.clearAll()
         toaster.show({
-          title: 'Oops',
+          title: 'Désolé',
           message: `Une erreur est survenue !`,
           color: 'danger',
           icon: 'ph:check',
@@ -407,7 +407,7 @@ const onSubmit = handleSubmit(
       })
       toaster.clearAll()
       toaster.show({
-        title: 'Oops!',
+        title: 'Désolé!',
         message: 'Veuillez examiner les erreurs dans le formulaire',
         color: 'danger',
         icon: 'lucide:alert-triangle',
