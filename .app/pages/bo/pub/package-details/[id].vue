@@ -107,6 +107,18 @@ var activeDays = ref(
 )
 const initDate = ref(false)
 
+function captureContent(type: string) {
+  if (type == 'Planning') {
+    isCapturePagePlanning.value = true
+    isPrintPlanning.value = true
+  } else if ((type = 'Certificate')) {
+    isCapturePageCertificate.value = true
+    isPrintCertificate.value = true
+  }
+  setTimeout(() => {
+    contentToPrint.value += document.getElementById('planningPrint').innerHTML
+  }, 500)
+}
 function addMonth() {
   const date = new Date(activeDate.value)
   initDate.value = false
@@ -1791,17 +1803,13 @@ const onSubmit = handleSubmit(
             >Produit :
             <span class="text-primary-500">{{ data?.data?.label ?? '-' }}</span>
           </BaseText>
-          <BaseText size="sm"
+          <BaseText size="md"
             >Mois :
             <span class="text-primary-500"
               >{{ formatter.format(activeDate) }}
               {{ activeDate.getFullYear() }}</span
             ></BaseText
           >
-          <BaseText size="sm"
-            >Total Commandés :
-            <span class="text-primary-500">{{ data?.data?.quantities }} </span>
-          </BaseText>
 
           <BaseText size="sm"
             >Période :
@@ -1828,14 +1836,17 @@ const onSubmit = handleSubmit(
           </div>
         </div>
 
-        <div class="flex justify-start text-sm px-2 pb-2">
-          LEGENDE :
-          <div v-for="(product, i) in data.data.products" :key="product._id">
-            <span class="px-2">
-              {{ product.tag }} : {{ product.type }} {{ product.message }}
-            </span>
-            |
+        <div class="flex justify-between px-2 pb-2 w-full">
+          <div class="flex justify-start text-sm">
+            LEGENDE :
+            <div v-for="(product, i) in data.data.products" :key="product._id">
+              <span class="px-2">
+                {{ product.tag }} : {{ product.type }} {{ product.message }}
+              </span>
+              |
+            </div>
           </div>
+          <div class="text-yellow-500">{{ data.data.description }}</div>
         </div>
 
         <div
@@ -2115,20 +2126,14 @@ const onSubmit = handleSubmit(
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
             <BaseButton @click="isModalPlanningOpen = false">Fermer</BaseButton>
-            <BaseButton
-              @click=";(isCapturePagePlanning = true), (isPrintPlanning = true)"
-            >
+            <BaseButton @click="captureContent('Planning')">
               <Icon
                 name="lucide:camera"
                 class="pointer-events-none h-4 w-4 mx-2"
               />
               Début Capture Planning</BaseButton
             >
-            <BaseButton
-              @click="
-                ;(isCapturePageCertificate = false), (isPrintCertificate = true)
-              "
-            >
+            <BaseButton @click="captureContent('Certificate')">
               <Icon
                 name="lucide:camera"
                 class="pointer-events-none h-4 w-4 mx-2"
