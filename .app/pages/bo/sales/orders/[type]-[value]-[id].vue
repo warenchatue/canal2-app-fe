@@ -2598,9 +2598,13 @@ const onSubmit = handleSubmit(
                           >
                             {{
                               new Intl.NumberFormat('fr-FR').format(
-                                currentOrderInvoice?.taxes.length > 1
+                                currentOrderInvoice?.taxes.length > 2
                                   ? currentOrderInvoice?.taxes[0].amount +
-                                      currentOrderInvoice?.taxes[1].amount
+                                      currentOrderInvoice?.taxes[1].amount +
+                                      currentOrderInvoice?.taxes[2].amount
+                                  : currentOrderInvoice?.taxes.length > 1
+                                  ? currentOrderInvoice?.taxes[0].amount +
+                                    currentOrderInvoice?.taxes[1].amount
                                   : currentOrderInvoice?.taxes[0].amount,
                               )
                             }}

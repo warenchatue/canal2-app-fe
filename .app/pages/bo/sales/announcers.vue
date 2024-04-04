@@ -989,6 +989,11 @@ const onSubmit = handleSubmit(
                         <option value="school">Ecole</option>
                         <option value="PME">PME</option>
                         <option value="TPE">TPE</option>
+                        <option value="ONG">ONG</option>
+                        <option value="ASSOCIATION">Association</option>
+                        <option value="INSTRELIG">
+                          Institution Religieuse
+                        </option>
                       </BaseSelect>
                     </Field>
                   </div>
