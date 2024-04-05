@@ -26,11 +26,11 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event)
     console.log(body)
     const data = await createAnnouncer(body, token)
-    return { data: data, success: true }
+    return { data: data, success: typeof data === 'undefined' ? false : true }
   } else if (action == 'updateAnnouncer') {
     const body = await readBody(event)
     const data = await updateAnnouncer(id, body, token)
-    return { data: data, success: true }
+    return { data: data, success: typeof data === 'undefined' ? false : true }
   } else if (action == 'delete') {
     const data = await deleteAnnouncer(id, token)
     return { data: data, success: true }

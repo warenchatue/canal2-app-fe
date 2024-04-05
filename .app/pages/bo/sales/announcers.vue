@@ -176,7 +176,7 @@ const zodSchema = z
       category: z.string().optional(),
       country: z
         .object({
-          _id: z.string(),
+          _id: z.string().optional(),
           abbr: z.string(),
           name: z.string(),
           flag: z.string().optional(),
@@ -213,12 +213,6 @@ const initialValues = computed<FormInput>(() => ({
     status: '',
     type: '',
     category: '',
-    country: {
-      _id: '',
-      abbr: '',
-      name: '',
-      flag: '',
-    },
   },
 }))
 
@@ -332,6 +326,7 @@ const onSubmit = handleSubmit(
           query: query2,
           body: {
             ...values.announcer,
+            country: values.announcer.country?._id,
           },
         })
         isSuccess.value = response.data.value?.success
@@ -349,6 +344,7 @@ const onSubmit = handleSubmit(
           query: query2,
           body: {
             ...values.announcer,
+            country: values.announcer.country?._id,
             _id: undefined,
           },
         })
