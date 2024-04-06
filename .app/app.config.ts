@@ -121,6 +121,38 @@ export default defineAppConfig({
             ],
           },
           {
+            name: 'Achats',
+            icon: { name: 'ph:target-duotone', class: 'w-5 h-5' },
+            activePath: '/bo/purchases',
+            children: [
+              {
+                name: 'Tableau de bord',
+                // to: '/bo/sales',
+                icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Bons de commandes',
+                to: '/bo/purchases/orders',
+                icon: { name: 'lucide:file', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Factures fournisseurs',
+                to: '/bo/purchases/invoices',
+                icon: { name: 'lucide:file', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Fournisseurs',
+                to: '/bo/purchases/suppliers',
+                icon: { name: 'lucide:file', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Paiements',
+                // to: '/bo/purchases/payments',
+                icon: { name: 'lucide:file', class: 'w-4 h-4' },
+              },
+            ],
+          },
+          {
             name: 'Ventes',
             icon: { name: 'ph:target-duotone', class: 'w-5 h-5' },
             activePath: '/bo/sales',
@@ -133,11 +165,6 @@ export default defineAppConfig({
               {
                 name: 'Devis',
                 to: '/bo/sales/orders',
-                icon: { name: 'lucide:file', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Bons de commandes',
-                // to: '/bo/sales/invoices',
                 icon: { name: 'lucide:file', class: 'w-4 h-4' },
               },
               {
