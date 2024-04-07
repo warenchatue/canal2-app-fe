@@ -1436,9 +1436,11 @@ const onSubmit = handleSubmit(
                           lead="none"
                         >
                           {{
-                            pageValue == 'order' ? 'Bon de Commande' : 'Facture'
+                            pageValue == 'order'
+                              ? 'Bon de Commande pour'
+                              : 'Facture de'
                           }}
-                          pour:
+                          :
                         </BaseHeading>
                         <BaseParagraph
                           size="sm"
@@ -1536,7 +1538,7 @@ const onSubmit = handleSubmit(
                       >
                         Description :
                       </p>
-                    
+
                       <!-- <p
                         class="text-muted-800 dark:text-muted-100 mt-2 text-[10px] font-semibold"
                       >
@@ -1560,7 +1562,7 @@ const onSubmit = handleSubmit(
                         {{ currentOrderInvoice?.description }}
                         <!-- BC N° 33880 DU 18/07/2023 -->
                       </p>
-                       <!-- <p class="mt-2 text-[10px]">
+                      <!-- <p class="mt-2 text-[10px]">
                         {{
                           new Date(
                             currentOrderInvoice?.dueDate,

@@ -97,21 +97,25 @@ const query2 = computed(() => {
   }
 })
 
+const queryLight = computed(() => {
+  return {
+    filter: filter.value,
+    perPage: 12000,
+    page: page.value,
+    action: 'findAllLight',
+    token: token.value,
+  }
+})
+
 const { data, pending } = await useFetch('/api/recovery/recovery-procedures', {
   query,
 })
 
-const { data: announcers } = await useFetch('/api/sales/announcers', {
-  query: query2,
-})
-
-const transformedAnnouncers = announcers.value?.data.map((e: any) => {
-  const invoice = {
-    id: e._id,
-    name: e.name,
-  }
-  return invoice
-})
+const { data: transformedAnnouncers, pending: pendingAnnouncers } =
+  await useFetch('/api/sales/announcers', {
+    query: queryLight,
+    lazy: true,
+  })
 
 const { data: allUsers } = await useFetch('/api/users', {
   query,
@@ -1063,10 +1067,10 @@ const onSubmit = handleSubmit(
                       <BaseAutocomplete
                         :model-value="field.value"
                         :error="errorMessage"
-                        :disabled="isSubmitting"
+                        :disabled="isSubmitting || pendingAnnouncers"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
-                        :items="transformedAnnouncers"
+                        :items="transformedAnnouncers?.data"
                         :display-value="(item: any) => item.name || ''"
                         :filter-items="filterItems"
                         icon="lucide:file"

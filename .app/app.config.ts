@@ -143,10 +143,10 @@ export default defineAppConfig({
               {
                 name: 'Fournisseurs',
                 to: '/bo/purchases/suppliers',
-                icon: { name: 'lucide:file', class: 'w-4 h-4' },
+                icon: { name: 'ph:users-duotone', class: 'w-5 h-5' },
               },
               {
-                name: 'Paiements',
+                name: 'Paiements effectués',
                 // to: '/bo/purchases/payments',
                 icon: { name: 'lucide:file', class: 'w-4 h-4' },
               },
@@ -173,12 +173,12 @@ export default defineAppConfig({
                 icon: { name: 'lucide:file', class: 'w-4 h-4' },
               },
               {
-                name: 'Paiements',
+                name: 'Paiements reçus',
                 to: '/bo/sales/payments',
                 icon: { name: 'lucide:file', class: 'w-4 h-4' },
               },
               {
-                name: 'Annonceurs',
+                name: 'Clients',
                 icon: { name: 'ph:users-duotone', class: 'w-5 h-5' },
                 to: '/bo/sales/announcers',
               },
