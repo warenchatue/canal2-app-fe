@@ -26,6 +26,7 @@ const isModalDeletePackageOpen = ref(false)
 const isModalCopyInvoiceOpen = ref(false)
 const isModalDoitInvoiceOpen = ref(false)
 const isModalSalesReportOpen = ref(false)
+const isIndividualReport = ref(false)
 const isEdit = ref(false)
 const isPrint = ref(false)
 const toaster = useToaster()
@@ -118,6 +119,10 @@ async function printSalesReport() {
   })
   data.value = reportData.value
   isPrint.value = true
+  await printElement()
+}
+
+async function printElement() {
   setTimeout(() => {
     var printContents = document.getElementById('print-sales-report').innerHTML
     var originalContents = document.body.innerHTML
@@ -132,6 +137,12 @@ function openReportModal() {
   setTimeout(() => {
     isModalSalesReportOpen.value = true
   }, 500)
+}
+
+async function openIndividualReportModal() {
+  isIndividualReport.value = true
+  isPrint.value = true
+  await printElement()
 }
 
 async function deletePackage(invoice: any) {
@@ -301,11 +312,19 @@ const success = ref(false)
           @click="openReportModal()"
         >
           <Icon name="ph:file" class="h-4 w-4" />
-          <span>Rapports</span>
+          <span>Rapport Global</span>
         </BaseButton>
         <BaseButton
           color="primary"
-          class="w-full sm:w-52"
+          class="w-full sm:w-48"
+          @click="openIndividualReportModal()"
+        >
+          <Icon name="ph:file" class="h-4 w-4" />
+          <span>Rapport Client</span>
+        </BaseButton>
+        <BaseButton
+          color="primary"
+          class="w-full sm:w-48"
           to="/bo/sales/orders/new-invoice-0"
           @click="isLoading = true"
           :loading="isLoading"
@@ -539,7 +558,7 @@ const success = ref(false)
         </div>
         <div v-if="isPrint" shape="straight" class="border border-t-1"></div>
         <h4
-          v-if="isPrint"
+          v-if="isPrint && !isIndividualReport"
           class="font-heading text-muted-900 text-xs font-medium pb-2 pt-1 px-2 leading-6 dark:text-white"
         >
           Etat des ventes du
@@ -548,6 +567,13 @@ const success = ref(false)
           {{ currentTeam ? currentTeam.toUpperCase() : 'Douala et Yaounde' }} de
           la société
           {{ currentOrg?.name ?? '' }}
+        </h4>
+        <h4
+          v-if="isPrint && isIndividualReport"
+          class="font-heading text-muted-900 text-xs font-medium pb-2 pt-1 px-2 leading-6 dark:text-white"
+        >
+          Etat des factures impayés du client
+          {{ data?.data[0]?.announcer?.name }}
         </h4>
         <h5
           v-if="isPrint"
