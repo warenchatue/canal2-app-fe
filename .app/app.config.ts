@@ -196,9 +196,9 @@ export default defineAppConfig({
           },
 
           {
-            name: 'Emission',
+            name: 'Programmes TV',
             icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
-            activePath: '/bo/estimations',
+            activePath: '/bo/tv-programs',
             children: [
               {
                 name: 'Tableau de bord',
@@ -211,14 +211,24 @@ export default defineAppConfig({
                 icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Nos Emmisions',
-                to: '',
+                name: 'Nos Emisions',
+                to: '/bo/tv-programs/programs',
+                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Catégories',
+                to: '/bo/tv-programs/categories',
                 icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Horaires',
-                to: '',
+                to: '/bo/tv-programs/hours',
                 icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Jounalistes',
+                to: '',
+                icon: { name: 'ph:users-duotone', class: 'w-4 h-4' },
               },
             ],
           },

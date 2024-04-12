@@ -6,11 +6,11 @@ import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Horaires',
+  title: 'Horaires Programmes TV',
   preview: {
-    title: 'Horaires',
-    description: 'Contribution and withdrawal',
-    categories: ['bo', 'spots', 'hours'],
+    title: 'Horaires Programmes TV',
+    description: 'Hours',
+    categories: ['bo', 'tv-programs', 'hours'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -53,7 +53,6 @@ watch([filter, perPage], () => {
   })
 })
 
-const app = useAppStore()
 const token = useCookie('token')
 const query = computed(() => {
   return {
@@ -65,12 +64,16 @@ const query = computed(() => {
   }
 })
 
+// const { data, pending, refresh } = await useFetch('/api/pub/hours', {
+//   query,
+// })
+
 const { data, pending, refresh } = await useFetch('/api/pub/hours', {
   query: query,
   lazy: true,
   transform: (els) => {
     return els.data?.filter((el: any) => {
-      return el.type != 'TvProgram'
+      return el.type == 'TvProgram'
     })
   },
 })
@@ -149,14 +152,10 @@ async function deleteHour(hour: any) {
   }
 }
 
-const spotType = [
+const hourType = [
   {
-    id: 'SPOT',
-    name: 'SPOT',
-  },
-  {
-    id: 'BA',
-    name: "Bande d'annonce",
+    id: 'TvProgram',
+    name: 'Programme TV',
   },
 ]
 
@@ -603,7 +602,7 @@ const onSubmit = handleSubmit(
                       >
                         <BaseListbox
                           label="Type Horaire"
-                          :items="spotType"
+                          :items="hourType"
                           :properties="{
                             value: 'id',
                             label: 'name',
