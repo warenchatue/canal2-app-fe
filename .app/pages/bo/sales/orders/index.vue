@@ -27,6 +27,7 @@ const perPage = ref(10)
 const isModalNewPackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
+const isModalCopyOrderOpen = ref(false)
 const isEdit = ref(false)
 const toaster = useToaster()
 const isLoading = ref(false)
@@ -78,6 +79,46 @@ function confirmDeletePackage(spotPackage: any) {
   isModalDeletePackageOpen.value = true
   isEdit.value = false
   currentOrder.value = spotPackage
+}
+
+async function copyOrder(ids: any) {
+  const query2 = computed(() => {
+    return {
+      action: 'copyOrder',
+      token: token.value,
+      id: ids[0],
+    }
+  })
+
+  const response = await useFetch('/api/sales/orders', {
+    method: 'put',
+    headers: { 'Content-Type': 'application/json' },
+    query: query2,
+  })
+
+  if (response.data?.value?.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Devis Dupliqué !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalCopyOrderOpen.value = false
+    filter.value = 'order'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Désolé',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
 }
 
 async function deleteOrder(order: any) {
@@ -768,8 +809,21 @@ const onSubmit = handleSubmit(
               </template>
 
               <TairoTableRow v-if="selected.length > 0" :hoverable="false">
+                <TairoTableCell colspan="3" class="p-4">
+                  <BaseButtonAction
+                    v-if="selected.length == 1"
+                    @click="isModalCopyOrderOpen = true"
+                    class="mx-2"
+                  >
+                    <Icon
+                      name="lucide:copy"
+                      class="h-4 w-4 mr-2 text-orange-500"
+                    />
+                    Dupliquer</BaseButtonAction
+                  >
+                </TairoTableCell>
                 <TairoTableCell
-                  colspan="6"
+                  colspan="4"
                   class="bg-success-100 text-success-700 dark:bg-success-700 dark:text-success-100 p-4"
                 >
                   You have selected {{ selected.length }} items of the total
@@ -916,6 +970,62 @@ const onSubmit = handleSubmit(
         </div>
       </div>
     </TairoContentWrapper>
+
+    <!-- Modal Copy Order -->
+    <TairoModal
+      :open="isModalCopyOrderOpen"
+      size="sm"
+      @close="isModalCopyOrderOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Copie d'un Devis
+          </h3>
+
+          <BaseButtonClose @click="isModalCopyOrderOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <h3
+            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
+          >
+            Dupliquer le devis sélèctionné
+            <span class="text-red-500"></span> ?
+          </h3>
+
+          <p
+            class="font-alt text-muted-700 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est irreversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalCopyOrderOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="copyOrder(selected)"
+              >Proceder</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
 
     <!-- Modal delete -->
     <TairoModal

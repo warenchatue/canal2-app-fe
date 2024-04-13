@@ -24,6 +24,9 @@ export default defineEventHandler(async (event) => {
     console.log(body)
     const data = await createOrder(body, token)
     return { data: data, success: true }
+  } else if (action == 'copyOrder') {
+    const data = await copyOrder(id, token)
+    return { data: data, success: true }
   } else if (action == 'updateOrder') {
     const body = await readBody(event)
     const data = await updateOrder(id, body, token)
@@ -106,6 +109,23 @@ async function createOrder(body: any, token: string) {
       code: 'DEV' + '/' + new Date().getFullYear() + '/' + makeId(4),
     },
   }).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
+}
+
+async function copyOrder(id: string, token: string) {
+  console.log('copyOrder ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/orders/' + id + '/copy',
+    {
+      method: 'put',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
   console.log(data)
   return Promise.resolve(data)
 }

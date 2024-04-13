@@ -32,7 +32,7 @@ const isPrint = ref(false)
 const toaster = useToaster()
 const currentOrg = ref('')
 const currentTeam = ref('')
-const currentPackage = ref({})
+const currentInvoice = ref({})
 const isLoading = ref(false)
 const dates = ref({
   start: new Date(),
@@ -92,11 +92,11 @@ const { data: orgs, pending: pendingOrg } = await useFetch('/api/admin/orgs', {
 function confirmDeletePackage(invoice: any) {
   isModalDeletePackageOpen.value = true
   isEdit.value = false
-  currentPackage.value = invoice
+  currentInvoice.value = invoice
 }
 
 function updateCurrentInvoice(invoice: any) {
-  currentPackage.value = invoice
+  currentInvoice.value = invoice
 }
 
 async function printSalesReport() {
@@ -185,12 +185,12 @@ async function deletePackage(invoice: any) {
   }
 }
 
-async function copyInvoice(invoice: any) {
+async function copyInvoice(ids: any) {
   const query2 = computed(() => {
     return {
       action: 'copyInvoice',
       token: token.value,
-      id: invoice._id,
+      id: ids[0],
     }
   })
 
@@ -1187,7 +1187,7 @@ const success = ref(false)
             class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
           >
             Supprimer
-            <span class="text-red-500">{{ currentPackage?.label }}</span> ?
+            <span class="text-red-500">{{ currentInvoice?.label }}</span> ?
           </h3>
 
           <p
@@ -1209,7 +1209,7 @@ const success = ref(false)
             <BaseButton
               color="primary"
               flavor="solid"
-              @click="deletePackage(currentPackage)"
+              @click="deletePackage(currentInvoice)"
               >Suppimer</BaseButton
             >
           </div>
@@ -1217,7 +1217,7 @@ const success = ref(false)
       </template>
     </TairoModal>
 
-    <!-- Modal Copy -->
+    <!-- Modal Copy Invoice -->
     <TairoModal
       :open="isModalCopyInvoiceOpen"
       size="sm"
@@ -1265,7 +1265,7 @@ const success = ref(false)
             <BaseButton
               color="primary"
               flavor="solid"
-              @click="copyInvoice(currentPackage)"
+              @click="copyInvoice(selected)"
               >Proceder</BaseButton
             >
           </div>
@@ -1321,7 +1321,7 @@ const success = ref(false)
             <BaseButton
               color="primary"
               flavor="solid"
-              @click="updateInvoiceIsDoit(currentPackage)"
+              @click="updateInvoiceIsDoit(currentInvoice)"
               >Proceder</BaseButton
             >
           </div>
