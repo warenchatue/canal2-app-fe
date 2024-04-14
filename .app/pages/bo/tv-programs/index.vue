@@ -27,7 +27,8 @@ const token = useCookie('token')
 const toaster = useToaster()
 // Check if can have access
 if (
-  authStore.user.appRole.name != UserRole.mediaPlanner &&
+  authStore.user.appRole.name != UserRole.programPlanner &&
+  authStore.user.appRole.name != UserRole.admin &&
   authStore.user.appRole.name != UserRole.superAdmin
 ) {
   toaster.clearAll()

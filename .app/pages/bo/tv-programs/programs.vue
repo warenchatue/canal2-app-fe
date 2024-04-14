@@ -32,8 +32,8 @@ const isEdit = ref(false)
 const toaster = useToaster()
 // Check if can have access
 if (
-  authStore.user.appRole.name != UserRole.mediaPlanner &&
-  authStore.user.appRole?.name != UserRole.admin &&
+  authStore.user.appRole.name != UserRole.programPlanner &&
+  authStore.user.appRole.name != UserRole.admin &&
   authStore.user.appRole.name != UserRole.superAdmin
 ) {
   toaster.clearAll()
@@ -796,38 +796,46 @@ const onSubmit = handleSubmit(
                 <TairoTableCell light spaced>
                   {{ item.category?.name }}
                 </TairoTableCell>
-                <TairoTableCell light spaced>  <div class="flex items-center">
+                <TairoTableCell light spaced>
+                  <div class="flex items-center">
                     <span
                       :style="'background-color:' + item.category?.color + ';'"
                       class="text-muted-400 w-14 h-6 rounded font-sans text-xs"
                     >
-                    </span>
-                  </div></TairoTableCell>
+                    </span></div
+                ></TairoTableCell>
                 <TairoTableCell light spaced> </TairoTableCell>
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag
-                    v-if="item.status === 'trashed'"
+                    v-if="item.state === 'trashed'"
                     color="muted"
                     flavor="pastel"
                     shape="full"
                     condensed
                     class="font-medium"
                   >
-                    {{ item.status }}
+                    {{ item.state }}
                   </BaseTag>
                   <BaseTag
-                    v-else-if="item.status === 'active'"
-                    color="warning"
+                    v-else-if="item.state === 'active'"
+                    color="success"
                     flavor="pastel"
                     shape="full"
                     condensed
                     class="font-medium"
                   >
-                    {{ item.status }}
+                    {{ item.state }}
                   </BaseTag>
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex">
+                     <BaseButtonAction
+                      class="mx-2"
+                      :to="'/bo/tv-programs/program-details/' + item._id"
+                      muted
+                    >
+                      <Icon name="lucide:settings" class="h-4 w-4"
+                    /></BaseButtonAction>
                     <BaseButtonAction @click="editTvProgram(item)">
                       <Icon name="lucide:edit" class="h-4 w-4"
                     /></BaseButtonAction>
@@ -967,27 +975,6 @@ const onSubmit = handleSubmit(
                         @update:model-value="handleChange"
                         @blur="handleBlur"
                       />
-                    </Field>
-                  </div>
-                  <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="tvProgram.status"
-                    >
-                      <BaseSelect
-                        label="Statut *"
-                        icon="ph:funnel"
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="true"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      >
-                        <option value="onHold">En attente de validation</option>
-                        <option value="confirmed">Validéé</option>
-                        <option value="completed">Soldée</option>
-                        <option value="closed">Cloturées</option>
-                      </BaseSelect>
                     </Field>
                   </div>
                 </div>

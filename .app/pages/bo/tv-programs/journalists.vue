@@ -2,13 +2,14 @@
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
+import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Users',
+  title: 'Journalistes',
   preview: {
-    title: 'Users',
-    description: 'For list views and collections',
-    categories: ['bo', 'admin'],
+    title: 'Journalistes',
+    description: '',
+    categories: ['bo', 'tv-programs'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -43,28 +44,23 @@ const query = computed(() => {
   }
 })
 
-const query2 = computed(() => {
-  return {
-    action: 'findAll',
-    token: token.value,
-    filter: filter.value,
-    perPage: 50,
-    page: page.value,
-  }
-})
+// const { data, pending, error, refresh } = await useFetch('/api/users', {
+//   query,
+// })
 
-
-const { data, pending, error, refresh } = await useFetch('/api/users', {
-  query,
-})
-
-const { data:rolesData } = await useFetch('/api/users/roles', {
-  query : query2,
+const { data, pending, refresh } = await useFetch('/api/users', {
+  query: query,
+  lazy: true,
+  transform: (els) => {
+    return els.data?.filter((el: any) => {
+      return el.appRole.name == UserRole.journalist
+    })
+  },
 })
 
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
-  return selected.value.length === data.value?.data.length
+  return selected.value.length === data.value?.length
 })
 
 function toggleAllVisibleSelection() {
@@ -425,6 +421,7 @@ const onSubmit = handleSubmit(
           <option :value="100">100 per page</option>
         </BaseSelect>
         <BaseButton
+          disabled
           @click="resetForm(), ((isModalNewUserOpen = true), (isEdit = false))"
           color="primary"
           class="w-full sm:w-44"
@@ -434,7 +431,7 @@ const onSubmit = handleSubmit(
         </BaseButton>
       </template>
       <div>
-        <div v-if="!pending && data?.data.length === 0">
+        <div v-if="!pending && data?.length === 0">
           <BasePlaceholderPage
             title="No matching results"
             subtitle="Looks like we couldn't find any matching results for your search terms. Try other search terms."
@@ -497,7 +494,7 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
               </TairoTableRow>
 
-              <TairoTableRow v-for="item in data?.data" :key="item._id">
+              <TairoTableRow v-for="item in data" :key="item._id">
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseCheckbox
@@ -559,17 +556,8 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex">
-                    <BaseButtonAction @click="editUser(item)">
+                    <BaseButtonAction disabled @click="editUser(item)">
                       <Icon name="lucide:edit" class="h-4 w-4"
-                    /></BaseButtonAction>
-                    <BaseButtonAction
-                      @click="editUserPassword(item)"
-                      class="!mx-3"
-                    >
-                      <Icon name="lucide:settings" class="h-4 w-4"
-                    /></BaseButtonAction>
-                    <BaseButtonAction @click="confirmDeleteUser(item)">
-                      <Icon name="lucide:trash" class="h-4 w-4"
                     /></BaseButtonAction>
                   </div>
                 </TairoTableCell>
@@ -740,7 +728,7 @@ const onSubmit = handleSubmit(
                     >
                       <BaseListbox
                         label="Role"
-                        :items="rolesData.data"
+                        :items="appStore.roles"
                         :properties="{
                           value: '_id',
                           label: 'name',

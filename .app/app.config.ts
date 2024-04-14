@@ -227,7 +227,7 @@ export default defineAppConfig({
               },
               {
                 name: 'Jounalistes',
-                to: '',
+                to: '/bo/tv-programs/journalists',
                 icon: { name: 'ph:users-duotone', class: 'w-4 h-4' },
               },
             ],
