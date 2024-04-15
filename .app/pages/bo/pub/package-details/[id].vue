@@ -6,9 +6,9 @@ import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Produits - Annonceur',
+  title: 'Details - Campagne',
   preview: {
-    title: 'Produits - Annonceur',
+    title: 'Details - Campagne',
     description: 'Contribution and withdrawal',
     categories: ['bo', 'pub', 'orders'],
     src: '/img/screens/layouts-table-list-1.png',
@@ -66,6 +66,12 @@ const { data, pending, error, refresh } = await useFetch('/api/pub/packages', {
 
 const { data: hoursData } = await useFetch('/api/pub/hours', {
   query: queryHours,
+  lazy: false,
+  transform: (els) => {
+    return els.data?.filter((el: any) => {
+      return el.type != 'TvProgram'
+    })
+  },
 })
 
 watch([filter, perPage], () => {
@@ -1895,7 +1901,7 @@ const onSubmit = handleSubmit(
                   <span>Horaires</span>
                 </BaseHeading>
               </div>
-              <div v-for="h in hoursData.data" :key="h._id">
+              <div v-for="h in hoursData" :key="h._id">
                 <div v-if="checkEmptyPlanning(h)" class="border-b-2">
                   <BaseHeading
                     as="h4"
@@ -1993,7 +1999,7 @@ const onSubmit = handleSubmit(
                 </BaseHeading>
               </div>
 
-              <div v-for="h in hoursData.data" :key="h._id" class="">
+              <div v-for="h in hoursData" :key="h._id" class="">
                 <div
                   v-if="checkEmptyPlanning(h)"
                   class="border-b-2 flex justify-start"

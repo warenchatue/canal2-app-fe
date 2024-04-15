@@ -106,11 +106,11 @@ function editTvProgram(tvProgram: any) {
   isEdit.value = true
   currentTvProgram.value = tvProgram
   setFieldValue('tvProgram._id', tvProgram._id)
-  setFieldValue('tvProgram.label', tvProgram.label)
+  setFieldValue('tvProgram.name', tvProgram.name)
   setFieldValue('tvProgram.code', tvProgram.code)
+  setFieldValue('tvProgram.category', tvProgram.category)
   setFieldValue('tvProgram.description', tvProgram.description)
   setFieldValue('tvProgram.org', tvProgram.org)
-  setFieldValue('tvProgram.adminValidator', tvProgram.adminValidator)
 }
 
 function confirmDeleteTvProgram(tvProgram: any) {
@@ -799,7 +799,9 @@ const onSubmit = handleSubmit(
                 <TairoTableCell light spaced>
                   <div class="flex items-center">
                     <span
-                      :style="'background-color:' + item.category?.color + ';'"
+                      :style="
+                        'background-color:' + item.category?.colorCode + ';'
+                      "
                       class="text-muted-400 w-14 h-6 rounded font-sans text-xs"
                     >
                     </span></div
@@ -829,7 +831,7 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex">
-                     <BaseButtonAction
+                    <BaseButtonAction
                       class="mx-2"
                       :to="'/bo/tv-programs/program-details/' + item._id"
                       muted

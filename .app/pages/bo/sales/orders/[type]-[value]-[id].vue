@@ -115,7 +115,7 @@ const { data: announcers, pending: pendingAnnouncer } = await useFetch(
   '/api/sales/announcers',
   {
     query: queryLight,
-    lazy: true,
+    lazy: false,
   },
 )
 

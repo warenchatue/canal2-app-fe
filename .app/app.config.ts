@@ -288,6 +288,28 @@ export default defineAppConfig({
             ],
           },
           {
+            name: 'Fiscalité',
+            icon: { name: 'ph:money-duotone', class: 'w-5 h-5' },
+            activePath: '/bo/accountancy',
+            children: [
+              {
+                name: 'Tableau de bord',
+                // to: '/bo/pub',
+                icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Déclarations',
+                // to: '/bo/accountancy/accounting-docs',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Sociétes',
+                // to: '/bo/accountancy/doc-accounts',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+            ],
+          },
+          {
             name: 'Creation',
             icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
             activePath: '/bo/creation',
@@ -326,7 +348,7 @@ export default defineAppConfig({
               },
               {
                 name: 'Personnel',
-                to: '/bo/accountancy/accounting-docs',
+                // to: '/bo/accountancy/accounting-docs',
                 icon: { name: 'ph:users-duotone', class: 'w-4 h-4' },
               },
               {
@@ -348,7 +370,7 @@ export default defineAppConfig({
               },
               {
                 name: 'Immobilisations',
-                to: '/bo/accountancy/accounting-docs',
+                // to: '',
                 icon: { name: 'ph:app-window-duotone', class: 'w-4 h-4' },
               },
               {

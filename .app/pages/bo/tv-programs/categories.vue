@@ -157,8 +157,8 @@ function editProgramCategory(programCategory: any) {
   setFieldValue('programCategory._id', programCategory._id)
   setFieldValue('programCategory.code', programCategory.code)
   setFieldValue('programCategory.name', programCategory.name)
-  setFieldValue('programCategory.color', programCategory.name)
-  setFieldValue('programCategory.colorCode', programCategory.name)
+  setFieldValue('programCategory.color', programCategory.color)
+  setFieldValue('programCategory.colorCode', programCategory.colorCode)
   setFieldValue('programCategory.description', programCategory.description)
 }
 
@@ -456,7 +456,7 @@ const onSubmit = handleSubmit(
                 <TairoTableCell light spaced>
                   <div class="flex items-center">
                     <span
-                      :style="'background-color:' + item.color + ';'"
+                      :style="'background-color:' + item.colorCode + ';'"
                       class="text-muted-400 w-14 h-6 rounded font-sans text-xs"
                     >
                     </span>
