@@ -100,7 +100,7 @@ const activeDay = ref('')
 const activePlanningId = ref('')
 const activeHour = ref({})
 const isActionLoading = ref(false)
-const activeEnd = ref({ day: undefined, step: 1 })
+const activeEnd = ref({ day: undefined, step: 1, total: 1 })
 const isCapturePagePlanning = ref(false)
 const isCapturePageCertificate = ref(false)
 const contentToPrint = ref('')
@@ -112,6 +112,25 @@ var activeDays = ref(
   ).getDate(),
 )
 const initDate = ref(false)
+
+const spotData = computed(() => {
+  let data = {}
+  hoursData.value.forEach((h: any) => {
+    data[h.code] = {}
+    Array.from({ length: activeDays.value }).forEach((_, d: number) => {
+      data[h.code][d] = checkSpot(d + 1, h.code)
+    })
+  })
+  return data
+})
+
+function openAllPlanning() {
+  setTimeout(() => {
+    isModalPlanningOpen.value = true
+    console.log('spotData')
+    console.log(spotData.value)
+  }, 500)
+}
 
 function captureContent(type: string) {
   if (type == 'Planning') {
@@ -193,6 +212,7 @@ async function addSpotToPlanning() {
   const myActiveDay = parseInt(activeDay.value)
   const myActiveEndDay = parseInt(activeEnd.value.day)
   const myActiveEndStep = parseInt(activeEnd.value.step)
+  const myActiveEndTotal = parseInt(activeEnd.value.total)
 
   for (
     let myDay = myActiveDay;
@@ -209,16 +229,17 @@ async function addSpotToPlanning() {
     )
 
     // console.log(date.toISOString())
-
-    newPlannings.push({
-      _id: undefined,
-      product: activeProduct.value._id,
-      hour: activeHour.value._id,
-      date: date.toISOString(),
-      position: date.toISOString(),
-      isManualPlay: false,
-      isAutoPlay: false,
-    })
+    for (let i = 0; i < myActiveEndTotal; i++) {
+      newPlannings.push({
+        _id: undefined,
+        product: activeProduct.value._id,
+        hour: activeHour.value._id,
+        date: date.toISOString(),
+        position: date.toISOString(),
+        isManualPlay: false,
+        isAutoPlay: false,
+      })
+    }
   }
 
   try {
@@ -394,15 +415,21 @@ function checkSpot(d: number, hour: string) {
       new Date(p.date).toLocaleString('fr-FR') == date?.toLocaleString('fr-FR'),
   )
   if (plannedSpots.length == 0) {
-    return ['+', 'default', undefined]
+    return ['+', 'default', undefined, 0]
   } else {
+    const numberSpots = plannedSpots.length == 1 ? 1 : 2
     const dateNow = new Date().toLocaleString('fr-FR')
     const dateNowTime = new Date().getTime()
     var dateP = new Date(plannedSpots[0].date).toLocaleString('fr-FR')
     var datePTime = new Date(plannedSpots[0].date).getTime()
     // console.log(plannedSpots[0])
     if (isPrintPlanning.value == true) {
-      return [plannedSpots[0].product.tag, 'warning', plannedSpots[0]._id]
+      return [
+        plannedSpots[0].product.tag,
+        'warning',
+        plannedSpots[0]._id,
+        numberSpots,
+      ]
     }
 
     // console.log(dateP)
@@ -420,15 +447,30 @@ function checkSpot(d: number, hour: string) {
       plannedSpots[0].isAutoPlay == false &&
       isPrintCertificate.value == false
     ) {
-      return [plannedSpots[0].product.tag, 'danger', plannedSpots[0]._id]
+      return [
+        plannedSpots[0].product.tag,
+        'danger',
+        plannedSpots[0]._id,
+        numberSpots,
+      ]
     } else if (
       datePTime < dateNowTime &&
       (plannedSpots[0].isManualPlay == true ||
         plannedSpots[0].isAutoPlay == true)
     ) {
-      return [plannedSpots[0].product.tag, 'primary', plannedSpots[0]._id]
+      return [
+        plannedSpots[0].product.tag,
+        'primary',
+        plannedSpots[0]._id,
+        numberSpots,
+      ]
     } else if (datePTime > dateNowTime && isPrintCertificate.value == false) {
-      return [plannedSpots[0].product.tag, 'warning', plannedSpots[0]._id]
+      return [
+        plannedSpots[0].product.tag,
+        'warning',
+        plannedSpots[0]._id,
+        numberSpots,
+      ]
     } else {
       return ['+', 'default', undefined]
     }
@@ -965,7 +1007,7 @@ const onSubmit = handleSubmit(
           <option :value="100">100 per page</option>
         </BaseSelect>
         <BaseButton
-          @click="isModalPlanningOpen = true"
+          @click="openAllPlanning()"
           color="primary"
           class="w-full sm:w-40"
         >
@@ -1645,7 +1687,7 @@ const onSubmit = handleSubmit(
                     v-if="activeProduct._id != ''"
                     class="grid grid-cols-12 gap-4 mt-4"
                   >
-                    <div class="col-span-12 md:col-span-6">
+                    <div class="col-span-12 md:col-span-4">
                       <Field
                         v-slot="{
                           field,
@@ -1669,7 +1711,7 @@ const onSubmit = handleSubmit(
                       </Field>
                     </div>
 
-                    <div class="col-span-12 md:col-span-6">
+                    <div class="col-span-12 md:col-span-4">
                       <Field
                         v-slot="{
                           field,
@@ -1677,7 +1719,7 @@ const onSubmit = handleSubmit(
                           handleChange,
                           handleBlur,
                         }"
-                        name="planning.obs"
+                        name="planning.step"
                       >
                         <BaseInput
                           label="Pas"
@@ -1685,6 +1727,29 @@ const onSubmit = handleSubmit(
                           icon="ph:file"
                           placeholder=""
                           v-model="activeEnd.step"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+                    <div class="col-span-12 md:col-span-4">
+                      <Field
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
+                        name="planning.total"
+                      >
+                        <BaseInput
+                          label="Nombre"
+                          type="number"
+                          icon="ph:file"
+                          placeholder=""
+                          v-model="activeEnd.total"
                           :error="errorMessage"
                           :disabled="isSubmitting"
                           @update:model-value="handleChange"
@@ -2015,20 +2080,20 @@ const onSubmit = handleSubmit(
                         openSpotPlanningModal(
                           d.toString(),
                           h,
-                          checkSpot(d, h.code)[2],
+                          spotData[h.code][d - 1][2],
                         )
                       "
-                      :color="checkSpot(d, h.code)[1]"
+                      :color="spotData[h.code][d - 1][1]"
                       class="!w-6 !h-[2.106em] rounded-full !px-1 !my-2"
                     >
-                      <!-- <span
-                        v-if="dayOfWeek(d)"
-                        class="hover:text-primary-500/90 text-base"
-                        >+</span
-                      > -->
-                      <span class="hover:text-primary-500/90 text-base">{{
-                        checkSpot(d, h.code)[0]
-                      }}</span>
+                      <span class="hover:text-primary-500/90 text-base"
+                        >{{ spotData[h.code][d - 1][0] }}
+                      </span>
+                      <span
+                        v-if="spotData[h.code][d - 1][3] > 1"
+                        class="text-[10px] pr-1 text-gray-900"
+                        >{{ spotData[h.code][d - 1][3] }}
+                      </span>
                     </BaseButton>
                   </div>
                   <div
