@@ -84,6 +84,7 @@
     "node-fetch-native": "^1.4.1",
     "nuxt-vue-select": "^0.1.4",
     "pinia": "^2.1.6",
-    "to-words": "^4.0.0"
+    "to-words": "^4.0.0",
+    "vue3-smooth-dnd": "0.0.5"
   }
 }

@@ -150,6 +150,7 @@ function editPackage(campaign: any) {
   setFieldValue('campaign.code', campaign.code)
   setFieldValue('campaign.description', campaign.description)
   setFieldValue('campaign.numberProducts', campaign.numberProducts)
+  setFieldValue('campaign.quantities', campaign.quantities)
   setFieldValue('campaign.period', campaign.period)
   setFieldValue('campaign.org', campaign.org)
   setFieldValue('campaign.adminValidator', campaign.adminValidator)

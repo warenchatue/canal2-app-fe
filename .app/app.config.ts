@@ -178,7 +178,7 @@ export default defineAppConfig({
                 icon: { name: 'lucide:file', class: 'w-4 h-4' },
               },
               {
-                name: 'Clients',
+                name: 'Annonceurs',
                 icon: { name: 'ph:users-duotone', class: 'w-5 h-5' },
                 to: '/bo/sales/announcers',
               },
@@ -206,8 +206,8 @@ export default defineAppConfig({
                 icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Conducteur',
-                to: '',
+                name: 'Planning',
+                to: '/bo/tv-programs/planning',
                 icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
               },
               {

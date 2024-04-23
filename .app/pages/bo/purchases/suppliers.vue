@@ -8,8 +8,8 @@ definePageMeta({
   title: 'Fournisseurs',
   preview: {
     title: 'Fournisseurs',
-    description: 'Contribution and withdrawal',
-    categories: ['bo', 'suppliers'],
+    description: '',
+    categories: ['bo', 'purchases','suppliers'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -107,7 +107,7 @@ async function importSuppliers() {
     fd.append('0', supplierFile.value)
     const query3 = computed(() => {
       return {
-        action: 'import-supplier',
+        action: 'import-suppliers',
         token: token.value,
       }
     })

@@ -6,11 +6,11 @@ import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Details - Campagne',
+  title: 'Planning Programmes TV',
   preview: {
-    title: 'Details - Campagne',
+    title: 'Planning Programmes TV',
     description: 'Contribution and withdrawal',
-    categories: ['bo', 'pub', 'orders'],
+    categories: ['bo', 'tv-programs', 'orders'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -24,7 +24,7 @@ const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(50)
 const token = useCookie('token')
-const packageId = computed(() => route.params.id)
+const packageId = computed(() => '661289857d622410a87c50ad')
 const toaster = useToaster()
 // Check if can have access
 if (
@@ -123,13 +123,7 @@ const activeEnd = ref({ day: undefined, step: 1, total: 1 })
 const isCapturePagePlanning = ref(false)
 const isCapturePageCertificate = ref(false)
 const contentToPrint = ref('')
-var activeDays = ref(
-  new Date(
-    activeDate.value.getFullYear(),
-    activeDate.value.getMonth() + 1,
-    0,
-  ).getDate(),
-)
+var activeDays = ref(7)
 const initDate = ref(false)
 
 const spotData = computed(() => {
@@ -141,17 +135,6 @@ const spotData = computed(() => {
     })
   })
   return data
-})
-
-const tvProgramData = computed(() => {
-  let allData = {}
-  data.value.data.tvPrograms.forEach((prog: any) => {
-    allData[prog._id] = {}
-    Array.from({ length: activeDays.value }).forEach((_, d: number) => {
-      allData[prog._id][d] = checkSpot(d + 1, '', true, prog._id)
-    })
-  })
-  return allData
 })
 
 function filterItems(query?: string, items?: any[]) {
@@ -176,8 +159,6 @@ function openAllPlanning() {
     isModalPlanningOpen.value = true
     console.log('spotData')
     console.log(spotData.value)
-    console.log('tvProgramData')
-    console.log(tvProgramData.value)
   }, 500)
 }
 
@@ -193,19 +174,30 @@ function captureContent(type: string) {
     contentToPrint.value += document.getElementById('planningPrint').innerHTML
   }, 500)
 }
-function addMonth() {
-  const date = new Date(activeDate.value)
-  initDate.value = false
-  date.setMonth(date.getMonth() + 1)
-  activeDate.value = date
-  activeDays.value = new Date(
-    date.getFullYear(),
-    date.getMonth() + 1,
-    0,
-  ).getDate()
 
-  // console.log(date.getMonth() + 1)
-  // console.log(activeDays)
+function weekDates(current: Date) {
+  var week = new Array()
+  var localDate = new Date(current)
+  // Starting Monday not Sunday
+  var first = localDate.getDate() - localDate.getDay() + 1
+  for (var i = 0; i < 7; i++) {
+    if (
+      first >
+      new Date(localDate.getFullYear(), localDate.getMonth() + 1, 0).getDate()
+    ) {
+      first = 1
+      localDate.setMonth(localDate.getMonth() + 1)
+    }
+    week.push(new Date(localDate.setDate(first++)))
+  }
+  return week
+}
+
+function addWeek() {
+  var date = new Date(activeDate.value)
+  initDate.value = false
+  date = new Date(date.setDate(date.getDate() + 7))
+  activeDate.value = date
   setTimeout(() => {
     if (isCapturePagePlanning.value || isCapturePageCertificate.value) {
       contentToPrint.value += document.getElementById('planningPrint').innerHTML
@@ -213,32 +205,17 @@ function addMonth() {
   }, 500)
 }
 
-function removeMonth() {
-  const date = new Date(activeDate.value)
-  date.setMonth(date.getMonth() - 1)
+function removeWeek() {
+  var date = new Date(activeDate.value)
+  initDate.value = false
+  date = new Date(date.setDate(date.getDate() - 7))
   activeDate.value = date
-  activeDays.value = new Date(
-    date.getFullYear(),
-    date.getMonth() + 1,
-    0,
-  ).getDate()
-  // console.log(date.getMonth())
-  // console.log(activeDays)
 }
 
-function dayOfWeek(d: number) {
-  var date = new Date(
-    activeDate.value.getFullYear(),
-    activeDate.value.getMonth(),
-    d,
-  )
-  return new Date(
-    activeDate.value.getFullYear(),
-    activeDate.value.getMonth(),
-    d,
-  )
+function dayOfWeek(curDate: any, d: number) {
+  return new Date(curDate)
     .toLocaleDateString('fr-FR', {
-      weekday: 'long',
+      weekday: 'short',
     })
     .toString()
     .toLocaleUpperCase()
@@ -440,17 +417,17 @@ function checkEmptyPlanning(h: any) {
   }
 }
 
-function totalPerHour(h: any, isProg: boolean, progId:string) {
+function totalPerHour(h: any, isProg: boolean, progId: string) {
   var plannedSpots = data.value?.data?.plannings?.filter(
-    (p: any) => (p.isTvProgram == true
-        ? p.tvProgram._id == progId : true) &&
+    (p: any) =>
+      (p.isTvProgram == true ? p.tvProgram._id == progId : true) &&
       moment(p.date).format('M/yyyy HH:mm') ==
-      activeDate.value.getMonth() +
-        1 +
-        '/' +
-        activeDate.value.getFullYear() +
-        ' ' +
-        (isProg == true ? '01:00' : h.name),
+        activeDate.value.getMonth() +
+          1 +
+          '/' +
+          activeDate.value.getFullYear() +
+          ' ' +
+          (isProg == true ? '01:00' : h.name),
   )
   return plannedSpots.length
 }
@@ -1074,473 +1051,343 @@ const onSubmit = handleSubmit(
 
 <template>
   <div>
-    <div>
-      <div class="flex w-full flex-col mb-10">
-        <BaseAvatar
-          :src="data?.data?.announcer?.logo ?? '/img/avatars/company.svg'"
-          :badge-src="data?.data?.announcer?.logo"
-          size="2xl"
-          class="mx-auto"
-        />
-        <div class="mx-auto w-full max-w-4xl text-center">
-          <BaseHeading tag="h2" size="xl" weight="medium" class="mt-4">
-            {{ data?.data?.announcer?.name }}
-          </BaseHeading>
-          <div
-            class="divide-muted-200 dark:divide-muted-800 flex items-center justify-center divide-x"
+    <TairoContentWrapper>
+      <div id="planningPrint" class="overflow-auto">
+        <div
+          v-if="isPrintPlanning == true || isPrintCertificate == true"
+          class="items-center border-b-2 py-1"
+        >
+          <div shape="straight" class="">
+            <img class="h-32 fit-content" :src="data?.data?.org?.logo ?? ''" />
+          </div>
+          <div shape="straight" class="border border-t-1"></div>
+          <h3
+            class="font-heading text-muted-900 text-base font-medium py-2 leading-6 dark:text-white"
           >
-            <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
-              <Icon name="ph:globe" class="h-5 w-5" />
-              <BaseText size="sm"
-                >Email: {{ data?.data?.announcer?.email }}</BaseText
-              >
-            </div>
+            {{
+              isPrintPlanning == true
+                ? 'PLANNING DE DIFFUSION'
+                : 'CERTIFICAT DE DIFFUSION'
+            }}
+          </h3>
+        </div>
+        <div class="flex justify-between items-center p-2">
+          <BaseText size="md"
+            >MOIS :
+            <span class="text-primary-500 toUppercase"
+              >{{ formatter.format(activeDate) }}
+              {{ activeDate.getFullYear() }}</span
+            ></BaseText
+          >
 
-            <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
-              <Icon name="ph:globe" class="h-5 w-5" />
-              <BaseText size="sm"
-                >Pays: {{ data?.data?.announcer.country?.name }}</BaseText
-              >
-            </div>
-
-            <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
-              <Icon name="ph:globe" class="h-5 w-5" />
-              <BaseText size="sm"
-                >Adresse: {{ data?.data?.announcer?.address }}</BaseText
-              >
-            </div>
-
-            <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
-              <Icon name="ph:phone" class="h-5 w-5" />
-              <BaseText size="sm">{{
-                data?.data?.order?.announcer?.phone
-              }}</BaseText>
-            </div>
+          <div v-if="isPrintPlanning == false && isPrintCertificate == false">
+            <BaseButton
+              @click="removeWeek()"
+              color="primary"
+              class="w-full sm:w-20"
+            >
+              <Icon name="lucide:chevron-left" class="h-6 w-6" />
+              <span></span>
+            </BaseButton>
+            <BaseButton
+              @click="addWeek()"
+              color="primary"
+              class="w-full sm:w-20 mx-2"
+            >
+              <Icon name="lucide:chevron-right" class="h-6 w-6" />
+              <span></span>
+            </BaseButton>
           </div>
         </div>
-      </div>
-    </div>
-    <TairoContentWrapper>
-      <template #left>
-        <BaseInput
-          v-model="filter"
-          icon="lucide:search"
-          placeholder="Filtre produit..."
-          :classes="{
-            wrapper: 'w-full sm:w-auto',
-          }"
-        />
-      </template>
-      <template #right>
-        <BaseSelect
-          v-model="perPage"
-          label=""
-          :classes="{
-            wrapper: 'w-full sm:w-40',
-          }"
-        >
-          <option :value="10">10 per page</option>
-          <option :value="25">25 per page</option>
-          <option :value="50">50 per page</option>
-          <option :value="100">100 per page</option>
-        </BaseSelect>
-        <BaseButton
-          @click="openAllPlanning()"
-          color="primary"
-          class="w-full sm:w-40"
-        >
-          <Icon name="lucide:calendar" class="h-4 w-4" />
-          <span>Planning</span>
-        </BaseButton>
-        <BaseButton
-          @click=";(isModalNewSpotOpen = true), (isEdit = false)"
-          color="primary"
-          class="w-full sm:w-48"
-          :disabled="
-            authStore.user.appRole.name != UserRole.sale &&
-            authStore.user.appRole.name != UserRole.mediaPlanner &&
-            authStore.user.appRole.name != UserRole.superAdmin
+
+        <div
+          class="grid grid-cols-12 gap-2 pb-5 px-2"
+          :class="
+            isPrintPlanning == false && isPrintCertificate == false
+              ? 'h-[550px]'
+              : ''
           "
         >
-          <Icon name="lucide:plus" class="h-4 w-4" />
-          <span>Nouveau Produit</span>
-        </BaseButton>
-        <BaseButton
-          data-tooltip="Raffraichir la page"
-          color="primary"
-          class="w-full sm:w-16"
-          @click="refresh"
-        >
-          <Icon name="ph:arrows-clockwise" class="h-6 w-6" />
-          <span></span>
-        </BaseButton>
-      </template>
-      <div class="grid grid-cols-12 gap-4 pb-5">
-        <!-- Stat tile -->
-        <div class="col-span-12 md:col-span-3">
-          <BaseCard class="p-4">
-            <div class="mb-1 flex items-center justify-between">
-              <BaseHeading
-                as="h5"
-                size="sm"
-                weight="medium"
-                lead="tight"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <span>Total Commandés</span>
-              </BaseHeading>
-              <BaseIconBox
-                size="xs"
-                class="bg-success-100 text-success-500 dark:bg-success-500/20 dark:text-success-400 dark:border-success-500 dark:border-2"
-                shape="full"
-              >
-                <Icon name="ph:money" class="h-5 w-5" />
-              </BaseIconBox>
+          <!-- Stat tile -->
+          <div class="col-span-6 md:col-span-1">
+            <BaseCard class="space-y-2 items-center">
+              <div class="border-b-2">
+                <BaseHeading
+                  as="h4"
+                  size="sm"
+                  weight="light"
+                  lead="tight"
+                  class="text-muted-800 dark:text-white pb-2 pt-2 text-center"
+                >
+                  <span>Jours</span>
+                </BaseHeading>
+              </div>
+
+              <div class="border-b-2">
+                <BaseHeading
+                  as="h4"
+                  size="sm"
+                  weight="light"
+                  lead="tight"
+                  class="text-muted-800 dark:text-white pb-2 pt-2 text-center"
+                >
+                  <span>Horaires</span>
+                </BaseHeading>
+              </div>
+              <div v-for="h in hoursData" :key="h._id">
+                <div v-if="checkEmptyPlanning(h)" class="border-b-2">
+                  <BaseHeading
+                    as="h4"
+                    size="sm"
+                    weight="light"
+                    lead="tight"
+                    class="text-muted-800 !h-20 dark:text-white pb-2 pt-2 text-center"
+                  >
+                    <span>{{ h.name }}</span>
+                  </BaseHeading>
+                </div>
+              </div>
+              <div>
+                <div class="border-b-2">
+                  <BaseHeading
+                    as="h4"
+                    size="sm"
+                    weight="light"
+                    lead="tight"
+                    class="text-muted-800 dark:text-white pb-2 pt-2 text-center"
+                  >
+                    <span>Total</span>
+                  </BaseHeading>
+                </div>
+              </div>
+            </BaseCard>
+          </div>
+          <div class="col-span-6 md:col-span-11">
+            <BaseCard class="space-y-0 items-center">
+              <div class="border-b-2 flex justify-start">
+                <BaseHeading
+                  v-for="curDate in weekDates(activeDate)"
+                  :key="curDate"
+                  as="h5"
+                  size="sm"
+                  weight="light"
+                  lead="tight"
+                  class="text-muted-800 dark:text-white pb-2 pt-2 !w-40 flex justify-center border-r"
+                >
+                  <span class="text-center px-auto pr-2"
+                    >{{ dayOfWeek(curDate, curDate.getDate()) }}
+                    {{ curDate.getDate() }} {{ formatter.format(curDate) }}
+                  </span>
+                </BaseHeading>
+                <div
+                  class="text-muted-800 dark:text-white pb-2 pt-2 !w-10 flex justify-center border-r"
+                >
+                  <span class="text-center text-[10px] px-auto pr-1"
+                    >Total
+                  </span>
+                </div>
+              </div>
+
+              <div class="border-b-2 flex justify-start">
+                <BaseHeading
+                  v-for="d in activeDays"
+                  :key="d"
+                  as="h4"
+                  size="sm"
+                  weight="light"
+                  lead="tight"
+                  class="text-muted-800 dark:text-white pb-2 !w-40 flex justify-center border-r"
+                >
+                  <span class="text-center py-2"> # </span>
+                </BaseHeading>
+                <BaseHeading
+                  as="h4"
+                  size="sm"
+                  weight="light"
+                  lead="tight"
+                  class="text-muted-800 dark:text-white pb-2 !w-10 flex justify-center border-r"
+                >
+                  <span class="text-center py-2"> # </span>
+                </BaseHeading>
+              </div>
+
+              <div v-for="h in hoursData" :key="h._id" class="">
+                <div
+                  v-if="checkEmptyPlanning(h)"
+                  class="border-b-2 flex justify-start"
+                >
+                  <div
+                    v-for="d in activeDays"
+                    :key="d"
+                    class="text-muted-800 dark:text-white -mt-1 !h-[92px] !w-40 flex justify-center items-center border-r"
+                  >
+                    <BaseButton
+                      :title="dayOfWeek(d) + ' LE ' + d + ' A ' + h.name"
+                      @click="
+                        openSpotPlanningModal(
+                          d.toString(),
+                          h,
+                          spotData[h.code][d - 1][2],
+                        )
+                      "
+                      :color="spotData[h.code][d - 1][1]"
+                      class="!w-6 !h-[2.106em] rounded-full !px-1 !my-2"
+                    >
+                      <span class="hover:text-primary-500/90 text-base"
+                        >{{ spotData[h.code][d - 1][0] }}
+                      </span>
+                      <span
+                        v-if="spotData[h.code][d - 1][3] > 1"
+                        class="text-[10px] pr-1 text-gray-900"
+                        >{{ spotData[h.code][d - 1][3] }}
+                      </span>
+                    </BaseButton>
+                  </div>
+                  <div
+                    class="text-muted-800 dark:text-white -mt-1 !w-10 flex justify-center items-center border-r"
+                  >
+                    {{ totalPerHour(h, false, '') }}
+                  </div>
+                </div>
+              </div>
+              <div class="border-b-2 flex justify-start">
+                <BaseHeading
+                  v-for="d in activeDays"
+                  :key="d"
+                  as="h4"
+                  size="sm"
+                  weight="light"
+                  lead="tight"
+                  class="text-muted-800 dark:text-white pb-2 !w-40 flex justify-center border-r"
+                >
+                  <span class="text-center py-2"> # </span>
+                </BaseHeading>
+                <BaseHeading
+                  as="h4"
+                  size="sm"
+                  weight="light"
+                  lead="tight"
+                  class="text-muted-900 dark:text-white pb-2 !w-10 flex justify-center border-r"
+                >
+                  <span class="text-center py-2"> {{ totalPerMonth() }} </span>
+                </BaseHeading>
+              </div>
+            </BaseCard>
+            <div v-if="true" class="flex justify-between py-4">
+              <div class="text-xs">
+                <p class="py-2">
+                  NB: (Difusé:
+                  <span class="px-1 text-primary-500"> E </span>; En attente de
+                  diffusion: <span class="px-1 text-yellow-500"> E </span>; Non
+                  difusé: <span class="px-1 text-red-500"> E </span>)
+                </p>
+                <p class="pt-2">
+                  Ce document dûment signé et cacheté par le support tient lieu
+                  de justificatif.
+                </p>
+                <p>
+                  Douala le,
+                  {{ new Date(Date.now()).toLocaleDateString('fr-FR') }}
+                </p>
+              </div>
+              <div class="flex px-2">
+                <div shape="straight" class="pr-10">
+                  <BaseHeading
+                    as="h4"
+                    size="sm"
+                    weight="semibold"
+                    lead="tight"
+                    class="text-muted-800 mb-2 text-center dark:text-white"
+                  >
+                    VISA RP
+                  </BaseHeading>
+                  <img
+                    v-if="isPrintPlanning || isPrintCertificate"
+                    class="h-28 fit-content"
+                    src=""
+                  />
+                </div>
+              </div>
             </div>
-            <div class="mb-2">
-              <BaseHeading
-                as="h4"
-                size="2xl"
-                weight="bold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>{{ data?.data?.quantities }}</span>
-              </BaseHeading>
-            </div>
-            <div
-              class="text-success-500 flex items-center gap-1 font-sans text-sm"
-            >
-              <span>+0%</span>
-              <Icon name="lucide:trending-up" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">en hausse</span>
-            </div>
-          </BaseCard>
-        </div>
-        <!-- Stat tile -->
-        <div class="col-span-12 md:col-span-3">
-          <BaseCard class="p-4">
-            <div class="mb-1 flex items-center justify-between">
-              <BaseHeading
-                as="h5"
-                size="sm"
-                weight="medium"
-                lead="tight"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <span>Total diffusés</span>
-              </BaseHeading>
-              <BaseIconBox
-                size="xs"
-                class="bg-yellow-100 text-yellow-500 dark:border-2 dark:border-yellow-500 dark:bg-yellow-500/20 dark:text-yellow-400"
-                shape="full"
-              >
-                <Icon name="ph:money" class="h-5 w-5" />
-              </BaseIconBox>
-            </div>
-            <div class="mb-2">
-              <BaseHeading
-                as="h4"
-                size="2xl"
-                weight="bold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>{{ data?.data?.numberPlay ?? 0 }}</span>
-              </BaseHeading>
-            </div>
-            <div
-              class="text-danger-500 flex items-center gap-1 font-sans text-sm"
-            >
-              <span>-0%</span>
-              <Icon name="lucide:trending-down" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">en baisse</span>
-            </div>
-          </BaseCard>
-        </div>
-        <!-- Stat tile -->
-        <div class="col-span-12 md:col-span-3">
-          <BaseCard class="p-4">
-            <div class="mb-1 flex items-center justify-between">
-              <BaseHeading
-                as="h5"
-                size="sm"
-                weight="medium"
-                lead="tight"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <span>Total attentes</span>
-              </BaseHeading>
-              <BaseIconBox
-                size="xs"
-                class="bg-yellow-100 text-yellow-500 dark:border-2 dark:border-yellow-500 dark:bg-yellow-500/20 dark:text-yellow-400"
-                shape="full"
-              >
-                <Icon name="ph:money" class="h-5 w-5" />
-              </BaseIconBox>
-            </div>
-            <div class="mb-2">
-              <BaseHeading
-                as="h4"
-                size="2xl"
-                weight="bold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>0</span>
-              </BaseHeading>
-            </div>
-            <div
-              class="text-danger-500 flex items-center gap-1 font-sans text-sm"
-            >
-              <span>0%</span>
-              <Icon name="lucide:trending-down" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">en baisse</span>
-            </div>
-          </BaseCard>
-        </div>
-        <!-- Stat tile -->
-        <div class="col-span-12 md:col-span-3">
-          <BaseCard class="p-4">
-            <div class="mb-1 flex items-center justify-between">
-              <BaseHeading
-                as="h5"
-                size="sm"
-                weight="medium"
-                lead="tight"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <span>Total non diffusés</span>
-              </BaseHeading>
-              <BaseIconBox
-                size="xs"
-                class="bg-primary-100 text-primary-500 dark:bg-primary-500/20 dark:text-primary-400 dark:border-primary-500 dark:border-2"
-                shape="full"
-              >
-                <Icon name="ph:money" class="h-5 w-5" />
-              </BaseIconBox>
-            </div>
-            <div class="mb-2">
-              <BaseHeading
-                as="h4"
-                size="2xl"
-                weight="bold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>0</span>
-              </BaseHeading>
-            </div>
-            <div
-              class="text-success-500 flex items-center gap-1 font-sans text-sm"
-            >
-              <span>+0%</span>
-              <Icon name="lucide:trending-up" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">en hausse</span>
-            </div>
-          </BaseCard>
+          </div>
         </div>
       </div>
       <div>
-        <div v-if="!pending && data?.data?.products?.length === 0">
-          <BasePlaceholderPage
-            title="No matching results"
-            subtitle="Looks like we couldn't find any matching results for your search terms. Try other search terms."
-          >
-            <template #image>
-              <img
-                class="block dark:hidden"
-                src="/img/illustrations/placeholders/flat/placeholder-search-4.svg"
-                alt="Placeholder image"
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="captureContent('Planning')">
+              <Icon
+                name="lucide:camera"
+                class="pointer-events-none h-4 w-4 mx-2"
               />
-              <img
-                class="hidden dark:block"
-                src="/img/illustrations/placeholders/flat/placeholder-search-4-dark.svg"
-                alt="Placeholder image"
+              Début Capture Planning</BaseButton
+            >
+            <BaseButton @click="captureContent('Certificate')">
+              <Icon
+                name="lucide:camera"
+                class="pointer-events-none h-4 w-4 mx-2"
               />
-            </template>
-          </BasePlaceholderPage>
-        </div>
-        <div v-else>
-          <div class="w-full">
-            <TairoTable shape="rounded">
-              <template #header>
-                <TairoTableHeading uppercase spaced class="p-4">
-                  <div class="flex items-center">
-                    <BaseCheckbox
-                      :model-value="isAllVisibleSelected"
-                      :indeterminate="
-                        selected.length > 0 && !isAllVisibleSelected
-                      "
-                      name="table-1-main"
-                      shape="rounded"
-                      class="text-primary-500"
-                      @click="toggleAllVisibleSelection"
-                    />
-                  </div>
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Produit
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced
-                  >Titre du message</TairoTableHeading
-                >
+              Debut Capture Certificat</BaseButton
+            >
+            <BaseButton @click="printPlanning('planning')">
+              <Icon
+                name="lucide:printer"
+                class="pointer-events-none h-4 w-4 mx-2"
+              />
+              Planning</BaseButton
+            >
+            <BaseButton @click="printPlanning('certificate')">
+              <Icon
+                name="lucide:printer"
+                class="pointer-events-none h-4 w-4 mx-2"
+              />
+              Certificat de diffusion</BaseButton
+            >
+            <BaseButton @click="isModalAddTvProgramOpen = true">
+              <Icon
+                name="lucide:plus"
+                class="pointer-events-none h-4 w-4 mx-2"
+              />
+              Emission</BaseButton
+            >
 
-                <TairoTableHeading uppercase spaced>Tag</TairoTableHeading>
-
-                <TairoTableHeading uppercase spaced>Type</TairoTableHeading>
-
-                <TairoTableHeading uppercase spaced>Durée(S)</TairoTableHeading>
-
-                <TairoTableHeading uppercase spaced>Fichier</TairoTableHeading>
-
-                <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
-              </template>
-
-              <TairoTableRow v-if="selected.length > 0" :hoverable="false">
-                <TairoTableCell
-                  colspan="6"
-                  class="bg-success-100 text-success-700 dark:bg-success-700 dark:text-success-100 p-4"
-                >
-                  You have selected {{ selected.length }} items of the total
-                  {{ data?.total }} items.
-                  <a
-                    href="#"
-                    class="outline-none hover:underline focus:underline"
-                    >Click here to everything</a
-                  >
-                </TairoTableCell>
-              </TairoTableRow>
-
-              <TairoTableRow
-                v-for="item in data?.data?.products"
-                :key="item.id"
+            <!-- <BaseButton
+              :color="data.data?.validator ? 'success' : 'warning'"
+              flavor="solid"
+              :disabled="
+                authStore.user?.appRole?.name != UserRole.superAdmin &&
+                authStore.user?.appRole?.name != UserRole.mediaPlanner
+              "
+              @click="isModalConfirmPlanningOpen = true"
+            >
+              {{
+                data.data?.validator ? 'Planning validé' : 'Valider le planning'
+              }}
+            </BaseButton> -->
+            <div
+              v-if="
+                isCapturePageCertificate == true ||
+                isCapturePagePlanning == true
+              "
+            >
+              <BaseButton
+                @click="removeWeek()"
+                color="primary"
+                class="w-full sm:w-20"
               >
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <BaseCheckbox
-                      v-model="selected"
-                      :value="item.id"
-                      :name="`item-checkbox-${item.id}`"
-                      shape="rounded"
-                      class="text-primary-500"
-                    />
-                  </div>
-                </TairoTableCell>
-
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
-                      {{ item.date }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
-                      {{ item.product }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
-                      {{ item.message }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <BaseTag
-                      color="info"
-                      flavor="pastel"
-                      shape="full"
-                      condensed
-                      class="font-medium"
-                    >
-                      {{ item.tag }}
-                    </BaseTag>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <BaseTag
-                      color="info"
-                      flavor="pastel"
-                      shape="full"
-                      condensed
-                      class="font-medium"
-                    >
-                      {{ item.type }}
-                    </BaseTag>
-                  </div>
-                </TairoTableCell>
-
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
-                      {{ item.duration ?? '50s' }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <a
-                    v-if="item.file"
-                    class="mx-1 text-white bg-muted-600 p-2 rounded"
-                    :href="'/' + item.file"
-                    target="_blank"
-                    >Visualiser</a
-                  >
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex">
-                    <BaseButtonAction
-                      :disabled="
-                        authStore.user.appRole.name != UserRole.sale &&
-                        authStore.user.appRole.name != UserRole.broadcast &&
-                        authStore.user.appRole.name != UserRole.superAdmin
-                      "
-                      @click="openProductFileModal(item)"
-                      class="mx-2"
-                      muted
-                    >
-                      <Icon name="lucide:upload" class="h-4 w-4"
-                    /></BaseButtonAction>
-                    <BaseButtonAction
-                      :disabled="
-                        authStore.user.appRole.name != UserRole.sale &&
-                        authStore.user.appRole.name != UserRole.mediaPlanner &&
-                        authStore.user.appRole.name != UserRole.superAdmin
-                      "
-                      @click="editSpot(item)"
-                    >
-                      <Icon name="lucide:edit" class="h-4 w-4"
-                    /></BaseButtonAction>
-                    <BaseButtonAction
-                      @click="confirmDeleteSpot(item)"
-                      class="mx-2"
-                      :disabled="
-                        authStore.user.appRole.name != UserRole.sale &&
-                        authStore.user.appRole.name != UserRole.mediaPlanner &&
-                        authStore.user.appRole.name != UserRole.superAdmin
-                      "
-                    >
-                      <Icon name="lucide:trash" class="h-4 w-4 text-red-500"
-                    /></BaseButtonAction>
-                  </div>
-                </TairoTableCell>
-              </TairoTableRow>
-            </TairoTable>
-          </div>
-          <div class="mt-6">
-            <BasePagination
-              :total-items="data?.products?.length ?? 0"
-              :item-per-page="perPage"
-              :current-page="page"
-              shape="curved"
-            />
+                <Icon name="lucide:chevron-left" class="h-6 w-6" />
+                <span></span>
+              </BaseButton>
+              <BaseButton
+                @click="addWeek()"
+                color="primary"
+                class="w-full sm:w-20 mx-2"
+              >
+                <Icon name="lucide:chevron-right" class="h-6 w-6" />
+                <span></span>
+              </BaseButton>
+            </div>
           </div>
         </div>
       </div>
@@ -1987,481 +1834,6 @@ const onSubmit = handleSubmit(
       </template>
 
       <!-- Body -->
-      <div id="planningPrint" class="overflow-auto">
-        <div
-          v-if="isPrintPlanning == true || isPrintCertificate == true"
-          class="items-center border-b-2 py-1"
-        >
-          <div shape="straight" class="">
-            <img class="h-32 fit-content" :src="data?.data?.org?.logo ?? ''" />
-          </div>
-          <div shape="straight" class="border border-t-1"></div>
-          <h3
-            class="font-heading text-muted-900 text-base font-medium py-2 leading-6 dark:text-white"
-          >
-            {{
-              isPrintPlanning == true
-                ? 'PLANNING DE DIFFUSION'
-                : 'CERTIFICAT DE DIFFUSION'
-            }}
-          </h3>
-        </div>
-        <div class="flex justify-between items-center p-2">
-          <BaseText size="sm"
-            >Annonceur :
-            <span class="text-primary-500">{{
-              data?.data?.announcer?.name
-            }}</span>
-          </BaseText>
-          <BaseText size="sm"
-            >Produit :
-            <span class="text-primary-500">{{ data?.data?.label ?? '-' }}</span>
-          </BaseText>
-          <BaseText size="md"
-            >Mois :
-            <span class="text-primary-500"
-              >{{ formatter.format(activeDate) }}
-              {{ activeDate.getFullYear() }}</span
-            ></BaseText
-          >
-
-          <BaseText size="sm"
-            >Période :
-            <span class="text-primary-500">{{ data.data?.period }}</span>
-          </BaseText>
-
-          <div v-if="isPrintPlanning == false && isPrintCertificate == false">
-            <BaseButton
-              @click="removeMonth()"
-              color="primary"
-              class="w-full sm:w-20"
-            >
-              <Icon name="lucide:chevron-left" class="h-6 w-6" />
-              <span></span>
-            </BaseButton>
-            <BaseButton
-              @click="addMonth()"
-              color="primary"
-              class="w-full sm:w-20 mx-2"
-            >
-              <Icon name="lucide:chevron-right" class="h-6 w-6" />
-              <span></span>
-            </BaseButton>
-          </div>
-        </div>
-
-        <div class="flex justify-between px-2 pb-2 w-full">
-          <div class="flex justify-start text-sm">
-            LEGENDE :
-            <div v-for="(product, i) in data.data.products" :key="product._id">
-              <span class="px-2">
-                {{ product.tag }} : {{ product.type }} {{ product.message }}
-              </span>
-              |
-            </div>
-          </div>
-          <div class="text-yellow-500">{{ data.data.description }}</div>
-        </div>
-
-        <div
-          class="grid grid-cols-12 gap-2 pb-5 px-2"
-          :class="
-            isPrintPlanning == false && isPrintCertificate == false
-              ? 'h-[550px]'
-              : ''
-          "
-        >
-          <!-- Stat tile -->
-          <div class="col-span-6 md:col-span-1">
-            <BaseCard class="space-y-2 items-center">
-              <div class="border-b-2">
-                <BaseHeading
-                  as="h4"
-                  size="sm"
-                  weight="light"
-                  lead="tight"
-                  class="text-muted-800 dark:text-white pb-2 pt-2 text-center"
-                >
-                  <span>Jours</span>
-                </BaseHeading>
-              </div>
-
-              <div class="border-b-2">
-                <BaseHeading
-                  as="h4"
-                  size="sm"
-                  weight="light"
-                  lead="tight"
-                  class="text-muted-800 dark:text-white pb-3 pt-2 text-center"
-                >
-                  <span class="py-auto">Dates</span>
-                </BaseHeading>
-              </div>
-
-              <div class="border-b-2">
-                <BaseHeading
-                  as="h4"
-                  size="sm"
-                  weight="light"
-                  lead="tight"
-                  class="text-muted-800 dark:text-white pb-2 pt-2 text-center"
-                >
-                  <span>Horaires</span>
-                </BaseHeading>
-              </div>
-              <div v-for="h in hoursData" :key="h._id">
-                <div v-if="checkEmptyPlanning(h)" class="border-b-2">
-                  <BaseHeading
-                    as="h4"
-                    size="sm"
-                    weight="light"
-                    lead="tight"
-                    class="text-muted-800 dark:text-white pb-2 pt-2 text-center"
-                  >
-                    <span>{{ h.name }}</span>
-                  </BaseHeading>
-                </div>
-              </div>
-              <div v-for="tvProg in data.data.tvPrograms" :key="tvProg._id">
-                <div class="border-b-2">
-                  <BaseHeading
-                    as="h4"
-                    size="sm"
-                    weight="light"
-                    lead="tight"
-                    class="text-muted-800 dark:text-white pb-2 pt-2 text-center"
-                  >
-                    <span>{{ tvProg.name }}</span>
-                  </BaseHeading>
-                </div>
-              </div>
-              <div>
-                <div class="border-b-2">
-                  <BaseHeading
-                    as="h4"
-                    size="sm"
-                    weight="light"
-                    lead="tight"
-                    class="text-muted-800 dark:text-white pb-2 pt-2 text-center"
-                  >
-                    <span>Total</span>
-                  </BaseHeading>
-                </div>
-              </div>
-            </BaseCard>
-          </div>
-          <div class="col-span-6 md:col-span-11">
-            <BaseCard class="space-y-0 items-center">
-              <div class="border-b-2 flex justify-start">
-                <BaseHeading
-                  v-for="d in activeDays"
-                  :key="d"
-                  as="h4"
-                  size="sm"
-                  weight="light"
-                  lead="tight"
-                  class="text-muted-800 dark:text-white pb-2 pt-2 !w-10 flex justify-center border-r"
-                >
-                  <span class="text-center px-auto pr-2"
-                    >{{ dayOfWeek(d)[0] }}
-                  </span>
-                </BaseHeading>
-                <div
-                  class="text-muted-800 dark:text-white pb-2 pt-2 !w-10 flex justify-center border-r"
-                >
-                  <span class="text-center text-[10px] px-auto pr-1"
-                    >Total
-                  </span>
-                </div>
-              </div>
-              <div class="border-b-2 flex justify-start py-0">
-                <BaseHeading
-                  v-for="d in activeDays"
-                  :key="d"
-                  as="h4"
-                  size="sm"
-                  weight="light"
-                  lead="tight"
-                  class="text-muted-800 dark:text-white pb-2 pt-1 !w-10 border-r flex justify-center"
-                >
-                  <span class="text-center py-2">{{ d }}</span>
-                </BaseHeading>
-                <BaseHeading
-                  as="h4"
-                  size="sm"
-                  weight="light"
-                  lead="tight"
-                  class="text-muted-800 dark:text-white pb-2 pt-1 !w-10 border-r flex justify-center"
-                >
-                  <span class="text-center py-2">#</span>
-                </BaseHeading>
-              </div>
-
-              <div class="border-b-2 flex justify-start">
-                <BaseHeading
-                  v-for="d in activeDays"
-                  :key="d"
-                  as="h4"
-                  size="sm"
-                  weight="light"
-                  lead="tight"
-                  class="text-muted-800 dark:text-white pb-2 !w-10 flex justify-center border-r"
-                >
-                  <span class="text-center py-2"> # </span>
-                </BaseHeading>
-                <BaseHeading
-                  as="h4"
-                  size="sm"
-                  weight="light"
-                  lead="tight"
-                  class="text-muted-800 dark:text-white pb-2 !w-10 flex justify-center border-r"
-                >
-                  <span class="text-center py-2"> # </span>
-                </BaseHeading>
-              </div>
-
-              <div v-for="h in hoursData" :key="h._id" class="">
-                <div
-                  v-if="checkEmptyPlanning(h)"
-                  class="border-b-2 flex justify-start"
-                >
-                  <div
-                    v-for="d in activeDays"
-                    :key="d"
-                    class="text-muted-800 dark:text-white -mt-1 !w-10 flex justify-center items-center border-r"
-                  >
-                    <BaseButton
-                      :title="dayOfWeek(d) + ' LE ' + d + ' A ' + h.name"
-                      @click="
-                        openSpotPlanningModal(
-                          d.toString(),
-                          h,
-                          spotData[h.code][d - 1][2],
-                        )
-                      "
-                      :color="spotData[h.code][d - 1][1]"
-                      class="!w-6 !h-[2.106em] rounded-full !px-1 !my-2"
-                    >
-                      <span class="hover:text-primary-500/90 text-base"
-                        >{{ spotData[h.code][d - 1][0] }}
-                      </span>
-                      <span
-                        v-if="spotData[h.code][d - 1][3] > 1"
-                        class="text-[10px] pr-1 text-gray-900"
-                        >{{ spotData[h.code][d - 1][3] }}
-                      </span>
-                    </BaseButton>
-                  </div>
-                  <div
-                    class="text-muted-800 dark:text-white -mt-1 !w-10 flex justify-center items-center border-r"
-                  >
-                    {{ totalPerHour(h, false, '') }}
-                  </div>
-                </div>
-              </div>
-              <div
-                v-for="prog in data.data.tvPrograms"
-                :key="prog._id"
-                class=""
-              >
-                <div class="border-b-2 flex justify-start">
-                  <div
-                    v-for="d in activeDays"
-                    :key="d"
-                    class="text-muted-800 dark:text-white -mt-1 !w-10 flex justify-center items-center border-r"
-                  >
-                    <BaseButton
-                      :title="dayOfWeek(d) + ' LE ' + d"
-                      @click="openSpotPlanningModalProg(d.toString(), prog, tvProgramData[prog._id][d - 1][2])"
-                      :color="tvProgramData[prog._id][d - 1][1]"
-                      class="!w-6 !h-[2.106em] rounded-full !px-1 !my-2"
-                    >
-                      <span class="hover:text-primary-500/90 text-base"
-                        >{{ tvProgramData[prog._id][d - 1][0] }}
-                      </span>
-                      <span
-                        v-if="tvProgramData[prog._id][d - 1][3] > 1"
-                        class="text-[10px] pr-1 text-gray-900"
-                        >{{ tvProgramData[prog._id][d - 1][3] }}
-                      </span>
-                    </BaseButton>
-                  </div>
-                  <div
-                    class="text-muted-800 dark:text-white -mt-1 !w-10 flex justify-center items-center border-r"
-                  >
-                    {{ totalPerHour('01:00', true, prog._id) }}
-                  </div>
-                </div>
-              </div>
-              <div class="border-b-2 flex justify-start">
-                <BaseHeading
-                  v-for="d in activeDays"
-                  :key="d"
-                  as="h4"
-                  size="sm"
-                  weight="light"
-                  lead="tight"
-                  class="text-muted-800 dark:text-white pb-2 !w-10 flex justify-center border-r"
-                >
-                  <span class="text-center py-2"> # </span>
-                </BaseHeading>
-                <BaseHeading
-                  as="h4"
-                  size="sm"
-                  weight="light"
-                  lead="tight"
-                  class="text-muted-900 dark:text-white pb-2 !w-10 flex justify-center border-r"
-                >
-                  <span class="text-center py-2"> {{ totalPerMonth() }} </span>
-                </BaseHeading>
-              </div>
-            </BaseCard>
-            <div v-if="true" class="flex justify-between py-4">
-              <div class="text-xs">
-                <p class="py-2">
-                  NB: (Difusé:
-                  <span class="px-1 text-primary-500"> SPOT </span>; En attente
-                  de diffusion:
-                  <span class="px-1 text-yellow-500"> SPOT </span>; Non difusé:
-                  <span class="px-1 text-red-500"> SPOT </span>)
-                </p>
-                <p class="pt-2">
-                  Ce document dûment signé et cacheté par le support tient lieu
-                  de justificatif.
-                </p>
-                <p>
-                  Douala le,
-                  {{ new Date(Date.now()).toLocaleDateString('fr-FR') }}
-                </p>
-              </div>
-              <div class="flex px-2">
-                <div shape="straight" class="pr-10">
-                  <BaseHeading
-                    as="h4"
-                    size="sm"
-                    weight="semibold"
-                    lead="tight"
-                    class="text-muted-800 mb-2 text-center dark:text-white"
-                  >
-                    VISA RC
-                  </BaseHeading>
-                  <img
-                    v-if="
-                      data.data.validatorSignature &&
-                      (isPrintPlanning || isPrintCertificate)
-                    "
-                    class="h-28 fit-content"
-                    :src="data.data.validatorSignature"
-                  />
-                </div>
-                <div
-                  v-if="data.data.validatorSignature"
-                  shape="straight"
-                  class="mx-2"
-                >
-                  <BaseHeading
-                    as="h4"
-                    size="sm"
-                    weight="semibold"
-                    lead="tight"
-                    class="text-muted-800 mb-2 text-center dark:text-white"
-                  >
-                    VISA MP
-                  </BaseHeading>
-                  <img
-                    v-if="
-                      data.data.validatorSignature &&
-                      (isPrintPlanning || isPrintCertificate)
-                    "
-                    class="h-28 fit-content"
-                    :src="data.data.planningValidatorSignature"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <template #footer>
-        <!-- Footer -->
-        <div class="p-4 md:p-6">
-          <div class="flex gap-x-2">
-            <BaseButton @click="isModalPlanningOpen = false">Fermer</BaseButton>
-            <BaseButton @click="captureContent('Planning')">
-              <Icon
-                name="lucide:camera"
-                class="pointer-events-none h-4 w-4 mx-2"
-              />
-              Début Capture Planning</BaseButton
-            >
-            <BaseButton @click="captureContent('Certificate')">
-              <Icon
-                name="lucide:camera"
-                class="pointer-events-none h-4 w-4 mx-2"
-              />
-              Debut Capture Certificat</BaseButton
-            >
-            <BaseButton @click="printPlanning('planning')">
-              <Icon
-                name="lucide:printer"
-                class="pointer-events-none h-4 w-4 mx-2"
-              />
-              Planning</BaseButton
-            >
-            <BaseButton @click="printPlanning('certificate')">
-              <Icon
-                name="lucide:printer"
-                class="pointer-events-none h-4 w-4 mx-2"
-              />
-              Certificat de diffusion</BaseButton
-            >
-            <BaseButton @click="isModalAddTvProgramOpen = true">
-              <Icon
-                name="lucide:plus"
-                class="pointer-events-none h-4 w-4 mx-2"
-              />
-              Emission</BaseButton
-            >
-
-            <BaseButton
-              :color="data.data?.validator ? 'success' : 'warning'"
-              flavor="solid"
-              :disabled="
-                authStore.user?.appRole?.name != UserRole.superAdmin &&
-                authStore.user?.appRole?.name != UserRole.mediaPlanner
-              "
-              @click="isModalConfirmPlanningOpen = true"
-            >
-              {{
-                data.data?.validator ? 'Planning validé' : 'Valider le planning'
-              }}
-            </BaseButton>
-            <div
-              v-if="
-                isCapturePageCertificate == true ||
-                isCapturePagePlanning == true
-              "
-            >
-              <BaseButton
-                @click="removeMonth()"
-                color="primary"
-                class="w-full sm:w-20"
-              >
-                <Icon name="lucide:chevron-left" class="h-6 w-6" />
-                <span></span>
-              </BaseButton>
-              <BaseButton
-                @click="addMonth()"
-                color="primary"
-                class="w-full sm:w-20 mx-2"
-              >
-                <Icon name="lucide:chevron-right" class="h-6 w-6" />
-                <span></span>
-              </BaseButton>
-            </div>
-          </div>
-        </div>
-      </template>
     </TairoModal>
 
     <!-- Modal confirm planning -->
