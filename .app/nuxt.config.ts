@@ -82,6 +82,13 @@ export default defineNuxtConfig({
     },
     build: {
       target: 'esnext',
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vue3-apexcharts': ['vue3-apexcharts'],
+          },
+        },
+      },
     },
   },
 
