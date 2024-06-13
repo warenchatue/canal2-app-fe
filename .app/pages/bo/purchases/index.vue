@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { Field } from 'vee-validate'
+import { Field } from 'vee-validate';
 
-import 'v-calendar/dist/style.css'
-import '~/assets/css/vcalendar.css'
-import { UserRole } from '~/types/user'
+import 'v-calendar/dist/style.css';
+import '~/assets/css/vcalendar.css';
+import { UserRole } from '~/types/user';
 
 definePageMeta({
   title: 'Tableau de bord Ventes',
@@ -29,7 +29,6 @@ const toaster = useToaster()
 // Check if can have access
 if (
   authStore.user.appRole?.name != UserRole.billing &&
-  authStore.user.appRole?.name != UserRole.adminSale &&
   authStore.user.appRole?.name != UserRole.admin &&
   authStore.user.appRole?.name != UserRole.accountancy &&
   authStore.user.appRole?.name != UserRole.superAdmin
