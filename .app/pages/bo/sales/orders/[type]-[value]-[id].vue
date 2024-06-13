@@ -622,7 +622,7 @@ async function filterItems(query?: string, items?: any[]) {
   const queryLightByName = computed(() => {
     return {
       filter: filter.value,
-      perPage: perPage.value,
+      perPage: 10000,
       page: page.value,
       action: 'findAllLightByName',
       name: query,

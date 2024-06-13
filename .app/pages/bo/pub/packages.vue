@@ -106,13 +106,13 @@ const { data, pending, refresh } = await useFetch('/api/pub/packages', {
   lazy: true,
 })
 
-const { data: announcers, pending: pendingAnnouncer } = await useFetch(
-  '/api/sales/announcers',
-  {
-    query: queryLight,
-    lazy: true,
-  },
-)
+// const { data: announcers, pending: pendingAnnouncer } = await useFetch(
+//   '/api/sales/announcers',
+//   {
+//     query: queryLight,
+//     lazy: true,
+//   },
+// )
 
 const { data: allInvoices, pending: pendingInvoices } = await useFetch(
   '/api/sales/invoices',
@@ -170,6 +170,34 @@ function confirmDeletePackage(campaign: any) {
   isModalDeletePackageOpen.value = true
   isEdit.value = false
   currentPackage.value = campaign
+}
+
+async function filterAnnouncersItems(query?: string, items?: any[]) {
+  if (query.length < 3) {
+    return []
+  }
+
+  if (!query || !items) {
+    return items ?? []
+  }
+
+  const queryLightByName = computed(() => {
+    return {
+      filter: filter.value,
+      perPage: 10000,
+      page: page.value,
+      action: 'findAllLightByName',
+      name: query,
+      token: token.value,
+    }
+  })
+
+  const { data: announcersData } = await useFetch('/api/sales/announcers', {
+    query: queryLightByName,
+  })
+
+  // search by name
+  return announcersData.value?.data ?? false
 }
 
 function filterItems(query?: string, items?: any[]) {
@@ -1062,9 +1090,9 @@ const onSubmit = handleSubmit(
                         :disabled="isSubmitting || pendingAnnouncer"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
-                        :items="announcers.data"
+                        :items="[]"
                         :display-value="(item: any) => item.name || ''"
-                        :filter-items="filterItems"
+                        :filter-items="filterAnnouncersItems"
                         icon="lucide:file"
                         placeholder="e.g. Canal2 International"
                         label="Annonceur"
