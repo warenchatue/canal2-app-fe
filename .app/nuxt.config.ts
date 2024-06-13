@@ -82,6 +82,7 @@ export default defineNuxtConfig({
     },
     build: {
       target: 'esnext',
+      chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
           manualChunks: {

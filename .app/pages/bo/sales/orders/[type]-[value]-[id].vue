@@ -111,13 +111,13 @@ const { data: allOrders } = await useFetch('/api/sales/orders', {
   query,
 })
 
-const { data: announcers, pending: pendingAnnouncer } = await useFetch(
-  '/api/sales/announcers',
-  {
-    query: queryLight,
-    lazy: false,
-  },
-)
+// const { data: announcers, pending: pendingAnnouncer } = await useFetch(
+//   '/api/sales/announcers',
+//   {
+//     query: queryLight,
+//     lazy: false,
+//   },
+// )
 
 const { data: articles } = await useFetch('/api/sales/articles', {
   query,
@@ -610,7 +610,7 @@ const isAllVisibleSelected = computed(() => {
   return selected.value.length === data.value?.data.length
 })
 
-function filterItems(query?: string, items?: any[]) {
+async function filterItems(query?: string, items?: any[]) {
   if (query.length < 3) {
     return []
   }
@@ -619,13 +619,41 @@ function filterItems(query?: string, items?: any[]) {
     return items ?? []
   }
 
-  // search by name
-  return items.filter((item) => {
-    const nameMatches = item?.name?.toLowerCase().includes(query.toLowerCase())
-    // const textMatches = item?.text?.toLowerCase().includes(query.toLowerCase())
-    return nameMatches
+  const queryLightByName = computed(() => {
+    return {
+      filter: filter.value,
+      perPage: perPage.value,
+      page: page.value,
+      action: 'findAllLightByName',
+      name: query,
+      token: token.value,
+    }
   })
+
+  const { data: announcersData } = await useFetch('/api/sales/announcers', {
+    query: queryLightByName,
+  })
+
+  // search by name
+  return announcersData.value?.data ?? false
 }
+
+// function filterItems(query?: string, items?: any[]) {
+//   if (query.length < 3) {
+//     return []
+//   }
+
+//   if (!query || !items) {
+//     return items ?? []
+//   }
+
+//   // search by name
+//   return items.filter((item) => {
+//     const nameMatches = item?.name?.toLowerCase().includes(query.toLowerCase())
+//     // const textMatches = item?.text?.toLowerCase().includes(query.toLowerCase())
+//     return nameMatches
+//   })
+// }
 
 const currentPackage = ref({})
 
@@ -1711,10 +1739,10 @@ const onSubmit = handleSubmit(
                             <BaseAutocomplete
                               :model-value="field.value"
                               :error="errorMessage"
-                              :disabled="isSubmitting || pendingAnnouncer"
+                              :disabled="isSubmitting"
                               @update:model-value="handleChange"
                               @blur="handleBlur"
-                              :items="announcers?.data"
+                              :items="[]"
                               :display-value="(item: any) => item.name || ''"
                               :filter-items="filterItems"
                               icon="lucide:user"

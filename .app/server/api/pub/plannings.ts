@@ -28,6 +28,7 @@ export default defineEventHandler(async (event) => {
         endDate,
         page,
         perPage,
+        false,
       ),
     }
   } else if (action == 'findAll') {
@@ -42,6 +43,7 @@ export default defineEventHandler(async (event) => {
         endDate,
         page,
         perPage,
+        true,
       ),
     }
   } else if (action == 'findAllStats') {
@@ -56,6 +58,7 @@ export default defineEventHandler(async (event) => {
         endDate,
         page,
         perPage,
+        false,
       ),
     }
   } else if (action == 'createPlanning') {
@@ -86,8 +89,17 @@ function filterData(
   endDate: string,
   page: number,
   perPage: number,
+  isTvProg: boolean,
 ) {
-  data = data.filter((item) => item.product?.package?.validator != null)
+  if (isTvProg == false) {
+    console.log(data)
+    data = data.filter(
+      (item) =>
+        item.isTvProgram == false && item.product?.package?.validator != null,
+    )
+  } else {
+    data = data.filter((item) => item.product?.package?.validator != null)
+  }
   data = data.sort((a: any, b: any) => {
     return a.position < b.position ? -1 : 1
   })
