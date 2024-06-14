@@ -7,6 +7,7 @@ export default defineEventHandler(async (event) => {
   const filter = (query.filter as string) || ''
   const action = (query.action as string) || 'get'
   const id = (query.id as string) || ''
+  const code = (query.code as string) || ''
   const token = (query.token as string) || ''
 
   if (action == 'findOne') {
@@ -18,6 +19,12 @@ export default defineEventHandler(async (event) => {
       total: response.metaData.totalItems,
       metaData: response.metaData,
       data: filterData(response.data, filter, page, perPage),
+    }
+  } else if (action == 'findAllLightByCode') {
+    const data = await findAllLightByCode(code, token)
+    return {
+      total: data.length,
+      data: filterData(data, filter, page, perPage),
     }
   } else if (action == 'createOrder') {
     const body = await readBody(event)
@@ -91,6 +98,23 @@ async function findAll(token: string) {
       'Content-type': 'application/json',
     },
   }).catch((error) => console.log(error))
+  // console.log(data)
+  return Promise.resolve(data)
+}
+
+async function findAllLightByCode(code: string, token: string) {
+  console.log('findAllLightByCode ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/orders/all/by/code?orderCode=' + code,
+    {
+      method: 'get',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
   // console.log(data)
   return Promise.resolve(data)
 }

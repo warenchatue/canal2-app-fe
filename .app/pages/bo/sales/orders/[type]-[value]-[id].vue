@@ -107,9 +107,9 @@ const queryLight = computed(() => {
   }
 })
 
-const { data: allOrders } = await useFetch('/api/sales/orders', {
-  query,
-})
+// const { data: allOrders } = await useFetch('/api/sales/orders', {
+//   query,
+// })
 
 // const { data: announcers, pending: pendingAnnouncer } = await useFetch(
 //   '/api/sales/announcers',
@@ -170,9 +170,9 @@ const commercials = allUsers.value?.data.filter((e: any) => {
   )
 })
 
-const finalOrders = allOrders.value?.data.filter((e: any) => {
-  return e.validator
-})
+// const finalOrders = allOrders.value?.data.filter((e: any) => {
+//   return e.validator
+// })
 
 const pageType = computed(() => route.params.type)
 const pageValue = computed(() => route.params.value)
@@ -220,6 +220,8 @@ if (pageType.value == 'view' || pageType.value == 'edit') {
       packageId.value =
         currentOrderInvoice.value.order?.package?._id ?? undefined
       selectedOrder.value = currentOrderInvoice.value.order
+      selectedOrder.value.id = currentOrderInvoice.value.order._id
+      selectedOrder.value.name = currentOrderInvoice.value.order.code
       editOrderInvoiceFile(currentOrderInvoice.value)
     }
   }
@@ -231,8 +233,23 @@ if (pageType.value == 'view' || pageType.value == 'edit') {
 }
 
 watch(selectedOrder, (value) => {
-  setTimeout(() => {
-    editOrderInvoiceFile(value, true)
+  setTimeout(async () => {
+    const query = computed(() => {
+      return {
+        filter: filter.value,
+        perPage: perPage.value,
+        page: page.value,
+        action: 'findOne',
+        id: value.id!,
+        token: token.value,
+      }
+    })
+    const { data: singleOrder } = await useFetch('/api/sales/orders', {
+      query,
+    })
+    if (singleOrder.value?.success) {
+      editOrderInvoiceFile(singleOrder.value.data, true)
+    }
   }, 500)
 })
 
@@ -631,6 +648,33 @@ async function filterItems(query?: string, items?: any[]) {
   })
 
   const { data: announcersData } = await useFetch('/api/sales/announcers', {
+    query: queryLightByName,
+  })
+
+  // search by name
+  return announcersData.value?.data ?? false
+}
+async function filterOrdersItems(query?: string, items?: any[]) {
+  if (query.length < 3) {
+    return []
+  }
+
+  if (!query || !items) {
+    return items ?? []
+  }
+
+  const queryLightByName = computed(() => {
+    return {
+      filter: filter.value,
+      perPage: 10000,
+      page: page.value,
+      action: 'findAllLightByCode',
+      name: query,
+      token: token.value,
+    }
+  })
+
+  const { data: announcersData } = await useFetch('/api/sales/orders', {
     query: queryLightByName,
   })
 
@@ -1115,7 +1159,7 @@ const onSubmit = handleSubmit(
               paymentCondition: values.order?.paymentCondition?._id,
               announcer: values.order?.announcer?.id,
               manager: values.order?.commercial?._id,
-              order: selectedOrder.value?._id ?? undefined,
+              order: selectedOrder.value?.id ?? undefined,
               org: currentOrg.value,
               items: orderData.value,
               paid: totalPaid,
@@ -1163,7 +1207,7 @@ const onSubmit = handleSubmit(
               announcer: values.order?.announcer?.id,
               manager: values.order?.commercial?._id,
               _id: undefined,
-              order: selectedOrder.value?._id ?? undefined,
+              order: selectedOrder.value?.id ?? undefined,
               org: currentOrg.value,
               items: orderData.value,
               paid: totalPaid,
@@ -1707,7 +1751,7 @@ const onSubmit = handleSubmit(
                   <div class="mx-auto flex w-full flex-col">
                     <div>
                       <div class="grid grid-cols-12 gap-4">
-                        <div
+                        <!-- <div
                           v-if="pageValue == 'invoice'"
                           class="ltablet:col-span-6 col-span-12 lg:col-span-6"
                         >
@@ -1723,6 +1767,44 @@ const onSubmit = handleSubmit(
                             :error="errorMessage"
                             :disabled="isSubmitting || isEdit"
                           />
+                        </div> -->
+                        <div
+                          v-if="pageValue == 'invoice'"
+                          class="ltablet:col-span-6 col-span-12 lg:col-span-6"
+                        >
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="order.order"
+                          >
+                            <BaseAutocomplete
+                              v-model="selectedOrder"
+                              :error="errorMessage"
+                              :disabled="isSubmitting"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
+                              :items="[]"
+                              :display-value="(item: any) => item.name || ''"
+                              :filter-items="filterOrdersItems"
+                              icon="lucide:file"
+                              placeholder="DEV/2024/..."
+                              label="Devis"
+                              clearable
+                              :clear-value="''"
+                            >
+                              <template #empty="value">
+                                <!-- Use destruct to keep what you need -->
+                                <div v-if="value.query.length < 3">
+                                  Saisissez au-moins 3 caractères
+                                </div>
+                                <div v-else>Aucun resultat.</div>
+                              </template>
+                            </BaseAutocomplete>
+                          </Field>
                         </div>
                         <div
                           class="ltablet:col-span-6 col-span-12 lg:col-span-6"

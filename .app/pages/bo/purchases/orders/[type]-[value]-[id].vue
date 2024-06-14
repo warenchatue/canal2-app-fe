@@ -46,8 +46,8 @@ const dates = ref({
 // Check if can have access
 if (
   authStore.user.appRole?.name != UserRole.billing &&
-  authStore.user.appRole?.name != UserRole. &&
-  authStore.user.appRole?.name != UserRole.accountaadminncy &&
+  authStore.user.appRole?.name != UserRole.accountancy &&
+  authStore.user.appRole?.name != UserRole.admin &&
   authStore.user.appRole?.name != UserRole.superAdmin
 ) {
   toaster.clearAll()
