@@ -29,12 +29,9 @@ const isEdit = ref(false)
 const isPrint = ref(false)
 const currentAccountingDoc = ref({})
 const token = useCookie('token')
-const isModalCreatePackageOpen = ref(false)
-const isModalDeletePackageOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
 const isModalCreatePaymentOpen = ref(false)
 const currentOrg = ref({})
-const packageId = ref('')
 const selectedOrder = ref({})
 const dates = ref({
   start: new Date(),
@@ -223,97 +220,6 @@ function viewOrder() {
   }, 1000)
 }
 
-async function deletePackage(spotPackage: any) {
-  const query2 = computed(() => {
-    return {
-      action: 'delete',
-      token: token.value,
-      id: order._id,
-    }
-  })
-
-  const response = await useFetch('/api/pub/packages', {
-    method: 'delete',
-    headers: { 'Content-Type': 'application/json' },
-    query: query2,
-  })
-
-  if (response.data?.value?.success) {
-    success.value = true
-    toaster.clearAll()
-    toaster.show({
-      title: 'Success',
-      message: `Package supprimé !`,
-      color: 'success',
-      icon: 'ph:check',
-      closable: true,
-    })
-    isModalDeletePackageOpen.value = false
-    filter.value = 'spotPackage'
-    filter.value = ''
-  } else {
-    toaster.clearAll()
-    toaster.show({
-      title: 'Désolé',
-      message: `Une erreur est survenue !`,
-      color: 'danger',
-      icon: 'ph:check',
-      closable: true,
-    })
-  }
-}
-
-async function addInvoicePayment() {
-  const query2 = computed(() => {
-    return {
-      action: 'addInvoicePayment',
-      token: token.value,
-      id: currentAccountingDoc.value._id,
-    }
-  })
-
-  const response = await useFetch('/api/sales/invoices', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    query: query2,
-    body: {
-      ...curInvoicePaymentForm.value,
-      paymentAccount: curInvoicePaymentForm.value.paymentAccount._id,
-      org: currentOrg?.value?._id,
-      announcer: currentAccountingDoc?.value?.announcer._id,
-      data: {
-        invoiceId: currentAccountingDoc.value._id,
-        invoiceCode: currentAccountingDoc.value.code,
-      },
-    },
-  })
-
-  if (response.data?.value?.success) {
-    success.value = true
-    toaster.clearAll()
-    toaster.show({
-      title: 'Success',
-      message: `Paiment créer !`,
-      color: 'success',
-      icon: 'ph:check',
-      closable: true,
-    })
-    isModalCreatePaymentOpen.value = false
-    filter.value = 'payment'
-    filter.value = ''
-    location.reload()
-  } else {
-    toaster.clearAll()
-    toaster.show({
-      title: 'Désolé',
-      message: `Une erreur est survenue !`,
-      color: 'danger',
-      icon: 'ph:check',
-      closable: true,
-    })
-  }
-}
-
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
   return selected.value.length === data.value?.data.length
@@ -343,8 +249,6 @@ function toggleAllVisibleSelection() {
     selected.value = data.value?.data.map((item) => item.id) ?? []
   }
 }
-
-const currentPackage = ref({})
 
 // This is the object that will contain the validation messages
 const ONE_MB = 1000000
@@ -588,17 +492,6 @@ watch(curAccountingDocItem, (value) => {
       curAccountingDocItem.value.rate = value.article.price
     }
   }, 500)
-})
-
-const curInvoicePaymentForm = ref({
-  paymentAccount: {},
-  label: '',
-  amount:
-    currentAccountingDoc.value?.amount ??
-    0 - currentAccountingDoc.value?.paid ??
-    0,
-  date: '',
-  currency: '',
 })
 
 const totalData = computed(() => {
@@ -871,7 +764,7 @@ const onSubmit = handleSubmit(
         </BaseButton>
       </template>
       <form method="POST" action="" @submit.prevent="onSubmit">
-        <div class="mx-auto max-w-5xl py-5">
+        <div class="mx-auto max-w-6xl py-5">
           <div class="mb-4 flex items-center justify-between">
             <div>
               <BaseHeading as="h2" size="xl" weight="medium" lead="none">
@@ -1866,62 +1759,6 @@ const onSubmit = handleSubmit(
         </div>
       </form>
     </TairoContentWrapper>
-
-    <!-- Modal delete -->
-    <TairoModal
-      :open="isModalDeletePackageOpen"
-      size="sm"
-      @close="isModalDeletePackageOpen = false"
-    >
-      <template #header>
-        <!-- Header -->
-        <div class="flex w-full items-center justify-between p-4 md:p-6">
-          <h3
-            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
-          >
-            Suppression d'un package
-          </h3>
-
-          <BaseButtonClose @click="isModalDeletePackageOpen = false" />
-        </div>
-      </template>
-
-      <!-- Body -->
-      <div class="p-4 md:p-6">
-        <div class="mx-auto w-full max-w-xs text-center">
-          <h3
-            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
-          >
-            Supprimer
-            <span class="text-red-500">{{ currentPackage?.label }}</span> ?
-          </h3>
-
-          <p
-            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
-          >
-            Cette action est irreversible
-          </p>
-        </div>
-      </div>
-
-      <template #footer>
-        <!-- Footer -->
-        <div class="p-4 md:p-6">
-          <div class="flex gap-x-2">
-            <BaseButton @click="isModalDeletePackageOpen = false"
-              >Annuler</BaseButton
-            >
-
-            <BaseButton
-              color="primary"
-              flavor="solid"
-              @click="deletePackage(currentPackage)"
-              >Suppimer</BaseButton
-            >
-          </div>
-        </div>
-      </template>
-    </TairoModal>
 
     <!-- Modal confirm order -->
     <TairoModal

@@ -1268,7 +1268,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Suppression d'un Bon de caisse
+            Suppression d'un bon de caisse
           </h3>
 
           <BaseButtonClose @click="isModalDeletePackageOpen = false" />
