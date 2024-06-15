@@ -5,8 +5,8 @@ import { UserRole } from '~/types/user'
 definePageMeta({
   title: 'Factures',
   preview: {
-    title: 'Factures',
-    description: 'Factures | Commandes',
+    title: 'Invoices',
+    description: 'Invoices management',
     categories: ['bo', 'spots', 'orders'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
@@ -445,7 +445,7 @@ const success = ref(false)
                 lead="tight"
                 class="text-muted-700 dark:text-muted-400"
               >
-                <span>En attente</span>
+                <span>Ouverte</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"

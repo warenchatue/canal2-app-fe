@@ -6,9 +6,9 @@ import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Rapports',
+  title: 'Suivi des campagnes',
   preview: {
-    title: 'Rapports',
+    title: 'Suivi des campagnes',
     description: 'Contribution and withdrawal',
     categories: ['bo', 'pub'],
     src: '/img/screens/layouts-table-list-1.png',
@@ -359,7 +359,6 @@ const onSubmit = handleSubmit(
         <div class="col-span-12 mx-2 -mt-6">
           <DatePicker
             v-model.range="dates"
-            :masks="masks"
             mode="date"
             hide-time-header
             trim-weeks
@@ -441,13 +440,9 @@ const onSubmit = handleSubmit(
           <option :value="50">50 per page</option>
           <option :value="100">100 per page</option>
         </BaseSelect>
-        <BaseButton
-          color="primary"
-          class="w-full sm:w-32"
-          @click=";(isModalNewPackageOpen = true), (isEdit = false)"
-        >
-          <span>Actualiser</span>
-          <Icon name="lucide:search" class="h-4 w-4" />
+        <BaseButton color="primary" class="w-full sm:w-16">
+          <span></span>
+          <Icon name="ph:arrows-clockwise" class="h-6 w-6" />
         </BaseButton>
       </template>
       <div class="grid grid-cols-12 gap-4 pb-5">
@@ -689,8 +684,9 @@ const onSubmit = handleSubmit(
                   >Formule d'achat</TairoTableHeading
                 >
                 <TairoTableHeading uppercase spaced
-                  >Commercial en charge</TairoTableHeading
+                  >Initiateur</TairoTableHeading
                 >
+                <TairoTableHeading uppercase spaced>Note</TairoTableHeading>
                 <TairoTableHeading uppercase spaced
                   >Montant global
                 </TairoTableHeading>
@@ -731,31 +727,40 @@ const onSubmit = handleSubmit(
                     />
                   </div>
                 </TairoTableCell>
-                <TairoTableCell light spaced>
-                  <p v-if="item.products.length > 0">
-                    1- {{ item.products[0].product }}
-                  </p>
-                  <p v-if="item.products.length > 1">
-                    2- {{ item.products[1].product }}
-                  </p>
-                  <p v-if="item.products.length > 2">
-                    3- {{ item.products[2].product }}
-                  </p>
-                  <p v-if="item.products.length > 3">
-                    4- {{ item.products[3].product }}
-                  </p>
-                  <p v-if="item.products.length > 4">
-                    5- {{ item.products[4].product }}
-                  </p>
+                <TairoTableCell
+                  style="white-space: pre-wrap; word-wrap: break-word"
+                  light
+                  spaced
+                >
+                  <div class="!w-44">
+                    <p v-if="item.products.length > 0">
+                      1- {{ item.products[0].product }}
+                    </p>
+                    <p v-if="item.products.length > 1">
+                      2- {{ item.products[1].product }}
+                    </p>
+                    <p v-if="item.products.length > 2">
+                      3- {{ item.products[2].product }}
+                    </p>
+                    <p v-if="item.products.length > 3">
+                      4- {{ item.products[3].product }}
+                    </p>
+                    <p v-if="item.products.length > 4">
+                      5- {{ item.products[4].product }}
+                    </p>
+                  </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <BaseAvatar
+                  <div
+                    style="white-space: pre-wrap; word-wrap: break-word"
+                    class="flex items-center"
+                  >
+                    <!-- <BaseAvatar
                       :src="item.announcer?.logo ?? '/img/avatars/company.svg'"
                       :text="item.initials"
                       :class="getRandomColor()"
-                    />
-                    <div class="ms-3 leading-none">
+                    /> -->
+                    <div class="!w-44 ms-3 leading-none">
                       <h4 class="font-sans text-sm font-medium">
                         {{ item.announcer?.name }}
                       </h4>
@@ -812,6 +817,9 @@ const onSubmit = handleSubmit(
                   {{ item.order?.manager?.lastName ?? item.creator?.lastName }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
+                  {{ item.description }}
+                </TairoTableCell>
+                <TairoTableCell light spaced>
                   {{
                     new Intl.NumberFormat().format(item.invoice?.amount ?? 0)
                   }}
@@ -859,7 +867,7 @@ const onSubmit = handleSubmit(
                   <div class="flex">
                     <BaseButtonAction
                       class="mx-2"
-                      :to="'/bo/spots/package-details/' + item._id"
+                      :to="'/bo/pub/package-details/' + item._id"
                       muted
                     >
                       <Icon name="lucide:settings" class="h-4 w-4"

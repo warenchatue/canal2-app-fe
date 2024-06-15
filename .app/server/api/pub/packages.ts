@@ -65,7 +65,7 @@ function filterData(
         return a.date < b.date ? -1 : 1
       })
       console.log('Sorted plannings')
-      console.log(plannings)
+      // console.log(plannings)
       if (plannings.length > 0) {
         const d2 = new Date(plannings[plannings.length - 1].date ?? '')
         const d1 = new Date(plannings[0].date ?? '')
@@ -86,7 +86,7 @@ function filterData(
         item.startDate = ''
         item.endDate = ''
       }
-      console.log(item)
+      // console.log(item)
       return item
     })
     if (data.length > 0) {

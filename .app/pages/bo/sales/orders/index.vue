@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import { toTypedSchema } from '@vee-validate/zod'
-import { useForm } from 'vee-validate'
-import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
   title: 'Devis',
   preview: {
-    title: 'Devis',
-    description: 'Devis | Commandes',
+    title: 'Sales Orders',
+    description: 'Sales orders management',
     categories: ['bo', 'spots', 'orders'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
@@ -176,303 +173,7 @@ function toggleAllVisibleSelection() {
 
 const currentOrder = ref({})
 
-// This is the object that will contain the validation messages
-const ONE_MB = 1000000
-const VALIDATION_TEXT = {
-  LABEL_REQUIRED: "Label can't be empty",
-  PHONE_REQUIRED: "Phone number can't be empty",
-  EMAIL_REQUIRED: "Email address can't be empty",
-  COUNTRY_REQUIRED: 'Please select a country',
-}
-
-// This is the Zod schema for the form input
-// It's used to define the shape that the form data will have
-const zodSchema = z
-  .object({
-    spotPackage: z.object({
-      _id: z.string().optional(),
-      label: z.string().min(1, VALIDATION_TEXT.LABEL_REQUIRED),
-      status: z
-        .union([
-          z.literal('onHold'),
-          z.literal('confirmed'),
-          z.literal('paid'),
-          z.literal('closed'),
-        ])
-        .optional(),
-      period: z.string(),
-      invoice: z
-        .object({
-          label: z.string(),
-          amount: z.number(),
-          pending: z.number(),
-          totalSpotsPaid: z.number(),
-          url: z.string(),
-        })
-        .optional()
-        .nullable(),
-      announcer: z
-        .object({
-          _id: z.string(),
-          email: z.string(),
-          name: z.string(),
-          photo: z.string().optional(),
-        })
-        .optional()
-        .nullable(),
-      commercial: z
-        .object({
-          _id: z.string(),
-          email: z.string(),
-          lastName: z.string(),
-          photo: z.string().optional(),
-        })
-        .optional()
-        .nullable(),
-    }),
-  })
-  .superRefine((data, ctx) => {
-    if (!data.spotPackage.label) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: VALIDATION_TEXT.LABEL_REQUIRED,
-        path: ['spotPackage.label'],
-      })
-    }
-  })
-
-// Zod has a great infer method that will
-// infer the shape of the schema into a TypeScript type
-type FormInput = z.infer<typeof zodSchema>
-
-const validationSchema = toTypedSchema(zodSchema)
-const initialValues = computed<FormInput>(() => ({
-  avatar: null,
-  spotPackage: {
-    label: '',
-    period: '',
-    status: 'onHold',
-    invoice: {
-      label: '',
-      amount: 0,
-      pending: 0,
-      totalSpotsPaid: 0,
-      url: '',
-    },
-    announcer: {
-      _id: '',
-      email: '',
-      name: '',
-      flag: '',
-    },
-    commercial: {
-      _id: authStore.user._id ?? '',
-      email: authStore.user.email ?? '',
-      lastName: authStore.user.firstName + ' ' + authStore.user.lastName,
-      photo: '',
-    },
-  },
-}))
-
-const {
-  handleSubmit,
-  isSubmitting,
-  setFieldError,
-  meta,
-  values,
-  errors,
-  resetForm,
-  setFieldValue,
-  setErrors,
-} = useForm({
-  validationSchema,
-  initialValues,
-})
-
 const success = ref(false)
-
-// This is where you would send the form data to the server
-const onSubmit = handleSubmit(
-  async (values) => {
-    success.value = false
-
-    // here you have access to the validated form values
-    console.log('package-create-success', values)
-    const contractUrl =
-      isEdit.value == true ? ref(currentOrder.contractUrl ?? '') : ref('')
-    const invoiceUrl =
-      isEdit.value == true ? ref(currentOrder.invoice?.url ?? '') : ref('')
-
-    try {
-      const isSuccess = ref(false)
-
-      // upload contract file
-      if (orderContractFile.value != null) {
-        const fd = new FormData()
-        fd.append('0', orderContractFile.value)
-        const query3 = computed(() => {
-          return {
-            action: 'new-single-file',
-            dir: 'uploads/ordersFiles/contracts',
-            token: token.value,
-          }
-        })
-
-        const { data: uploadData } = await useFetch('/api/files/upload', {
-          method: 'POST',
-          query: query3,
-          body: fd,
-        })
-        console.log(uploadData)
-        if (uploadData.value?.success == false) {
-          contractUrl.value = ''
-          toaster.show({
-            title: 'Désolé',
-            message: `Une erreur est survenue lors de l'importation de des fichiers !`,
-            color: 'danger',
-            icon: 'ph:check',
-            closable: true,
-          })
-        } else {
-          contractUrl.value = uploadData.value.fileName
-        }
-      }
-
-      // upload invoice file
-      if (orderInvoiceFile.value != null) {
-        const fd = new FormData()
-        fd.append('0', orderInvoiceFile.value)
-        const query3 = computed(() => {
-          return {
-            action: 'new-single-file',
-            dir: 'uploads/ordersFiles/invoices',
-            token: token.value,
-          }
-        })
-
-        const { data: uploadData } = await useFetch('/api/files/upload', {
-          method: 'POST',
-          query: query3,
-          body: fd,
-        })
-        console.log(uploadData)
-        if (uploadData.value?.success == false) {
-          invoiceUrl.value = ''
-          toaster.show({
-            title: 'Désolé',
-            message: `Une erreur est survenue lors de l'importation de des fichiers !`,
-            color: 'danger',
-            icon: 'ph:check',
-            closable: true,
-          })
-        } else {
-          invoiceUrl.value = uploadData.value.fileName
-        }
-      }
-
-      if (isEdit.value == true) {
-        const query2 = computed(() => {
-          return {
-            action: 'updatePackage',
-            token: token.value,
-            id: values.spotPackage._id,
-          }
-        })
-
-        const response = await useFetch('/api/pub/packages', {
-          method: 'put',
-          headers: { 'Content-Type': 'application/json' },
-          query: query2,
-          body: {
-            ...values.spotPackage,
-            announcer: values.spotPackage?.announcer?._id,
-            manager: values.spotPackage?.commercial?._id,
-            invoice: { ...values.spotPackage?.invoice, url: invoiceUrl.value },
-            contractUrl,
-          },
-        })
-        isSuccess.value = response.data.value?.success
-      } else {
-        const query2 = computed(() => {
-          return {
-            action: 'createPackage',
-            token: token.value,
-          }
-        })
-
-        const response = await useFetch('/api/pub/packages', {
-          method: 'post',
-          headers: { 'Content-Type': 'application/json' },
-          query: query2,
-          body: {
-            ...values.spotPackage,
-            announcer: values.spotPackage?.announcer?._id,
-            manager: values.spotPackage?.commercial?._id,
-            _id: undefined,
-            invoice: { ...values.spotPackage?.invoice, url: invoiceUrl.value },
-            contractUrl,
-          },
-        })
-        isSuccess.value = response.data.value?.success
-      }
-      if (isSuccess) {
-        success.value = true
-        toaster.clearAll()
-        toaster.show({
-          title: 'Success',
-          message:
-            isEdit.value == false ? `Package créé !` : `Package mis à jour`,
-          color: 'success',
-          icon: 'ph:check',
-          closable: true,
-        })
-        isModalNewPackageOpen.value = false
-        resetForm()
-        filter.value = 'spotPackage'
-        filter.value = ''
-      } else {
-        toaster.clearAll()
-        toaster.show({
-          title: 'Désolé',
-          message: `Une erreur est survenue !`,
-          color: 'danger',
-          icon: 'ph:check',
-          closable: true,
-        })
-      }
-    } catch (error: any) {
-      console.log(error)
-      document.documentElement.scrollTo({
-        top: 0,
-        behavior: 'smooth',
-      })
-      toaster.clearAll()
-      toaster.show({
-        title: 'Désolé!',
-        message: 'Veuillez examiner les erreurs dans le formulaire',
-        color: 'danger',
-        icon: 'lucide:alert-triangle',
-        closable: true,
-      })
-      // return
-    }
-
-    success.value = true
-  },
-  (error) => {
-    // this callback is optional and called only if the form has errors
-    success.value = false
-
-    // here you have access to the error
-    console.log('payment-create-error', error)
-
-    // you can use it to scroll to the first error
-    document.documentElement.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    })
-  },
-)
 </script>
 
 <template>
@@ -482,7 +183,7 @@ const onSubmit = handleSubmit(
         <BaseInput
           v-model="filter"
           icon="lucide:search"
-          placeholder="Filtrer package..."
+          placeholder="Filtrer devis..."
           :classes="{
             wrapper: 'w-full sm:w-auto',
           }"
@@ -510,7 +211,7 @@ const onSubmit = handleSubmit(
           :disabled="isLoading"
         >
           <Icon name="ph:plus" class="h-4 w-4" />
-          <span>Nouvau devis</span>
+          <span>Nouveau devis</span>
         </BaseButton>
         <BaseButton
           data-tooltip="Raffraichir la page"
