@@ -4,7 +4,6 @@ import moment from 'moment'
 import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
-
 definePageMeta({
   title: 'Details - Campagne',
   preview: {
@@ -103,6 +102,7 @@ const isModalPlanningOpen = ref(false)
 const isModalNewSpotPlanningOpen = ref(false)
 const isModalAddTvProgramOpen = ref(false)
 const isModalConfirmPlanningOpen = ref(false)
+const isModalConfirmDiffusionOpen = ref(false)
 const isModalUploadProductFileOpen = ref(false)
 const isEdit = ref(false)
 const isTvProgram = ref(false)
@@ -175,9 +175,9 @@ function openAllPlanning() {
   setTimeout(() => {
     isModalPlanningOpen.value = true
     console.log('spotData')
-    console.log(spotData.value)
+    // console.log(spotData.value)
     console.log('tvProgramData')
-    console.log(tvProgramData.value)
+    // console.log(tvProgramData.value)
   }, 500)
 }
 
@@ -440,17 +440,17 @@ function checkEmptyPlanning(h: any) {
   }
 }
 
-function totalPerHour(h: any, isProg: boolean, progId:string) {
+function totalPerHour(h: any, isProg: boolean, progId: string) {
   var plannedSpots = data.value?.data?.plannings?.filter(
-    (p: any) => (p.isTvProgram == true
-        ? p.tvProgram._id == progId : true) &&
+    (p: any) =>
+      (p.isTvProgram == true ? p.tvProgram._id == progId : true) &&
       moment(p.date).format('M/yyyy HH:mm') ==
-      activeDate.value.getMonth() +
-        1 +
-        '/' +
-        activeDate.value.getFullYear() +
-        ' ' +
-        (isProg == true ? '01:00' : h.name),
+        activeDate.value.getMonth() +
+          1 +
+          '/' +
+          activeDate.value.getFullYear() +
+          ' ' +
+          (isProg == true ? '01:00' : h.name),
   )
   return plannedSpots.length
 }
@@ -589,6 +589,49 @@ async function addTvProgram() {
     toaster.show({
       title: 'Success',
       message: `Emission mise à jour !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    filter.value = 'planning'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Désolé',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+  isActionLoading.value = false
+}
+
+async function validatePlanningDiffusion() {
+  isActionLoading.value = true
+
+  const response = await $fetch(
+    '/api/pub/plannings?action=validatePlanningDiffusion&token=' + token.value,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        packageId: data.value.data._id,
+        _ids: selectedPlannings.value,
+      },
+    },
+  )
+
+  if (response.success) {
+    success.value = true
+    data.value.data.plannings = response.data?.plannings
+    selectedPlannings.value = []
+    isModalConfirmDiffusionOpen.value = false
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Validation planning réussie !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
@@ -766,15 +809,27 @@ async function importProductFile() {
 }
 
 const selected = ref<number[]>([])
+const selectedPlannings = ref<string[]>([])
 const isAllVisibleSelected = computed(() => {
   return selected.value.length === data.value?.data?.products?.length
+})
+const isAllVisibleSelectedPlanning = computed(() => {
+  return selectedPlannings.value.length === data.value?.data?.plannings?.length
 })
 
 function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
     selected.value = []
   } else {
-    selected.value = data.value?.data?.products?.map((item) => item.id) ?? []
+    selected.value = data.value?.data?.products?.map((item) => item._id) ?? []
+  }
+}
+function toggleAllVisibleSelectionPlanning() {
+  if (isAllVisibleSelectedPlanning.value) {
+    selectedPlannings.value = []
+  } else {
+    selectedPlannings.value =
+      data.value?.data?.plannings?.map((item) => item._id) ?? []
   }
 }
 
@@ -2272,7 +2327,13 @@ const onSubmit = handleSubmit(
                   >
                     <BaseButton
                       :title="dayOfWeek(d) + ' LE ' + d"
-                      @click="openSpotPlanningModalProg(d.toString(), prog, tvProgramData[prog._id][d - 1][2])"
+                      @click="
+                        openSpotPlanningModalProg(
+                          d.toString(),
+                          prog,
+                          tvProgramData[prog._id][d - 1][2],
+                        )
+                      "
                       :color="tvProgramData[prog._id][d - 1][1]"
                       class="!w-6 !h-[2.106em] rounded-full !px-1 !my-2"
                     >
@@ -2316,15 +2377,16 @@ const onSubmit = handleSubmit(
                 </BaseHeading>
               </div>
             </BaseCard>
-            <div v-if="true" class="flex justify-between py-4">
+            <div v-if="true" class="flex justify-between pt-4 pb-2">
               <div class="text-xs">
-                <p class="py-2">
+                <div class="flex item-center py-2">
                   NB: (Difusé:
-                  <span class="px-1 text-primary-500"> SPOT </span>; En attente
-                  de diffusion:
-                  <span class="px-1 text-yellow-500"> SPOT </span>; Non difusé:
-                  <span class="px-1 text-red-500"> SPOT </span>)
-                </p>
+                  <p class="mx-2 h-4 w-4 bg-primary-500 rounded-full"></p>
+                  ; En attente de diffusion:
+                  <span class="mx-2 h-4 w-4 bg-yellow-500 rounded-full"></span>;
+                  Non difusé:
+                  <span class="h-4 w-4 bg-red-500 rounded-full"></span>)
+                </div>
                 <p class="pt-2">
                   Ce document dûment signé et cacheté par le support tient lieu
                   de justificatif.
@@ -2386,20 +2448,22 @@ const onSubmit = handleSubmit(
         <!-- Footer -->
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
-            <BaseButton @click="isModalPlanningOpen = false">Fermer</BaseButton>
+            <BaseButton @click="isModalPlanningOpen = false" label="Fermer"
+              >X</BaseButton
+            >
             <BaseButton @click="captureContent('Planning')">
               <Icon
                 name="lucide:camera"
                 class="pointer-events-none h-4 w-4 mx-2"
               />
-              Début Capture Planning</BaseButton
+              Début capture planning</BaseButton
             >
             <BaseButton @click="captureContent('Certificate')">
               <Icon
                 name="lucide:camera"
                 class="pointer-events-none h-4 w-4 mx-2"
               />
-              Debut Capture Certificat</BaseButton
+              Debut capture certificat</BaseButton
             >
             <BaseButton @click="printPlanning('planning')">
               <Icon
@@ -2413,7 +2477,7 @@ const onSubmit = handleSubmit(
                 name="lucide:printer"
                 class="pointer-events-none h-4 w-4 mx-2"
               />
-              Certificat de diffusion</BaseButton
+              Certificat de diff.</BaseButton
             >
             <BaseButton @click="isModalAddTvProgramOpen = true">
               <Icon
@@ -2421,6 +2485,13 @@ const onSubmit = handleSubmit(
                 class="pointer-events-none h-4 w-4 mx-2"
               />
               Emission</BaseButton
+            >
+            <BaseButton @click="isModalConfirmDiffusionOpen = true">
+              <Icon
+                name="lucide:check"
+                class="pointer-events-none h-4 w-4 mx-2"
+              />
+              Valider diffusion</BaseButton
             >
 
             <BaseButton
@@ -2690,6 +2761,95 @@ const onSubmit = handleSubmit(
               color="primary"
               flavor="solid"
               @click="addTvProgram()"
+              >Valider</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal confirm diffusion -->
+    <TairoModal
+      :open="isModalConfirmDiffusionOpen"
+      size="4xl"
+      @close="isModalConfirmDiffusionOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Confirmation de diffusion
+          </h3>
+
+          <BaseButtonClose @click="isModalConfirmDiffusionOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6 h-[600px] overflow-y-scroll">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div v-for="pl in data!.data.plannings" class="my-2">
+            <div class="flex items-center">
+              <BaseCheckbox
+                v-model="selectedPlannings"
+                :value="pl._id"
+                :name="`item-checkbox-${pl._id}`"
+                :disabled="pl.isManualPlay || pl.isAutoPlay"
+                shape="rounded"
+                class="text-primary-500"
+              />
+              <p
+                :class="
+                  pl.isManualPlay || pl.isAutoPlay ? 'text-primary-500' : ''
+                "
+              >
+                {{
+                  moment(pl.date)
+                    .locale('fr-FR')
+                    .format('dddd D MMMM YYYY [à] HH:mm:ss')
+                }}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-between pt-10">
+          <div class="flex items-center">
+            <BaseCheckbox
+              :model-value="isAllVisibleSelectedPlanning"
+              :indeterminate="
+                selectedPlannings.length > 0 && !isAllVisibleSelectedPlanning
+              "
+              name="table-1-main"
+              shape="rounded"
+              class="text-primary-500"
+              @click="toggleAllVisibleSelectionPlanning"
+            />
+            Tout selectionner
+          </div>
+          <p
+            class="flex justify-center font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est reversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalConfirmDiffusionOpen = false"
+              >Fermer</BaseButton
+            >
+
+            <BaseButton
+              :disabled="isActionLoading"
+              :loading="isActionLoading"
+              color="primary"
+              flavor="solid"
+              @click="validatePlanningDiffusion()"
               >Valider</BaseButton
             >
           </div>

@@ -76,6 +76,11 @@ export default defineEventHandler(async (event) => {
     console.log(body)
     const data = await updatePlanning(id, body, token)
     return { data: data, success: true }
+  } else if (action == 'validatePlanningDiffusion') {
+    const body = await readBody(event)
+    console.log(body)
+    const data = await updatePlanningDiffusionBulk(body, token)
+    return { data: data, success: true }
   } else if (action == 'delete') {
     const data = await deletePlanning(id, token)
     return { data: data, success: true }
@@ -263,6 +268,24 @@ async function updatePlanning(id: string, body: any, token: string) {
         'Content-type': 'application/json',
       },
       body: body,
+    },
+  ).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
+}
+
+async function updatePlanningDiffusionBulk(body: any, token: string) {
+  console.log('updatePlanningDiffusionBulk ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/plannings/manual-validate/ids',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+      body,
     },
   ).catch((error) => console.log(error))
   console.log(data)

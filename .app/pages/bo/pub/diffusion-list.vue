@@ -1337,7 +1337,7 @@ const onSubmit = handleSubmit(
                         :text="item.initials"
                         :class="getRandomColor()"
                       /> -->
-                      <div class="ms-3 !w-48 leading-none">
+                      <div class="ms-3 !w-44 leading-none">
                         <h4 class="font-sans text-sm font-medium">
                           {{ item.product?.package?.announcer?.name }}
                         </h4>

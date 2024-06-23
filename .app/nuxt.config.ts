@@ -18,6 +18,7 @@ export default defineNuxtConfig({
   pinia: {
     autoImports: ['defineStore', 'acceptHMRUpdate'],
   },
+
   css: ['~/assets/css/colors.css'],
 
   experimental: {

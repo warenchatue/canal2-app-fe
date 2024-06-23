@@ -127,7 +127,7 @@ const onSubmit = handleSubmit(async (values) => {
 <template>
   <div class="flex h-screen w-full flex-col items-center md:flex-row">
     <div
-      class="bg-muted-100 dark:bg-muted-900 hidden h-screen w-full md:w-1/2 lg:block xl:w-2/3"
+      class="bg-gradient-to-bl from-white dark:from-gray-600 to-emerald-500 dark:to-emerald-500 dark:bg-muted-900 hidden h-screen w-full md:w-1/2 lg:block xl:w-2/3"
     >
       <div
         class="mx-auto w-full h-full flex items-center justify-center max-w-4xl"
@@ -135,7 +135,7 @@ const onSubmit = handleSubmit(async (values) => {
         <!--Media image-->
         <img
           class="max-w-xl mx-auto"
-          src="/img/illustrations/people.svg"
+          src="/uploads/logos/c2.png"
           alt=""
           width="1200"
           height="996"
