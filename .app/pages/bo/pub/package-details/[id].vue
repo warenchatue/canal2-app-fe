@@ -2052,7 +2052,7 @@ const onSubmit = handleSubmit(
           </div>
           <div shape="straight" class="border border-t-1"></div>
           <h3
-            class="font-heading text-muted-900 text-base font-medium py-2 leading-6 dark:text-white"
+            class="font-heading text-muted-900 text-lg font-medium py-2 leading-6 dark:text-white"
           >
             {{
               isPrintPlanning == true
