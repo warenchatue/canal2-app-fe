@@ -103,19 +103,25 @@ const {
 })
 
 const { data: allHours } = await useFetch('/api/pub/hours', {
-  query,
+  query: query,
+  lazy: false,
+  transform: (els) => {
+    return els.data?.filter((el: any) => {
+      return el.type != 'TvProgram'
+    })
+  },
 })
 
 const { data: orgs } = await useFetch('/api/admin/orgs', {
   query,
 })
 
-const transformedAllHours = allHours.value?.data.map((e: any) => {
-  const invoice = {
+const transformedAllHours = allHours.value?.map((e: any) => {
+  const hour = {
     id: e._id,
     name: e.code,
   }
-  return invoice
+  return hour
 })
 
 const { data: allPackages, pending: pendingPackages } = await useFetch(
@@ -778,7 +784,6 @@ const onSubmit = handleSubmit(
         <div class="col-span-12 mx-1 -mt-6">
           <DatePicker
             v-model.range="dates"
-            :masks="masks"
             mode="date"
             hide-time-header
             trim-weeks
@@ -1332,7 +1337,7 @@ const onSubmit = handleSubmit(
                         :text="item.initials"
                         :class="getRandomColor()"
                       /> -->
-                      <div class="ms-3 !w-48 leading-none">
+                      <div class="ms-3 !w-44 leading-none">
                         <h4 class="font-sans text-sm font-medium">
                           {{ item.product?.package?.announcer?.name }}
                         </h4>
@@ -1855,7 +1860,6 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 mx-2 mt-2">
                     <DatePicker
                       v-model.range="planningDates"
-                      :masks="masks"
                       mode="date"
                       hide-time-header
                       trim-weeks

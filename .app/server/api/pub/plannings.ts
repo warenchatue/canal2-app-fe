@@ -28,6 +28,7 @@ export default defineEventHandler(async (event) => {
         endDate,
         page,
         perPage,
+        false,
       ),
     }
   } else if (action == 'findAll') {
@@ -42,6 +43,7 @@ export default defineEventHandler(async (event) => {
         endDate,
         page,
         perPage,
+        true,
       ),
     }
   } else if (action == 'findAllStats') {
@@ -56,6 +58,7 @@ export default defineEventHandler(async (event) => {
         endDate,
         page,
         perPage,
+        false,
       ),
     }
   } else if (action == 'createPlanning') {
@@ -73,6 +76,11 @@ export default defineEventHandler(async (event) => {
     console.log(body)
     const data = await updatePlanning(id, body, token)
     return { data: data, success: true }
+  } else if (action == 'validatePlanningDiffusion') {
+    const body = await readBody(event)
+    console.log(body)
+    const data = await updatePlanningDiffusionBulk(body, token)
+    return { data: data, success: true }
   } else if (action == 'delete') {
     const data = await deletePlanning(id, token)
     return { data: data, success: true }
@@ -86,8 +94,17 @@ function filterData(
   endDate: string,
   page: number,
   perPage: number,
+  isTvProg: boolean,
 ) {
-  data = data.filter((item) => item.product?.package?.validator != null)
+  if (isTvProg == false) {
+    console.log(data)
+    data = data.filter(
+      (item) =>
+        item.isTvProgram == false && item.product?.package?.validator != null,
+    )
+  } else {
+    data = data.filter((item) => item.product?.package?.validator != null)
+  }
   data = data.sort((a: any, b: any) => {
     return a.position < b.position ? -1 : 1
   })
@@ -251,6 +268,24 @@ async function updatePlanning(id: string, body: any, token: string) {
         'Content-type': 'application/json',
       },
       body: body,
+    },
+  ).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
+}
+
+async function updatePlanningDiffusionBulk(body: any, token: string) {
+  console.log('updatePlanningDiffusionBulk ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/plannings/manual-validate/ids',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+      body,
     },
   ).catch((error) => console.log(error))
   console.log(data)

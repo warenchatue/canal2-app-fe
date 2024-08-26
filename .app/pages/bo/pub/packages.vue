@@ -106,13 +106,13 @@ const { data, pending, refresh } = await useFetch('/api/pub/packages', {
   lazy: true,
 })
 
-const { data: announcers, pending: pendingAnnouncer } = await useFetch(
-  '/api/sales/announcers',
-  {
-    query: queryLight,
-    lazy: true,
-  },
-)
+// const { data: announcers, pending: pendingAnnouncer } = await useFetch(
+//   '/api/sales/announcers',
+//   {
+//     query: queryLight,
+//     lazy: true,
+//   },
+// )
 
 const { data: allInvoices, pending: pendingInvoices } = await useFetch(
   '/api/sales/invoices',
@@ -150,6 +150,7 @@ function editPackage(campaign: any) {
   setFieldValue('campaign.code', campaign.code)
   setFieldValue('campaign.description', campaign.description)
   setFieldValue('campaign.numberProducts', campaign.numberProducts)
+  setFieldValue('campaign.quantities', campaign.quantities)
   setFieldValue('campaign.period', campaign.period)
   setFieldValue('campaign.org', campaign.org)
   setFieldValue('campaign.adminValidator', campaign.adminValidator)
@@ -169,6 +170,34 @@ function confirmDeletePackage(campaign: any) {
   isModalDeletePackageOpen.value = true
   isEdit.value = false
   currentPackage.value = campaign
+}
+
+async function filterAnnouncersItems(query?: string, items?: any[]) {
+  if (query.length < 3) {
+    return []
+  }
+
+  if (!query || !items) {
+    return items ?? []
+  }
+
+  const queryLightByName = computed(() => {
+    return {
+      filter: filter.value,
+      perPage: 10000,
+      page: page.value,
+      action: 'findAllLightByName',
+      name: query,
+      token: token.value,
+    }
+  })
+
+  const { data: announcersData } = await useFetch('/api/sales/announcers', {
+    query: queryLightByName,
+  })
+
+  // search by name
+  return announcersData.value?.data ?? false
 }
 
 function filterItems(query?: string, items?: any[]) {
@@ -828,6 +857,7 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Code</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Date</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>
                   Annonceur
                 </TairoTableHeading>
@@ -841,7 +871,7 @@ const onSubmit = handleSubmit(
                 <TairoTableHeading uppercase spaced>Produits</TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>Période</TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Docs</TairoTableHeading>
+                <!-- <TairoTableHeading uppercase spaced>Docs</TairoTableHeading> -->
                 <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
               </template>
@@ -881,14 +911,20 @@ const onSubmit = handleSubmit(
                     {{ item.code }}
                   </NuxtLink>
                 </TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ new Date(item.createdAt).toLocaleDateString('fr-FR') }}
+                </TairoTableCell>
                 <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <BaseAvatar
+                  <div
+                    style="white-space: pre-wrap; word-wrap: break-word"
+                    class="flex items-center"
+                  >
+                   <!-- <BaseAvatar
                       :src="item.announcer?.logo ?? '/img/avatars/company.svg'"
                       :text="item.initials"
                       :class="getRandomColor()"
-                    />
-                    <div class="ms-3 leading-none">
+                    /> -->
+                    <div class="!w-44 ms-3">
                       <h4 class="font-sans text-sm font-medium">
                         {{ item.announcer?.name }}
                       </h4>
@@ -898,8 +934,12 @@ const onSubmit = handleSubmit(
                     </div>
                   </div>
                 </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{ item.label }}
+                <TairoTableCell
+                  light
+                  spaced
+                  style="white-space: pre-wrap; word-wrap: break-word"
+                >
+                  <span class="!w-48"> {{ item.label }}</span>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{ item.quantities }} spots
@@ -910,7 +950,7 @@ const onSubmit = handleSubmit(
                 <TairoTableCell light spaced>
                   {{ item.period }}
                 </TairoTableCell>
-                <TairoTableCell light spaced>
+                <!-- <TairoTableCell light spaced>
                   <a
                     v-if="item.contractUrl"
                     class="mx-1 text-white bg-muted-600 p-2 rounded"
@@ -925,7 +965,7 @@ const onSubmit = handleSubmit(
                     target="_blank"
                     >F</a
                   >
-                </TairoTableCell>
+                </TairoTableCell> -->
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag
                     v-if="item.state === 'trashed'"
@@ -1061,9 +1101,9 @@ const onSubmit = handleSubmit(
                         :disabled="isSubmitting || pendingAnnouncer"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
-                        :items="announcers.data"
+                        :items="[]"
                         :display-value="(item: any) => item.name || ''"
-                        :filter-items="filterItems"
+                        :filter-items="filterAnnouncersItems"
                         icon="lucide:file"
                         placeholder="e.g. Canal2 International"
                         label="Annonceur"

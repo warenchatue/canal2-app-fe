@@ -841,7 +841,8 @@ const onSubmit = handleSubmit(
           v-if="isPrint && isIndividualReport"
           class="font-heading text-muted-900 text-xs font-medium pb-2 pt-1 px-2 leading-6 dark:text-white"
         >
-          Etat des factures impayés du client {{ filter }}
+          Etat des factures impayés du client
+          {{ data?.data[0]?.announcer?.name }}
         </h4>
         <h5
           v-if="isPrint"

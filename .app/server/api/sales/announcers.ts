@@ -5,6 +5,7 @@ export default defineEventHandler(async (event) => {
   const filter = (query.filter as string) || ''
   const action = (query.action as string) || 'get'
   const id = (query.id as string) || ''
+  const name = (query.name as string) || ''
   const token = (query.token as string) || ''
 
   if (action == 'findOne') {
@@ -22,15 +23,21 @@ export default defineEventHandler(async (event) => {
       total: data.length,
       data: filterData(data, filter, page, perPage),
     }
+  } else if (action == 'findAllLightByName') {
+    const data = await findAllLightByName(name, token)
+    return {
+      total: data.length,
+      data: filterData(data, filter, page, perPage),
+    }
   } else if (action == 'createAnnouncer') {
     const body = await readBody(event)
     console.log(body)
     const data = await createAnnouncer(body, token)
-    return { data: data, success: true }
+    return { data: data, success: typeof data === 'undefined' ? false : true }
   } else if (action == 'updateAnnouncer') {
     const body = await readBody(event)
     const data = await updateAnnouncer(id, body, token)
-    return { data: data, success: true }
+    return { data: data, success: typeof data === 'undefined' ? false : true }
   } else if (action == 'delete') {
     const data = await deleteAnnouncer(id, token)
     return { data: data, success: true }
@@ -93,6 +100,23 @@ async function findAllLight(token: string) {
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
     runtimeConfig.env.apiUrl + '/announcers/all/light',
+    {
+      method: 'get',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
+  // console.log(data)
+  return Promise.resolve(data)
+}
+
+async function findAllLightByName(name: string, token: string) {
+  console.log('findAllLightByName ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/announcers/all/by/name?announcerName=' + name,
     {
       method: 'get',
       headers: {

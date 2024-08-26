@@ -6,9 +6,9 @@ import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Planning de diffusion',
+  title: 'Conducteur PUB du jour',
   preview: {
-    title: 'Planning de diffusion',
+    title: 'Conducteur publicitaire du jour',
     description: '',
     categories: ['bo', 'pub', 'diffusion-list'],
     src: '/img/screens/layouts-table-list-1.png',
@@ -692,17 +692,20 @@ const onSubmit = handleSubmit(
                 </TairoTableCell> -->
 
                 <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <BaseAvatar
+                  <div
+                    style="white-space: pre-wrap; word-wrap: break-word"
+                    class="flex items-center"
+                  >
+                    <!-- <BaseAvatar
                       :src="
                         item.product?.announcer?.logo ??
                         '/img/avatars/company.svg'
                       "
                       :text="item.initials"
                       :class="getRandomColor()"
-                    />
-                    <div class="ms-3 leading-none">
-                      <h4 class="font-sans text-sm font-medium">
+                    /> -->
+                    <div class="!w-44 ms-3 leading-none">
+                      <h4 class="font-semibold text-base font-medium">
                         {{ item.product?.package?.announcer?.name }}
                       </h4>
                       <p class="text-muted-400 font-sans text-xs">
@@ -722,7 +725,10 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
-                  <div class="flex items-center">
+                  <div
+                    style="white-space: pre-wrap; word-wrap: break-word"
+                    class="flex items-center"
+                  >
                     <BaseText
                       size="sm"
                       class="hover:cursor-pointer"
@@ -733,7 +739,7 @@ const onSubmit = handleSubmit(
                       "
                     >
                       <span
-                        class="text-muted-600 dark:text-muted-300 font-sans text-base px-1"
+                        class="!w-44 text-muted-600 dark:text-muted-300 font-sans !text-sm px-1"
                       >
                         {{ item.product.message }} [{{ item.code }}]
                       </span></BaseText

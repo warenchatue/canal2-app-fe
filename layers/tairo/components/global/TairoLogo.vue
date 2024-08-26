@@ -3,8 +3,8 @@
     class="flex justify-center justify-items-center rounded-full bg-indigo-600/25 text-center"
   >
     <span
-      class="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text pt-1 text-center text-2xl font-bold text-transparent"
-      >DInoES</span
+      class="to-primary-600 bg-gradient-to-r from-blue-800 bg-clip-text pt-1 text-center text-2xl font-bold text-transparent"
+      >DinoES</span
     >
   </div>
   <!-- <svg

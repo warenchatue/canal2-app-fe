@@ -4,11 +4,10 @@ import moment from 'moment'
 import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
-
 definePageMeta({
-  title: 'Produits - Annonceur',
+  title: 'Details - Campagne',
   preview: {
-    title: 'Produits - Annonceur',
+    title: 'Details - Campagne',
     description: 'Contribution and withdrawal',
     categories: ['bo', 'pub', 'orders'],
     src: '/img/screens/layouts-table-list-1.png',
@@ -24,7 +23,6 @@ const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(50)
 const token = useCookie('token')
-const app = useAppStore()
 const packageId = computed(() => route.params.id)
 const toaster = useToaster()
 // Check if can have access
@@ -67,7 +65,28 @@ const { data, pending, error, refresh } = await useFetch('/api/pub/packages', {
 
 const { data: hoursData } = await useFetch('/api/pub/hours', {
   query: queryHours,
+  lazy: false,
+  transform: (els) => {
+    return els.data?.filter((el: any) => {
+      return el.type != 'TvProgram'
+    })
+  },
 })
+
+const { data: allTvPrograms, pending: pendingTvPrograms } = await useFetch(
+  '/api/tv-programs/programs',
+  {
+    query: queryHours,
+    lazy: true,
+    transform: (els) => {
+      return els.data?.map((el) => ({
+        name: el.name,
+        id: el._id,
+        text: el.code,
+      }))
+    },
+  },
+)
 
 watch([filter, perPage], () => {
   router.push({
@@ -81,21 +100,29 @@ const isModalNewSpotOpen = ref(false)
 const isModalDeleteSpotOpen = ref(false)
 const isModalPlanningOpen = ref(false)
 const isModalNewSpotPlanningOpen = ref(false)
+const isModalAddTvProgramOpen = ref(false)
 const isModalConfirmPlanningOpen = ref(false)
+const isModalConfirmDiffusionOpen = ref(false)
 const isModalUploadProductFileOpen = ref(false)
 const isEdit = ref(false)
+const isTvProgram = ref(false)
 const isPrintPlanning = ref(false)
 const isPrintCertificate = ref(false)
 const activeProduct = ref({ _id: '', product: '', tag: '', flag: '' })
 const currentProduct = ref({})
+const currentTvProgram = ref({})
 const phoneNumber = ref('')
 const formatter = new Intl.DateTimeFormat('fr', { month: 'long' })
 const activeDate = ref(new Date())
 const activeDay = ref('')
 const activePlanningId = ref('')
 const activeHour = ref({})
+const activeTvProgram = ref({})
 const isActionLoading = ref(false)
-const activeEnd = ref({ day: undefined, step: 1 })
+const activeEnd = ref({ day: undefined, step: 1, total: 1 })
+const isCapturePagePlanning = ref(false)
+const isCapturePageCertificate = ref(false)
+const contentToPrint = ref('')
 var activeDays = ref(
   new Date(
     activeDate.value.getFullYear(),
@@ -105,6 +132,67 @@ var activeDays = ref(
 )
 const initDate = ref(false)
 
+const spotData = computed(() => {
+  let data = {}
+  hoursData.value.forEach((h: any) => {
+    data[h.code] = {}
+    Array.from({ length: activeDays.value }).forEach((_, d: number) => {
+      data[h.code][d] = checkSpot(d + 1, h.code, false, '')
+    })
+  })
+  return data
+})
+
+const tvProgramData = computed(() => {
+  let allData = {}
+  data.value.data.tvPrograms.forEach((prog: any) => {
+    allData[prog._id] = {}
+    Array.from({ length: activeDays.value }).forEach((_, d: number) => {
+      allData[prog._id][d] = checkSpot(d + 1, '', true, prog._id)
+    })
+  })
+  return allData
+})
+
+function filterItems(query?: string, items?: any[]) {
+  if (query.length < 3) {
+    return []
+  }
+
+  if (!query || !items) {
+    return items ?? []
+  }
+
+  // search by name or text
+  return items.filter((item) => {
+    const nameMatches = item?.name?.toLowerCase().includes(query.toLowerCase())
+    // const textMatches = item?.text?.toLowerCase().includes(query.toLowerCase())
+    return nameMatches
+  })
+}
+
+function openAllPlanning() {
+  setTimeout(() => {
+    isModalPlanningOpen.value = true
+    console.log('spotData')
+    // console.log(spotData.value)
+    console.log('tvProgramData')
+    // console.log(tvProgramData.value)
+  }, 500)
+}
+
+function captureContent(type: string) {
+  if (type == 'Planning') {
+    isCapturePagePlanning.value = true
+    isPrintPlanning.value = true
+  } else if ((type = 'Certificate')) {
+    isCapturePageCertificate.value = true
+    isPrintCertificate.value = true
+  }
+  setTimeout(() => {
+    contentToPrint.value += document.getElementById('planningPrint').innerHTML
+  }, 500)
+}
 function addMonth() {
   const date = new Date(activeDate.value)
   initDate.value = false
@@ -116,8 +204,13 @@ function addMonth() {
     0,
   ).getDate()
 
-  console.log(date.getMonth() + 1)
-  console.log(activeDays)
+  // console.log(date.getMonth() + 1)
+  // console.log(activeDays)
+  setTimeout(() => {
+    if (isCapturePagePlanning.value || isCapturePageCertificate.value) {
+      contentToPrint.value += document.getElementById('planningPrint').innerHTML
+    }
+  }, 500)
 }
 
 function removeMonth() {
@@ -129,8 +222,8 @@ function removeMonth() {
     date.getMonth() + 1,
     0,
   ).getDate()
-  console.log(date.getMonth())
-  console.log(activeDays)
+  // console.log(date.getMonth())
+  // console.log(activeDays)
 }
 
 function dayOfWeek(d: number) {
@@ -156,18 +249,30 @@ function openSpotPlanningModal(day: string, hour: any, planningId: string) {
   activeHour.value = hour
   activePlanningId.value = planningId
   activeEnd.value.day = parseInt(day)
+  isTvProgram.value = false
+  isModalNewSpotPlanningOpen.value = true
+}
+
+function openSpotPlanningModalProg(day: string, prog: any, planningId: string) {
+  activeDay.value = day
+  activeTvProgram.value = prog
+  activePlanningId.value = planningId
+  activeEnd.value.day = parseInt(day)
+  isTvProgram.value = true
   isModalNewSpotPlanningOpen.value = true
 }
 
 async function addSpotToPlanning() {
   console.log('Adding product to the planning')
   isActionLoading.value = true
-  const hourArray = activeHour.value?.code.split(':')
+  const hourArray =
+    isTvProgram.value == true ? ['01', '00'] : activeHour.value?.code.split(':')
 
   let newPlannings = []
   const myActiveDay = parseInt(activeDay.value)
   const myActiveEndDay = parseInt(activeEnd.value.day)
   const myActiveEndStep = parseInt(activeEnd.value.step)
+  const myActiveEndTotal = parseInt(activeEnd.value.total)
 
   for (
     let myDay = myActiveDay;
@@ -184,16 +289,20 @@ async function addSpotToPlanning() {
     )
 
     // console.log(date.toISOString())
-
-    newPlannings.push({
-      _id: undefined,
-      product: activeProduct.value._id,
-      hour: activeHour.value._id,
-      date: date.toISOString(),
-      position: date.toISOString(),
-      isManualPlay: false,
-      isAutoPlay: false,
-    })
+    for (let i = 0; i < myActiveEndTotal; i++) {
+      newPlannings.push({
+        _id: undefined,
+        product: activeProduct.value._id,
+        hour: isTvProgram.value == true ? undefined : activeHour.value._id,
+        tvProgram:
+          isTvProgram.value == true ? activeTvProgram.value._id : undefined,
+        isTvProgram: isTvProgram.value,
+        date: date.toISOString(),
+        position: date.toISOString(),
+        isManualPlay: false,
+        isAutoPlay: false,
+      })
+    }
   }
 
   try {
@@ -331,16 +440,17 @@ function checkEmptyPlanning(h: any) {
   }
 }
 
-function totalPerHour(h: any) {
+function totalPerHour(h: any, isProg: boolean, progId: string) {
   var plannedSpots = data.value?.data?.plannings?.filter(
     (p: any) =>
+      (p.isTvProgram == true ? p.tvProgram._id == progId : true) &&
       moment(p.date).format('M/yyyy HH:mm') ==
-      activeDate.value.getMonth() +
-        1 +
-        '/' +
-        activeDate.value.getFullYear() +
-        ' ' +
-        h.name,
+        activeDate.value.getMonth() +
+          1 +
+          '/' +
+          activeDate.value.getFullYear() +
+          ' ' +
+          (isProg == true ? '01:00' : h.name),
   )
   return plannedSpots.length
 }
@@ -354,30 +464,59 @@ function totalPerMonth() {
   return plannedSpots.length
 }
 
-function checkSpot(d: number, hour: string) {
-  const hourArray = hour.split(':')
-  var date = new Date(
-    activeDate.value.getFullYear(),
-    activeDate.value.getMonth(),
-    d,
-    parseInt(hourArray[0]),
-    parseInt(hourArray[1]),
-  )
+function checkSpot(d: number, hour: string, isProg: boolean, progId: string) {
+  var plannedSpots = []
+  if (isProg == true) {
+    var date = new Date(
+      activeDate.value.getFullYear(),
+      activeDate.value.getMonth(),
+      d,
+      parseInt('01'),
+      parseInt('00'),
+    )
 
-  var plannedSpots = data.value?.data?.plannings?.filter(
-    (p: any) =>
-      new Date(p.date).toLocaleString('fr-FR') == date?.toLocaleString('fr-FR'),
-  )
-  if (plannedSpots.length == 0) {
-    return ['+', 'default', undefined]
+    plannedSpots = data.value?.data?.plannings?.filter((p: any) =>
+      p.isTvProgram == true
+        ? p.tvProgram._id == progId &&
+          new Date(p.date).toLocaleString('fr-FR') ==
+            date?.toLocaleString('fr-FR')
+          ? true
+          : false
+        : false,
+    )
   } else {
+    const hourArray = hour.split(':')
+    var date = new Date(
+      activeDate.value.getFullYear(),
+      activeDate.value.getMonth(),
+      d,
+      parseInt(hourArray[0]),
+      parseInt(hourArray[1]),
+    )
+
+    plannedSpots = data.value?.data?.plannings?.filter(
+      (p: any) =>
+        new Date(p.date).toLocaleString('fr-FR') ==
+        date?.toLocaleString('fr-FR'),
+    )
+  }
+
+  if (plannedSpots.length == 0) {
+    return ['+', 'default', undefined, 0]
+  } else {
+    const numberSpots = plannedSpots.length == 1 ? 1 : 2
     const dateNow = new Date().toLocaleString('fr-FR')
     const dateNowTime = new Date().getTime()
     var dateP = new Date(plannedSpots[0].date).toLocaleString('fr-FR')
     var datePTime = new Date(plannedSpots[0].date).getTime()
     // console.log(plannedSpots[0])
     if (isPrintPlanning.value == true) {
-      return [plannedSpots[0].product.tag, 'warning', plannedSpots[0]._id]
+      return [
+        plannedSpots[0].product.tag,
+        'warning',
+        plannedSpots[0]._id,
+        numberSpots,
+      ]
     }
 
     // console.log(dateP)
@@ -395,19 +534,121 @@ function checkSpot(d: number, hour: string) {
       plannedSpots[0].isAutoPlay == false &&
       isPrintCertificate.value == false
     ) {
-      return [plannedSpots[0].product.tag, 'danger', plannedSpots[0]._id]
+      return [
+        plannedSpots[0].product.tag,
+        'danger',
+        plannedSpots[0]._id,
+        numberSpots,
+      ]
     } else if (
       datePTime < dateNowTime &&
       (plannedSpots[0].isManualPlay == true ||
         plannedSpots[0].isAutoPlay == true)
     ) {
-      return [plannedSpots[0].product.tag, 'primary', plannedSpots[0]._id]
+      return [
+        plannedSpots[0].product.tag,
+        'primary',
+        plannedSpots[0]._id,
+        numberSpots,
+      ]
     } else if (datePTime > dateNowTime && isPrintCertificate.value == false) {
-      return [plannedSpots[0].product.tag, 'warning', plannedSpots[0]._id]
+      return [
+        plannedSpots[0].product.tag,
+        'warning',
+        plannedSpots[0]._id,
+        numberSpots,
+      ]
     } else {
       return ['+', 'default', undefined]
     }
   }
+}
+
+async function addTvProgram() {
+  isActionLoading.value = true
+
+  const response = await $fetch(
+    '/api/pub/packages?action=addTvProgram&token=' +
+      token.value +
+      '&id=' +
+      data.value?.data?._id ?? '',
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        tvProgramId: currentTvProgram.value?.id,
+      },
+    },
+  )
+
+  if (response.success) {
+    success.value = true
+    data.value.data.tvPrograms = response.data?.tvPrograms
+    isModalAddTvProgramOpen.value = false
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Emission mise à jour !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    filter.value = 'planning'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Désolé',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+  isActionLoading.value = false
+}
+
+async function validatePlanningDiffusion() {
+  isActionLoading.value = true
+
+  const response = await $fetch(
+    '/api/pub/plannings?action=validatePlanningDiffusion&token=' + token.value,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        packageId: data.value.data._id,
+        _ids: selectedPlannings.value,
+      },
+    },
+  )
+
+  if (response.success) {
+    success.value = true
+    data.value.data.plannings = response.data?.plannings
+    selectedPlannings.value = []
+    isModalConfirmDiffusionOpen.value = false
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Validation planning réussie !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    filter.value = 'planning'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Désolé',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+  isActionLoading.value = false
 }
 
 function editSpot(product: any) {
@@ -477,9 +718,15 @@ function printPlanning(typeDoc: string) {
   setTimeout(() => {
     var printContents = document.getElementById('planningPrint').innerHTML
     var originalContents = document.body.innerHTML
-    document.body.innerHTML = printContents
+    if (contentToPrint.value) {
+      document.body.innerHTML = contentToPrint.value
+    } else {
+      document.body.innerHTML = printContents
+    }
     window.print()
     document.body.innerHTML = originalContents
+    isCapturePagePlanning.value = false
+    isCapturePageCertificate.value = false
     location.reload()
   }, 500)
 }
@@ -562,15 +809,27 @@ async function importProductFile() {
 }
 
 const selected = ref<number[]>([])
+const selectedPlannings = ref<string[]>([])
 const isAllVisibleSelected = computed(() => {
   return selected.value.length === data.value?.data?.products?.length
+})
+const isAllVisibleSelectedPlanning = computed(() => {
+  return selectedPlannings.value.length === data.value?.data?.plannings?.length
 })
 
 function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
     selected.value = []
   } else {
-    selected.value = data.value?.data?.products?.map((item) => item.id) ?? []
+    selected.value = data.value?.data?.products?.map((item) => item._id) ?? []
+  }
+}
+function toggleAllVisibleSelectionPlanning() {
+  if (isAllVisibleSelectedPlanning.value) {
+    selectedPlannings.value = []
+  } else {
+    selectedPlannings.value =
+      data.value?.data?.plannings?.map((item) => item._id) ?? []
   }
 }
 
@@ -604,7 +863,14 @@ const zodSchema = z
       message: z.string().optional(),
       duration: z.string().optional(),
       tag: z.string().optional(),
-      type: z.union([z.literal('SPOT'), z.literal('BA')]).optional(),
+      type: z
+        .union([
+          z.literal('SPOT'),
+          z.literal('BA'),
+          z.literal('INT-E'),
+          z.literal('PAD'),
+        ])
+        .optional(),
       package: z.string().optional(),
     }),
   })
@@ -934,7 +1200,7 @@ const onSubmit = handleSubmit(
           <option :value="100">100 per page</option>
         </BaseSelect>
         <BaseButton
-          @click="isModalPlanningOpen = true"
+          @click="openAllPlanning()"
           color="primary"
           class="w-full sm:w-40"
         >
@@ -1418,10 +1684,10 @@ const onSubmit = handleSubmit(
                         @blur="handleBlur"
                       >
                         <option value="SPOT">SPOT</option>
-                        <option value="BA">Bande d'annonce</option>
-                        <option value="BA">Intervention Canal Matin</option>
-                        <option value="BA">Intervention Jambo</option>
-                        <option value="BA">Publi reportage</option>
+                        <option value="BA">Bande d'Annonce</option>
+                        <option value="INT-E">Intervention Emission</option>
+                        <option value="PUB-R">Publi Reportage</option>
+                        <option value="PAD">Prêt à Diffuser</option>
                       </BaseSelect>
                     </Field>
                   </div>
@@ -1576,8 +1842,13 @@ const onSubmit = handleSubmit(
                     <span class="text-primary-500">
                       {{ dayOfWeek(parseInt(activeDay)) }} le {{ activeDay }}
                       {{ formatter.format(activeDate) }}
-                      {{ activeDate.getFullYear() }} à
-                      {{ activeHour.code }}</span
+                      {{ activeDate.getFullYear() }}
+                      {{ isTvProgram == true ? 'dans' : 'à' }}
+                      {{
+                        isTvProgram == true
+                          ? activeTvProgram.name
+                          : activeHour.code
+                      }}</span
                     ></BaseText
                   >
                   <div class="grid grid-cols-12 gap-4">
@@ -1614,7 +1885,7 @@ const onSubmit = handleSubmit(
                     v-if="activeProduct._id != ''"
                     class="grid grid-cols-12 gap-4 mt-4"
                   >
-                    <div class="col-span-12 md:col-span-6">
+                    <div class="col-span-12 md:col-span-4">
                       <Field
                         v-slot="{
                           field,
@@ -1638,7 +1909,7 @@ const onSubmit = handleSubmit(
                       </Field>
                     </div>
 
-                    <div class="col-span-12 md:col-span-6">
+                    <div class="col-span-12 md:col-span-4">
                       <Field
                         v-slot="{
                           field,
@@ -1646,7 +1917,7 @@ const onSubmit = handleSubmit(
                           handleChange,
                           handleBlur,
                         }"
-                        name="planning.obs"
+                        name="planning.step"
                       >
                         <BaseInput
                           label="Pas"
@@ -1654,6 +1925,29 @@ const onSubmit = handleSubmit(
                           icon="ph:file"
                           placeholder=""
                           v-model="activeEnd.step"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+                    <div class="col-span-12 md:col-span-4">
+                      <Field
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
+                        name="planning.total"
+                      >
+                        <BaseInput
+                          label="Nombre"
+                          type="number"
+                          icon="ph:file"
+                          placeholder=""
+                          v-model="activeEnd.total"
                           :error="errorMessage"
                           :disabled="isSubmitting"
                           @update:model-value="handleChange"
@@ -1758,7 +2052,7 @@ const onSubmit = handleSubmit(
           </div>
           <div shape="straight" class="border border-t-1"></div>
           <h3
-            class="font-heading text-muted-900 text-base font-medium py-2 leading-6 dark:text-white"
+            class="font-heading text-muted-900 text-lg font-medium py-2 leading-6 dark:text-white"
           >
             {{
               isPrintPlanning == true
@@ -1778,17 +2072,13 @@ const onSubmit = handleSubmit(
             >Produit :
             <span class="text-primary-500">{{ data?.data?.label ?? '-' }}</span>
           </BaseText>
-          <BaseText size="sm"
+          <BaseText size="md"
             >Mois :
             <span class="text-primary-500"
               >{{ formatter.format(activeDate) }}
               {{ activeDate.getFullYear() }}</span
             ></BaseText
           >
-          <BaseText size="sm"
-            >Total Commandés :
-            <span class="text-primary-500">{{ data?.data?.quantities }} </span>
-          </BaseText>
 
           <BaseText size="sm"
             >Période :
@@ -1815,14 +2105,17 @@ const onSubmit = handleSubmit(
           </div>
         </div>
 
-        <div class="flex justify-start text-sm px-2 pb-2">
-          LEGENDE :
-          <div v-for="(product, i) in data.data.products" :key="product._id">
-            <span class="px-2">
-              {{ product.tag }} : {{ product.type }} {{ product.message }}
-            </span>
-            |
+        <div class="flex justify-between px-2 pb-2 w-full">
+          <div class="flex justify-start text-sm">
+            LEGENDE :
+            <div v-for="(product, i) in data.data.products" :key="product._id">
+              <span class="px-2">
+                {{ product.tag }} : {{ product.type }} {{ product.message }}
+              </span>
+              |
+            </div>
           </div>
+          <div class="text-yellow-500">{{ data.data.description }}</div>
         </div>
 
         <div
@@ -1871,7 +2164,7 @@ const onSubmit = handleSubmit(
                   <span>Horaires</span>
                 </BaseHeading>
               </div>
-              <div v-for="h in hoursData.data" :key="h._id">
+              <div v-for="h in hoursData" :key="h._id">
                 <div v-if="checkEmptyPlanning(h)" class="border-b-2">
                   <BaseHeading
                     as="h4"
@@ -1881,6 +2174,19 @@ const onSubmit = handleSubmit(
                     class="text-muted-800 dark:text-white pb-2 pt-2 text-center"
                   >
                     <span>{{ h.name }}</span>
+                  </BaseHeading>
+                </div>
+              </div>
+              <div v-for="tvProg in data.data.tvPrograms" :key="tvProg._id">
+                <div class="border-b-2">
+                  <BaseHeading
+                    as="h4"
+                    size="sm"
+                    weight="light"
+                    lead="tight"
+                    class="text-muted-800 dark:text-white pb-2 pt-2 text-center"
+                  >
+                    <span>{{ tvProg.name }}</span>
                   </BaseHeading>
                 </div>
               </div>
@@ -1969,7 +2275,7 @@ const onSubmit = handleSubmit(
                 </BaseHeading>
               </div>
 
-              <div v-for="h in hoursData.data" :key="h._id" class="">
+              <div v-for="h in hoursData" :key="h._id" class="">
                 <div
                   v-if="checkEmptyPlanning(h)"
                   class="border-b-2 flex justify-start"
@@ -1985,26 +2291,66 @@ const onSubmit = handleSubmit(
                         openSpotPlanningModal(
                           d.toString(),
                           h,
-                          checkSpot(d, h.code)[2],
+                          spotData[h.code][d - 1][2],
                         )
                       "
-                      :color="checkSpot(d, h.code)[1]"
+                      :color="spotData[h.code][d - 1][1]"
                       class="!w-6 !h-[2.106em] rounded-full !px-1 !my-2"
                     >
-                      <!-- <span
-                        v-if="dayOfWeek(d)"
-                        class="hover:text-primary-500/90 text-base"
-                        >+</span
-                      > -->
-                      <span class="hover:text-primary-500/90 text-base">{{
-                        checkSpot(d, h.code)[0]
-                      }}</span>
+                      <span class="hover:text-primary-500/90 text-base"
+                        >{{ spotData[h.code][d - 1][0] }}
+                      </span>
+                      <span
+                        v-if="spotData[h.code][d - 1][3] > 1"
+                        class="text-[10px] pr-1 text-gray-900"
+                        >{{ spotData[h.code][d - 1][3] }}
+                      </span>
                     </BaseButton>
                   </div>
                   <div
                     class="text-muted-800 dark:text-white -mt-1 !w-10 flex justify-center items-center border-r"
                   >
-                    {{ totalPerHour(h) }}
+                    {{ totalPerHour(h, false, '') }}
+                  </div>
+                </div>
+              </div>
+              <div
+                v-for="prog in data.data.tvPrograms"
+                :key="prog._id"
+                class=""
+              >
+                <div class="border-b-2 flex justify-start">
+                  <div
+                    v-for="d in activeDays"
+                    :key="d"
+                    class="text-muted-800 dark:text-white -mt-1 !w-10 flex justify-center items-center border-r"
+                  >
+                    <BaseButton
+                      :title="dayOfWeek(d) + ' LE ' + d"
+                      @click="
+                        openSpotPlanningModalProg(
+                          d.toString(),
+                          prog,
+                          tvProgramData[prog._id][d - 1][2],
+                        )
+                      "
+                      :color="tvProgramData[prog._id][d - 1][1]"
+                      class="!w-6 !h-[2.106em] rounded-full !px-1 !my-2"
+                    >
+                      <span class="hover:text-primary-500/90 text-base"
+                        >{{ tvProgramData[prog._id][d - 1][0] }}
+                      </span>
+                      <span
+                        v-if="tvProgramData[prog._id][d - 1][3] > 1"
+                        class="text-[10px] pr-1 text-gray-900"
+                        >{{ tvProgramData[prog._id][d - 1][3] }}
+                      </span>
+                    </BaseButton>
+                  </div>
+                  <div
+                    class="text-muted-800 dark:text-white -mt-1 !w-10 flex justify-center items-center border-r"
+                  >
+                    {{ totalPerHour('01:00', true, prog._id) }}
                   </div>
                 </div>
               </div>
@@ -2031,15 +2377,16 @@ const onSubmit = handleSubmit(
                 </BaseHeading>
               </div>
             </BaseCard>
-            <div v-if="true" class="flex justify-between py-4">
+            <div v-if="true" class="flex justify-between pt-4 pb-2">
               <div class="text-xs">
-                <p class="py-2">
+                <div class="flex item-center py-2">
                   NB: (Difusé:
-                  <span class="px-1 text-primary-500"> SPOT </span>; En attente
-                  de diffusion:
-                  <span class="px-1 text-yellow-500"> SPOT </span>; Non difusé:
-                  <span class="px-1 text-red-500"> SPOT </span>)
-                </p>
+                  <p class="mx-2 h-4 w-4 bg-primary-500 rounded-full"></p>
+                  ; En attente de diffusion:
+                  <span class="mx-2 h-4 w-4 bg-yellow-500 rounded-full"></span>;
+                  Non difusé:
+                  <span class="h-4 w-4 bg-red-500 rounded-full"></span>)
+                </div>
                 <p class="pt-2">
                   Ce document dûment signé et cacheté par le support tient lieu
                   de justificatif.
@@ -2101,7 +2448,23 @@ const onSubmit = handleSubmit(
         <!-- Footer -->
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
-            <BaseButton @click="isModalPlanningOpen = false">Fermer</BaseButton>
+            <BaseButton @click="isModalPlanningOpen = false" label="Fermer"
+              >X</BaseButton
+            >
+            <BaseButton @click="captureContent('Planning')">
+              <Icon
+                name="lucide:camera"
+                class="pointer-events-none h-4 w-4 mx-2"
+              />
+              Début capture planning</BaseButton
+            >
+            <BaseButton @click="captureContent('Certificate')">
+              <Icon
+                name="lucide:camera"
+                class="pointer-events-none h-4 w-4 mx-2"
+              />
+              Debut capture certificat</BaseButton
+            >
             <BaseButton @click="printPlanning('planning')">
               <Icon
                 name="lucide:printer"
@@ -2114,8 +2477,23 @@ const onSubmit = handleSubmit(
                 name="lucide:printer"
                 class="pointer-events-none h-4 w-4 mx-2"
               />
-              Certificat de diffusion</BaseButton
+              Certificat de diff.</BaseButton
             >
+            <BaseButton @click="isModalAddTvProgramOpen = true">
+              <Icon
+                name="lucide:plus"
+                class="pointer-events-none h-4 w-4 mx-2"
+              />
+              Emission</BaseButton
+            >
+            <BaseButton @click="isModalConfirmDiffusionOpen = true">
+              <Icon
+                name="lucide:check"
+                class="pointer-events-none h-4 w-4 mx-2"
+              />
+              Valider diffusion</BaseButton
+            >
+
             <BaseButton
               :color="data.data?.validator ? 'success' : 'warning'"
               flavor="solid"
@@ -2129,6 +2507,29 @@ const onSubmit = handleSubmit(
                 data.data?.validator ? 'Planning validé' : 'Valider le planning'
               }}
             </BaseButton>
+            <div
+              v-if="
+                isCapturePageCertificate == true ||
+                isCapturePagePlanning == true
+              "
+            >
+              <BaseButton
+                @click="removeMonth()"
+                color="primary"
+                class="w-full sm:w-20"
+              >
+                <Icon name="lucide:chevron-left" class="h-6 w-6" />
+                <span></span>
+              </BaseButton>
+              <BaseButton
+                @click="addMonth()"
+                color="primary"
+                class="w-full sm:w-20 mx-2"
+              >
+                <Icon name="lucide:chevron-right" class="h-6 w-6" />
+                <span></span>
+              </BaseButton>
+            </div>
           </div>
         </div>
       </template>
@@ -2291,6 +2692,164 @@ const onSubmit = handleSubmit(
               color="primary"
               flavor="solid"
               @click="importProductFile()"
+              >Valider</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal Add Tv Program -->
+    <TairoModal
+      :open="isModalAddTvProgramOpen"
+      size="sm"
+      @close="isModalAddTvProgramOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Nouvelle émission
+          </h3>
+
+          <BaseButtonClose @click="isModalAddTvProgramOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <div class="ltablet:col-span-6 col-span-12 lg:col-span-6 my-2">
+            <BaseAutocomplete
+              v-model="currentTvProgram"
+              :error="errorMessage"
+              :disabled="isSubmitting"
+              :items="allTvPrograms"
+              :display-value="(item: any) => item.name || ''"
+              :filter-items="filterItems"
+              icon="lucide:tv"
+              placeholder="e.g. Canal Matin"
+              label="Emission"
+              clearable
+              :clear-value="''"
+            >
+              <template #empty="value"> Aucun resultat </template>
+            </BaseAutocomplete>
+          </div>
+
+          <p
+            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est reversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalAddTvProgramOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              :disabled="isActionLoading"
+              :loading="isActionLoading"
+              color="primary"
+              flavor="solid"
+              @click="addTvProgram()"
+              >Valider</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal confirm diffusion -->
+    <TairoModal
+      :open="isModalConfirmDiffusionOpen"
+      size="4xl"
+      @close="isModalConfirmDiffusionOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Confirmation de diffusion
+          </h3>
+
+          <BaseButtonClose @click="isModalConfirmDiffusionOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6 h-[600px] overflow-y-scroll">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div v-for="pl in data!.data.plannings" class="my-2">
+            <div class="flex items-center">
+              <BaseCheckbox
+                v-model="selectedPlannings"
+                :value="pl._id"
+                :name="`item-checkbox-${pl._id}`"
+                :disabled="pl.isManualPlay || pl.isAutoPlay"
+                shape="rounded"
+                class="text-primary-500"
+              />
+              <p
+                :class="
+                  pl.isManualPlay || pl.isAutoPlay ? 'text-primary-500' : ''
+                "
+              >
+                {{
+                  moment(pl.date)
+                    .locale('fr-FR')
+                    .format('dddd D MMMM YYYY [à] HH:mm:ss')
+                }}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-between pt-10">
+          <div class="flex items-center">
+            <BaseCheckbox
+              :model-value="isAllVisibleSelectedPlanning"
+              :indeterminate="
+                selectedPlannings.length > 0 && !isAllVisibleSelectedPlanning
+              "
+              name="table-1-main"
+              shape="rounded"
+              class="text-primary-500"
+              @click="toggleAllVisibleSelectionPlanning"
+            />
+            Tout selectionner
+          </div>
+          <p
+            class="flex justify-center font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est reversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalConfirmDiffusionOpen = false"
+              >Fermer</BaseButton
+            >
+
+            <BaseButton
+              :disabled="isActionLoading"
+              :loading="isActionLoading"
+              color="primary"
+              flavor="solid"
+              @click="validatePlanningDiffusion()"
               >Valider</BaseButton
             >
           </div>

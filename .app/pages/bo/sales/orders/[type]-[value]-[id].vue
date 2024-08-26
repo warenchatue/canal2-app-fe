@@ -32,7 +32,6 @@ const isLoading = ref(false)
 const currentOrderInvoice = ref({})
 const token = useCookie('token')
 const isModalCreatePackageOpen = ref(false)
-const isModalDeletePackageOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
 const isModalCreatePaymentOpen = ref(false)
 const isModalCreateTaxOpen = ref(false)
@@ -107,17 +106,17 @@ const queryLight = computed(() => {
   }
 })
 
-const { data: allOrders } = await useFetch('/api/sales/orders', {
-  query,
-})
+// const { data: allOrders } = await useFetch('/api/sales/orders', {
+//   query,
+// })
 
-const { data: announcers, pending: pendingAnnouncer } = await useFetch(
-  '/api/sales/announcers',
-  {
-    query: queryLight,
-    lazy: true,
-  },
-)
+// const { data: announcers, pending: pendingAnnouncer } = await useFetch(
+//   '/api/sales/announcers',
+//   {
+//     query: queryLight,
+//     lazy: false,
+//   },
+// )
 
 const { data: articles } = await useFetch('/api/sales/articles', {
   query,
@@ -170,9 +169,9 @@ const commercials = allUsers.value?.data.filter((e: any) => {
   )
 })
 
-const finalOrders = allOrders.value?.data.filter((e: any) => {
-  return e.validator
-})
+// const finalOrders = allOrders.value?.data.filter((e: any) => {
+//   return e.validator
+// })
 
 const pageType = computed(() => route.params.type)
 const pageValue = computed(() => route.params.value)
@@ -220,6 +219,8 @@ if (pageType.value == 'view' || pageType.value == 'edit') {
       packageId.value =
         currentOrderInvoice.value.order?.package?._id ?? undefined
       selectedOrder.value = currentOrderInvoice.value.order
+      selectedOrder.value.id = currentOrderInvoice.value.order._id
+      selectedOrder.value.name = currentOrderInvoice.value.order.code
       editOrderInvoiceFile(currentOrderInvoice.value)
     }
   }
@@ -231,8 +232,23 @@ if (pageType.value == 'view' || pageType.value == 'edit') {
 }
 
 watch(selectedOrder, (value) => {
-  setTimeout(() => {
-    editOrderInvoiceFile(value, true)
+  setTimeout(async () => {
+    const query = computed(() => {
+      return {
+        filter: filter.value,
+        perPage: perPage.value,
+        page: page.value,
+        action: 'findOne',
+        id: value.id!,
+        token: token.value,
+      }
+    })
+    const { data: singleOrder } = await useFetch('/api/sales/orders', {
+      query,
+    })
+    if (singleOrder.value?.success) {
+      editOrderInvoiceFile(singleOrder.value.data, true)
+    }
   }, 500)
 })
 
@@ -308,46 +324,6 @@ async function viewOrder() {
     isPrint.value = !isPrint.value
     editOrderInvoiceFile(currentOrderInvoice.value)
   }, 500)
-}
-
-async function deletePackage(spotPackage: any) {
-  const query2 = computed(() => {
-    return {
-      action: 'delete',
-      token: token.value,
-      id: order._id,
-    }
-  })
-
-  const response = await useFetch('/api/pub/packages', {
-    method: 'delete',
-    headers: { 'Content-Type': 'application/json' },
-    query: query2,
-  })
-
-  if (response.data?.value?.success) {
-    success.value = true
-    toaster.clearAll()
-    toaster.show({
-      title: 'Success',
-      message: `Package supprimé !`,
-      color: 'success',
-      icon: 'ph:check',
-      closable: true,
-    })
-    isModalDeletePackageOpen.value = false
-    filter.value = 'spotPackage'
-    filter.value = ''
-  } else {
-    toaster.clearAll()
-    toaster.show({
-      title: 'Désolé',
-      message: `Une erreur est survenue !`,
-      color: 'danger',
-      icon: 'ph:check',
-      closable: true,
-    })
-  }
 }
 
 async function addInvoicePayment() {
@@ -610,7 +586,7 @@ const isAllVisibleSelected = computed(() => {
   return selected.value.length === data.value?.data.length
 })
 
-function filterItems(query?: string, items?: any[]) {
+async function filterItems(query?: string, items?: any[]) {
   if (query.length < 3) {
     return []
   }
@@ -619,13 +595,68 @@ function filterItems(query?: string, items?: any[]) {
     return items ?? []
   }
 
-  // search by name
-  return items.filter((item) => {
-    const nameMatches = item?.name?.toLowerCase().includes(query.toLowerCase())
-    // const textMatches = item?.text?.toLowerCase().includes(query.toLowerCase())
-    return nameMatches
+  const queryLightByName = computed(() => {
+    return {
+      filter: filter.value,
+      perPage: 10000,
+      page: page.value,
+      action: 'findAllLightByName',
+      name: query,
+      token: token.value,
+    }
   })
+
+  const { data: announcersData } = await useFetch('/api/sales/announcers', {
+    query: queryLightByName,
+  })
+
+  // search by name
+  return announcersData.value?.data ?? false
 }
+async function filterOrdersItems(query?: string, items?: any[]) {
+  if (query.length < 3) {
+    return []
+  }
+
+  if (!query || !items) {
+    return items ?? []
+  }
+
+  const queryLightByName = computed(() => {
+    return {
+      filter: filter.value,
+      perPage: 10000,
+      page: page.value,
+      action: 'findAllLightByCode',
+      name: query,
+      token: token.value,
+    }
+  })
+
+  const { data: announcersData } = await useFetch('/api/sales/orders', {
+    query: queryLightByName,
+  })
+
+  // search by name
+  return announcersData.value?.data ?? false
+}
+
+// function filterItems(query?: string, items?: any[]) {
+//   if (query.length < 3) {
+//     return []
+//   }
+
+//   if (!query || !items) {
+//     return items ?? []
+//   }
+
+//   // search by name
+//   return items.filter((item) => {
+//     const nameMatches = item?.name?.toLowerCase().includes(query.toLowerCase())
+//     // const textMatches = item?.text?.toLowerCase().includes(query.toLowerCase())
+//     return nameMatches
+//   })
+// }
 
 const currentPackage = ref({})
 
@@ -1087,7 +1118,7 @@ const onSubmit = handleSubmit(
               paymentCondition: values.order?.paymentCondition?._id,
               announcer: values.order?.announcer?.id,
               manager: values.order?.commercial?._id,
-              order: selectedOrder.value?._id ?? undefined,
+              order: selectedOrder.value?.id ?? undefined,
               org: currentOrg.value,
               items: orderData.value,
               paid: totalPaid,
@@ -1135,7 +1166,7 @@ const onSubmit = handleSubmit(
               announcer: values.order?.announcer?.id,
               manager: values.order?.commercial?._id,
               _id: undefined,
-              order: selectedOrder.value?._id ?? undefined,
+              order: selectedOrder.value?.id ?? undefined,
               org: currentOrg.value,
               items: orderData.value,
               paid: totalPaid,
@@ -1679,7 +1710,7 @@ const onSubmit = handleSubmit(
                   <div class="mx-auto flex w-full flex-col">
                     <div>
                       <div class="grid grid-cols-12 gap-4">
-                        <div
+                        <!-- <div
                           v-if="pageValue == 'invoice'"
                           class="ltablet:col-span-6 col-span-12 lg:col-span-6"
                         >
@@ -1695,6 +1726,44 @@ const onSubmit = handleSubmit(
                             :error="errorMessage"
                             :disabled="isSubmitting || isEdit"
                           />
+                        </div> -->
+                        <div
+                          v-if="pageValue == 'invoice'"
+                          class="ltablet:col-span-6 col-span-12 lg:col-span-6"
+                        >
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="order.order"
+                          >
+                            <BaseAutocomplete
+                              v-model="selectedOrder"
+                              :error="errorMessage"
+                              :disabled="isSubmitting"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
+                              :items="[]"
+                              :display-value="(item: any) => item.name || ''"
+                              :filter-items="filterOrdersItems"
+                              icon="lucide:file"
+                              placeholder="DEV/2024/..."
+                              label="Devis"
+                              clearable
+                              :clear-value="''"
+                            >
+                              <template #empty="value">
+                                <!-- Use destruct to keep what you need -->
+                                <div v-if="value.query.length < 3">
+                                  Saisissez au-moins 3 caractères
+                                </div>
+                                <div v-else>Aucun resultat.</div>
+                              </template>
+                            </BaseAutocomplete>
+                          </Field>
                         </div>
                         <div
                           class="ltablet:col-span-6 col-span-12 lg:col-span-6"
@@ -1711,10 +1780,10 @@ const onSubmit = handleSubmit(
                             <BaseAutocomplete
                               :model-value="field.value"
                               :error="errorMessage"
-                              :disabled="isSubmitting || pendingAnnouncer"
+                              :disabled="isSubmitting"
                               @update:model-value="handleChange"
                               @blur="handleBlur"
-                              :items="announcers?.data"
+                              :items="[]"
                               :display-value="(item: any) => item.name || ''"
                               :filter-items="filterItems"
                               icon="lucide:user"
@@ -2598,9 +2667,13 @@ const onSubmit = handleSubmit(
                           >
                             {{
                               new Intl.NumberFormat('fr-FR').format(
-                                currentOrderInvoice?.taxes.length > 1
+                                currentOrderInvoice?.taxes.length > 2
                                   ? currentOrderInvoice?.taxes[0].amount +
-                                      currentOrderInvoice?.taxes[1].amount
+                                      currentOrderInvoice?.taxes[1].amount +
+                                      currentOrderInvoice?.taxes[2].amount
+                                  : currentOrderInvoice?.taxes.length > 1
+                                  ? currentOrderInvoice?.taxes[0].amount +
+                                    currentOrderInvoice?.taxes[1].amount
                                   : currentOrderInvoice?.taxes[0].amount,
                               )
                             }}
@@ -2701,63 +2774,7 @@ const onSubmit = handleSubmit(
       </form>
     </TairoContentWrapper>
 
-    <!-- Modal delete -->
-    <TairoModal
-      :open="isModalDeletePackageOpen"
-      size="sm"
-      @close="isModalDeletePackageOpen = false"
-    >
-      <template #header>
-        <!-- Header -->
-        <div class="flex w-full items-center justify-between p-4 md:p-6">
-          <h3
-            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
-          >
-            Suppression d'un package
-          </h3>
-
-          <BaseButtonClose @click="isModalDeletePackageOpen = false" />
-        </div>
-      </template>
-
-      <!-- Body -->
-      <div class="p-4 md:p-6">
-        <div class="mx-auto w-full max-w-xs text-center">
-          <h3
-            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
-          >
-            Supprimer
-            <span class="text-red-500">{{ currentPackage?.label }}</span> ?
-          </h3>
-
-          <p
-            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
-          >
-            Cette action est irreversible
-          </p>
-        </div>
-      </div>
-
-      <template #footer>
-        <!-- Footer -->
-        <div class="p-4 md:p-6">
-          <div class="flex gap-x-2">
-            <BaseButton @click="isModalDeletePackageOpen = false"
-              >Annuler</BaseButton
-            >
-
-            <BaseButton
-              color="primary"
-              flavor="solid"
-              @click="deletePackage(currentPackage)"
-              >Suppimer</BaseButton
-            >
-          </div>
-        </div>
-      </template>
-    </TairoModal>
-
-    <!-- Modal confirm order -->
+    <!-- Modal confirm sale order / invoice -->
     <TairoModal
       :open="isModalConfirmOrderOpen"
       size="sm"
@@ -2819,7 +2836,7 @@ const onSubmit = handleSubmit(
       </template>
     </TairoModal>
 
-    <!-- Modal create package -->
+    <!-- Modal create campaign -->
     <TairoModal
       :open="isModalCreatePackageOpen"
       size="sm"
@@ -2987,35 +3004,6 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
-                  <!-- <div class="grid grid-cols-12 gap-4 mt-2">
-                    <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
-                      <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
-                        name="operation.currency"
-                      >
-                        <BaseListbox
-                          label="Devise"
-                          :items="currenciesData?.data"
-                          :properties="{
-                            value: '_id',
-                            label: 'name',
-                            sublabel: 'rate',
-                            media: '',
-                          }"
-                         v-model="curInvoicePaymentForm.currency"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        />
-                      </Field>
-                    </div>
-                  </div> -->
                   <div class="col-span-12 sm:col-span-6 mt-2">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"

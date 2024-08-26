@@ -5,8 +5,8 @@ import { UserRole } from '~/types/user'
 definePageMeta({
   title: 'Factures',
   preview: {
-    title: 'Factures',
-    description: 'Factures | Commandes',
+    title: 'Invoices',
+    description: 'Invoices management',
     categories: ['bo', 'spots', 'orders'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
@@ -26,12 +26,13 @@ const isModalDeletePackageOpen = ref(false)
 const isModalCopyInvoiceOpen = ref(false)
 const isModalDoitInvoiceOpen = ref(false)
 const isModalSalesReportOpen = ref(false)
+const isIndividualReport = ref(false)
 const isEdit = ref(false)
 const isPrint = ref(false)
 const toaster = useToaster()
 const currentOrg = ref('')
 const currentTeam = ref('')
-const currentPackage = ref({})
+const currentInvoice = ref({})
 const isLoading = ref(false)
 const dates = ref({
   start: new Date(),
@@ -91,11 +92,11 @@ const { data: orgs, pending: pendingOrg } = await useFetch('/api/admin/orgs', {
 function confirmDeletePackage(invoice: any) {
   isModalDeletePackageOpen.value = true
   isEdit.value = false
-  currentPackage.value = invoice
+  currentInvoice.value = invoice
 }
 
 function updateCurrentInvoice(invoice: any) {
-  currentPackage.value = invoice
+  currentInvoice.value = invoice
 }
 
 async function printSalesReport() {
@@ -118,6 +119,10 @@ async function printSalesReport() {
   })
   data.value = reportData.value
   isPrint.value = true
+  await printElement()
+}
+
+async function printElement() {
   setTimeout(() => {
     var printContents = document.getElementById('print-sales-report').innerHTML
     var originalContents = document.body.innerHTML
@@ -132,6 +137,12 @@ function openReportModal() {
   setTimeout(() => {
     isModalSalesReportOpen.value = true
   }, 500)
+}
+
+async function openIndividualReportModal() {
+  isIndividualReport.value = true
+  isPrint.value = true
+  await printElement()
 }
 
 async function deletePackage(invoice: any) {
@@ -174,12 +185,12 @@ async function deletePackage(invoice: any) {
   }
 }
 
-async function copyInvoice(invoice: any) {
+async function copyInvoice(ids: any) {
   const query2 = computed(() => {
     return {
       action: 'copyInvoice',
       token: token.value,
-      id: invoice._id,
+      id: ids[0],
     }
   })
 
@@ -301,11 +312,19 @@ const success = ref(false)
           @click="openReportModal()"
         >
           <Icon name="ph:file" class="h-4 w-4" />
-          <span>Rapports</span>
+          <span>Rapport Global</span>
         </BaseButton>
         <BaseButton
           color="primary"
-          class="w-full sm:w-52"
+          class="w-full sm:w-48"
+          @click="openIndividualReportModal()"
+        >
+          <Icon name="ph:file" class="h-4 w-4" />
+          <span>Rapport Client</span>
+        </BaseButton>
+        <BaseButton
+          color="primary"
+          class="w-full sm:w-48"
           to="/bo/sales/orders/new-invoice-0"
           @click="isLoading = true"
           :loading="isLoading"
@@ -426,7 +445,7 @@ const success = ref(false)
                 lead="tight"
                 class="text-muted-700 dark:text-muted-400"
               >
-                <span>En attente</span>
+                <span>Ouverte</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -539,7 +558,7 @@ const success = ref(false)
         </div>
         <div v-if="isPrint" shape="straight" class="border border-t-1"></div>
         <h4
-          v-if="isPrint"
+          v-if="isPrint && !isIndividualReport"
           class="font-heading text-muted-900 text-xs font-medium pb-2 pt-1 px-2 leading-6 dark:text-white"
         >
           Etat des ventes du
@@ -548,6 +567,13 @@ const success = ref(false)
           {{ currentTeam ? currentTeam.toUpperCase() : 'Douala et Yaounde' }} de
           la société
           {{ currentOrg?.name ?? '' }}
+        </h4>
+        <h4
+          v-if="isPrint && isIndividualReport"
+          class="font-heading text-muted-900 text-xs font-medium pb-2 pt-1 px-2 leading-6 dark:text-white"
+        >
+          Etat des factures impayés du client
+          {{ data?.data[0]?.announcer?.name }}
         </h4>
         <h5
           v-if="isPrint"
@@ -1161,7 +1187,7 @@ const success = ref(false)
             class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
           >
             Supprimer
-            <span class="text-red-500">{{ currentPackage?.label }}</span> ?
+            <span class="text-red-500">{{ currentInvoice?.label }}</span> ?
           </h3>
 
           <p
@@ -1183,7 +1209,7 @@ const success = ref(false)
             <BaseButton
               color="primary"
               flavor="solid"
-              @click="deletePackage(currentPackage)"
+              @click="deletePackage(currentInvoice)"
               >Suppimer</BaseButton
             >
           </div>
@@ -1191,7 +1217,7 @@ const success = ref(false)
       </template>
     </TairoModal>
 
-    <!-- Modal Copy -->
+    <!-- Modal Copy Invoice -->
     <TairoModal
       :open="isModalCopyInvoiceOpen"
       size="sm"
@@ -1239,7 +1265,7 @@ const success = ref(false)
             <BaseButton
               color="primary"
               flavor="solid"
-              @click="copyInvoice(currentPackage)"
+              @click="copyInvoice(selected)"
               >Proceder</BaseButton
             >
           </div>
@@ -1295,7 +1321,7 @@ const success = ref(false)
             <BaseButton
               color="primary"
               flavor="solid"
-              @click="updateInvoiceIsDoit(currentPackage)"
+              @click="updateInvoiceIsDoit(currentInvoice)"
               >Proceder</BaseButton
             >
           </div>

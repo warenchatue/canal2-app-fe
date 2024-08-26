@@ -121,6 +121,75 @@ export default defineAppConfig({
             ],
           },
           {
+            name: 'Programmes TV',
+            icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
+            activePath: '/bo/tv-programs',
+            children: [
+              {
+                name: 'Tableau de bord',
+                to: '',
+                icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Planning',
+                to: '/bo/tv-programs/planning',
+                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Nos emisions',
+                to: '/bo/tv-programs/programs',
+                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Catégories',
+                to: '/bo/tv-programs/categories',
+                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Horaires',
+                to: '/bo/tv-programs/hours',
+                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Jounalistes',
+                to: '/bo/tv-programs/journalists',
+                icon: { name: 'ph:users-duotone', class: 'w-4 h-4' },
+              },
+            ],
+          },
+          {
+            name: 'Achats',
+            icon: { name: 'ph:target-duotone', class: 'w-5 h-5' },
+            activePath: '/bo/purchases',
+            children: [
+              {
+                name: 'Tableau de bord',
+                // to: '/bo/sales',
+                icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Bons de commandes',
+                to: '/bo/purchases/orders',
+                icon: { name: 'lucide:file', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Factures fournisseurs',
+                to: '/bo/purchases/invoices',
+                icon: { name: 'lucide:file', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Fournisseurs',
+                to: '/bo/purchases/suppliers',
+                icon: { name: 'ph:users-duotone', class: 'w-5 h-5' },
+              },
+              {
+                name: 'Paiements effectués',
+                // to: '/bo/purchases/payments',
+                icon: { name: 'lucide:file', class: 'w-4 h-4' },
+              },
+            ],
+          },
+          {
             name: 'Ventes',
             icon: { name: 'ph:target-duotone', class: 'w-5 h-5' },
             activePath: '/bo/sales',
@@ -136,17 +205,12 @@ export default defineAppConfig({
                 icon: { name: 'lucide:file', class: 'w-4 h-4' },
               },
               {
-                name: 'Bons de commandes',
-                // to: '/bo/sales/invoices',
-                icon: { name: 'lucide:file', class: 'w-4 h-4' },
-              },
-              {
                 name: 'Factures clients',
                 to: '/bo/sales/invoices',
                 icon: { name: 'lucide:file', class: 'w-4 h-4' },
               },
               {
-                name: 'Paiements',
+                name: 'Paiements reçus',
                 to: '/bo/sales/payments',
                 icon: { name: 'lucide:file', class: 'w-4 h-4' },
               },
@@ -169,9 +233,9 @@ export default defineAppConfig({
           },
 
           {
-            name: 'Emission',
+            name: 'Programmes TV',
             icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
-            activePath: '/bo/estimations',
+            activePath: '/bo/tv-programs',
             children: [
               {
                 name: 'Tableau de bord',
@@ -179,19 +243,29 @@ export default defineAppConfig({
                 icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Conducteur',
-                to: '',
+                name: 'Planning',
+                to: '/bo/tv-programs/planning',
                 icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Nos Emmisions',
-                to: '',
+                name: 'Nos emisions',
+                to: '/bo/tv-programs/programs',
+                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Catégories',
+                to: '/bo/tv-programs/categories',
                 icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Horaires',
-                to: '',
+                to: '/bo/tv-programs/hours',
                 icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Jounalistes',
+                to: '/bo/tv-programs/journalists',
+                icon: { name: 'ph:users-duotone', class: 'w-4 h-4' },
               },
             ],
           },
@@ -233,12 +307,12 @@ export default defineAppConfig({
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'P.C & Cptes rattachés',
+                name: 'Catégories de dépenses',
                 to: '/bo/accountancy/doc-accounts',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Types P.C.',
+                name: 'Types de pièces',
                 to: '/bo/accountancy/doc-types',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
@@ -251,36 +325,9 @@ export default defineAppConfig({
             ],
           },
           {
-            name: 'Creation',
-            icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
-            activePath: '/bo/creation',
-            children: [
-              {
-                name: 'Impots et Taxes',
-                to: '/bo/config/taxes',
-                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Plan comptable',
-                to: '/bo/config/accounts',
-                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Codes Journaux',
-                to: '/bo/accountancy/journals',
-                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Plan de Tiers',
-                // to: '/bo/accountancy/third-parties',
-                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
-              },
-            ],
-          },
-          {
-            name: 'RH',
-            icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
-            activePath: '/bo/sav',
+            name: 'Fiscalité',
+            icon: { name: 'ph:money-duotone', class: 'w-5 h-5' },
+            activePath: '/bo/taxation',
             children: [
               {
                 name: 'Tableau de bord',
@@ -288,39 +335,61 @@ export default defineAppConfig({
                 icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Personnel',
-                to: '/bo/accountancy/accounting-docs',
-                icon: { name: 'ph:users-duotone', class: 'w-4 h-4' },
+                name: 'Déclarations',
+                // to: '/bo/accountancy/accounting-docs',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
               {
-                name: 'Rapports',
-                // to: '/bo/pub/reports',
+                name: 'Sociétes',
+                // to: '/bo/accountancy/doc-accounts',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
             ],
           },
-          {
-            name: 'PI',
-            icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
-            activePath: '/bo/sav',
-            children: [
-              {
-                name: 'Tableau de bord',
-                // to: '/bo/pub',
-                icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Immobilisations',
-                to: '/bo/accountancy/accounting-docs',
-                icon: { name: 'ph:app-window-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Rapports',
-                // to: '/bo/pub/reports',
-                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
-              },
-            ],
-          },
+          // {
+          //   name: 'RH',
+          //   icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
+          //   activePath: '/bo/sav',
+          //   children: [
+          //     {
+          //       name: 'Tableau de bord',
+          //       // to: '/bo/pub',
+          //       icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+          //     },
+          //     {
+          //       name: 'Personnel',
+          //       // to: '/bo/accountancy/accounting-docs',
+          //       icon: { name: 'ph:users-duotone', class: 'w-4 h-4' },
+          //     },
+          //     {
+          //       name: 'Rapports',
+          //       // to: '/bo/pub/reports',
+          //       icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+          //     },
+          //   ],
+          // },
+          // {
+          //   name: 'PI',
+          //   icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
+          //   activePath: '/bo/sav',
+          //   children: [
+          //     {
+          //       name: 'Tableau de bord',
+          //       // to: '/bo/pub',
+          //       icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+          //     },
+          //     {
+          //       name: 'Immobilisations',
+          //       // to: '',
+          //       icon: { name: 'ph:app-window-duotone', class: 'w-4 h-4' },
+          //     },
+          //     {
+          //       name: 'Rapports',
+          //       // to: '/bo/pub/reports',
+          //       icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+          //     },
+          //   ],
+          // },
           {
             name: 'Configuration',
             icon: { name: 'lucide:settings', class: 'w-5 h-5' },
@@ -336,6 +405,31 @@ export default defineAppConfig({
                 to: '/bo/config/payment-conditions',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
+              {
+                name: 'Impots et Taxes',
+                to: '/bo/config/taxes',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Plan comptable',
+                to: '/bo/config/accounts',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Codes journaux',
+                to: '/bo/accountancy/journals',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Plan de tiers',
+                // to: '/bo/accountancy/third-parties',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Sociétés',
+                to: '/bo/admin/orgs',
+                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
+              },
             ],
           },
           {
@@ -344,11 +438,6 @@ export default defineAppConfig({
             isAdmin: true,
             activePath: '/bo/admin',
             children: [
-              {
-                name: 'Organisations',
-                to: '/bo/admin/orgs',
-                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
-              },
               {
                 name: 'Utilisateurs',
                 to: '/bo/admin/users',

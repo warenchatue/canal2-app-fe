@@ -18,6 +18,7 @@ export default defineNuxtConfig({
   pinia: {
     autoImports: ['defineStore', 'acceptHMRUpdate'],
   },
+
   css: ['~/assets/css/colors.css'],
 
   experimental: {
@@ -82,6 +83,14 @@ export default defineNuxtConfig({
     },
     build: {
       target: 'esnext',
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vue3-apexcharts': ['vue3-apexcharts'],
+          },
+        },
+      },
     },
   },
 

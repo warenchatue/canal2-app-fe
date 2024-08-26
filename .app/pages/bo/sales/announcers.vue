@@ -36,6 +36,7 @@ if (
   authStore.user.appRole?.name != UserRole.rh &&
   authStore.user.appRole?.name != UserRole.billing &&
   authStore.user.appRole?.name != UserRole.sale &&
+  authStore.user.appRole?.name != UserRole.mediaPlanner &&
   authStore.user.appRole?.name != UserRole.adminSale &&
   authStore.user.appRole?.name != UserRole.admin &&
   authStore.user.appRole?.name != UserRole.accountancy &&
@@ -176,7 +177,7 @@ const zodSchema = z
       category: z.string().optional(),
       country: z
         .object({
-          _id: z.string(),
+          _id: z.string().optional(),
           abbr: z.string(),
           name: z.string(),
           flag: z.string().optional(),
@@ -213,12 +214,6 @@ const initialValues = computed<FormInput>(() => ({
     status: '',
     type: '',
     category: '',
-    country: {
-      _id: '',
-      abbr: '',
-      name: '',
-      flag: '',
-    },
   },
 }))
 
@@ -332,6 +327,7 @@ const onSubmit = handleSubmit(
           query: query2,
           body: {
             ...values.announcer,
+            country: values.announcer.country?._id,
           },
         })
         isSuccess.value = response.data.value?.success
@@ -349,6 +345,7 @@ const onSubmit = handleSubmit(
           query: query2,
           body: {
             ...values.announcer,
+            country: values.announcer.country?._id,
             _id: undefined,
           },
         })
@@ -989,6 +986,11 @@ const onSubmit = handleSubmit(
                         <option value="school">Ecole</option>
                         <option value="PME">PME</option>
                         <option value="TPE">TPE</option>
+                        <option value="ONG">ONG</option>
+                        <option value="ASSOCIATION">Association</option>
+                        <option value="INSTRELIG">
+                          Institution Religieuse
+                        </option>
                       </BaseSelect>
                     </Field>
                   </div>

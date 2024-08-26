@@ -67,6 +67,27 @@ export default defineEventHandler(async (event) => {
         let newPath = `${dirName}/${fileName}`
 
         const { success } = await newAnnouncers(
+          'announcers',
+          dirName,
+          fileName,
+          newPath,
+          files,
+          token,
+        )
+
+        return { success }
+      } catch (error) {
+        return { status: 'OK', success: false, count: 0 }
+      }
+    } else if (action == 'import-suppliers') {
+      let dirName = `${path.join('.app', 'public')}`
+
+      try {
+        let fileName = 'uploads/suppliers/' + files[0].data
+        let newPath = `${dirName}/${fileName}`
+
+        const { success } = await newAnnouncers(
+          'suppliers',
           dirName,
           fileName,
           newPath,
@@ -182,39 +203,32 @@ async function newPlaylist(
 }
 
 async function newAnnouncers(
+  routeName: string,
   dirName: string,
   fileName: string,
   newPath: string,
   files: any,
   token: string,
 ) {
-  // fs.writeFile(newPath, files[0].data, { flag: 'w' }, function (err) {
-  //   if (err) {
-  //     console.log(err)
-  //     return { success: false, count: 0 }
-  //   }
-  //   console.log(`${fileName} Successfully uploaded`)
-  // })
-
-  // const content = fs.readFileSync(dirName + '/' + fileName, 'utf8')
   const content = files[0].data.toString()
   const rows = content.split('\n')
   const finalContent = rows.map((row: any) => row.split(','))
   console.log(finalContent.length)
   for (let index = 1; index < finalContent.length; index++) {
     const el = finalContent[index]
-    console.log('createAnnouncer ' + token)
+    console.log('create ' + routeName + ' ' + token)
     const runtimeConfig = useRuntimeConfig()
-    const data: any = await $fetch(runtimeConfig.env.apiUrl + '/announcers', {
+    const data: any = await $fetch(runtimeConfig.env.apiUrl + '/' + routeName, {
       method: 'post',
       headers: {
         Authorization: 'Bearer ' + token,
         'Content-type': 'application/json',
       },
       body: {
-        name: el[1],
-        phone: el[3],
-        phone2: el[3],
+        name: el[2].replaceAll('"', ''),
+        nc: el[5].replaceAll('"', ''),
+        phone: el[11].replaceAll('"', ''),
+        city: el[12].replaceAll('"', ""),
       },
     }).catch((error) => console.log(error))
     console.log(data)

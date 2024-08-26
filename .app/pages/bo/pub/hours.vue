@@ -66,7 +66,13 @@ const query = computed(() => {
 })
 
 const { data, pending, refresh } = await useFetch('/api/pub/hours', {
-  query,
+  query: query,
+  lazy: true,
+  transform: (els) => {
+    return els.data?.filter((el: any) => {
+      return el.type != 'TvProgram'
+    })
+  },
 })
 
 watch(route, (value) => {
@@ -75,7 +81,7 @@ watch(route, (value) => {
 
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
-  return selected.value.length === data.value?.data.length
+  return selected.value.length === data.value?.length
 })
 
 function toggleAllVisibleSelection() {
@@ -376,7 +382,7 @@ const onSubmit = handleSubmit(
       </template>
 
       <div>
-        <div v-if="!pending && data?.data.length === 0">
+        <div v-if="!pending && data?.length === 0">
           <BasePlaceholderPage
             title="No matching results"
             subtitle="Looks like we couldn't find any matching results for your search terms. Try other search terms."
@@ -438,7 +444,7 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
               </TairoTableRow>
 
-              <TairoTableRow v-for="item in data?.data" :key="item.id">
+              <TairoTableRow v-for="item in data" :key="item.id">
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseCheckbox

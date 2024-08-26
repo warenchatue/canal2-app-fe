@@ -43,8 +43,23 @@ const query = computed(() => {
   }
 })
 
+const query2 = computed(() => {
+  return {
+    action: 'findAll',
+    token: token.value,
+    filter: filter.value,
+    perPage: 50,
+    page: page.value,
+  }
+})
+
+
 const { data, pending, error, refresh } = await useFetch('/api/users', {
   query,
+})
+
+const { data:rolesData } = await useFetch('/api/users/roles', {
+  query : query2,
 })
 
 const selected = ref<number[]>([])
@@ -56,7 +71,7 @@ function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
     selected.value = []
   } else {
-    selected.value = data.value?.data.map((item: any) => item.id) ?? []
+    selected.value = data.value?.data.map((item: any) => item._id) ?? []
   }
 }
 
@@ -482,13 +497,13 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
               </TairoTableRow>
 
-              <TairoTableRow v-for="item in data?.data" :key="item.id">
+              <TairoTableRow v-for="item in data?.data" :key="item._id">
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseCheckbox
                       v-model="selected"
-                      :value="item.id"
-                      :name="`item-checkbox-${item.id}`"
+                      :value="item._id"
+                      :name="`item-checkbox-${item._id}`"
                       shape="rounded"
                       class="text-primary-500"
                     />
@@ -725,7 +740,7 @@ const onSubmit = handleSubmit(
                     >
                       <BaseListbox
                         label="Role"
-                        :items="appStore.roles"
+                        :items="rolesData.data"
                         :properties="{
                           value: '_id',
                           label: 'name',

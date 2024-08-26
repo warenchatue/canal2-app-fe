@@ -97,21 +97,25 @@ const query2 = computed(() => {
   }
 })
 
+const queryLight = computed(() => {
+  return {
+    filter: filter.value,
+    perPage: 12000,
+    page: page.value,
+    action: 'findAllLight',
+    token: token.value,
+  }
+})
+
 const { data, pending } = await useFetch('/api/recovery/recovery-procedures', {
   query,
 })
 
-const { data: announcers } = await useFetch('/api/sales/announcers', {
-  query: query2,
-})
-
-const transformedAnnouncers = announcers.value?.data.map((e: any) => {
-  const invoice = {
-    id: e._id,
-    name: e.name,
-  }
-  return invoice
-})
+// const { data: transformedAnnouncers, pending: pendingAnnouncers } =
+//   await useFetch('/api/sales/announcers', {
+//     query: queryLight,
+//     lazy: true,
+//   })
 
 const { data: allUsers } = await useFetch('/api/users', {
   query,
@@ -185,6 +189,33 @@ function confirmDeletePackage(recoveryProcedure: any) {
   currentRecoveryProcedure.value = recoveryProcedure
 }
 
+async function filterAnnouncersItems(query?: string, items?: any[]) {
+  if (query.length < 3) {
+    return []
+  }
+
+  if (!query || !items) {
+    return items ?? []
+  }
+
+  const queryLightByName = computed(() => {
+    return {
+      filter: filter.value,
+      perPage: 10000,
+      page: page.value,
+      action: 'findAllLightByName',
+      name: query,
+      token: token.value,
+    }
+  })
+
+  const { data: announcersData } = await useFetch('/api/sales/announcers', {
+    query: queryLightByName,
+  })
+
+  // search by name
+  return announcersData.value?.data ?? false
+}
 function filterItems(query?: string, items?: any[]) {
   if (query.length < 3) {
     return []
@@ -1063,12 +1094,12 @@ const onSubmit = handleSubmit(
                       <BaseAutocomplete
                         :model-value="field.value"
                         :error="errorMessage"
-                        :disabled="isSubmitting"
+                        :disabled="isSubmitting || pendingAnnouncers"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
-                        :items="transformedAnnouncers"
+                        :items="[]"
                         :display-value="(item: any) => item.name || ''"
-                        :filter-items="filterItems"
+                        :filter-items="filterAnnouncersItems"
                         icon="lucide:file"
                         placeholder="e.g. Nom"
                         label="Annonceur"

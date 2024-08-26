@@ -26,6 +26,11 @@ export default defineEventHandler(async (event) => {
       metaData: response.metaData,
       data: filterData(response.data, filter, page, perPage, true),
     }
+  } else if (action == 'addTvProgram') {
+    const body = await readBody(event)
+    console.log(body)
+    const data = await addTvProgram(id, body, token)
+    return { data: data, success: true }
   } else if (action == 'createPackage') {
     const body = await readBody(event)
     console.log(body)
@@ -60,7 +65,7 @@ function filterData(
         return a.date < b.date ? -1 : 1
       })
       console.log('Sorted plannings')
-      console.log(plannings)
+      // console.log(plannings)
       if (plannings.length > 0) {
         const d2 = new Date(plannings[plannings.length - 1].date ?? '')
         const d1 = new Date(plannings[0].date ?? '')
@@ -81,7 +86,7 @@ function filterData(
         item.startDate = ''
         item.endDate = ''
       }
-      console.log(item)
+      // console.log(item)
       return item
     })
     if (data.length > 0) {
@@ -154,6 +159,27 @@ async function updatePackage(id: string, body: any, token: string) {
     },
     body: body,
   }).catch((error) => console.log(error))
+  console.log(data)
+  return Promise.resolve(data)
+}
+
+async function addTvProgram(id: string, body: any, token: string) {
+  console.log('addTvProgram ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl +
+      '/packages/' +
+      id +
+      '/add-tv-program/' +
+      body.tvProgramId,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
   console.log(data)
   return Promise.resolve(data)
 }
