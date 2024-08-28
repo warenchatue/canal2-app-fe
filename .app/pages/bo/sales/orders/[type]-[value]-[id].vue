@@ -2761,7 +2761,7 @@ const onSubmit = handleSubmit(
                         . {{ currentOrderInvoice?.org?.website }}
                       </BaseParagraph>
                       <BaseParagraph size="xs" class="text-[10px] font-medium">
-                        N° Contribuable: NC
+                        N° Contribuable:
                         {{ currentOrderInvoice?.org?.nc }} - RC:
                         {{ currentOrderInvoice?.org?.rc }};
                       </BaseParagraph>
