@@ -332,7 +332,7 @@ export default defineAppConfig({
           // },
           // {
           {
-            name: 'IMO',
+            name: 'IMMO',
             icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
             activePath: '/bo/sav',
             children: [
