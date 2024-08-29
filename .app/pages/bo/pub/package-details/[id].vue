@@ -27,6 +27,7 @@ const packageId = computed(() => route.params.id)
 const toaster = useToaster()
 // Check if can have access
 if (
+  authStore.user.appRole.name != UserRole.sale &&
   authStore.user.appRole.name != UserRole.mediaPlanner &&
   authStore.user.appRole.name != UserRole.superAdmin
 ) {

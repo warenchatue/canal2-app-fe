@@ -32,6 +32,7 @@ const isEdit = ref(false)
 const toaster = useToaster()
 // Check if can have access
 if (
+  authStore.user.appRole.name != UserRole.sale &&
   authStore.user.appRole.name != UserRole.mediaPlanner &&
   authStore.user.appRole?.name != UserRole.admin &&
   authStore.user.appRole.name != UserRole.superAdmin
@@ -919,7 +920,7 @@ const onSubmit = handleSubmit(
                     style="white-space: pre-wrap; word-wrap: break-word"
                     class="flex items-center"
                   >
-                   <!-- <BaseAvatar
+                    <!-- <BaseAvatar
                       :src="item.announcer?.logo ?? '/img/avatars/company.svg'"
                       :text="item.initials"
                       :class="getRandomColor()"

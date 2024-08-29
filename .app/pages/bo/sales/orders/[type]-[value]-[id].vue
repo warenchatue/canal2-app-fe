@@ -2219,14 +2219,15 @@ const onSubmit = handleSubmit(
                           <td
                             class="text-muted-800 dark:text-muted-400 px-3 py-4 text-center font-medium text-[9px] sm:table-cell"
                           >
-                            <p v-if="item.taxes.length > 0">
+                            <span v-if="item.taxes.length > 0">
                               {{ item.taxes[0]?.code }} :
                               {{ item.taxes[0]?.value }} %
-                            </p>
-                            <p v-if="item.taxes.length > 1">
+                            </span>
+                            <span v-if="item.taxes.length > 0"> , </span>
+                            <span v-if="item.taxes.length > 1">
                               {{ item.taxes[1]?.code }} :
                               {{ item.taxes[1]?.value }} %
-                            </p>
+                            </span>
                           </td>
                           <td
                             class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right font-medium text-[9px] sm:pe-6 md:pe-0"
@@ -2760,7 +2761,7 @@ const onSubmit = handleSubmit(
                         . {{ currentOrderInvoice?.org?.website }}
                       </BaseParagraph>
                       <BaseParagraph size="xs" class="text-[10px] font-medium">
-                        N° Contribuable: NC
+                        N° Contribuable:
                         {{ currentOrderInvoice?.org?.nc }} - RC:
                         {{ currentOrderInvoice?.org?.rc }};
                       </BaseParagraph>
