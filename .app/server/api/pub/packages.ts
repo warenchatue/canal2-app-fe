@@ -13,11 +13,12 @@ export default defineEventHandler(async (event) => {
     const data = await findOne(id, token)
     return { data: data, success: true }
   } else if (action == 'findAll') {
-    const response = await findAll(token)
+    const response = await findAllPagination(token, perPage, page)
     return {
-      total: response.metaData.totalItems ?? 0,
-      metaData: response.metaData ?? {},
-      data: filterData(response.data, filter, page, perPage),
+      total: response.stats.totalItems ?? 0,
+      stats: response.stats,
+      metaData: response.results.data ?? {},
+      data: response.results.data,
     }
   } else if (action == 'findAllReport') {
     const response = await findAll(token)
@@ -65,7 +66,6 @@ function filterData(
         return a.date < b.date ? -1 : 1
       })
       console.log('Sorted plannings')
-      // console.log(plannings)
       if (plannings.length > 0) {
         const d2 = new Date(plannings[plannings.length - 1].date ?? '')
         const d1 = new Date(plannings[0].date ?? '')
@@ -116,6 +116,28 @@ async function findOne(id: string, token: string) {
     },
   }).catch((error) => console.log(error))
   console.log(data)
+  return Promise.resolve(data)
+}
+
+async function findAllPagination(token: string, perPage: number, page: number) {
+  console.log('findAll ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl +
+      '/packages/paginate?perPage=' +
+      perPage +
+      '&page=' +
+      page +
+      '&states=active',
+    {
+      method: 'get',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
+  // console.log(data)
   return Promise.resolve(data)
 }
 

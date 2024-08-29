@@ -24,7 +24,7 @@ const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(50)
+const perPage = ref(10)
 const isModalNewPackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
@@ -619,7 +619,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{ data?.metaData?.totalItems }}</span>
+                <span v-if="!pending">{{ data?.stats?.totalItems }}</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -663,9 +663,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{
-                  data?.metaData?.totalAnnouncers
-                }}</span>
+                <span v-if="!pending">{{ data?.stats?.totalAnnouncers }}</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -709,7 +707,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{ data?.metaData?.totalSpots }}</span>
+                <span v-if="!pending">{{ data?.stats?.totalSpots }}</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -753,7 +751,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{ data?.metaData?.totalFiles }}</span>
+                <span v-if="!pending">{{ data?.stats?.totalFiles }}</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
