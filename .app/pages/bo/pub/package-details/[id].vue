@@ -21,7 +21,7 @@ const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(50)
+const perPage = ref(100)
 const token = useCookie('token')
 const packageId = computed(() => route.params.id)
 const toaster = useToaster()
@@ -102,6 +102,9 @@ const isModalDeleteSpotOpen = ref(false)
 const isModalPlanningOpen = ref(false)
 const isModalNewSpotPlanningOpen = ref(false)
 const isModalAddTvProgramOpen = ref(false)
+const isModalDeleteTvProgramOpen = ref(false)
+const isModalAddHourOpen = ref(false)
+const isModalDeleteHourOpen = ref(false)
 const isModalConfirmPlanningOpen = ref(false)
 const isModalConfirmDiffusionOpen = ref(false)
 const isModalUploadProductFileOpen = ref(false)
@@ -112,6 +115,7 @@ const isPrintCertificate = ref(false)
 const activeProduct = ref({ _id: '', product: '', tag: '', flag: '' })
 const currentProduct = ref({})
 const currentTvProgram = ref({})
+const currentHour = ref({})
 const phoneNumber = ref('')
 const formatter = new Intl.DateTimeFormat('fr', { month: 'long' })
 const activeDate = ref(new Date())
@@ -134,14 +138,18 @@ var activeDays = ref(
 const initDate = ref(false)
 
 const spotData = computed(() => {
-  let data = {}
-  hoursData.value.forEach((h: any) => {
-    data[h.code] = {}
+  let result = {}
+  let allHoursData = hoursData.value
+  if (data.value.data && Array.isArray(data.value.data.hours)) {
+    allHoursData = data.value.data.hours
+  }
+  allHoursData.forEach((h: any) => {
+    result[h.code] = {}
     Array.from({ length: activeDays.value }).forEach((_, d: number) => {
-      data[h.code][d] = checkSpot(d + 1, h.code, false, '')
+      result[h.code][d] = checkSpot(d + 1, h.code, false, '')
     })
   })
-  return data
+  return result
 })
 
 const tvProgramData = computed(() => {
@@ -261,6 +269,16 @@ function openSpotPlanningModalProg(day: string, prog: any, planningId: string) {
   activeEnd.value.day = parseInt(day)
   isTvProgram.value = true
   isModalNewSpotPlanningOpen.value = true
+}
+
+function openDeleteTvProgramModal(tvProgram: any) {
+  currentTvProgram.value = tvProgram
+  isModalDeleteTvProgramOpen.value = true
+}
+
+function openDeleteHourModal(hour: any) {
+  currentHour.value = hour
+  isModalDeleteHourOpen.value = true
 }
 
 async function addSpotToPlanning() {
@@ -595,6 +613,137 @@ async function addTvProgram() {
       closable: true,
     })
     filter.value = 'planning'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Désolé',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+  isActionLoading.value = false
+}
+
+async function deleteTvProgram() {
+  isActionLoading.value = true
+
+  const response = await $fetch(
+    '/api/pub/packages?action=deleteTvProgram&token=' +
+      token.value +
+      '&id=' +
+      data.value?.data?._id ?? '',
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        tvProgramId: currentTvProgram.value?._id,
+      },
+    },
+  )
+
+  if (response.success) {
+    success.value = true
+    data.value.data.tvPrograms = response.data?.tvPrograms
+    isModalDeleteTvProgramOpen.value = false
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Emission supprimée !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    filter.value = 'planning'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Désolé',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+  isActionLoading.value = false
+}
+
+async function addHour() {
+  isActionLoading.value = true
+
+  const response = await $fetch(
+    '/api/pub/packages?action=addHour&token=' +
+      token.value +
+      '&id=' +
+      data.value?.data?._id ?? '',
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        hourId: currentHour.value?._id,
+      },
+    },
+  )
+
+  if (response.success) {
+    success.value = true
+    data.value.data.hours = response.data?.hours
+    isModalAddHourOpen.value = false
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Horaire mise à jour !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    filter.value = 'hour'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Désolé',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+  isActionLoading.value = false
+}
+
+async function deleteHour() {
+  isActionLoading.value = true
+  const response = await $fetch(
+    '/api/pub/packages?action=deleteHour&token=' +
+      token.value +
+      '&id=' +
+      data.value?.data?._id ?? '',
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        hourId: currentHour.value?._id,
+      },
+    },
+  )
+
+  if (response.success) {
+    success.value = true
+    data.value.data.hours = response.data?.hours
+    isModalDeleteHourOpen.value = false
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Horaire supprimé !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    filter.value = 'hour'
     filter.value = ''
   } else {
     toaster.clearAll()
@@ -1179,6 +1328,7 @@ const onSubmit = handleSubmit(
     <TairoContentWrapper>
       <template #left>
         <BaseInput
+          id="search-campaign"
           v-model="filter"
           icon="lucide:search"
           placeholder="Filtre produit..."
@@ -1642,6 +1792,7 @@ const onSubmit = handleSubmit(
                       name="product.product"
                     >
                       <BaseInput
+                        id="product.product"
                         label="Produit *"
                         icon="ph:user-duotone"
                         placeholder="produit xxxx"
@@ -1659,6 +1810,7 @@ const onSubmit = handleSubmit(
                       name="product.message"
                     >
                       <BaseInput
+                        id="product.message"
                         label="Message"
                         icon="ph:chat-duotone"
                         placeholder="message xxxx"
@@ -1700,6 +1852,7 @@ const onSubmit = handleSubmit(
                       name="product.tag"
                     >
                       <BaseInput
+                        id="product.tag"
                         label="Tag"
                         icon="ph:chat-duotone"
                         placeholder="A"
@@ -1717,6 +1870,7 @@ const onSubmit = handleSubmit(
                       name="product.duration"
                     >
                       <BaseInput
+                        id="product.duration"
                         label="Durée(seconde)"
                         icon="ph:chat-duotone"
                         placeholder="50"
@@ -1887,6 +2041,7 @@ const onSubmit = handleSubmit(
                         name="planning.obs"
                       >
                         <BaseInput
+                          id="planning.obs"
                           label="Jour de Fin"
                           type="number"
                           icon="ph:file"
@@ -1906,6 +2061,7 @@ const onSubmit = handleSubmit(
                         name="planning.step"
                       >
                         <BaseInput
+                          id="planning.step"
                           label="Pas"
                           type="number"
                           icon="ph:file"
@@ -1924,6 +2080,7 @@ const onSubmit = handleSubmit(
                         name="planning.total"
                       >
                         <BaseInput
+                          id="planning.total"
                           label="Nombre"
                           type="number"
                           icon="ph:file"
@@ -1947,6 +2104,7 @@ const onSubmit = handleSubmit(
                         name="planning.obs"
                       >
                         <BaseInput
+                          id="planning.obs"
                           label="Observation"
                           icon="ph:chat"
                           placeholder=""
@@ -2084,7 +2242,7 @@ const onSubmit = handleSubmit(
         <div class="flex justify-between px-2 pb-2 w-full">
           <div class="flex justify-start text-sm">
             LEGENDE :
-            <div v-for="(product, i) in data.data.products" :key="product._id">
+            <div v-for="product in data.data.products" :key="product._id">
               <span class="px-2">
                 {{ product.tag }} : {{ product.type }} {{ product.message }}
               </span>
@@ -2140,16 +2298,21 @@ const onSubmit = handleSubmit(
                   <span>Horaires</span>
                 </BaseHeading>
               </div>
-              <div v-for="h in hoursData" :key="h._id">
+              <div
+                v-for="h in data.data && Array.isArray(data.data.hours)
+                  ? data.data.hours
+                  : hoursData"
+                :key="h._id"
+              >
                 <div v-if="checkEmptyPlanning(h)" class="border-b-2">
                   <BaseHeading
                     as="h4"
                     size="sm"
                     weight="light"
                     lead="tight"
-                    class="text-muted-800 dark:text-white pb-2 pt-2 text-center"
+                    class="text-muted-800 dark:text-white pb-2 pt-2 text-center hover:cursor-pointer"
                   >
-                    <span>{{ h.name }}</span>
+                    <span @click="openDeleteHourModal(h)">{{ h.name }}</span>
                   </BaseHeading>
                 </div>
               </div>
@@ -2160,9 +2323,11 @@ const onSubmit = handleSubmit(
                     size="sm"
                     weight="light"
                     lead="tight"
-                    class="text-muted-800 dark:text-white pb-2 pt-2 text-center"
+                    class="text-muted-800 dark:text-white pb-2 pt-2 text-center hover:cursor-pointer"
                   >
-                    <span>{{ tvProg.name }}</span>
+                    <span @click="openDeleteTvProgramModal(tvProg)">{{
+                      tvProg.name
+                    }}</span>
                   </BaseHeading>
                 </div>
               </div>
@@ -2251,7 +2416,13 @@ const onSubmit = handleSubmit(
                 </BaseHeading>
               </div>
 
-              <div v-for="h in hoursData" :key="h._id" class="">
+              <div
+                v-for="h in data.data && Array.isArray(data.data.hours)
+                  ? data.data.hours
+                  : hoursData"
+                :key="h._id"
+                class=""
+              >
                 <div
                   v-if="checkEmptyPlanning(h)"
                   class="border-b-2 flex justify-start"
@@ -2432,14 +2603,14 @@ const onSubmit = handleSubmit(
                 name="lucide:camera"
                 class="pointer-events-none h-4 w-4 mx-2"
               />
-              Début capture planning</BaseButton
+              D. capture planning</BaseButton
             >
             <BaseButton @click="captureContent('Certificate')">
               <Icon
                 name="lucide:camera"
                 class="pointer-events-none h-4 w-4 mx-2"
               />
-              Debut capture certificat</BaseButton
+              D. capture certificat</BaseButton
             >
             <BaseButton @click="printPlanning('planning')">
               <Icon
@@ -2453,7 +2624,14 @@ const onSubmit = handleSubmit(
                 name="lucide:printer"
                 class="pointer-events-none h-4 w-4 mx-2"
               />
-              Certificat de diff.</BaseButton
+              Cert de diff.</BaseButton
+            >
+            <BaseButton @click="isModalAddHourOpen = true">
+              <Icon
+                name="lucide:plus"
+                class="pointer-events-none h-4 w-4 mx-2"
+              />
+              Heure</BaseButton
             >
             <BaseButton @click="isModalAddTvProgramOpen = true">
               <Icon
@@ -2547,7 +2725,7 @@ const onSubmit = handleSubmit(
             <BaseInputFileHeadless
               accept="image/*"
               v-model="inputFileSignature"
-              v-slot="{ open, remove, preview, files }"
+              v-slot="{ open }"
             >
               <div class="relative h-40 w-40">
                 <img
@@ -2700,7 +2878,6 @@ const onSubmit = handleSubmit(
           <div class="ltablet:col-span-6 col-span-12 lg:col-span-6 my-2">
             <BaseAutocomplete
               v-model="currentTvProgram"
-              :error="errorMessage"
               :disabled="isSubmitting"
               :items="allTvPrograms"
               :display-value="(item: any) => item.name || ''"
@@ -2744,6 +2921,176 @@ const onSubmit = handleSubmit(
       </template>
     </TairoModal>
 
+    <!-- Modal Add Hour -->
+    <TairoModal
+      :open="isModalAddHourOpen"
+      size="sm"
+      @close="isModalAddHourOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Nouvelle Horaire
+          </h3>
+
+          <BaseButtonClose @click="isModalAddHourOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <div class="ltablet:col-span-6 col-span-12 lg:col-span-6 my-2">
+            <BaseAutocomplete
+              v-model="currentHour"
+              :disabled="isSubmitting"
+              :items="hoursData"
+              :display-value="(item: any) => item.name || ''"
+              :filter-items="filterItems"
+              icon="lucide:clock"
+              placeholder="e.g. 08:25"
+              label="Heure"
+              clearable
+              :clear-value="''"
+            >
+              <template #empty="value"> Aucun resultat </template>
+            </BaseAutocomplete>
+          </div>
+
+          <p
+            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est reversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalAddTvProgramOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              :disabled="isActionLoading"
+              :loading="isActionLoading"
+              color="primary"
+              flavor="solid"
+              @click="addHour()"
+              >Valider</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal Delete Hour -->
+    <TairoModal
+      :open="isModalDeleteHourOpen"
+      size="sm"
+      @close="isModalDeleteHourOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Suppression Horaire
+          </h3>
+
+          <BaseButtonClose @click="isModalDeleteHourOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <p
+            class="font-alt text-muted-500 dark:text-muted-200 text-base leading-5"
+          >
+            Voulez-vous supprimer l'horaire {{ currentHour.name }} ?
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalDeleteHourOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              :disabled="isActionLoading"
+              :loading="isActionLoading"
+              color="danger"
+              flavor="solid"
+              @click="deleteHour()"
+              >Valider</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal Delete TvProgram -->
+    <TairoModal
+      :open="isModalDeleteTvProgramOpen"
+      size="sm"
+      @close="isModalDeleteTvProgramOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Suppression Emission
+          </h3>
+
+          <BaseButtonClose @click="isModalDeleteTvProgramOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <p
+            class="font-alt text-muted-500 dark:text-muted-200 text-base leading-5"
+          >
+            Voulez-vous supprimer l'émission {{ currentTvProgram.name }} ?
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalDeleteTvProgramOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              :disabled="isActionLoading"
+              :loading="isActionLoading"
+              color="danger"
+              flavor="solid"
+              @click="deleteTvProgram()"
+              >Valider</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
     <!-- Modal confirm diffusion -->
     <TairoModal
       :open="isModalConfirmDiffusionOpen"
@@ -2766,7 +3113,7 @@ const onSubmit = handleSubmit(
       <!-- Body -->
       <div class="p-4 md:p-6 h-[600px] overflow-y-scroll">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div v-for="pl in data!.data.plannings" class="my-2">
+          <div v-for="pl in data!.data.plannings" :key="pl._id" class="my-2">
             <div class="flex items-center">
               <BaseCheckbox
                 v-model="selectedPlannings"
@@ -2878,7 +3225,7 @@ const onSubmit = handleSubmit(
           </div>
         </div>
         <!-- Operation details -->
-        <div v-else class="mt-8" @click.>
+        <div v-else class="mt-8">
           <div class="flex items-center justify-center">
             <BaseAvatar :src="selectedSpot?.product" size="2xl" />
           </div>

@@ -32,6 +32,21 @@ export default defineEventHandler(async (event) => {
     console.log(body)
     const data = await addTvProgram(id, body, token)
     return { data: data, success: true }
+  } else if (action == 'deleteTvProgram') {
+    const body = await readBody(event)
+    console.log(body)
+    const data = await deleteTvProgram(id, body, token)
+    return { data: data, success: true }
+  } else if (action == 'addHour') {
+    const body = await readBody(event)
+    console.log(body)
+    const data = await addHour(id, body, token)
+    return { data: data, success: true }
+  } else if (action == 'deleteHour') {
+    const body = await readBody(event)
+    console.log(body)
+    const data = await deleteHour(id, body, token)
+    return { data: data, success: true }
   } else if (action == 'createPackage') {
     const body = await readBody(event)
     console.log(body)
@@ -202,7 +217,62 @@ async function addTvProgram(id: string, body: any, token: string) {
       },
     },
   ).catch((error) => console.log(error))
-  console.log(data)
+  return Promise.resolve(data)
+}
+
+async function deleteTvProgram(id: string, body: any, token: string) {
+  console.log('deleteTvProgram ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl +
+      '/packages/' +
+      id +
+      '/delete-tv-program/' +
+      body.tvProgramId,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
+  return Promise.resolve(data)
+}
+
+async function addHour(id: string, body: any, token: string) {
+  console.log('addHour ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/packages/' + id + '/add-hour/' + body.hourId,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
+  return Promise.resolve(data)
+}
+
+async function deleteHour(id: string, body: any, token: string) {
+  console.log('deleteHour ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl +
+      '/packages/' +
+      id +
+      '/delete-hour/' +
+      body.hourId,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
   return Promise.resolve(data)
 }
 
