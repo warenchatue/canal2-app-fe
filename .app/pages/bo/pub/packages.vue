@@ -92,16 +92,6 @@ const query2 = computed(() => {
   }
 })
 
-const queryLight = computed(() => {
-  return {
-    filter: filter.value,
-    perPage: 12000,
-    page: page.value,
-    action: 'findAllLight',
-    token: token.value,
-  }
-})
-
 const { data, pending, refresh } = await useFetch('/api/pub/packages', {
   query,
   lazy: true,
@@ -274,7 +264,6 @@ function toggleAllVisibleSelection() {
 const currentPackage = ref({})
 
 // This is the object that will contain the validation messages
-const ONE_MB = 1000000
 const VALIDATION_TEXT = {
   LABEL_REQUIRED: "Label can't be empty",
   PHONE_REQUIRED: "Phone number can't be empty",
@@ -305,6 +294,7 @@ const zodSchema = z
         .object({
           id: z.string(),
           name: z.string(),
+          phone: z.string().optional(),
           email: z.string().optional(),
         })
         .optional()
@@ -336,6 +326,7 @@ const zodSchema = z
         .object({
           id: z.string(),
           name: z.string(),
+          createdAt: z.string(),
         })
         .optional()
         .nullable(),
@@ -370,17 +361,7 @@ const initialValues = computed<FormInput>(() => ({
   },
 }))
 
-const {
-  handleSubmit,
-  isSubmitting,
-  setFieldError,
-  meta,
-  values,
-  errors,
-  resetForm,
-  setFieldValue,
-  setErrors,
-} = useForm({
+const { handleSubmit, isSubmitting, resetForm, setFieldValue } = useForm({
   validationSchema,
   initialValues,
 })
