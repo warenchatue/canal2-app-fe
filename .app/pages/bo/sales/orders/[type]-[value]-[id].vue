@@ -219,8 +219,11 @@ if (pageType.value == 'view' || pageType.value == 'edit') {
       packageId.value =
         currentOrderInvoice.value.order?.package?._id ?? undefined
       selectedOrder.value = currentOrderInvoice.value.order
-      selectedOrder.value.id = currentOrderInvoice.value.order._id
-      selectedOrder.value.name = currentOrderInvoice.value.order.code
+      if (currentOrderInvoice.value.order) {
+        selectedOrder.value.id =
+          currentOrderInvoice.value.order?._id ?? undefined
+        selectedOrder.value.name = currentOrderInvoice.value.order?.code ?? ''
+      }
       editOrderInvoiceFile(currentOrderInvoice.value)
     }
   }
