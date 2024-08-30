@@ -681,7 +681,7 @@ const onSubmit = handleSubmit(
         </div>
         <div v-else-if="pending">
           <TairoTableRow v-for="index in 5" :key="index">
-            <TairoTableCell spaced>
+            <TairoTableCell class="!w-full" spaced>
               <div class="flex items-center">
                 <BaseCheckbox
                   v-model="fakeItems"
