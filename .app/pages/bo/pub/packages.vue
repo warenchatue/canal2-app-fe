@@ -1097,7 +1097,7 @@ const onSubmit = handleSubmit(
                       <BaseAutocomplete
                         :model-value="field.value"
                         :error="errorMessage"
-                        :disabled="isSubmitting || pendingAnnouncer"
+                        :disabled="isSubmitting"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
                         :items="[]"

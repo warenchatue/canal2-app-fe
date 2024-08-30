@@ -68,7 +68,6 @@ if (filter.value == '') {
   filter.value = ''
 }
 
-const app = useAppStore()
 const token = useCookie('token')
 const query = computed(() => {
   return {
@@ -95,7 +94,6 @@ const query2 = computed(() => {
 const {
   data,
   pending,
-  error,
   refresh: refreshPlanning,
 } = await useFetch('/api/pub/plannings', {
   query,
@@ -124,21 +122,18 @@ const transformedAllHours = allHours.value?.map((e: any) => {
   return hour
 })
 
-const { data: allPackages, pending: pendingPackages } = await useFetch(
-  '/api/pub/packages',
-  {
-    query: query2,
-    lazy: true,
-    transform: (els) => {
-      return els.data?.map((el) => ({
-        name: el.label,
-        id: el._id,
-        text: el.code,
-        products: el.products,
-      }))
-    },
+const { data: allPackages } = await useFetch('/api/pub/packages', {
+  query: query2,
+  lazy: true,
+  transform: (els) => {
+    return els.data?.map((el) => ({
+      name: el.label,
+      id: el._id,
+      text: el.code,
+      products: el.products,
+    }))
   },
-)
+})
 
 function openElementModal() {
   setTimeout(() => {
@@ -293,7 +288,7 @@ function toggleAllVisibleSelection() {
   }
 }
 
-const { text, copy, copied, isSupported } = useClipboard()
+const { copy, copied } = useClipboard()
 const toaster = useToaster()
 const handleClipboard = (textLink: string) => {
   copy(textLink)
@@ -580,7 +575,7 @@ async function importPlayList() {
       }
     })
 
-    const { data: uploadData, refresh } = await useFetch('/api/files/upload', {
+    const { data: uploadData } = await useFetch('/api/files/upload', {
       method: 'POST',
       query: query3,
       body: fd,
@@ -619,7 +614,6 @@ async function importPlayList() {
 // })
 
 // This is the object that will contain the validation messages
-const ONE_MB = 1000000
 const VALIDATION_TEXT = {
   OPERATOR_REQUIRED: "Operator can't be empty",
   PHONE_REQUIRED: "Phone number can't be empty",
@@ -686,17 +680,7 @@ const initialValues = computed<FormInput>(() => ({
   },
 }))
 
-const {
-  handleSubmit,
-  isSubmitting,
-  setFieldError,
-  meta,
-  values,
-  errors,
-  resetForm,
-  setFieldValue,
-  setErrors,
-} = useForm({
+const { handleSubmit, isSubmitting, setFieldError, resetForm } = useForm({
   validationSchema,
   initialValues,
 })
@@ -1546,7 +1530,7 @@ const onSubmit = handleSubmit(
               <div>
                 <div class="col-span-12 sm:col-span-6 mt-2">
                   <Field
-                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    v-slot="{ errorMessage, handleChange, handleBlur }"
                     name="report.org"
                   >
                     <BaseListbox
@@ -1648,7 +1632,6 @@ const onSubmit = handleSubmit(
                 <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                   <BaseAutocomplete
                     v-model="currentCampaign"
-                    :error="errorMessage"
                     :disabled="isSubmitting"
                     :items="allPackages"
                     :display-value="(item: any) => item.name || ''"
@@ -1668,7 +1651,7 @@ const onSubmit = handleSubmit(
                   class="col-span-12 sm:col-span-6"
                 >
                   <Field
-                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    v-slot="{ errorMessage, handleChange, handleBlur }"
                     name="report.product"
                   >
                     <BaseListbox
@@ -1692,7 +1675,7 @@ const onSubmit = handleSubmit(
                 </div>
                 <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                   <Field
-                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    v-slot="{ errorMessage, handleChange, handleBlur }"
                     name="campaign.year"
                   >
                     <BaseSelect
@@ -1710,7 +1693,7 @@ const onSubmit = handleSubmit(
                 </div>
                 <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                   <Field
-                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    v-slot="{ errorMessage, handleChange, handleBlur }"
                     name="campaign.month"
                   >
                     <BaseSelect
@@ -1743,7 +1726,6 @@ const onSubmit = handleSubmit(
                 >
                   <BaseAutocomplete
                     v-model="currentHour"
-                    :error="errorMessage"
                     :disabled="isSubmitting"
                     :items="transformedAllHours"
                     :display-value="(item: any) => item.name || ''"
@@ -1762,7 +1744,7 @@ const onSubmit = handleSubmit(
                   class="ltablet:col-span-6 col-span-12 lg:col-span-6"
                 >
                   <Field
-                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    v-slot="{ errorMessage, handleChange, handleBlur }"
                     name="jour"
                   >
                     <BaseInput

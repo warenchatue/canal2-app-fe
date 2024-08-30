@@ -902,7 +902,6 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 mx-2 mt-2">
                     <DatePicker
                       v-model.range="planningDates"
-                      :masks="masks"
                       mode="date"
                       hide-time-header
                       trim-weeks
