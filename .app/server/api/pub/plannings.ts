@@ -84,6 +84,11 @@ export default defineEventHandler(async (event) => {
   } else if (action == 'delete') {
     const data = await deletePlanning(id, token)
     return { data: data, success: true }
+  } else if (action == 'bulkDelete') {
+    const body = await readBody(event)
+    console.log(body)
+    const data = await bulkDeletePlanning(body, token)
+    return { data: data, success: true }
   }
 })
 
@@ -306,6 +311,24 @@ async function deletePlanning(id: string, token: string) {
     },
   ).catch((error) => console.log(error))
   console.log(data)
+  return Promise.resolve(data)
+}
+
+async function bulkDeletePlanning(body: any, token: string) {
+  console.log('bulkDeletePlanning ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/plannings/bulk-deletion/ids',
+    {
+      method: 'DELETE',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+      body,
+    },
+  ).catch((error) => console.log(error))
+  // console.log(data)
   return Promise.resolve(data)
 }
 

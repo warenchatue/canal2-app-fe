@@ -136,6 +136,8 @@ var activeDays = ref(
   ).getDate(),
 )
 const initDate = ref(false)
+const isBulkPlanningDeletion = ref(false)
+const planningIdsToBeDeleted = ref<string[]>([])
 
 const spotData = computed(() => {
   let result = {}
@@ -281,6 +283,15 @@ function openDeleteHourModal(hour: any) {
   isModalDeleteHourOpen.value = true
 }
 
+function softDeletePlanning(planningId: string) {
+  if (planningId) {
+    data.value.data.plannings = data.value.data.plannings.filter(
+      (planning) => planning._id != planningId,
+    )
+    planningIdsToBeDeleted.value.push(planningId)
+  }
+}
+
 async function addSpotToPlanning() {
   console.log('Adding product to the planning')
   isActionLoading.value = true
@@ -298,7 +309,7 @@ async function addSpotToPlanning() {
     myDay <= myActiveEndDay;
     myDay += myActiveEndStep
   ) {
-    console.log(myDay)
+    // console.log(myDay)
     var date = new Date(
       activeDate.value.getFullYear(),
       activeDate.value.getMonth(),
@@ -385,6 +396,65 @@ async function addSpotToPlanning() {
   isModalNewSpotPlanningOpen.value = false
   isActionLoading.value = false
 }
+async function bulkDeleteSpotToPlanning() {
+  isActionLoading.value = true
+  try {
+    const isSuccess = ref(false)
+    const response = await $fetch(
+      '/api/pub/plannings?action=bulkDelete&token=' + token.value,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: {
+          packageId: data.value.data._id,
+          _ids: planningIdsToBeDeleted.value,
+        },
+      },
+    )
+
+    isSuccess.value = response?.success
+    if (isSuccess.value == true) {
+      success.value = true
+      data.value.data.plannings = data.value?.data?.plannings.filter(
+        (p: any) => !planningIdsToBeDeleted.value.includes(p._id),
+      )
+      activePlanningId.value = ''
+      isActionLoading.value = false
+      isBulkPlanningDeletion.value = false
+      toaster.clearAll()
+      toaster.show({
+        title: 'Success',
+        message: 'Produit(s) supprimé(s) du planning !',
+        color: 'success',
+        icon: 'ph:check',
+        closable: true,
+      })
+    } else {
+      toaster.clearAll()
+      toaster.show({
+        title: 'Désolé',
+        message: `Une erreur est survenue !`,
+        color: 'danger',
+        icon: 'ph:check',
+        closable: true,
+      })
+    }
+  } catch (error: any) {
+    console.log(error)
+    toaster.clearAll()
+    toaster.show({
+      title: 'Désolé!',
+      message: 'Veuillez examiner les erreurs dans le formulaire',
+      color: 'danger',
+      icon: 'lucide:alert-triangle',
+      closable: true,
+    })
+  }
+  console.log(data.value?.data?.plannings)
+
+  isModalNewSpotPlanningOpen.value = false
+}
+
 async function deleteSpotToPlanning() {
   console.log('Deleting product from the planning')
 
@@ -401,7 +471,6 @@ async function deleteSpotToPlanning() {
       },
     )
 
-    console.log(response)
     isSuccess.value = response?.success
     if (isSuccess.value == true) {
       success.value = true
@@ -2435,11 +2504,13 @@ const onSubmit = handleSubmit(
                     <BaseButton
                       :title="dayOfWeek(d) + ' LE ' + d + ' A ' + h.name"
                       @click="
-                        openSpotPlanningModal(
-                          d.toString(),
-                          h,
-                          spotData[h.code][d - 1][2],
-                        )
+                        isBulkPlanningDeletion
+                          ? softDeletePlanning(spotData[h.code][d - 1][2])
+                          : openSpotPlanningModal(
+                              d.toString(),
+                              h,
+                              spotData[h.code][d - 1][2],
+                            )
                       "
                       :color="spotData[h.code][d - 1][1]"
                       class="!w-6 !h-[2.106em] rounded-full !px-1 !my-2"
@@ -2475,11 +2546,15 @@ const onSubmit = handleSubmit(
                     <BaseButton
                       :title="dayOfWeek(d) + ' LE ' + d"
                       @click="
-                        openSpotPlanningModalProg(
-                          d.toString(),
-                          prog,
-                          tvProgramData[prog._id][d - 1][2],
-                        )
+                        isBulkPlanningDeletion
+                          ? softDeletePlanning(
+                              tvProgramData[prog._id][d - 1][2],
+                            )
+                          : openSpotPlanningModalProg(
+                              d.toString(),
+                              prog,
+                              tvProgramData[prog._id][d - 1][2],
+                            )
                       "
                       :color="tvProgramData[prog._id][d - 1][1]"
                       class="!w-6 !h-[2.106em] rounded-full !px-1 !my-2"
@@ -2598,6 +2673,50 @@ const onSubmit = handleSubmit(
             <BaseButton @click="isModalPlanningOpen = false" label="Fermer"
               >X</BaseButton
             >
+            <BaseDropdown label="Action en masse " placement="top-end">
+              <template #button>
+                <BaseButtonAction rounded="none">
+                  Action en masse
+                </BaseButtonAction>
+              </template>
+
+              <BaseDropdownItem>
+                <template #start>
+                  <Icon
+                    name="lucide:plus"
+                    class="pointer-events-none h-4 w-4 mx-2 text-primary"
+                  />
+                </template>
+
+                <span @click="isBulkPlanningDeletion = true"
+                  >Création en masse</span
+                >
+              </BaseDropdownItem>
+              <BaseDropdownItem>
+                <template #start>
+                  <Icon
+                    name="lucide:trash"
+                    class="pointer-events-none h-4 w-4 mx-2 text-danger"
+                  />
+                </template>
+
+                <span @click="isBulkPlanningDeletion = true"
+                  >Suppression en masse</span
+                >
+              </BaseDropdownItem>
+            </BaseDropdown>
+            <BaseButton
+              class="!bg-red-600"
+              :loading="isActionLoading"
+              v-if="isBulkPlanningDeletion == true"
+              @click="bulkDeleteSpotToPlanning()"
+            >
+              <Icon
+                name="lucide:trash"
+                class="pointer-events-none h-4 w-4 mx-2"
+              />
+              Valider la suppression</BaseButton
+            >
             <BaseButton @click="captureContent('Planning')">
               <Icon
                 name="lucide:camera"
@@ -2612,20 +2731,35 @@ const onSubmit = handleSubmit(
               />
               D. capture certificat</BaseButton
             >
-            <BaseButton @click="printPlanning('planning')">
-              <Icon
-                name="lucide:printer"
-                class="pointer-events-none h-4 w-4 mx-2"
-              />
-              Planning</BaseButton
-            >
-            <BaseButton @click="printPlanning('certificate')">
-              <Icon
-                name="lucide:printer"
-                class="pointer-events-none h-4 w-4 mx-2"
-              />
-              Cert de diff.</BaseButton
-            >
+            <BaseDropdown label="Imprimer" placement="top-end">
+              <template #button>
+                <BaseButtonAction rounded="none"> Imprimer </BaseButtonAction>
+              </template>
+
+              <BaseDropdownItem>
+                <template #start>
+                  <Icon
+                    name="lucide:printer"
+                    class="pointer-events-none h-4 w-4 mx-2"
+                  />
+                </template>
+
+                <span @click="printPlanning('planning')">Planning</span>
+              </BaseDropdownItem>
+              <BaseDropdownItem>
+                <template #start>
+                  <Icon
+                    name="lucide:printer"
+                    class="pointer-events-none h-4 w-4 mx-2"
+                  />
+                </template>
+
+                <span @click="printPlanning('certificate')"
+                  >Certificat de diffusion</span
+                >
+              </BaseDropdownItem>
+            </BaseDropdown>
+
             <BaseButton @click="isModalAddHourOpen = true">
               <Icon
                 name="lucide:plus"
