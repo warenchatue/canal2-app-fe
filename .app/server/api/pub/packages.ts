@@ -56,6 +56,9 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event)
     const data = await updatePackage(id, body, token)
     return { data: data, success: true }
+  } else if (action == 'sync') {
+    const data = await syncCampaign(id, token)
+    return { data: data, success: true }
   } else if (action == 'delete') {
     const data = await deletePackage(id, token)
     return { data: data, success: true }
@@ -273,6 +276,23 @@ async function deleteHour(id: string, body: any, token: string) {
       },
     },
   ).catch((error) => console.log(error))
+  return Promise.resolve(data)
+}
+
+async function syncCampaign(id: string, token: string) {
+  console.log('syncCampaign ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/packages/' + id + '/sync',
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
+  console.log(data)
   return Promise.resolve(data)
 }
 

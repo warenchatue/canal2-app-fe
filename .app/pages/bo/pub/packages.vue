@@ -27,6 +27,7 @@ const filter = ref('')
 const perPage = ref(10)
 const isModalNewPackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
+const isModalSyncCampaignOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
 const isEdit = ref(false)
 const toaster = useToaster()
@@ -163,6 +164,12 @@ function confirmDeletePackage(campaign: any) {
   currentPackage.value = campaign
 }
 
+function confirmSyncCampaign(campaign: any) {
+  isModalSyncCampaignOpen.value = true
+  isEdit.value = false
+  currentPackage.value = campaign
+}
+
 async function filterAnnouncersItems(query?: string, items?: any[]) {
   if (query.length < 3) {
     return []
@@ -234,6 +241,46 @@ async function deletePackage(campaign: any) {
       closable: true,
     })
     isModalDeletePackageOpen.value = false
+    filter.value = 'campaign'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Désolé',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+}
+
+async function syncCampaign(campaign: any) {
+  const query2 = computed(() => {
+    return {
+      action: 'sync',
+      token: token.value,
+      id: campaign._id,
+    }
+  })
+
+  const response = await useFetch('/api/pub/packages', {
+    method: 'put',
+    headers: { 'Content-Type': 'application/json' },
+    query: query2,
+  })
+
+  if (response.data?.value?.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Campagne synchronisée !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalSyncCampaignOpen.value = false
     filter.value = 'campaign'
     filter.value = ''
   } else {
@@ -981,6 +1028,17 @@ const onSubmit = handleSubmit(
                       <Icon name="lucide:edit" class="h-4 w-4"
                     /></BaseButtonAction>
                     <BaseButtonAction
+                      @click="confirmSyncCampaign(item)"
+                      class="mx-2"
+                      :disabled="
+                        authStore.user.appRole?.name != UserRole.superAdmin
+                      "
+                    >
+                      <Icon
+                        name="ph:arrows-clockwise"
+                        class="h-4 w-4 text-warning-500"
+                    /></BaseButtonAction>
+                    <BaseButtonAction
                       @click="confirmDeletePackage(item)"
                       class="mx-2"
                       :disabled="
@@ -1352,6 +1410,61 @@ const onSubmit = handleSubmit(
       </template>
     </TairoModal>
 
+    <!-- Modal Sync campaign -->
+    <TairoModal
+      :open="isModalSyncCampaignOpen"
+      size="sm"
+      @close="isModalSyncCampaignOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Synchronisation d'une campagne
+          </h3>
+
+          <BaseButtonClose @click="isModalSyncCampaignOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <h3
+            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
+          >
+            Synchroniser
+            <span class="text-warning-500">{{ currentPackage?.label }}</span> ?
+          </h3>
+
+          <p
+            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est irreversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalSyncCampaignOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="syncCampaign(currentPackage)"
+              >Valider</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
     <!-- Modal confirm order -->
     <TairoModal
       :open="isModalConfirmOrderOpen"

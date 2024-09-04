@@ -142,7 +142,7 @@ const planningIdsToBeDeleted = ref<string[]>([])
 const spotData = computed(() => {
   let result = {}
   let allHoursData = hoursData.value
-  if (data.value.data && Array.isArray(data.value.data.hours)) {
+  if (data.value.data && Array.from(data.value.data.hours).length > 0) {
     allHoursData = data.value.data.hours
   }
   allHoursData.forEach((h: any) => {
@@ -629,7 +629,7 @@ function checkSpot(d: number, hour: string, isProg: boolean, progId: string) {
         numberSpots,
       ]
     } else if (
-      datePTime < dateNowTime &&
+      (datePTime < dateNowTime || datePTime > dateNowTime) &&
       (plannedSpots[0].isManualPlay == true ||
         plannedSpots[0].isAutoPlay == true)
     ) {
@@ -1434,6 +1434,7 @@ const onSubmit = handleSubmit(
           :disabled="
             authStore.user.appRole.name != UserRole.sale &&
             authStore.user.appRole.name != UserRole.mediaPlanner &&
+            authStore.user.appRole.name != UserRole.admin &&
             authStore.user.appRole.name != UserRole.superAdmin
           "
         >
@@ -2368,7 +2369,7 @@ const onSubmit = handleSubmit(
                 </BaseHeading>
               </div>
               <div
-                v-for="h in data.data && Array.isArray(data.data.hours)
+                v-for="h in data.data && Array.from(data.data.hours).length > 0
                   ? data.data.hours
                   : hoursData"
                 :key="h._id"
@@ -2486,7 +2487,7 @@ const onSubmit = handleSubmit(
               </div>
 
               <div
-                v-for="h in data.data && Array.isArray(data.data.hours)
+                v-for="h in data.data && Array.from(data.data.hours).length > 0
                   ? data.data.hours
                   : hoursData"
                 :key="h._id"
