@@ -1358,7 +1358,7 @@ const onSubmit = handleSubmit(
         </BaseButton>
       </template>
       <form method="POST" action="" @submit.prevent="onSubmit">
-        <div class="mx-auto max-w-7xl py-5">
+        <div class="mx-auto max-w-8xl py-5">
           <div class="mb-4 flex items-center justify-between">
             <div>
               <BaseHeading as="h2" size="xl" weight="medium" lead="none">

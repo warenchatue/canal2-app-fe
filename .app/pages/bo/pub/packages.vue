@@ -264,18 +264,23 @@ async function syncCampaign(campaign: any) {
     }
   })
 
-  const response = await useFetch('/api/pub/packages', {
-    method: 'put',
-    headers: { 'Content-Type': 'application/json' },
-    query: query2,
-  })
+  const response = await $fetch(
+    '/api/pub/packages?action=sync&token=' +
+      token.value +
+      '&id=' +
+      campaign._id,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+    },
+  )
 
-  if (response.data?.value?.success) {
+  if (response.success) {
     success.value = true
     toaster.clearAll()
     toaster.show({
       title: 'Success',
-      message: `Campagne synchronisée !`,
+      message: `${response.data} plannings synchronisés !`,
       color: 'success',
       icon: 'ph:check',
       closable: true,
@@ -304,7 +309,7 @@ function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
     selected.value = []
   } else {
-    selected.value = data.value?.data.map((item) => item.id) ?? []
+    selected.value = data.value?.data?.map((item) => item._id) ?? []
   }
 }
 
@@ -923,8 +928,8 @@ const onSubmit = handleSubmit(
                   <div class="flex items-center">
                     <BaseCheckbox
                       v-model="selected"
-                      :value="item.id"
-                      :name="`item-checkbox-${item.id}`"
+                      :value="item._id"
+                      :name="`item-checkbox-${item._id}`"
                       shape="rounded"
                       class="text-primary-500"
                     />
@@ -1366,7 +1371,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Suppression d'un package
+            Suppression d'un planning
           </h3>
 
           <BaseButtonClose @click="isModalDeletePackageOpen = false" />

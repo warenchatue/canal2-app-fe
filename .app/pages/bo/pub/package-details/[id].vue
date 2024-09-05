@@ -1504,7 +1504,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total diffusés</span>
+                <span>Total Pannifiés</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -1522,7 +1522,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.data?.numberPlay ?? 0 }}</span>
+                <span>{{ data?.data?.plannings?.length ?? 0 }}</span>
               </BaseHeading>
             </div>
             <div
@@ -1545,7 +1545,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total attentes</span>
+                <span>Total diffusés</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -1563,7 +1563,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>0</span>
+                <span>{{ data?.data?.numberPlay ?? 0 }}</span>
               </BaseHeading>
             </div>
             <div
