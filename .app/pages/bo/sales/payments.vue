@@ -121,7 +121,7 @@ async function printSalesReport() {
   setTimeout(() => {
     var printContents = document.getElementById(
       'print-payments-report',
-    ).innerHTML
+    )!.innerHTML
     var originalContents = document.body.innerHTML
     document.body.innerHTML = printContents
     window.print()
