@@ -76,7 +76,6 @@ function filterData(
   const filterRe = new RegExp(filter, 'i')
   return data
     .filter((item) => {
-      console.log(item.amount)
       return [
         item.amount.toString(),
         `${item.announcer?.name}`,
@@ -117,8 +116,6 @@ async function findAll(token: string) {
       'Content-type': 'application/json',
     },
   }).catch((error) => console.log(error))
-  // console.log(data)
-
   return Promise.resolve(data)
 }
 

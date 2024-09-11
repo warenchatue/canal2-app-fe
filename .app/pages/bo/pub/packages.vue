@@ -98,14 +98,6 @@ const { data, pending, refresh } = await useFetch('/api/pub/packages', {
   lazy: true,
 })
 
-// const { data: announcers, pending: pendingAnnouncer } = await useFetch(
-//   '/api/sales/announcers',
-//   {
-//     query: queryLight,
-//     lazy: true,
-//   },
-// )
-
 const { data: allInvoices, pending: pendingInvoices } = await useFetch(
   '/api/sales/invoices',
   {

@@ -146,7 +146,7 @@ function filterData(
         item.org?.name ?? '',
         item.announcer?.name ?? '',
         item.team ?? '',
-      ].some((item) => item.match(filterRe))
+      ].some((item) => (item ? item.match(filterRe) : false))
     })
     .sort(function (a, b) {
       return a.code < b.code ? 1 : -1

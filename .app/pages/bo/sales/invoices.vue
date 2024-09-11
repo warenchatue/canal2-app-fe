@@ -71,7 +71,7 @@ watch([filter, perPage], () => {
 const token = useCookie('token')
 const query = computed(() => {
   return {
-    filter: filter.value,
+    filter: '',
     perPage: perPage.value,
     page: page.value,
     action: 'findAll',
@@ -613,7 +613,7 @@ const success = ref(false)
           </div>
           <div v-else-if="pending">
             <TairoTableRow v-for="index in 5" :key="index">
-              <TairoTableCell spaced>
+              <TairoTableCell class="!w-full" spaced>
                 <div class="flex items-center">
                   <BaseCheckbox
                     v-model="fakeItems"
@@ -655,6 +655,15 @@ const success = ref(false)
               </TairoTableCell>
               <TairoTableCell light spaced>
                 <BasePlaceload class="h-3 w-12 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell spaced>
+                <BasePlaceload class="h-8 w-16 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell spaced>
+                <BasePlaceload class="h-8 w-16 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell spaced>
+                <BasePlaceload class="h-8 w-16 rounded-lg" />
               </TairoTableCell>
               <TairoTableCell spaced>
                 <BasePlaceload class="h-8 w-16 rounded-lg" />
