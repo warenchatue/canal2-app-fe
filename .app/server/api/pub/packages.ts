@@ -184,7 +184,7 @@ async function createPackage(body: any, token: string) {
     },
     body: { ...body, code: makeId(4) + '_' + makeId(4) },
   }).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
 
@@ -199,7 +199,7 @@ async function updatePackage(id: string, body: any, token: string) {
     },
     body: body,
   }).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
 
@@ -292,7 +292,7 @@ async function syncCampaign(id: string, token: string) {
       },
     },
   ).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
 
@@ -306,6 +306,6 @@ async function deletePackage(id: string, token: string) {
       'Content-type': 'application/json',
     },
   }).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
