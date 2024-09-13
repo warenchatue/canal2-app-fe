@@ -136,8 +136,10 @@ var activeDays = ref(
   ).getDate(),
 )
 const initDate = ref(false)
+const isBulkPlanningCreation = ref(false)
 const isBulkPlanningDeletion = ref(false)
 const planningIdsToBeDeleted = ref<string[]>([])
+const planningsToBeCreated = ref<any[]>([])
 
 const spotData = computed(() => {
   let result = {}
@@ -292,6 +294,131 @@ function softDeletePlanning(planningId: string) {
   }
 }
 
+function populateBulkPlanning(
+  day: string,
+  el: any,
+  isHour: boolean,
+  planningId: string,
+) {
+  if (!activeProduct.value._id) {
+    return
+  }
+  if (isHour == true) {
+    activeHour.value = el
+    isTvProgram.value = false
+  } else {
+    activeTvProgram.value = el
+    isTvProgram.value = true
+  }
+  activeDay.value = day
+  activePlanningId.value = planningId
+  isActionLoading.value = true
+  const hourArray =
+    isTvProgram.value == true ? ['01', '00'] : activeHour.value?.code.split(':')
+
+  var date = new Date(
+    activeDate.value.getFullYear(),
+    activeDate.value.getMonth(),
+    parseInt(activeDay.value),
+    parseInt(hourArray[0]),
+    parseInt(hourArray[1]),
+  )
+  const myNewPlanning = {
+    _id: undefined,
+    product: activeProduct.value,
+    hour: isTvProgram.value == true ? undefined : activeHour.value,
+    tvProgram: isTvProgram.value == true ? activeTvProgram.value : undefined,
+    isTvProgram: isTvProgram.value,
+    date: date.toISOString(),
+    position: date.toISOString(),
+    isManualPlay: false,
+    isAutoPlay: false,
+  }
+  planningsToBeCreated.value.push(myNewPlanning)
+  data.value.data.plannings.push(myNewPlanning)
+
+  isActionLoading.value = false
+
+  console.log(planningsToBeCreated.value)
+}
+async function addBulkSpotToPlanning() {
+  isActionLoading.value = true
+  const updatedPlannings = planningsToBeCreated.value.map((planning) => {
+    return {
+      _id: planning._id,
+      product: planning.product._id,
+      hour: planning.isTvProgram == true ? undefined : planning.hour._id,
+      tvProgram:
+        planning.isTvProgram == true ? planning.tvProgram._id : undefined,
+      isTvProgram: planning.isTvProgram,
+      date: planning.date,
+      position: planning.date,
+      isManualPlay: planning.isManualPlay,
+      isAutoPlay: planning.isAutoPlay,
+    }
+  })
+  try {
+    const isSuccess = ref(false)
+    const response = await $fetch(
+      '/api/pub/plannings?action=createPlannings&token=' +
+        token.value +
+        '&packageId=' +
+        data.value?.data?._id +
+        '&orderCode=' +
+        data.value?.data?.code,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: {
+          plannings: updatedPlannings,
+        },
+      },
+    )
+
+    // console.log(response)
+    isSuccess.value = response?.success
+    if (isSuccess.value == true) {
+      success.value = true
+      // data.value?.data?.plannings?.push(...response.data)
+      toaster.clearAll()
+      toaster.show({
+        title: 'Success',
+        message:
+          isEdit.value == false
+            ? `Produit(s) ajouté(s) au planning !`
+            : `Produit mis à jour`,
+        color: 'success',
+        icon: 'ph:check',
+        closable: true,
+      })
+    } else {
+      toaster.clearAll()
+      toaster.show({
+        title: 'Désolé',
+        message: `Une erreur est survenue !`,
+        color: 'danger',
+        icon: 'ph:check',
+        closable: true,
+      })
+    }
+  } catch (error: any) {
+    console.log(error)
+    toaster.clearAll()
+    toaster.show({
+      title: 'Désolé!',
+      message: 'Veuillez examiner les erreurs dans le formulaire',
+      color: 'danger',
+      icon: 'lucide:alert-triangle',
+      closable: true,
+    })
+    // return
+  }
+  // console.log(data.value?.data?.plannings)
+
+  isBulkPlanningCreation.value = false
+  planningsToBeCreated.value = []
+  isActionLoading.value = false
+}
 async function addSpotToPlanning() {
   console.log('Adding product to the planning')
   isActionLoading.value = true
@@ -421,6 +548,7 @@ async function bulkDeleteSpotToPlanning() {
       activePlanningId.value = ''
       isActionLoading.value = false
       isBulkPlanningDeletion.value = false
+      planningIdsToBeDeleted.value = []
       toaster.clearAll()
       toaster.show({
         title: 'Success',
@@ -2507,6 +2635,13 @@ const onSubmit = handleSubmit(
                       @click="
                         isBulkPlanningDeletion
                           ? softDeletePlanning(spotData[h.code][d - 1][2])
+                          : isBulkPlanningCreation
+                          ? populateBulkPlanning(
+                              d.toString(),
+                              h,
+                              true,
+                              spotData[h.code][d - 1][2],
+                            )
                           : openSpotPlanningModal(
                               d.toString(),
                               h,
@@ -2549,6 +2684,13 @@ const onSubmit = handleSubmit(
                       @click="
                         isBulkPlanningDeletion
                           ? softDeletePlanning(
+                              tvProgramData[prog._id][d - 1][2],
+                            )
+                          : isBulkPlanningCreation
+                          ? populateBulkPlanning(
+                              d.toString(),
+                              prog,
+                              false,
                               tvProgramData[prog._id][d - 1][2],
                             )
                           : openSpotPlanningModalProg(
@@ -2674,6 +2816,29 @@ const onSubmit = handleSubmit(
             <BaseButton @click="isModalPlanningOpen = false" label="Fermer"
               >X</BaseButton
             >
+            <div v-if="isBulkPlanningCreation" class="w-64">
+              <Field
+                v-slot="{ errorMessage, handleChange, handleBlur }"
+                name="planning.product"
+              >
+                <BaseListbox
+                  label=""
+                  :items="data?.data?.products"
+                  :properties="{
+                    value: '_id',
+                    label: 'product',
+                    sublabel: 'tag',
+                    media: 'flag',
+                  }"
+                  placeholder=""
+                  v-model="activeProduct"
+                  :error="errorMessage"
+                  :disabled="isSubmitting"
+                  @update:model-value="handleChange"
+                  @blur="handleBlur"
+                />
+              </Field>
+            </div>
             <BaseDropdown label="Action en masse " placement="top-end">
               <template #button>
                 <BaseButtonAction rounded="none">
@@ -2689,7 +2854,11 @@ const onSubmit = handleSubmit(
                   />
                 </template>
 
-                <span @click="isBulkPlanningDeletion = true"
+                <span
+                  @click="
+                    ;(isBulkPlanningCreation = true),
+                      (isBulkPlanningDeletion = false)
+                  "
                   >Création en masse</span
                 >
               </BaseDropdownItem>
@@ -2701,13 +2870,29 @@ const onSubmit = handleSubmit(
                   />
                 </template>
 
-                <span @click="isBulkPlanningDeletion = true"
+                <span
+                  @click="
+                    ;(isBulkPlanningDeletion = true),
+                      (isBulkPlanningCreation = false)
+                  "
                   >Suppression en masse</span
                 >
               </BaseDropdownItem>
             </BaseDropdown>
             <BaseButton
-              class="!bg-red-600"
+              class="!bg-primary-600 !text-gray-100"
+              :loading="isActionLoading"
+              v-if="isBulkPlanningCreation == true"
+              @click="addBulkSpotToPlanning()"
+            >
+              <Icon
+                name="lucide:plus"
+                class="pointer-events-none h-4 w-4 mx-2"
+              />
+              Valider la création</BaseButton
+            >
+            <BaseButton
+              class="!bg-red-600 !text-gray-100"
               :loading="isActionLoading"
               v-if="isBulkPlanningDeletion == true"
               @click="bulkDeleteSpotToPlanning()"
@@ -2760,21 +2945,32 @@ const onSubmit = handleSubmit(
                 >
               </BaseDropdownItem>
             </BaseDropdown>
+            <BaseDropdown label="Créer" placement="top-end">
+              <template #button>
+                <BaseButtonAction rounded="none"> Créer </BaseButtonAction>
+              </template>
 
-            <BaseButton @click="isModalAddHourOpen = true">
-              <Icon
-                name="lucide:plus"
-                class="pointer-events-none h-4 w-4 mx-2"
-              />
-              Heure</BaseButton
-            >
-            <BaseButton @click="isModalAddTvProgramOpen = true">
-              <Icon
-                name="lucide:plus"
-                class="pointer-events-none h-4 w-4 mx-2"
-              />
-              Emission</BaseButton
-            >
+              <BaseDropdownItem>
+                <template #start>
+                  <Icon
+                    name="lucide:clock"
+                    class="pointer-events-none h-4 w-4 mx-2"
+                  />
+                </template>
+
+                <span @click="isModalAddHourOpen = true">Heure</span>
+              </BaseDropdownItem>
+              <BaseDropdownItem>
+                <template #start>
+                  <Icon
+                    name="lucide:tv"
+                    class="pointer-events-none h-4 w-4 mx-2"
+                  />
+                </template>
+
+                <span @click="isModalAddTvProgramOpen = true">Emission</span>
+              </BaseDropdownItem>
+            </BaseDropdown>
             <BaseButton @click="isModalConfirmDiffusionOpen = true">
               <Icon
                 name="lucide:check"
