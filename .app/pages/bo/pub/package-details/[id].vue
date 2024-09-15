@@ -339,7 +339,7 @@ function populateBulkPlanning(
 
   isActionLoading.value = false
 
-  console.log(planningsToBeCreated.value)
+  // console.log(planningsToBeCreated.value)
 }
 async function addBulkSpotToPlanning() {
   isActionLoading.value = true

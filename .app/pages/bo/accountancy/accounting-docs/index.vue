@@ -617,7 +617,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{ 0 }}</span>
+                <span v-if="!pending">-</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -661,7 +661,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{ 0 }}</span>
+                <span v-if="!pending">-</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -694,7 +694,7 @@ const onSubmit = handleSubmit(
                 class="bg-primary-100 text-primary-500 dark:bg-primary-500/20 dark:text-primary-400 dark:border-primary-500 dark:border-2"
                 shape="full"
               >
-                <Icon name="ph:user" class="h-5 w-5" />
+                <Icon name="ph:money" class="h-5 w-5" />
               </BaseIconBox>
             </div>
             <div class="mb-2">
@@ -705,14 +705,15 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">
-                  {{
+                <span v-if="!pending"
+                  >-
+                  <!-- {{
                     new Intl.NumberFormat().format(
                       Math.ceil(data?.metaData?.totalAmount ?? 0),
                     )
                   }}
-                  XAF</span
-                >
+                  XAF -->
+                </span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -801,7 +802,7 @@ const onSubmit = handleSubmit(
           </div>
           <div v-else-if="pending">
             <TairoTableRow v-for="index in 5" :key="index">
-              <TairoTableCell spaced>
+              <TairoTableCell class="!w-full" spaced>
                 <div class="flex items-center">
                   <BaseCheckbox
                     v-model="fakeItems"
@@ -844,6 +845,15 @@ const onSubmit = handleSubmit(
               </TairoTableCell>
               <TairoTableCell light spaced>
                 <BasePlaceload class="h-3 w-12 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell spaced>
+                <BasePlaceload class="h-8 w-16 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell spaced>
+                <BasePlaceload class="h-8 w-16 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell spaced>
+                <BasePlaceload class="h-8 w-16 rounded-lg" />
               </TairoTableCell>
               <TairoTableCell spaced>
                 <BasePlaceload class="h-8 w-16 rounded-lg" />

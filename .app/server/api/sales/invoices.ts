@@ -53,7 +53,7 @@ export default defineEventHandler(async (event) => {
   } else if (action == 'findAllUnpaid') {
     const response = await findAll(token)
     response.data = response.data.filter((e: any) => {
-      return (e.amount - e.paid ?? 0) > 0 && e.taxes.length == 0
+      return e.amount - e.paid > 0 && e.taxes.length == 0
     })
     let totalSelection = 0
     for (let index = 0; index < response.data.length; index++) {
@@ -81,7 +81,7 @@ export default defineEventHandler(async (event) => {
       )
     })
     response.data = response.data.filter((e: any) => {
-      return (e.amount - e.paid ?? 0) > 0 && e.taxes.length == 0
+      return e.amount - e.paid > 0 && e.taxes.length == 0
     })
     let totalSelection = 0
     for (let index = 0; index < response.data.length; index++) {

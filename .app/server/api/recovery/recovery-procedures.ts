@@ -46,7 +46,7 @@ export default defineEventHandler(async (event) => {
   } else if (action == 'findAllUnpaid') {
     const response = await findAll(token)
     response.data = response.data.filter((e: any) => {
-      return (e.amount - e.paid ?? 0) > 0
+      return e.amount - e.paid > 0
     })
     return {
       total: response.metaData.totalItems,
