@@ -92,6 +92,15 @@ const query2 = computed(() => {
     token: token.value,
   }
 })
+const query3 = computed(() => {
+  return {
+    filter: filter.value,
+    perPage: 50,
+    page: page.value,
+    action: 'findAll',
+    token: token.value,
+  }
+})
 
 const { data, pending, refresh } = await useFetch('/api/pub/packages', {
   query,
@@ -118,7 +127,7 @@ const { data: orgs } = await useFetch('/api/admin/orgs', {
 })
 
 const { data: allUsers } = await useFetch('/api/users', {
-  query,
+  query: query3,
 })
 const adminsUser = allUsers.value?.data.filter((e: any) => {
   return (
