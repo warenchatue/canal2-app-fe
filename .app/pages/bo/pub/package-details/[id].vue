@@ -29,6 +29,7 @@ const toaster = useToaster()
 if (
   authStore.user.appRole.name != UserRole.sale &&
   authStore.user.appRole.name != UserRole.mediaPlanner &&
+  authStore.user.appRole.name != UserRole.admin &&
   authStore.user.appRole.name != UserRole.superAdmin
 ) {
   toaster.clearAll()
@@ -1916,6 +1917,7 @@ const onSubmit = handleSubmit(
                       :disabled="
                         authStore.user.appRole.name != UserRole.sale &&
                         authStore.user.appRole.name != UserRole.mediaPlanner &&
+                        authStore.user.appRole.name != UserRole.admin &&
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
                       @click="editSpot(item)"
@@ -2745,11 +2747,11 @@ const onSubmit = handleSubmit(
             <div v-if="true" class="flex justify-between pt-4 pb-2">
               <div class="text-xs">
                 <div class="flex item-center py-2">
-                  NB: (Difusé:
+                  NB: (Diffusé:
                   <p class="mx-2 h-4 w-4 bg-primary-500 rounded-full"></p>
                   ; En attente de diffusion:
                   <span class="mx-2 h-4 w-4 bg-yellow-500 rounded-full"></span>;
-                  Non difusé:
+                  Non diffusé:
                   <span class="h-4 w-4 bg-red-500 rounded-full"></span>)
                 </div>
                 <p class="pt-2">

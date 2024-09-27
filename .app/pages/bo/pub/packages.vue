@@ -111,7 +111,7 @@ const { data: allInvoices, pending: pendingInvoices } = await useFetch(
   '/api/sales/invoices',
   {
     query: query2,
-    lazy: true,
+    lazy: false,
     transform: (els) => {
       return els.data?.map((el) => ({
         name: el.code,
@@ -379,7 +379,7 @@ const zodSchema = z
         .object({
           id: z.string(),
           name: z.string(),
-          createdAt: z.string(),
+          text: z.string(),
         })
         .optional()
         .nullable(),

@@ -2562,9 +2562,7 @@ const onSubmit = handleSubmit(
                 </div>
                 <div class="mt-2 p-8 flex justify-end">
                   <div class="dark:text-muted-400 font-bold">
-                    <BaseParagraph size="sm">
-                      La Direction commerciale
-                    </BaseParagraph>
+                    <BaseParagraph size="md"> La Direction </BaseParagraph>
                   </div>
                 </div>
                 <footer
