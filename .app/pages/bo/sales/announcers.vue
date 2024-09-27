@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { toTypedSchema } from '@vee-validate/zod'
-import { Field, useForm } from 'vee-validate'
-import { z } from 'zod'
-import { UserRole } from '~/types/user'
+import { toTypedSchema } from '@vee-validate/zod';
+import { Field, useForm } from 'vee-validate';
+import { z } from 'zod';
+import { UserRole } from '~/types/user';
 
 definePageMeta({
   title: 'Annonceurs',
@@ -166,6 +166,7 @@ const zodSchema = z
       _id: z.string().optional(),
       name: z.string().min(1, VALIDATION_TEXT.NAME_REQUIRED),
       email: z.string().optional(),
+      supCode: z.string().optional(),
       rc: z.string().optional(),
       nc: z.string().optional(),
       niu: z.string().optional(),
@@ -206,6 +207,7 @@ const initialValues = computed<FormInput>(() => ({
   announcer: {
     name: '',
     email: '',
+    supCode: '',
     address: '',
     phone: '',
     rc: '',
@@ -240,6 +242,7 @@ function editAnnouncer(announcer: any) {
   setFieldValue('announcer._id', announcer._id)
   setFieldValue('announcer.name', announcer.name)
   setFieldValue('announcer.email', announcer.email)
+  setFieldValue('announcer.supCode', announcer.supCode)
   setFieldValue('announcer.phone', announcer.phone)
   setFieldValue('announcer.country', announcer.country)
   setFieldValue('announcer.city', announcer.city)
@@ -769,13 +772,30 @@ const onSubmit = handleSubmit(
             <div class="mx-auto flex w-full flex-col">
               <div>
                 <div class="grid grid-cols-12 gap-4">
-                  <div class="col-span-12 md:col-span-12">
+                  <div class="col-span-12 md:col-span-8">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
                       name="announcer.name"
                     >
                       <BaseInput
                         label="Nom"
+                        icon="ph:user-duotone"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-4">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="announcer.supCode"
+                    >
+                      <BaseInput
+                        label="Code Fournisseur"
                         icon="ph:user-duotone"
                         placeholder=""
                         :model-value="field.value"

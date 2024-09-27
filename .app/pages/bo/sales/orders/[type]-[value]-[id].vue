@@ -1563,7 +1563,7 @@ const onSubmit = handleSubmit(
                         </BaseHeading>
                         <BaseParagraph
                           size="sm"
-                          class="text-muted-800 dark:text-muted-400 font-semibold !w-64"
+                          class="text-muted-800 dark:text-muted-400 font-semibold !w-96"
                         >
                           {{ currentOrderInvoice?.announcer?.name }}
                         </BaseParagraph>
@@ -1651,6 +1651,16 @@ const onSubmit = handleSubmit(
                         }}
                       </p>
 
+                      <!-- <p
+                        class="text-muted-800 dark:text-muted-100 mt-2 text-[10px] font-semibold"
+                      >
+                        Date de commande :
+                      </p>  -->
+                      <p
+                        class="text-muted-800 dark:text-muted-100 mt-2 text-[10px] font-semibold"
+                      >
+                        Date Echéance :
+                      </p>
                       <p
                         v-if="currentOrderInvoice?.description"
                         class="text-muted-800 dark:text-muted-100 mt-2 text-[10px] font-semibold"
@@ -1658,21 +1668,11 @@ const onSubmit = handleSubmit(
                         Description :
                       </p>
 
-                      <!-- <p
-                        class="text-muted-800 dark:text-muted-100 mt-2 text-[10px] font-semibold"
-                      >
-                        SO :
-                      </p>
-
                       <p
+                        v-if="currentOrderInvoice?.announcer?.supCode"
                         class="text-muted-800 dark:text-muted-100 mt-2 text-[10px] font-semibold"
                       >
-                        Date de commande :
-                      </p> -->
-                      <p
-                        class="text-muted-800 dark:text-muted-100 mt-2 text-[10px] font-semibold"
-                      >
-                        Date Echéance :
+                        Code Fournisseur :
                       </p>
                     </div>
                     <div
@@ -1685,13 +1685,7 @@ const onSubmit = handleSubmit(
                           ).toLocaleDateString('fr-FR')
                         }}
                       </p>
-                      <p
-                        v-if="currentOrderInvoice?.description"
-                        class="mt-2 text-[10px]"
-                      >
-                        {{ currentOrderInvoice?.description }}
-                        <!-- BC N° 33880 DU 18/07/2023 -->
-                      </p>
+
                       <!-- <p class="mt-2 text-[10px]">SO3078</p>
                       <p class="mt-2 text-[10px]">30/05/2023</p> -->
                       <p class="mt-2 text-[10px]">
@@ -1700,6 +1694,19 @@ const onSubmit = handleSubmit(
                             currentOrderInvoice?.dueDate,
                           ).toLocaleDateString('fr-FR')
                         }}
+                      </p>
+                      <p
+                        v-if="currentOrderInvoice?.description"
+                        class="mt-2 text-[10px]"
+                      >
+                        {{ currentOrderInvoice?.description }}
+                        <!-- BC N° 33880 DU 18/07/2023 -->
+                      </p>
+                      <p
+                        v-if="currentOrderInvoice?.announcer?.supCode"
+                        class="mt-2 text-[10px]"
+                      >
+                        {{ currentOrderInvoice?.announcer?.supCode ?? '' }}
                       </p>
                     </div>
                   </div>
