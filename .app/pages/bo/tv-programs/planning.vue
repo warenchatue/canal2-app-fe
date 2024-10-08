@@ -511,13 +511,15 @@ function checkProgram(
     if (!Array.isArray(p.hours)) {
       p.hours = []
     }
-    p.hours.push({ date: p.date, hour: '' })
+    if (!p.hours.some((hourObj) => hourObj.date === p.date)) {
+      p.hours.push({ date: p.date, hour: '' })
+    }
+    // console.log(p.hours)
     for (let index = 0; index < p.hours.length; index++) {
       if (
         new Date(p.hours[index].date).toLocaleString('fr-FR') ==
         date?.toLocaleString('fr-FR')
       ) {
-        p.date = p.hours[index].date
         return true
       }
     }
