@@ -6,9 +6,9 @@ import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Planning de diffusion',
+  title: 'Conducteur Journalier des Programmes',
   preview: {
-    title: 'Planning de diffusion',
+    title: 'Conducteur Journalier des Programmes',
     description: '',
     categories: ['bo', 'pub', 'diffusion-list'],
     src: '/img/screens/layouts-table-list-1.png',
@@ -54,9 +54,12 @@ const query = computed(() => {
   }
 })
 
-const { data, pending, error, refresh } = await useFetch('/api/pub/plannings', {
-  query,
-})
+const { data, pending, error, refresh } = await useFetch(
+  '/api/tv-programs/plannings',
+  {
+    query,
+  },
+)
 
 const inputPlayListFile = ref<FileList | null>(null)
 const payListFile = ref<File | null>(null)
@@ -74,7 +77,7 @@ function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
     selected.value = []
   } else {
-    selected.value = data.value?.data.map((item) => item.id) ?? []
+    selected.value = data.value?.data.map((item) => item._id) ?? []
   }
 }
 
@@ -118,7 +121,7 @@ async function confirmDiffusion(planning: any) {
     }
   })
 
-  const response = await useFetch('/api/pub/plannings', {
+  const response = await useFetch('/api/tv-programs/plannings', {
     method: 'put',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
@@ -375,7 +378,7 @@ const onSubmit = handleSubmit(
         <BaseInput
           v-model="filter"
           icon="lucide:search"
-          placeholder="Filtre pub..."
+          placeholder="Filtre programme..."
           :classes="{
             wrapper: 'w-full sm:w-auto',
           }"
@@ -619,20 +622,16 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Heure </TairoTableHeading>
-                <!-- <TairoTableHeading uppercase spaced> Pos </TairoTableHeading> -->
-                <TairoTableHeading uppercase spaced>
-                  Annonceur
-                </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Heures </TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>
-                  Produit
+                  Emission
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced
-                  >Titre du message</TairoTableHeading
-                >
-                <TairoTableHeading uppercase spaced>Durée(s)</TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Fichier</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>
+                  Description
+                </TairoTableHeading>
+
+                <TairoTableHeading uppercase spaced>Durée</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
               </template>
@@ -652,13 +651,21 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
               </TairoTableRow>
 
-              <TairoTableRow v-for="item in data?.data" :key="item.id">
+              <TairoTableRow
+                :style="{
+                  backgroundColor: getBackgroundColor(
+                    item.tvProgram?.category?.colorCode,
+                  ),
+                }"
+                v-for="item in data?.data"
+                :key="item._id"
+              >
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseCheckbox
                       v-model="selected"
-                      :value="item.id"
-                      :name="`item-checkbox-${item.id}`"
+                      :value="item._id"
+                      :name="`item-checkbox-${item._id}`"
                       shape="rounded"
                       class="text-primary-500"
                     />
@@ -678,49 +685,29 @@ const onSubmit = handleSubmit(
                     <span
                       class="text-muted-600 dark:text-muted-300 font-sans text-base"
                     >
-                      {{ new Date(item.date).toLocaleTimeString('fr-FR') }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-                <!-- <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span
-                      class="text-muted-600 dark:text-muted-300 font-sans text-base"
-                    >
-                    </span>
-                  </div>
-                </TairoTableCell> -->
+                      {{
+                        new Date(item.date)
+                          .toLocaleTimeString('fr-FR')
+                          .replace(':00', '')
+                          .replace(':', 'H')
+                      }}
 
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <BaseAvatar
-                      :src="
-                        item.product?.announcer?.logo ??
-                        '/img/avatars/company.svg'
-                      "
-                      :text="item.initials"
-                      :class="getRandomColor()"
-                    />
-                    <div class="ms-3 leading-none">
-                      <h4 class="font-sans text-sm font-medium">
-                        {{ item.product?.package?.announcer?.name }}
-                      </h4>
-                      <p class="text-muted-400 font-sans text-xs">
-                        {{ item.product?.package?.announcer?.email }}
-                      </p>
-                    </div>
+                      <span v-if="item.date">
+                        -
+                        {{
+                          new Date(
+                            new Date(item.date).getTime() +
+                              (item.tvProgram?.duration ?? 0) * 60000,
+                          )
+                            .toLocaleTimeString('fr-FR')
+                            .replace(':00', '')
+                            .replace(':', 'H')
+                        }}</span
+                      >
+                    </span>
                   </div>
                 </TairoTableCell>
 
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span
-                      class="text-muted-600 dark:text-muted-300 font-sans text-base"
-                    >
-                      {{ item.product.product }}
-                    </span>
-                  </div>
-                </TairoTableCell>
                 <TairoTableCell light spaced>
                   <div class="flex items-center">
                     <BaseText
@@ -728,50 +715,41 @@ const onSubmit = handleSubmit(
                       class="hover:cursor-pointer"
                       @click="
                         handleClipboard(
-                          item.product.message + '[' + item.code + ']',
+                          item.tvProgram?.name ?? '' + '[' + item.code + ']',
                         )
                       "
                     >
                       <span
                         class="text-muted-600 dark:text-muted-300 font-sans text-base px-1"
                       >
-                        {{ item.product.message }} [{{ item.code }}]
+                        {{ item.tvProgram?.name ?? '' }}
                       </span></BaseText
                     >
                     <Icon name="ph:link-duotone" class="h-5 w-5" />
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
+                  <div
+                    style="white-space: pre-wrap; word-wrap: break-word"
+                    class=""
+                  >
+                    <h4
+                      v-html="item.description"
+                      class="font-sans !w-80 text-sm text-justify font-medium"
+                    ></h4>
+                  </div>
+                </TairoTableCell>
+
+                <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span
                       class="text-muted-600 dark:text-muted-300 font-sans text-base"
                     >
-                      {{ item.product.duration ?? '' }}
+                      {{ formattedDuration(item.tvProgram?.duration ?? '') }}
                     </span>
                   </div>
                 </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex">
-                    <a
-                      v-if="item.product?.file"
-                      class="text-white bg-muted-600 px-2 py-1 rounded"
-                      :href="'/' + item.product?.file"
-                      target="_blank"
-                    >
-                      <Icon name="lucide:eye" class="h-4 w-4"
-                    /></a>
 
-                    <BaseButtonAction
-                      v-if="item.product?.file"
-                      class="mx-4"
-                      @click.prevent="
-                        downloadProductFile(item.product?.file, item)
-                      "
-                    >
-                      <Icon name="lucide:download" class="h-4 w-4" />
-                    </BaseButtonAction>
-                  </div>
-                </TairoTableCell>
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag
                     v-if="item.isManualPlay == true || item.isAutoPlay == true"
@@ -795,16 +773,6 @@ const onSubmit = handleSubmit(
                   >
                     Non Diffusé
                   </BaseTag>
-                  <!-- <BaseTag
-                    v-else-if="item.status === 'offline'"
-                    color="muted"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    {{ item.status }}
-                  </BaseTag> -->
                 </TairoTableCell>
 
                 <TairoTableCell spaced>
@@ -1025,7 +993,7 @@ const onSubmit = handleSubmit(
           >
             Voulez-vous confirmer la diffusion de
             <span class="text-primary-500">{{
-              currentPlanning?.product?.message
+              currentPlanning?.tvProgram?.name ?? ''
             }}</span>
             à
             <span class="text-primary-500">{{

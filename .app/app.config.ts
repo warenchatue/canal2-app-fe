@@ -127,8 +127,18 @@ export default defineAppConfig({
             children: [
               {
                 name: 'Tableau de bord',
-                to: '',
+                to: '/bo/tv-programs',
                 icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Conducteur du jour',
+                to: '/bo/tv-programs/daily-diffusion-list',
+                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Tous les conducteurs',
+                to: '/bo/tv-programs/diffusion-list',
+                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Planning',

@@ -1036,9 +1036,6 @@ const onSubmit = handleSubmit(
                     <BaseButtonAction
                       @click="confirmSyncCampaign(item)"
                       class="mx-2"
-                      :disabled="
-                        authStore.user.appRole?.name != UserRole.superAdmin
-                      "
                     >
                       <Icon
                         name="ph:arrows-clockwise"

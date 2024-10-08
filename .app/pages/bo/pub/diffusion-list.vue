@@ -1295,7 +1295,12 @@ const onSubmit = handleSubmit(
                       <span
                         class="text-muted-600 dark:text-muted-300 font-sans text-base"
                       >
-                        {{ new Date(item.date).toLocaleTimeString('fr-FR') }}
+                        {{
+                          new Date(item.date)
+                            .toLocaleTimeString('fr-FR')
+                            .replace(':00', '')
+                            .replace(':', 'H')
+                        }}
                       </span>
                     </div>
                   </TairoTableCell>

@@ -108,6 +108,7 @@ function editTvProgram(tvProgram: any) {
   setFieldValue('tvProgram._id', tvProgram._id)
   setFieldValue('tvProgram.name', tvProgram.name)
   setFieldValue('tvProgram.code', tvProgram.code)
+  setFieldValue('tvProgram.duration', tvProgram.duration)
   setFieldValue('tvProgram.category', tvProgram.category)
   setFieldValue('tvProgram.description', tvProgram.description)
   setFieldValue('tvProgram.org', tvProgram.org)
@@ -208,6 +209,7 @@ const zodSchema = z
       _id: z.string().optional(),
       code: z.string().optional(),
       name: z.string().optional(),
+      duration: z.number().optional(),
       description: z.string().optional(),
       status: z
         .union([
@@ -254,6 +256,7 @@ const initialValues = computed<FormInput>(() => ({
   tvProgram: {
     label: '',
     code: '',
+    duration: 0,
     description: '',
     status: 'onHold',
   },
@@ -749,6 +752,7 @@ const onSubmit = handleSubmit(
                 >
 
                 <TairoTableHeading uppercase spaced>Couleur</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Durée</TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>Planning</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
@@ -806,6 +810,9 @@ const onSubmit = handleSubmit(
                     >
                     </span></div
                 ></TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ formattedDuration(item.duration ?? '') }}
+                </TairoTableCell>
                 <TairoTableCell light spaced> </TairoTableCell>
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag
@@ -947,6 +954,24 @@ const onSubmit = handleSubmit(
                       <BaseInput
                         label="Observations"
                         icon="ph:file-duotone"
+                        placeholder=""
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="tvProgram.duration"
+                    >
+                      <BaseInput
+                        label="Durée(Minutes)"
+                        icon="ph:clock-duotone"
+                        type="number"
                         placeholder=""
                         :model-value="field.value"
                         :error="errorMessage"
