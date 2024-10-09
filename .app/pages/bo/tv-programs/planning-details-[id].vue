@@ -3,9 +3,9 @@ import { Field } from 'vee-validate'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Detail - Planning',
+  title: 'Details - Planning',
   preview: {
-    title: 'Detail - Planning',
+    title: 'Details - Planning',
     description: 'Detail - Planning',
     categories: ['bo', 'tv-programs', 'planning'],
     src: '/img/screens/layouts-table-list-1.png',
@@ -52,7 +52,7 @@ const isModalNewActionOpen = ref(false)
 const isModalDeleteActionOpen = ref(false)
 const isModalUploadProductFileOpen = ref(false)
 const isEdit = ref(false)
-const currentDescription = ref('')
+const isPrint = ref(false)
 
 watch([filter, perPage], () => {
   router.push({
@@ -78,6 +78,19 @@ const { data, pending, error, refresh } = await useFetch(
     query,
   },
 )
+
+async function printProcedures() {
+  isPrint.value = true
+  setTimeout(() => {
+    var printContents = document.getElementById('print-procedures').innerHTML
+    var originalContents = document.body.innerHTML
+    document.body.innerHTML = printContents
+    window.print()
+    document.body.innerHTML = originalContents
+    isPrint.value = false
+    location.reload()
+  }, 500)
+}
 
 async function importProductFile() {
   const slug = ref('null')
@@ -123,6 +136,7 @@ async function importProductFile() {
           color: 'success',
           icon: 'ph:check',
           closable: true,
+          isPrint,
         })
         location.reload()
       } else {
@@ -152,14 +166,14 @@ async function importProductFile() {
 
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
-  return selected.value.length === data.value?.data?.products?.length
+  return selected.value.length === data.value?.data?.procedures?.length
 })
 
 function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
     selected.value = []
   } else {
-    selected.value = data.value?.data?.items?.map((item) => item.id) ?? []
+    selected.value = data.value?.data?.procedures?.map((item) => item._id) ?? []
   }
 }
 
@@ -275,67 +289,67 @@ const success = ref(false)
 </script>
 
 <template>
-  <div>
-    <div>
-      <div class="flex w-full flex-col mb-10">
-        <div class="flex justify-center">
-          <Icon name="lucide:tv" class="h-10 w-10" />
-        </div>
-        <div class="mx-auto w-full max-w-4xl text-center">
-          <BaseHeading tag="h1" size="xl" weight="medium" class="mt-4">
-            {{ data?.data?.tvProgram?.name }}
-          </BaseHeading>
-          <div
-            class="divide-muted-400 dark:divide-muted-600 flex items-center justify-center divide-x"
-          >
-            <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
-              <Icon name="ph:clock" class="h-5 w-5" />
-              <BaseText class="text-primary-500" size="lg"
-                >Date:
+  <div id="print-procedures" :class="isPrint == true ? '!p-4' : ''">
+    <div class="flex w-full flex-col mt-2 mx-2 mb-10">
+      <div class="flex justify-center">
+        <Icon name="lucide:tv" class="h-10 w-10" />
+      </div>
+      <div class="mx-auto w-full max-w-4xl text-center">
+        <BaseHeading tag="h1" size="xl" weight="medium" class="mt-4">
+          {{ data?.data?.tvProgram?.name }}
+        </BaseHeading>
+        <div
+          class="divide-muted-400 dark:divide-muted-600 flex items-center justify-center divide-x"
+        >
+          <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
+            <Icon name="ph:clock" class="h-5 w-5" />
+            <BaseText class="text-primary-500" size="lg"
+              >Date:
 
-                {{ new Date(data?.data?.date).toLocaleDateString('fr-FR') }}
+              {{ new Date(data?.data?.date).toLocaleDateString('fr-FR') }}
 
-                De
+              De
+              {{
+                new Date(data?.data?.date)
+                  .toLocaleTimeString('fr-FR')
+                  .replace(':00', '')
+                  .replace(':', 'H')
+              }}
+
+              <span v-if="data?.data?.date">
+                À
                 {{
-                  new Date(data?.data?.date)
+                  new Date(
+                    new Date(data?.data?.date).getTime() +
+                      (data?.data?.tvProgram?.duration ?? 0) * 60000,
+                  )
                     .toLocaleTimeString('fr-FR')
                     .replace(':00', '')
                     .replace(':', 'H')
-                }}
+                }}</span
+              ></BaseText
+            >
+          </div>
 
-                <span v-if="data?.data?.date">
-                  À
-                  {{
-                    new Date(
-                      new Date(data?.data?.date).getTime() +
-                        (data?.data?.tvProgram?.duration ?? 0) * 60000,
-                    )
-                      .toLocaleTimeString('fr-FR')
-                      .replace(':00', '')
-                      .replace(':', 'H')
-                  }}</span
-                ></BaseText
-              >
-            </div>
-
-            <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
-              <Icon name="ph:clock" class="h-5 w-5" />
-              <BaseText class="text-primary-500" size="lg"
-                >Durée:
-                {{
-                  formattedDuration(
-                    data?.data?.tvProgram ? data?.data?.tvProgram.duration : '',
-                  )
-                }}
-              </BaseText>
-            </div>
+          <div class="text-muted-400 flex h-8 items-center gap-1 px-4">
+            <Icon name="ph:clock" class="h-5 w-5" />
+            <BaseText class="text-primary-500" size="lg"
+              >Durée:
+              {{
+                formattedDuration(
+                  data?.data?.tvProgram ? data?.data?.tvProgram.duration : '',
+                )
+              }}
+            </BaseText>
           </div>
         </div>
       </div>
     </div>
+
     <TairoContentWrapper>
       <template #left>
         <BaseInput
+          v-if="!isPrint"
           v-model="filter"
           icon="lucide:search"
           placeholder="Filtre element..."
@@ -346,6 +360,7 @@ const success = ref(false)
       </template>
       <template #right>
         <BaseSelect
+          v-if="!isPrint"
           v-model="perPage"
           label=""
           :classes="{
@@ -358,6 +373,7 @@ const success = ref(false)
           <option :value="100">100 per page</option>
         </BaseSelect>
         <BaseButton
+          v-if="!isPrint"
           @click=";(isModalNewActionOpen = true), (isEdit = false)"
           color="primary"
           class="w-full sm:w-48"
@@ -371,6 +387,15 @@ const success = ref(false)
           <span>Nouvelle action</span>
         </BaseButton>
         <BaseButton
+          v-if="!isPrint"
+          color="primary"
+          @click="printProcedures"
+          class="w-full sm:w-48"
+        >
+          <Icon name="carbon:printer" class="h-4 w-4" /> Exporter
+        </BaseButton>
+        <BaseButton
+          v-if="!isPrint"
           @click="
             router.push('/bo/tv-programs/planning-details/' + data.data?._id)
           "
@@ -380,7 +405,7 @@ const success = ref(false)
           <Icon name="carbon:tropical-storm-tracks" class="h-4 w-4" />
         </BaseButton>
       </template>
-      <div class="grid grid-cols-12 gap-4 pb-5">
+      <div v-if="!isPrint" class="grid grid-cols-12 gap-4 pb-5">
         <!-- Stat tile -->
         <div class="col-span-12 md:col-span-3">
           <BaseCard class="p-4">
@@ -399,7 +424,7 @@ const success = ref(false)
                 class="bg-success-100 text-success-500 dark:bg-success-500/20 dark:text-success-400 dark:border-success-500 dark:border-2"
                 shape="full"
               >
-                <Icon name="ph:money" class="h-5 w-5" />
+                <Icon name="lucide:tv" class="h-5 w-5" />
               </BaseIconBox>
             </div>
             <div class="mb-2">
@@ -410,7 +435,7 @@ const success = ref(false)
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>-</span>
+                <span>{{ data?.data?.procedures?.length ?? '-' }}</span>
               </BaseHeading>
             </div>
             <div
@@ -440,7 +465,7 @@ const success = ref(false)
                 class="bg-yellow-100 text-yellow-500 dark:border-2 dark:border-yellow-500 dark:bg-yellow-500/20 dark:text-yellow-400"
                 shape="full"
               >
-                <Icon name="ph:money" class="h-5 w-5" />
+                <Icon name="lucide:tv" class="h-5 w-5" />
               </BaseIconBox>
             </div>
             <div class="mb-2">
@@ -481,7 +506,7 @@ const success = ref(false)
                 class="bg-yellow-100 text-yellow-500 dark:border-2 dark:border-yellow-500 dark:bg-yellow-500/20 dark:text-yellow-400"
                 shape="full"
               >
-                <Icon name="ph:money" class="h-5 w-5" />
+                <Icon name="lucide:tv" class="h-5 w-5" />
               </BaseIconBox>
             </div>
             <div class="mb-2">
@@ -522,7 +547,7 @@ const success = ref(false)
                 class="bg-primary-100 text-primary-500 dark:bg-primary-500/20 dark:text-primary-400 dark:border-primary-500 dark:border-2"
                 shape="full"
               >
-                <Icon name="ph:money" class="h-5 w-5" />
+                <Icon name="lucide:tv" class="h-5 w-5" />
               </BaseIconBox>
             </div>
             <div class="mb-2">
@@ -570,7 +595,7 @@ const success = ref(false)
           <div class="w-full">
             <TairoTable shape="rounded">
               <template #header>
-                <TairoTableHeading uppercase spaced class="p-4">
+                <TairoTableHeading v-if="!isPrint" uppercase spaced class="p-4">
                   <div class="flex items-center">
                     <BaseCheckbox
                       :model-value="isAllVisibleSelected"
@@ -590,7 +615,9 @@ const success = ref(false)
                 <TairoTableHeading uppercase spaced
                   >Description</TairoTableHeading
                 >
-                <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
+                <TairoTableHeading v-if="!isPrint" uppercase spaced
+                  >Action</TairoTableHeading
+                >
               </template>
 
               <TairoTableRow v-if="selected.length > 0" :hoverable="false">
@@ -599,7 +626,7 @@ const success = ref(false)
                   class="bg-success-100 text-success-700 dark:bg-success-700 dark:text-success-100 p-4"
                 >
                   You have selected {{ selected.length }} items of the total
-                  {{ data?.total }} items.
+                  {{ data?.data.procedures.length }} items.
                   <a
                     href="#"
                     class="outline-none hover:underline focus:underline"
@@ -610,14 +637,14 @@ const success = ref(false)
 
               <TairoTableRow
                 v-for="item in data?.data?.procedures"
-                :key="item.id"
+                :key="item._id"
               >
-                <TairoTableCell spaced>
+                <TairoTableCell v-if="!isPrint" spaced>
                   <div class="flex items-center">
                     <BaseCheckbox
                       v-model="selected"
-                      :value="item.id"
-                      :name="`item-checkbox-${item.id}`"
+                      :value="item._id"
+                      :name="`item-checkbox-${item._id}`"
                       shape="rounded"
                       class="text-primary-500"
                     />
@@ -635,18 +662,19 @@ const success = ref(false)
                   <div class="flex items-center">
                     <span
                       v-html="item.description"
-                      class="text-muted-400 font-sans text-xs"
+                      class="text-muted-400 font-sans text-lg"
                     >
                     </span>
                   </div>
                 </TairoTableCell>
 
-                <TairoTableCell spaced>
+                <TairoTableCell v-if="!isPrint" spaced>
                   <div class="flex">
                     <BaseButtonAction
                       :disabled="
-                        authStore.user.appRole?.name != UserRole.superAdmin &&
-                        authStore.user.appRole?.name != UserRole.accountancy
+                        authStore.user.appRole?.name !=
+                          UserRole.programPlanner &&
+                        authStore.user.appRole?.name != UserRole.superAdmin
                       "
                       @click="editProcedureAction(item)"
                     >
@@ -656,8 +684,9 @@ const success = ref(false)
                       @click="confirmDeleteProcedureAction(item)"
                       class="mx-2"
                       :disabled="
-                        authStore.user.appRole?.name != UserRole.superAdmin &&
-                        authStore.user.appRole?.name != UserRole.accountancy
+                        authStore.user.appRole?.name !=
+                          UserRole.programPlanner &&
+                        authStore.user.appRole?.name != UserRole.superAdmin
                       "
                     >
                       <Icon name="lucide:trash" class="h-4 w-4 text-red-500"
@@ -667,7 +696,7 @@ const success = ref(false)
               </TairoTableRow>
             </TairoTable>
           </div>
-          <div class="mt-6">
+          <div v-if="!isPrint" class="mt-6">
             <BasePagination
               :total-items="data?.products?.length ?? 0"
               :item-per-page="perPage"
