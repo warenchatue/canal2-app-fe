@@ -7,28 +7,19 @@ export default defineEventHandler(async (event) => {
   const filter = (query.filter as string) || ''
   const action = (query.action as string) || 'get'
   const id = (query.id as string) || ''
-  const orderCode = (query.orderCode as string) || ''
-  const packageId = (query.packageId as string) || ''
   const token = (query.token as string) || ''
   const startDate = (query.startDate as string) || ''
   const endDate = (query.endDate as string) || ''
 
-  if (action == 'findOne') {
-    const data = await findOne(id, token)
-    return { data: data, success: true }
-  } else if (action == 'findToday') {
-    const response = await findToday(token)
+  if (action == 'findToday') {
+    const responseProg = await findTodayProg(token)
+    const responsePUB = await findTodayPUB(token)
+    const allResp = [...responseProg.data, ...responsePUB.data]
+
     return {
-      total: response.data.length,
-      metaData: response.metaData,
-      data: filterData(
-        response.data,
-        filter,
-        startDate,
-        endDate,
-        page,
-        perPage,
-      ),
+      total: responseProg.data.length + responsePUB.data.length,
+      metaData: responseProg.metaData,
+      data: filterData(allResp, filter, startDate, endDate, page, perPage),
     }
   } else if (action == 'findAll') {
     const response = await findAll(token)
@@ -44,47 +35,6 @@ export default defineEventHandler(async (event) => {
         perPage,
       ),
     }
-  } else if (action == 'findAllPlanning') {
-    const response = await findAll(token)
-    return {
-      total: response.metaData.totalItems,
-      metaData: response.metaData,
-      data: response.data,
-    }
-  } else if (action == 'findAllStats') {
-    const response = await findAllStats(token)
-    return {
-      total: response.metaData.totalItems,
-      metaData: response.metaData,
-      data: filterData(
-        response.data,
-        filter,
-        startDate,
-        endDate,
-        page,
-        perPage,
-      ),
-    }
-  } else if (action == 'createPlanning') {
-    const body = await readBody(event)
-    console.log(body)
-    const data = await createPlanning(orderCode, body, token)
-    return { data: data, success: true }
-  } else if (action == 'createPlannings') {
-    const body = await readBody(event)
-    console.log(body)
-    const data = await createPlannings(packageId, orderCode, body, token)
-    return { data: data, success: true }
-  } else if (action == 'updateDefaultPlannings') {
-    const body = await readBody(event)
-    console.log(body)
-    const data = await updateDefaultPlannings(body, token)
-    return { data: data, success: true }
-  } else if (action == 'useDefaultPlannings') {
-    const body = await readBody(event)
-    console.log(body)
-    const data = await useDefaultPlannings(body, token)
-    return { data: data, success: true }
   } else if (action == 'updatePlanning') {
     const body = await readBody(event)
     console.log(body)
@@ -114,6 +64,12 @@ function filterData(
   page: number,
   perPage: number,
 ) {
+  data = data.filter(
+    (item) =>
+      (item.isTvProgram ? item.isTvProgram == false : true) &&
+      (item.product ? item.product?.package?.validator != null : true),
+  )
+
   data = data.sort((a: any, b: any) => {
     return a.position < b.position ? -1 : 1
   })
@@ -145,9 +101,10 @@ function filterData(
       return itemTime >= startTime && itemTime <= endTime
     } else if (filter) {
       return [
-        item.tvProgram?.name,
+        item.tvProgram?.name ?? '',
+        item.product?.name ?? '',
         item.code,
-        item.tvProgramHost?.firstName,
+        item.tvProgramHost?.firstName ?? '',
       ].some((item) => item.match(filterRe))
     }
   })
@@ -155,11 +112,11 @@ function filterData(
   return filteredData.slice(offset, offset + perPage)
 }
 
-async function findOne(id: string, token: string) {
-  console.log('findOne ' + token)
+async function findTodayProg(token: string) {
+  console.log('findTodayProg ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/programs-plannings/' + id,
+    runtimeConfig.env.apiUrl + '/programs-plannings/today',
     {
       method: 'get',
       headers: {
@@ -172,11 +129,11 @@ async function findOne(id: string, token: string) {
   return Promise.resolve(data)
 }
 
-async function findToday(token: string) {
-  console.log('findToday ' + token)
+async function findTodayPUB(token: string) {
+  console.log('findTodayPUB ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/programs-plannings/today',
+    runtimeConfig.env.apiUrl + '/plannings/today',
     {
       method: 'get',
       headers: {
@@ -196,98 +153,6 @@ async function findAll(token: string) {
     runtimeConfig.env.apiUrl + '/programs-plannings',
     {
       method: 'get',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-type': 'application/json',
-      },
-    },
-  ).catch((error) => console.log(error))
-  // console.log(data)
-  return Promise.resolve(data)
-}
-
-async function findAllStats(token: string) {
-  console.log('findAllStats ' + token)
-  const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/programs-plannings/stats',
-    {
-      method: 'get',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-type': 'application/json',
-      },
-    },
-  ).catch((error) => console.log(error))
-  // console.log(data)
-  return Promise.resolve(data)
-}
-
-async function createPlanning(orderCode: string, body: any, token: string) {
-  console.log('createPlanning ' + token)
-  const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/programs-plannings',
-    {
-      method: 'post',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-type': 'application/json',
-      },
-      body: { ...body, code: orderCode + '_' + makeId(4) },
-    },
-  ).catch((error) => console.log(error))
-  // console.log(data)
-  return Promise.resolve(data)
-}
-async function createPlannings(
-  packageId: string,
-  orderCode: string,
-  body: any,
-  token: string,
-) {
-  console.log('createPlannings ' + token)
-  const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/programs-plannings/bulk',
-    {
-      method: 'post',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-type': 'application/json',
-      },
-      body: body.plannings,
-    },
-  ).catch((error) => console.log(error))
-  // console.log(data)
-  return Promise.resolve(data)
-}
-
-async function updateDefaultPlannings(body: any, token: string) {
-  console.log('updateDefaultPlannings ' + token)
-  const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/programs-plannings/default-bulk',
-    {
-      method: 'post',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-type': 'application/json',
-      },
-      body: body._ids,
-    },
-  ).catch((error) => console.log(error))
-  // console.log(data)
-  return Promise.resolve(data)
-}
-
-async function useDefaultPlannings(body: any, token: string) {
-  console.log('useDefaultPlannings ' + token)
-  const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/programs-plannings/use-default-bulk',
-    {
-      method: 'post',
       headers: {
         Authorization: 'Bearer ' + token,
         'Content-type': 'application/json',
@@ -367,16 +232,4 @@ async function bulkDeletePlanning(body: any, token: string) {
   ).catch((error) => console.log(error))
   // console.log(data)
   return Promise.resolve(data)
-}
-
-function makeId(length: number) {
-  let result = ''
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#'
-  const charactersLength = characters.length
-  let counter = 0
-  while (counter < length) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength))
-    counter += 1
-  }
-  return result
 }

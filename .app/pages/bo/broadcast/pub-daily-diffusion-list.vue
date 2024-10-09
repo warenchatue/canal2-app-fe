@@ -6,9 +6,9 @@ import { z } from 'zod'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Conducteur PUB du jour',
+  title: 'Conducteur Publicitaire du jour',
   preview: {
-    title: 'Conducteur publicitaire du jour',
+    title: 'Conducteur Publicitaire du jour',
     description: '',
     categories: ['bo', 'pub', 'diffusion-list'],
     src: '/img/screens/layouts-table-list-1.png',

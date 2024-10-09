@@ -134,7 +134,6 @@ const isEdit = ref(false)
 const isTvProgram = ref(false)
 const isPrintPlanning = ref(false)
 const isPrintCertificate = ref(false)
-const activeProduct = ref({ _id: '', product: '', tag: '', flag: '' })
 const currentProduct = ref({})
 const currentTvProgram = ref({})
 const currentTvProgramHost = ref({})
@@ -145,8 +144,8 @@ const activeDate = ref(new Date())
 const currentDate = ref(new Date())
 const activeDay = ref('')
 const activePlanningId = ref('')
+const activePlanning = ref({})
 const activeHour = ref({})
-const activeTvProgram = ref({})
 const isActionLoading = ref(false)
 const activeEnd = ref({ day: undefined, step: 1, total: 1 })
 const isCapturePagePlanning = ref(false)
@@ -168,7 +167,7 @@ const spotData = computed(() => {
 })
 
 function filterItems(query?: string, items?: any[]) {
-  if (query.length < 3) {
+  if (query.length < 1) {
     return []
   }
 
@@ -182,14 +181,6 @@ function filterItems(query?: string, items?: any[]) {
     // const textMatches = item?.text?.toLowerCase().includes(query.toLowerCase())
     return nameMatches
   })
-}
-
-function openAllPlanning() {
-  setTimeout(() => {
-    isModalPlanningOpen.value = true
-    console.log('spotData')
-    console.log(spotData.value)
-  }, 500)
 }
 
 function captureContent(type: string) {
@@ -254,26 +245,42 @@ function openSpotPlanningModal(
   date: Date,
   hour: any,
   planningId: string,
+  planning: any,
 ) {
   activeDay.value = day
   currentDate.value = date
   activeHour.value = hour
   activePlanningId.value = planningId
+  console.log(planning)
+  if (planning) {
+    activePlanning.value = planning
+    currentTvProgram.value = planning.tvProgram
+    currentTvProgramHost.value = {
+      ...planning.tvProgramHost,
+      name:
+        planning.tvProgramHost.firstName +
+        ' ' +
+        planning.tvProgramHost.lastName,
+    }
+    currentDescription.value = planning.description
+    planning.hours.pop()
+    console.log(planning.hours)
+    currentHours.value = planning.hours.map((h) => {
+      return { date: h.date, hour: h.hour, _id: h.hour, code: h.code }
+    })
+  } else {
+    currentTvProgram.value = {}
+    currentTvProgramHost.value = {}
+    currentDescription.value = ''
+    currentHours.value = []
+  }
+
   activeEnd.value.day = parseInt(day)
   isTvProgram.value = false
   isModalNewSpotPlanningOpen.value = true
 }
 
-function openSpotPlanningModalProg(day: string, prog: any, planningId: string) {
-  activeDay.value = day
-  activeTvProgram.value = prog
-  activePlanningId.value = planningId
-  activeEnd.value.day = parseInt(day)
-  isTvProgram.value = true
-  isModalNewSpotPlanningOpen.value = true
-}
-
-async function addProgramToPlanning() {
+async function addProgramToPlanning(planningId: string) {
   console.log('Adding program to the planning')
   isActionLoading.value = true
   const hourArray = activeHour.value?.code.split(':')
@@ -310,40 +317,59 @@ async function addProgramToPlanning() {
       )
       hours.push({
         date: dateT.toISOString(),
+        code: currentHours.value[index].code,
         hour: currentHours.value[index]._id,
       })
     }
 
     // console.log(date.toISOString())
     for (let i = 0; i < myActiveEndTotal; i++) {
-      newPlannings.push({
-        _id: undefined,
-        hour: activeHour.value._id,
-        hours: hours,
-        tvProgram: currentTvProgram.value.id,
-        tvProgramHost: currentTvProgramHost.value.id,
-        description: currentDescription.value,
-        date: date.toISOString(),
-        position: date.toISOString(),
-        isManualPlay: false,
-        isAutoPlay: false,
-      })
+      if (planningId) {
+        newPlannings.push({
+          _id: planningId,
+          hour: activeHour.value._id,
+          hours: hours,
+          tvProgram: currentTvProgram.value.id,
+          tvProgramHost: currentTvProgramHost.value.id,
+          description: currentDescription.value,
+          date: date.toISOString(),
+          position: date.toISOString(),
+        })
+      } else {
+        newPlannings.push({
+          _id: undefined,
+          hour: activeHour.value._id,
+          hours: hours,
+          tvProgram: currentTvProgram.value.id,
+          tvProgramHost: currentTvProgramHost.value.id,
+          description: currentDescription.value,
+          date: date.toISOString(),
+          position: date.toISOString(),
+          isManualPlay: false,
+          isAutoPlay: false,
+        })
+      }
     }
   }
 
   try {
     const isSuccess = ref(false)
+    const action = planningId ? 'updatePlanning' : 'createPlannings'
     const response = await $fetch(
-      '/api/tv-programs/plannings?action=createPlannings&token=' +
+      `/api/tv-programs/plannings?action=${action}&token=` +
         token.value +
+        '&id=' +
+        (planningId ?? '') +
         '&orderCode=' +
         data.value?.data?.code,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: {
-          plannings: newPlannings,
-        },
+        body: planningId
+          ? newPlannings[0]
+          : {
+              plannings: newPlannings,
+            },
       },
     )
 
@@ -351,7 +377,21 @@ async function addProgramToPlanning() {
     isSuccess.value = response?.success
     if (isSuccess.value == true) {
       success.value = true
-      data.value?.data?.push(...response.data)
+      if (!planningId) {
+        data.value?.data?.push(...response.data)
+      } else {
+        data.value.data = data.value?.data.filter((p) => p._id != planningId)
+        data.value?.data?.push({
+          _id: planningId,
+          hour: activeHour.value,
+          hours: newPlannings[0].hours,
+          tvProgram: currentTvProgram.value,
+          tvProgramHost: currentTvProgramHost.value,
+          description: currentDescription.value,
+          date: newPlannings[0].date,
+          position: newPlannings[0].date,
+        })
+      }
       toaster.clearAll()
       toaster.show({
         title: 'Success',
@@ -512,7 +552,7 @@ function checkProgram(
       p.hours = []
     }
     if (!p.hours.some((hourObj) => hourObj.date === p.date)) {
-      p.hours.push({ date: p.date, hour: '' })
+      p.hours.push({ date: p.date, hour: p.hour._id, code: p.hour.code })
     }
     // console.log(p.hours)
     for (let index = 0; index < p.hours.length; index++) {
@@ -527,7 +567,7 @@ function checkProgram(
   })
 
   if (plannedSpots.length == 0) {
-    return ['+', 'default', undefined, 0]
+    return ['+', 'default', undefined, 0, undefined]
   } else {
     const numberSpots = plannedSpots.length == 1 ? 1 : 2
     const dateNow = new Date().toLocaleString('fr-FR')
@@ -564,6 +604,7 @@ function checkProgram(
         plannedSpots[0].tvProgram?.name ?? '',
         plannedSpots[0].tvProgram?.category?.colorCode ?? '',
         plannedSpots[0]._id,
+        plannedSpots[0],
         numberSpots,
       ]
     } else if (
@@ -576,6 +617,7 @@ function checkProgram(
         plannedSpots[0].tvProgram?.name ?? '',
         plannedSpots[0].tvProgram?.category?.colorCode ?? '',
         plannedSpots[0]._id,
+        plannedSpots[0],
         numberSpots,
       ]
     } else if (datePTime > dateNowTime && isPrintCertificate.value == false) {
@@ -584,6 +626,7 @@ function checkProgram(
         plannedSpots[0].tvProgram?.name ?? '',
         plannedSpots[0].tvProgram?.category?.colorCode ?? '',
         plannedSpots[0]._id,
+        plannedSpots[0],
         numberSpots,
       ]
     } else {
@@ -1292,6 +1335,7 @@ const onSubmit = handleSubmit(
                           d,
                           h,
                           spotData[h.code][d.getDay()][2],
+                          spotData[h.code][d.getDay()][3],
                         )
                       "
                       class="!w-6 !h-[2.106em] !bg-muted-100 rounded-full !px-1 !my-2"
@@ -1894,15 +1938,30 @@ const onSubmit = handleSubmit(
             <BaseButton @click="isModalNewSpotPlanningOpen = false"
               >Annuler</BaseButton
             >
+            <BaseButton
+              v-if="activePlanningId"
+              :to="'/bo/tv-programs/planning-details-' + activePlanningId"
+              >Details</BaseButton
+            >
 
             <BaseButton
               color="primary"
               flavor="solid"
-              :disabled="isActionLoading"
+              :disabled="isActionLoading || activePlanningId"
               :loading="isActionLoading"
-              @click="addProgramToPlanning()"
+              @click="addProgramToPlanning(null)"
             >
               Valider
+            </BaseButton>
+            <BaseButton
+              v-if="activePlanningId"
+              color="warning"
+              flavor="solid"
+              :disabled="isActionLoading"
+              :loading="isActionLoading"
+              @click="addProgramToPlanning(activePlanningId)"
+            >
+              Modifier
             </BaseButton>
             <BaseButton
               v-if="activePlanningId"

@@ -82,6 +82,31 @@ export default defineAppConfig({
               },
             ],
           },
+          {
+            name: 'Diffusion',
+            icon: { name: 'lucide:tv', class: 'w-5 h-5' },
+            activePath: '/bo/broadcast',
+            children: [
+              {
+                name: 'Diffusion du jour',
+                to: '/bo/broadcast/daily-diffusion-list',
+                icon: { name: 'ph:target-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Publicités du Jour',
+                to: '/bo/broadcast/pub-daily-diffusion-list',
+                icon: { name: 'ph:target-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Programmes du jour',
+                to: '/bo/broadcast/tv-programs-daily-diffusion-list',
+                icon: {
+                  name: 'lucide:tv',
+                  class: 'w-4 h-4',
+                },
+              },
+            ],
+          },
 
           {
             name: 'PUB',
@@ -92,11 +117,6 @@ export default defineAppConfig({
                 name: 'Tableau de bord',
                 to: '/bo/pub',
                 icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Conducteur du jour',
-                to: '/bo/pub/daily-diffusion-list',
-                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Tous les conducteurs',
@@ -122,18 +142,13 @@ export default defineAppConfig({
           },
           {
             name: 'Programmes TV',
-            icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
+            icon: { name: 'ph:target-duotone', class: 'w-5 h-5' },
             activePath: '/bo/tv-programs',
             children: [
               {
                 name: 'Tableau de bord',
                 to: '/bo/tv-programs',
                 icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Conducteur du jour',
-                to: '/bo/tv-programs/daily-diffusion-list',
-                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Tous les conducteurs',
@@ -169,7 +184,7 @@ export default defineAppConfig({
           },
           {
             name: 'Achats',
-            icon: { name: 'ph:target-duotone', class: 'w-5 h-5' },
+            icon: { name: 'ph:money-duotone', class: 'w-5 h-5' },
             activePath: '/bo/purchases',
             children: [
               {
@@ -201,7 +216,7 @@ export default defineAppConfig({
           },
           {
             name: 'Ventes',
-            icon: { name: 'ph:target-duotone', class: 'w-5 h-5' },
+            icon: { name: 'ph:money-duotone', class: 'w-5 h-5' },
             activePath: '/bo/sales',
             children: [
               {
@@ -243,7 +258,7 @@ export default defineAppConfig({
           },
           {
             name: 'Recouvrement',
-            icon: { name: 'ph:chat-duotone', class: 'w-5 h-5' },
+            icon: { name: 'ph:money-duotone', class: 'w-5 h-5' },
             activePath: '/bo/sav',
             children: [
               {

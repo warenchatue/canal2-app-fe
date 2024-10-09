@@ -6,8 +6,10 @@ export function formattedDuration(duration: number) {
     const hours = Math.floor(duration / 60)
     const minutes = duration % 60
     return `${hours}h ${minutes > 0 ? minutes + 'm' : ''}`
+  } else if (duration > 1) {
+    return `${duration}m`
   }
-  return `${duration}m`
+  return `${duration * 60}s`
 }
 
 export function hexToRgba(hex: any, opacity: number) {
