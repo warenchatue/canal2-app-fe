@@ -113,7 +113,7 @@ const { data: suppliers, pending: pendingAnnouncer } = await useFetch(
   '/api/purchases/suppliers',
   {
     query: queryLight,
-    lazy: true,
+    lazy: false,
   },
 )
 

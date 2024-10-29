@@ -440,7 +440,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data.metaData?.totalDiffused }}</span>
+                <span>{{ data?.metaData?.totalDiffused ?? 0 }}</span>
               </BaseHeading>
             </div>
             <div
@@ -481,7 +481,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data.metaData?.totalNotDiffused }}</span>
+                <span>{{ data?.metaData?.totalNotDiffused ?? 0 }}</span>
               </BaseHeading>
             </div>
             <div
@@ -522,7 +522,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data.metaData?.totalPending }}</span>
+                <span>{{ data?.metaData?.totalPending ?? 0 }}</span>
               </BaseHeading>
             </div>
             <div
@@ -569,14 +569,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span
-                >{{
-                  Math.ceil(
-                    (data.metaData?.totalToday / data.metaData?.totalToday) *
-                      100,
-                  )
-                }}%</span
-              >
+              <span>- %</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>

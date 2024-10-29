@@ -493,7 +493,7 @@ async function deleteSpotToPlanning() {
 
 function checkEmptyPlanning(h: any) {
   if (isPrintPlanning.value == true || isPrintCertificate.value == true) {
-    var plannedSpots = data.value?.data?.plannings?.filter(
+    var plannedSpots = data.value?.data?.filter(
       (p: any) => moment(p.date).format('HH:mm') == h.name,
     )
     if (plannedSpots.length == 0) {
@@ -504,30 +504,6 @@ function checkEmptyPlanning(h: any) {
   } else {
     return true
   }
-}
-
-function totalPerHour(h: any, isProg: boolean, progId: string) {
-  var plannedSpots = data.value?.data?.plannings?.filter(
-    (p: any) =>
-      (p.isTvProgram == true ? p.tvProgram._id == progId : true) &&
-      moment(p.date).format('M/yyyy HH:mm') ==
-        activeDate.value.getMonth() +
-          1 +
-          '/' +
-          activeDate.value.getFullYear() +
-          ' ' +
-          (isProg == true ? '01:00' : h.name),
-  )
-  return plannedSpots.length
-}
-
-function totalPerMonth() {
-  var plannedSpots = data.value?.data?.plannings?.filter(
-    (p: any) =>
-      moment(p.date).format('M/yyyy') ==
-      activeDate.value.getMonth() + 1 + '/' + activeDate.value.getFullYear(),
-  )
-  return plannedSpots.length
 }
 
 function checkProgram(
@@ -1425,7 +1401,7 @@ const onSubmit = handleSubmit(
               Imprimer
             </BaseButton>
             <BaseButton
-              :color="data.data?.validator ? 'success' : 'warning'"
+              :color="data?.data?.validator ? 'success' : 'warning'"
               flavor="solid"
               :disabled="
                 authStore.user?.appRole?.name != UserRole.superAdmin &&
@@ -1434,7 +1410,9 @@ const onSubmit = handleSubmit(
               @click="isModalConfirmPlanningOpen = true"
             >
               {{
-                data.data?.validator ? 'Planning validé' : 'Valider le planning'
+                data?.data?.validator
+                  ? 'Planning validé'
+                  : 'Valider le planning'
               }}
             </BaseButton>
             <BaseButton
