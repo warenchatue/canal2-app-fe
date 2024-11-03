@@ -2097,6 +2097,12 @@ const onSubmit = handleSubmit(
                           >
                             Article
                           </th>
+                          <!-- <th
+                            scope="col"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-left text-[9px] font-bold sm:ps-6 md:ps-0"
+                          >
+                            Référence Mercuriale
+                          </th> -->
                           <th
                             scope="col"
                             class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-left text-[9px] font-bold sm:ps-6 md:ps-0"
@@ -2191,6 +2197,12 @@ const onSubmit = handleSubmit(
                             v-if="!isPrint"
                             class="text-muted-800 dark:text-muted-400 text-left text-[9px] sm:table-cell"
                           ></td>
+                          <!-- <td
+                            style="white-space: pre-wrap; word-wrap: break-word"
+                            class="text-muted-800 dark:text-muted-400 !w-20 px-3 py-4 text-left font-medium text-[9px] sm:table-cell"
+                          >
+                            <p class="w-20 break-words">48-002-200326</p>
+                          </td> -->
                           <td
                             style="white-space: pre-wrap; word-wrap: break-word"
                             class="text-muted-800 dark:text-muted-400 !w-48 px-3 py-4 text-left font-medium text-[9px] sm:table-cell"
@@ -2575,7 +2587,7 @@ const onSubmit = handleSubmit(
                             scope="col"
                             class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-[9px] font-bold sm:ps-6 md:ps-0"
                           >
-                            Reference
+                            Référence
                           </th>
                         </tr>
                       </thead>
