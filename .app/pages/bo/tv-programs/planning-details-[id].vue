@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Field } from 'vee-validate'
-import { UserRole } from '~/types/user'
+import { Field } from 'vee-validate';
+import { UserRole } from '~/types/user';
 
 definePageMeta({
   title: 'Conducteur - Programme',
@@ -19,6 +19,7 @@ const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
+const curProgramContent = ref('')
 const perPage = ref(10)
 const token = useCookie('token')
 const toaster = useToaster()
@@ -50,7 +51,6 @@ const queryHours = computed(() => {
 
 const isModalNewActionOpen = ref(false)
 const isModalDeleteActionOpen = ref(false)
-const isModalUploadProductFileOpen = ref(false)
 const isEdit = ref(false)
 const isPrint = ref(false)
 
@@ -79,6 +79,10 @@ const { data, pending, error, refresh } = await useFetch(
   },
 )
 
+if (data.value?.data) {
+  curProgramContent.value = data?.value.data?.content ?? ''
+}
+
 async function printProcedures() {
   isPrint.value = true
   setTimeout(() => {
@@ -90,78 +94,6 @@ async function printProcedures() {
     isPrint.value = false
     location.reload()
   }, 500)
-}
-
-async function importProductFile() {
-  const slug = ref('null')
-  try {
-    const fd = new FormData()
-    fd.append('0', productFile.value)
-    const query3 = computed(() => {
-      return {
-        action: 'import-product-file',
-        token: token.value,
-        dir: 'uploads/productsFiles',
-      }
-    })
-
-    const { data: uploadData, refresh } = await useFetch('/api/files/upload', {
-      method: 'POST',
-      query: query3,
-      body: fd,
-    })
-    if (uploadData.value?.success == true) {
-      const query4 = computed(() => {
-        return {
-          action: 'updateSpot',
-          token: token.value,
-          id: curProcedureAction.value._id,
-        }
-      })
-
-      const response = await useFetch('/api/pub', {
-        method: 'put',
-        headers: { 'Content-Type': 'application/json' },
-        query: query4,
-        body: {
-          ...curProcedureAction.value,
-          file: uploadData.value?.fileName,
-        },
-      })
-      if (response.data.value?.success) {
-        toaster.clearAll()
-        toaster.show({
-          title: 'Success',
-          message: `Mise à jour terminé !`,
-          color: 'success',
-          icon: 'ph:check',
-          closable: true,
-          isPrint,
-        })
-        location.reload()
-      } else {
-        toaster.clearAll()
-        toaster.show({
-          title: 'Désolé',
-          message: `Une erreur est survenue lors de la mise à jour du produit !`,
-          color: 'danger',
-          icon: 'ph:check',
-          closable: true,
-        })
-      }
-    } else {
-      slug.value = ''
-      toaster.clearAll()
-      toaster.show({
-        title: 'Désolé',
-        message: `Une erreur est survenue lors de l'importation du fichier !`,
-        color: 'danger',
-        icon: 'ph:check',
-        closable: true,
-      })
-    }
-  } catch (error) {}
-  isModalUploadProductFileOpen.value = false
 }
 
 const selected = ref<number[]>([])
@@ -240,6 +172,46 @@ async function updateProcedure() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: data.value?.data,
+    },
+  )
+  if (response.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `Element mis a jour !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalNewActionOpen.value = false
+    // location.reload()
+    filter.value = 'actions'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Désolé',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+}
+
+async function updateProgramContent() {
+  const response = await $fetch(
+    `/api/tv-programs/plannings?action=updatePlanningContent&token=` +
+      token.value +
+      '&id=' +
+      (data.value?.data._id ?? '') +
+      '&orderCode=' +
+      data.value?.data?.code,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { content: curProgramContent.value },
     },
   )
   if (response.success) {
@@ -359,7 +331,7 @@ const success = ref(false)
         />
       </template>
       <template #right>
-        <BaseSelect
+        <!-- <BaseSelect
           v-if="!isPrint"
           v-model="perPage"
           label=""
@@ -371,7 +343,7 @@ const success = ref(false)
           <option :value="25">25 per page</option>
           <option :value="50">50 per page</option>
           <option :value="100">100 per page</option>
-        </BaseSelect>
+        </BaseSelect> -->
         <!-- <BaseButton
           v-if="!isPrint"
           @click=";(isModalNewActionOpen = true), (isEdit = false)"
@@ -388,7 +360,7 @@ const success = ref(false)
         </BaseButton> -->
         <BaseButton
           v-if="!isPrint"
-          @click=";(isModalNewActionOpen = true), (isEdit = false)"
+          @click="updateProgramContent()"
           color="primary"
           class="w-full sm:w-48"
           :disabled="
@@ -419,174 +391,9 @@ const success = ref(false)
           <Icon name="carbon:tropical-storm-tracks" class="h-4 w-4" />
         </BaseButton>
       </template>
-      <div v-if="!isPrint" class="grid grid-cols-12 gap-4 pb-5">
-        <!-- Stat tile -->
-        <div class="col-span-12 md:col-span-3">
-          <BaseCard class="p-4">
-            <div class="mb-1 flex items-center justify-between">
-              <BaseHeading
-                as="h5"
-                size="sm"
-                weight="medium"
-                lead="tight"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <span>Total Elements</span>
-              </BaseHeading>
-              <BaseIconBox
-                size="xs"
-                class="bg-success-100 text-success-500 dark:bg-success-500/20 dark:text-success-400 dark:border-success-500 dark:border-2"
-                shape="full"
-              >
-                <Icon name="lucide:tv" class="h-5 w-5" />
-              </BaseIconBox>
-            </div>
-            <div class="mb-2">
-              <BaseHeading
-                as="h4"
-                size="2xl"
-                weight="bold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>{{ data?.data?.procedures?.length ?? '-' }}</span>
-              </BaseHeading>
-            </div>
-            <div
-              class="text-success-500 flex items-center gap-1 font-sans text-sm"
-            >
-              <span>+0%</span>
-              <Icon name="lucide:trending-up" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">en hausse</span>
-            </div>
-          </BaseCard>
-        </div>
-        <!-- Stat tile -->
-        <div class="col-span-12 md:col-span-3">
-          <BaseCard class="p-4">
-            <div class="mb-1 flex items-center justify-between">
-              <BaseHeading
-                as="h5"
-                size="sm"
-                weight="medium"
-                lead="tight"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <span>Total Intervenants</span>
-              </BaseHeading>
-              <BaseIconBox
-                size="xs"
-                class="bg-yellow-100 text-yellow-500 dark:border-2 dark:border-yellow-500 dark:bg-yellow-500/20 dark:text-yellow-400"
-                shape="full"
-              >
-                <Icon name="lucide:tv" class="h-5 w-5" />
-              </BaseIconBox>
-            </div>
-            <div class="mb-2">
-              <BaseHeading
-                as="h4"
-                size="2xl"
-                weight="bold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>-</span>
-              </BaseHeading>
-            </div>
-            <div
-              class="text-danger-500 flex items-center gap-1 font-sans text-sm"
-            >
-              <span>-0%</span>
-              <Icon name="lucide:trending-down" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">en baisse</span>
-            </div>
-          </BaseCard>
-        </div>
-        <!-- Stat tile -->
-        <div class="col-span-12 md:col-span-3">
-          <BaseCard class="p-4">
-            <div class="mb-1 flex items-center justify-between">
-              <BaseHeading
-                as="h5"
-                size="sm"
-                weight="medium"
-                lead="tight"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <span>Total</span>
-              </BaseHeading>
-              <BaseIconBox
-                size="xs"
-                class="bg-yellow-100 text-yellow-500 dark:border-2 dark:border-yellow-500 dark:bg-yellow-500/20 dark:text-yellow-400"
-                shape="full"
-              >
-                <Icon name="lucide:tv" class="h-5 w-5" />
-              </BaseIconBox>
-            </div>
-            <div class="mb-2">
-              <BaseHeading
-                as="h4"
-                size="2xl"
-                weight="bold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>-</span>
-              </BaseHeading>
-            </div>
-            <div
-              class="text-danger-500 flex items-center gap-1 font-sans text-sm"
-            >
-              <span>0%</span>
-              <Icon name="lucide:trending-down" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">en baisse</span>
-            </div>
-          </BaseCard>
-        </div>
-        <!-- Stat tile -->
-        <div class="col-span-12 md:col-span-3">
-          <BaseCard class="p-4">
-            <div class="mb-1 flex items-center justify-between">
-              <BaseHeading
-                as="h5"
-                size="sm"
-                weight="medium"
-                lead="tight"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <span>Total</span>
-              </BaseHeading>
-              <BaseIconBox
-                size="xs"
-                class="bg-primary-100 text-primary-500 dark:bg-primary-500/20 dark:text-primary-400 dark:border-primary-500 dark:border-2"
-                shape="full"
-              >
-                <Icon name="lucide:tv" class="h-5 w-5" />
-              </BaseIconBox>
-            </div>
-            <div class="mb-2">
-              <BaseHeading
-                as="h4"
-                size="2xl"
-                weight="bold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>-</span>
-              </BaseHeading>
-            </div>
-            <div
-              class="text-success-500 flex items-center gap-1 font-sans text-sm"
-            >
-              <span>+0%</span>
-              <Icon name="lucide:trending-up" class="h-5 w-5" />
-              <span class="text-muted-400 text-xs">en hausse</span>
-            </div>
-          </BaseCard>
-        </div>
-      </div>
+
       <div>
-        <div v-if="!pending && data?.data?.procedures?.length === 0">
+        <div v-if="pending">
           <BasePlaceholderPage
             title="No matching results"
             subtitle="Looks like we couldn't find any matching results for your search terms. Try other search terms."
@@ -607,135 +414,48 @@ const success = ref(false)
         </div>
         <div v-else>
           <div class="w-full">
-            <TairoTable shape="rounded">
-              <template #header>
-                <TairoTableHeading v-if="!isPrint" uppercase spaced class="p-4">
-                  <div class="flex items-center">
-                    <BaseCheckbox
-                      :model-value="isAllVisibleSelected"
-                      :indeterminate="
-                        selected.length > 0 && !isAllVisibleSelected
-                      "
-                      name="table-1-main"
-                      shape="rounded"
-                      class="text-primary-500"
-                      @click="toggleAllVisibleSelection"
-                    />
-                  </div>
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Element
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced
-                  >Description</TairoTableHeading
-                >
-                <TairoTableHeading v-if="!isPrint" uppercase spaced
-                  >Action</TairoTableHeading
-                >
-              </template>
-
-              <TairoTableRow v-if="selected.length > 0" :hoverable="false">
-                <TairoTableCell
-                  colspan="6"
-                  class="bg-success-100 text-success-700 dark:bg-success-700 dark:text-success-100 p-4"
-                >
-                  You have selected {{ selected.length }} items of the total
-                  {{ data?.data.procedures.length }} items.
-                  <a
-                    href="#"
-                    class="outline-none hover:underline focus:underline"
-                    >Click here to everything</a
-                  >
-                </TairoTableCell>
-              </TairoTableRow>
-              <Editor
-                class="!z-10001"
-                api-key="28vhdlyfnzs83pxfpaj979iljxwg6tviaz2y4gri6drif9ak"
-                v-model="curProcedureAction.description"
-                :init="{
-                  height: 300,
-                  menubar: true,
-                  plugins: 'link image code',
-                  toolbar:
-                    'undo redo | formatselect | bold italic | forecolor backcolor | \
-    alignleft aligncenter alignright | \
-    bullist numlist outdent indent | removeformat | help',
-                }"
-              />
-              <TairoTableRow
-                v-for="item in data?.data?.procedures"
-                :key="item._id"
-              >
-                <TairoTableCell v-if="!isPrint" spaced>
-                  <div class="flex items-center">
-                    <BaseCheckbox
-                      v-model="selected"
-                      :value="item._id"
-                      :name="`item-checkbox-${item._id}`"
-                      shape="rounded"
-                      class="text-primary-500"
-                    />
-                  </div>
-                </TairoTableCell>
-
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
-                      {{ item.title }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span
-                      v-html="item.description"
-                      class="text-muted-400 font-sans text-lg"
-                    >
-                    </span>
-                  </div>
-                </TairoTableCell>
-
-                <TairoTableCell v-if="!isPrint" spaced>
-                  <div class="flex">
-                    <BaseButtonAction
-                      :disabled="
-                        authStore.user.appRole?.name !=
-                          UserRole.programPlanner &&
-                        authStore.user.appRole?.name != UserRole.superAdmin
-                      "
-                      @click="editProcedureAction(item)"
-                    >
-                      <Icon name="lucide:edit" class="h-4 w-4"
-                    /></BaseButtonAction>
-                    <BaseButtonAction
-                      @click="confirmDeleteProcedureAction(item)"
-                      class="mx-2"
-                      :disabled="
-                        authStore.user.appRole?.name !=
-                          UserRole.programPlanner &&
-                        authStore.user.appRole?.name != UserRole.superAdmin
-                      "
-                    >
-                      <Icon name="lucide:trash" class="h-4 w-4 text-red-500"
-                    /></BaseButtonAction>
-                  </div>
-                </TairoTableCell>
-              </TairoTableRow>
-            </TairoTable>
-          </div>
-          <div v-if="!isPrint" class="mt-6">
-            <BasePagination
-              :total-items="data?.products?.length ?? 0"
-              :item-per-page="perPage"
-              :current-page="page"
-              shape="curved"
+            <Editor
+              class="!z-10001"
+              api-key="28vhdlyfnzs83pxfpaj979iljxwg6tviaz2y4gri6drif9ak"
+              v-model="curProgramContent"
+              :init="{
+                selector: 'textarea#basic-example',
+                height: 500,
+                with: 1500,
+                plugins: [
+                  'advlist',
+                  'autolink',
+                  'lists',
+                  'link',
+                  'image',
+                  'charmap',
+                  'preview',
+                  'anchor',
+                  'searchreplace',
+                  'visualblocks',
+                  'code',
+                  'fullscreen',
+                  'insertdatetime',
+                  'media',
+                  'table',
+                  'help',
+                  'wordcount',
+                ],
+                toolbar:
+                  'undo redo | blocks | ' +
+                  'bold italic backcolor | alignleft aligncenter ' +
+                  'alignright alignjustify | bullist numlist outdent indent | ' +
+                  'removeformat | help',
+                content_style:
+                  'body { font-family:Helvetica,Arial,sans-serif; font-size:16px }',
+              }"
             />
           </div>
         </div>
       </div>
     </TairoContentWrapper>
 
-    <!-- Modal new Spot -->
+    <!-- Modal new action -->
     <TairoModal
       :open="isModalNewActionOpen"
       size="xl"
@@ -896,64 +616,6 @@ const success = ref(false)
               flavor="solid"
               @click="deleteProcedureAction(curProcedureAction?._id)"
               >Suppimer</BaseButton
-            >
-          </div>
-        </div>
-      </template>
-    </TairoModal>
-
-    <!-- Modal upload product file -->
-    <TairoModal
-      :open="isModalUploadProductFileOpen"
-      size="sm"
-      @close="isModalUploadProductFileOpen = false"
-    >
-      <template #header>
-        <!-- Header -->
-        <div class="flex w-full items-center justify-between p-4 md:p-6">
-          <h3
-            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
-          >
-            Upload du fichier produit
-          </h3>
-
-          <BaseButtonClose @click="isModalUploadProductFileOpen = false" />
-        </div>
-      </template>
-
-      <!-- Body -->
-      <div class="p-4 md:p-6">
-        <div class="mx-auto w-full text-center">
-          <form action="" class="pb-2" method="POST" @submit.prevent="">
-            <BaseInputFile
-              accept=".jpg, .png, .mp4, .avi"
-              v-model="inputFileProduct"
-              shape="rounded"
-              label="Fichier"
-            />
-          </form>
-
-          <p
-            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
-          >
-            Cette action est reversible
-          </p>
-        </div>
-      </div>
-
-      <template #footer>
-        <!-- Footer -->
-        <div class="p-4 md:p-6">
-          <div class="flex gap-x-2">
-            <BaseButton @click="isModalUploadProductFileOpen = false"
-              >Annuler</BaseButton
-            >
-
-            <BaseButton
-              color="primary"
-              flavor="solid"
-              @click="importProductFile()"
-              >Valider</BaseButton
             >
           </div>
         </div>

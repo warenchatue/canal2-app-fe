@@ -90,6 +90,11 @@ export default defineEventHandler(async (event) => {
     console.log(body)
     const data = await updatePlanning(id, body, token)
     return { data: data, success: true }
+  } else if (action == 'updatePlanningContent') {
+    const body = await readBody(event)
+    console.log(body)
+    const data = await updatePlanningContent(id, body, token)
+    return { data: data, success: true }
   } else if (action == 'validatePlanningDiffusion') {
     const body = await readBody(event)
     console.log(body)
@@ -313,6 +318,23 @@ async function updatePlanning(id: string, body: any, token: string) {
     },
   ).catch((error) => console.log(error))
   // console.log(data)
+  return Promise.resolve(data)
+}
+
+async function updatePlanningContent(id: string, body: any, token: string) {
+  console.log('updatePlanningContent ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/programs-plannings/' + id + '/content',
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+      body: body,
+    },
+  ).catch((error) => console.log(error))
   return Promise.resolve(data)
 }
 
