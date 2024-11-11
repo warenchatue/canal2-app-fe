@@ -3,10 +3,10 @@ import { Field } from 'vee-validate'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Details - Planning',
+  title: 'Conducteur - Programme',
   preview: {
-    title: 'Details - Planning',
-    description: 'Detail - Planning',
+    title: 'Conducteur - Programme',
+    description: 'Conducteur - Programme',
     categories: ['bo', 'tv-programs', 'planning'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
@@ -372,7 +372,7 @@ const success = ref(false)
           <option :value="50">50 per page</option>
           <option :value="100">100 per page</option>
         </BaseSelect>
-        <BaseButton
+        <!-- <BaseButton
           v-if="!isPrint"
           @click=";(isModalNewActionOpen = true), (isEdit = false)"
           color="primary"
@@ -385,6 +385,20 @@ const success = ref(false)
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
           <span>Nouvelle action</span>
+        </BaseButton> -->
+        <BaseButton
+          v-if="!isPrint"
+          @click=";(isModalNewActionOpen = true), (isEdit = false)"
+          color="primary"
+          class="w-full sm:w-48"
+          :disabled="
+            authStore.user.appRole?.name != UserRole.programPlanner &&
+            authStore.user.appRole?.name != UserRole.admin &&
+            authStore.user.appRole?.name != UserRole.superAdmin
+          "
+        >
+          <Icon name="lucide:save" class="h-4 w-4" />
+          <span>Enregistrer</span>
         </BaseButton>
         <BaseButton
           v-if="!isPrint"
@@ -634,7 +648,20 @@ const success = ref(false)
                   >
                 </TairoTableCell>
               </TairoTableRow>
-
+              <Editor
+                class="!z-10001"
+                api-key="28vhdlyfnzs83pxfpaj979iljxwg6tviaz2y4gri6drif9ak"
+                v-model="curProcedureAction.description"
+                :init="{
+                  height: 300,
+                  menubar: true,
+                  plugins: 'link image code',
+                  toolbar:
+                    'undo redo | formatselect | bold italic | forecolor backcolor | \
+    alignleft aligncenter alignright | \
+    bullist numlist outdent indent | removeformat | help',
+                }"
+              />
               <TairoTableRow
                 v-for="item in data?.data?.procedures"
                 :key="item._id"
@@ -780,22 +807,7 @@ const success = ref(false)
                 </div>
                 <div
                   class="ltablet:col-span-12 col-span-12 pt-5 lg:col-span-12"
-                >
-                  <Editor
-                    class="!z-10001"
-                    api-key="28vhdlyfnzs83pxfpaj979iljxwg6tviaz2y4gri6drif9ak"
-                    v-model="curProcedureAction.description"
-                    :init="{
-                      height: 300,
-                      menubar: true,
-                      plugins: 'link image code',
-                      toolbar:
-                        'undo redo | formatselect | bold italic | forecolor backcolor | \
-          alignleft aligncenter alignright | \
-          bullist numlist outdent indent | removeformat | help',
-                    }"
-                  />
-                </div>
+                ></div>
               </div>
             </div>
           </div>
