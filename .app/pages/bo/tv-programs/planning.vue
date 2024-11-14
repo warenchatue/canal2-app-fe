@@ -22,9 +22,8 @@ const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(80)
+const perPage = ref(100)
 const token = useCookie('token')
-const packageId = computed(() => '661289857d622410a87c50ad')
 const toaster = useToaster()
 // Check if can have access
 if (
@@ -42,14 +41,6 @@ if (
   })
   router.back()
 }
-
-const query = computed(() => {
-  return {
-    action: 'findOne',
-    id: packageId.value,
-    token: token.value,
-  }
-})
 
 const queryHours = computed(() => {
   return {
@@ -255,13 +246,16 @@ function openSpotPlanningModal(
   if (planning) {
     activePlanning.value = planning
     currentTvProgram.value = planning.tvProgram
-    currentTvProgramHost.value = {
-      ...planning.tvProgramHost,
-      name:
-        planning.tvProgramHost.firstName +
-        ' ' +
-        planning.tvProgramHost.lastName,
+    if (planning.tvProgramHost) {
+      currentTvProgramHost.value = {
+        ...planning.tvProgramHost,
+        name:
+          planning.tvProgramHost.firstName +
+          ' ' +
+          planning.tvProgramHost.lastName,
+      }
     }
+
     currentDescription.value = planning.description
     planning.hours.pop()
     console.log(planning.hours)
