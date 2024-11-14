@@ -440,7 +440,7 @@ const onSubmit = handleSubmit(
         <BaseInput
           v-model="filter"
           icon="lucide:search"
-          placeholder="Filtrer package..."
+          placeholder="Filtrer emi..."
           :classes="{
             wrapper: 'w-full sm:w-auto',
           }"

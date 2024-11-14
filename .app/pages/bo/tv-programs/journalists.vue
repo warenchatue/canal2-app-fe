@@ -424,10 +424,10 @@ const onSubmit = handleSubmit(
           disabled
           @click="resetForm(), ((isModalNewUserOpen = true), (isEdit = false))"
           color="primary"
-          class="w-full sm:w-44"
+          class="w-full sm:w-52"
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
-          <span>Nouvel utilisateur</span>
+          <span>Nouveau journaliste</span>
         </BaseButton>
       </template>
       <div>
@@ -469,7 +469,7 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>
-                  Utilisateur
+                  Journaliste
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Equipe</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Tel</TairoTableHeading>

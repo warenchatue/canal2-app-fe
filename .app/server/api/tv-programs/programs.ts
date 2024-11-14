@@ -95,7 +95,7 @@ function filterData(
   const filterRe = new RegExp(filter, 'i')
   return data
     .filter((item) => {
-      return [item.code, item.label].some((item) => item.match(filterRe))
+      return [item.name].some((item) => item.match(filterRe))
     })
     .slice(offset, offset + perPage)
 }
