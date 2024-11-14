@@ -652,7 +652,18 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
               </TairoTableRow>
 
-              <TairoTableRow v-for="item in data?.data" :key="item.id">
+              <TairoTableRow
+                v-for="(item, i) in data?.data"
+                :key="item.id"
+                :class="
+                  i == 0 ||
+                  (i < data?.data.length - 1 &&
+                    (data?.data[i].date == data?.data[i - 1].date ||
+                      data?.data[i].date == data?.data[i + 1].date))
+                    ? 'bg-primary-500/10'
+                    : 'bg-yellow-500/10'
+                "
+              >
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseCheckbox
@@ -676,6 +687,11 @@ const onSubmit = handleSubmit(
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span
+                      v-if="
+                        i == 0 ||
+                        (i < data?.data.length - 1 &&
+                          data?.data[i].date != data?.data[i - 1].date)
+                      "
                       class="text-muted-600 dark:text-muted-300 font-sans text-base"
                     >
                       {{

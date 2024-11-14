@@ -44,7 +44,6 @@ if (
 
 const queryHours = computed(() => {
   return {
-    filter: filter.value,
     perPage: perPage.value,
     page: page.value,
     action: 'findAll',
@@ -54,7 +53,6 @@ const queryHours = computed(() => {
 
 const queryPlanning = computed(() => {
   return {
-    filter: filter.value,
     perPage: perPage.value,
     page: page.value,
     action: 'findAllPlanning',
@@ -106,13 +104,13 @@ const { data: allUsers, pending: pendingUsers } = await useFetch('/api/users', {
   },
 })
 
-watch([filter, perPage], () => {
-  router.push({
-    query: {
-      page: undefined,
-    },
-  })
-})
+// watch([filter, perPage], () => {
+//   router.push({
+//     query: {
+//       page: undefined,
+//     },
+//   })
+// })
 
 const isModalNewSpotOpen = ref(false)
 const isModalAddDefaultProgramOpen = ref(false)
@@ -128,6 +126,7 @@ const isPrintCertificate = ref(false)
 const currentProduct = ref({})
 const currentTvProgram = ref({})
 const currentTvProgramHost = ref({})
+const currentTvProgramHost2 = ref({})
 const currentDescription = ref('')
 const currentHours = ref([])
 const formatter = new Intl.DateTimeFormat('fr', { month: 'long' })
@@ -156,6 +155,15 @@ const spotData = computed(() => {
 
   return data
 })
+
+// watch([currentTvProgram], () => {
+//   if (currentTvProgram.value.host) {
+//     currentTvProgramHost.value = currentTvProgram.value.host
+//   }
+//   if (currentTvProgram.value.host2) {
+//     currentTvProgramHost2.value = currentTvProgram.value.host2
+//   }
+// })
 
 function filterItems(query?: string, items?: any[]) {
   if (query.length < 1) {
@@ -248,13 +256,24 @@ function openSpotPlanningModal(
     currentTvProgram.value = planning.tvProgram
     if (planning.tvProgramHost) {
       currentTvProgramHost.value = {
-        ...planning.tvProgramHost,
+        id: planning.tvProgramHost._id,
+        text: planning.tvProgramHost.email,
         name:
-          planning.tvProgramHost.firstName +
+          planning.tvProgramHost?.firstName +
           ' ' +
-          planning.tvProgramHost.lastName,
+          planning.tvProgramHost?.lastName,
       }
     }
+
+    // if (planning.tvProgramHost2) {
+    //   currentTvProgramHost.value = {
+    //     ...planning.tvProgramHost2,
+    //     name:
+    //       planning.tvProgramHost2.firstName +
+    //       ' ' +
+    //       planning.tvProgramHost2.lastName,
+    //   }
+    // }
 
     currentDescription.value = planning.description
     planning.hours.pop()

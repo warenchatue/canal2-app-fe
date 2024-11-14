@@ -88,6 +88,7 @@ function filterData(
       data[0].globalPending = totalPending
     }
   }
+  console.log(data)
 
   if (!filter) {
     return data.slice(offset, offset + perPage)
@@ -95,7 +96,9 @@ function filterData(
   const filterRe = new RegExp(filter, 'i')
   return data
     .filter((item) => {
-      return [item.name].some((item) => item.match(filterRe))
+      return [item?.name?.toString() ?? ''].some((item) =>
+        item ? item.match(filterRe) : false,
+      )
     })
     .slice(offset, offset + perPage)
 }

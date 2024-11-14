@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Field } from 'vee-validate';
-import { UserRole } from '~/types/user';
+import { Field } from 'vee-validate'
+import { UserRole } from '~/types/user'
 
 definePageMeta({
   title: 'Conducteur - Programme',
@@ -262,7 +262,7 @@ const success = ref(false)
 
 <template>
   <div id="print-procedures" :class="isPrint == true ? '!p-4' : ''">
-    <div class="flex w-full flex-col mt-2 mx-2 mb-10">
+    <div class="flex w-full flex-col mt-2 mx-2 mb-5">
       <div class="flex justify-center">
         <Icon name="lucide:tv" class="h-10 w-10" />
       </div>
@@ -366,7 +366,10 @@ const success = ref(false)
           :disabled="
             authStore.user.appRole?.name != UserRole.programPlanner &&
             authStore.user.appRole?.name != UserRole.admin &&
-            authStore.user.appRole?.name != UserRole.superAdmin
+            authStore.user.appRole?.name != UserRole.superAdmin &&
+            (data.data.tvProgramHost
+              ? authStore.user._id != data.data.tvProgramHost._id
+              : false)
           "
         >
           <Icon name="lucide:save" class="h-4 w-4" />

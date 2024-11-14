@@ -144,9 +144,7 @@ const transformedDocTypes = allDocTypes.value?.data.map((e: any) => {
   }
   return docType
 })
-//  .filter((e: any) => {
-//     return e.org._id == currentOrg.value._id
-//   })
+
 const transformedJournals = allJournals.value?.data.map((e: any) => {
   const journal = {
     id: e._id,
