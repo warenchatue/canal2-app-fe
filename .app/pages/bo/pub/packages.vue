@@ -1001,24 +1001,24 @@ const onSubmit = handleSubmit(
                 </TairoTableCell> -->
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag
-                    v-if="item.state === 'trashed'"
-                    color="muted"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    {{ item.state }}
-                  </BaseTag>
-                  <BaseTag
-                    v-else-if="item.state === 'active'"
+                    v-if="item.validator == null"
                     color="warning"
                     flavor="pastel"
                     shape="full"
                     condensed
                     class="font-medium"
                   >
-                    {{ item.state }}
+                    Brouillon
+                  </BaseTag>
+                  <BaseTag
+                    v-else-if="item.validator != null"
+                    color="success"
+                    flavor="pastel"
+                    shape="full"
+                    condensed
+                    class="font-medium"
+                  >
+                    Validée
                   </BaseTag>
                 </TairoTableCell>
                 <TairoTableCell spaced>
