@@ -17,7 +17,7 @@ definePageMeta({
     order: 44,
   },
 })
-
+const fakeItems = ref([])
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
@@ -49,6 +49,7 @@ const token = useCookie('token')
 const query = computed(() => {
   return {
     filter: filter.value,
+    orgId: currentOrg.value?._id ?? '',
     perPage: perPage.value,
     page: page.value,
     action: 'findToday',
@@ -58,7 +59,6 @@ const query = computed(() => {
 
 const query2 = computed(() => {
   return {
-    filter: filter.value,
     perPage: 250,
     action: 'findAll',
     token: token.value,
@@ -66,12 +66,14 @@ const query2 = computed(() => {
 })
 
 const { data, pending, error, refresh } = await useFetch('/api/pub/plannings', {
+  lazy: true,
   query,
 })
 
 const { data: orgs } = await useFetch('/api/admin/orgs', {
   query: query2,
 })
+currentOrg.value = orgs.value ? orgs.value.data[0] : {}
 
 const { data: hoursData } = await useFetch('/api/pub/hours', {
   query: query2,
@@ -617,7 +619,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalToday ?? 0 }}</span>
+                <span>{{ data?.data.length ?? 0 }}</span>
               </BaseHeading>
             </div>
             <div
@@ -656,6 +658,53 @@ const onSubmit = handleSubmit(
               />
             </template>
           </BasePlaceholderPage>
+        </div>
+        <div v-else-if="pending">
+          <TairoTableRow v-for="index in 5" :key="index">
+            <TairoTableCell class="!w-full" spaced>
+              <div class="flex items-center">
+                <BaseCheckbox
+                  v-model="fakeItems"
+                  :value="`placeload-item-checkbox-${index}`"
+                  rounded="full"
+                  color="primary"
+                />
+              </div>
+            </TairoTableCell>
+            <TairoTableCell spaced>
+              <BasePlaceload class="h-3 w-24 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell spaced>
+              <div class="flex items-center gap-2">
+                <BasePlaceload class="size-8 shrink-0 rounded-full" />
+                <div class="space-y-1">
+                  <BasePlaceload class="h-2 w-[70px] rounded-lg" />
+                  <BasePlaceload class="h-2 w-[50px] rounded-lg" />
+                </div>
+              </div>
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+          </TairoTableRow>
         </div>
         <div v-else>
           <div class="w-full">

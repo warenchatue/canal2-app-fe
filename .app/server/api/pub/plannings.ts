@@ -9,6 +9,7 @@ export default defineEventHandler(async (event) => {
   const id = (query.id as string) || ''
   const orderCode = (query.orderCode as string) || ''
   const packageId = (query.packageId as string) || ''
+  const orgId = (query.orgId as string) || ''
   const token = (query.token as string) || ''
   const startDate = (query.startDate as string) || ''
   const endDate = (query.endDate as string) || ''
@@ -29,6 +30,7 @@ export default defineEventHandler(async (event) => {
         page,
         perPage,
         false,
+        orgId,
       ),
     }
   } else if (action == 'findAll') {
@@ -100,7 +102,11 @@ function filterData(
   page: number,
   perPage: number,
   isTvProg: boolean,
+  orgId?: string,
 ) {
+  if (orgId) {
+    data = data.filter((item) => item.product?.package?.org == orgId)
+  }
   if (isTvProg == false) {
     // console.log(data)
     data = data.filter(
