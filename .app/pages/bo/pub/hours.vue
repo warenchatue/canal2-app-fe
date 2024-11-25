@@ -22,7 +22,7 @@ const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(10)
+const perPage = ref(250)
 const isModalNewHourOpen = ref(false)
 const isModalDeleteHourOpen = ref(false)
 const isEdit = ref(false)
@@ -365,6 +365,7 @@ const onSubmit = handleSubmit(
           <option :value="25">25 per page</option>
           <option :value="50">50 per page</option>
           <option :value="100">100 per page</option>
+          <option :value="250">250 per page</option>
         </BaseSelect>
         <BaseButton
           @click=";(isModalNewHourOpen = true), (isEdit = false)"

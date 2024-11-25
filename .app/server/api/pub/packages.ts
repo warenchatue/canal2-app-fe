@@ -13,7 +13,8 @@ export default defineEventHandler(async (event) => {
     const data = await findOne(id, token)
     return { data: data, success: true }
   } else if (action == 'findAll') {
-    const response = await findAllPagination(token, perPage, page)
+    const response = await findAllPagination(token, perPage, page, filter)
+
     return {
       total: response.stats.totalItems ?? 0,
       stats: response.stats,
@@ -118,7 +119,9 @@ function filterData(
   const filterRe = new RegExp(filter, 'i')
   return data
     .filter((item) => {
-      return [item.code, item.label].some((item) => item.match(filterRe))
+      return [item.code ?? '', item.label ?? ''].some((item) =>
+        item.match(filterRe),
+      )
     })
     .slice(offset, offset + perPage)
 }
@@ -137,8 +140,13 @@ async function findOne(id: string, token: string) {
   return Promise.resolve(data)
 }
 
-async function findAllPagination(token: string, perPage: number, page: number) {
-  console.log('findAll ' + token)
+async function findAllPagination(
+  token: string,
+  perPage: number,
+  page: number,
+  search: string,
+) {
+  console.log('findAllPagination ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
     runtimeConfig.env.apiUrl +
@@ -146,7 +154,10 @@ async function findAllPagination(token: string, perPage: number, page: number) {
       perPage +
       '&page=' +
       page +
-      '&states=active',
+      '&states=active' +
+      '&search=' +
+      search,
+
     {
       method: 'get',
       headers: {

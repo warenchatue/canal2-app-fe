@@ -3,6 +3,7 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { DatePicker } from 'v-calendar'
 import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
+import { generateHexColorPalette } from '~/server/utils'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
@@ -26,6 +27,7 @@ const perPage = ref(250)
 const isModalImportPlaylistOpen = ref(false)
 const isModalConfirmDiffusionOpen = ref(false)
 const playedHour = ref('')
+const currentOrg = ref({})
 
 const initialDates = {
   start: new Date(),
@@ -54,10 +56,38 @@ const query = computed(() => {
   }
 })
 
+const query2 = computed(() => {
+  return {
+    filter: filter.value,
+    perPage: 250,
+    action: 'findAll',
+    token: token.value,
+  }
+})
+
 const { data, pending, error, refresh } = await useFetch('/api/pub/plannings', {
   query,
 })
 
+const { data: orgs } = await useFetch('/api/admin/orgs', {
+  query: query2,
+})
+
+const { data: hoursData } = await useFetch('/api/pub/hours', {
+  query: query2,
+  lazy: false,
+  transform: (els) => {
+    return els.data?.filter((el: any) => {
+      return el.type != 'TvProgram'
+    })
+  },
+})
+
+const colors = generateHexColorPalette(hoursData.value.length)
+let hoursWithColors = []
+hoursData.value.forEach((element, i) => {
+  hoursWithColors[element.code] = colors[i]
+})
 const inputPlayListFile = ref<FileList | null>(null)
 const payListFile = ref<File | null>(null)
 watch(inputPlayListFile, (value) => {
@@ -382,6 +412,32 @@ const onSubmit = handleSubmit(
         />
       </template>
       <template #right>
+        <BaseHeading
+          as="h5"
+          size="sm"
+          weight="medium"
+          lead="tight"
+          class="text-muted-500 dark:text-muted-200"
+        >
+          Société :
+        </BaseHeading>
+        <div class="text-muted-800 dark:text-muted-100 font-medium !w-64">
+          <BaseListbox
+            label=""
+            :items="orgs.data"
+            :classes="{
+              wrapper: '!w-60',
+            }"
+            :properties="{
+              value: '_id',
+              label: 'name',
+              sublabel: 'email',
+              media: '',
+            }"
+            v-model="currentOrg"
+            :disabled="isSubmitting"
+          />
+        </div>
         <BaseSelect
           v-model="perPage"
           label=""
@@ -653,18 +709,7 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
               </TairoTableRow>
 
-              <TairoTableRow
-                v-for="(item, i) in data?.data"
-                :key="item.id"
-                :class="
-                  i == 0 ||
-                  (i < data?.data.length - 1 &&
-                    (data?.data[i].date == data?.data[i - 1].date ||
-                      data?.data[i].date == data?.data[i + 1].date))
-                    ? 'bg-primary-500/10'
-                    : 'bg-yellow-500/10'
-                "
-              >
+              <TairoTableRow v-for="(item, i) in data?.data" :key="item.id">
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseCheckbox
@@ -676,24 +721,25 @@ const onSubmit = handleSubmit(
                     />
                   </div>
                 </TairoTableCell>
-                <TairoTableCell spaced>
+                <TairoTableCell
+                  :style="'background-color:' + hoursWithColors[item.hour.code]"
+                  spaced
+                >
                   <div class="flex items-center">
                     <span
-                      class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                      class="text-muted-800 text-bold dark:text-muted-300 font-sans text-base"
                     >
                       {{ new Date(item.date).toLocaleDateString('fr-FR') }}
                     </span>
                   </div>
                 </TairoTableCell>
-                <TairoTableCell spaced>
+                <TairoTableCell
+                  :style="'background-color:' + hoursWithColors[item.hour.code]"
+                  spaced
+                >
                   <div class="flex items-center">
                     <span
-                      v-if="
-                        i == 0 ||
-                        (i < data?.data.length - 1 &&
-                          data?.data[i].date != data?.data[i - 1].date)
-                      "
-                      class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                      class="text-muted-800 text-bold dark:text-muted-300 font-sans text-base"
                     >
                       {{
                         new Date(item.date)

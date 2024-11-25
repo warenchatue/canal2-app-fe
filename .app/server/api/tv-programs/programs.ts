@@ -88,7 +88,6 @@ function filterData(
       data[0].globalPending = totalPending
     }
   }
-  console.log(data)
 
   if (!filter) {
     return data.slice(offset, offset + perPage)
@@ -145,7 +144,7 @@ async function createTvProgram(body: any, token: string) {
     },
     body: { ...body, code: makeId(4) + '_' + makeId(4) },
   }).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
 
@@ -163,7 +162,7 @@ async function updateTvProgram(id: string, body: any, token: string) {
       body: body,
     },
   ).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
 
@@ -180,6 +179,6 @@ async function deleteTvProgram(id: string, token: string) {
       },
     },
   ).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }

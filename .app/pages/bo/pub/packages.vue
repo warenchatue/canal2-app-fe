@@ -85,7 +85,6 @@ const query = computed(() => {
 })
 const query2 = computed(() => {
   return {
-    filter: filter.value,
     perPage: 1000,
     page: page.value,
     action: 'findAll',
@@ -94,7 +93,6 @@ const query2 = computed(() => {
 })
 const query3 = computed(() => {
   return {
-    filter: filter.value,
     perPage: 50,
     page: page.value,
     action: 'findAll',
@@ -123,7 +121,7 @@ const { data: allInvoices, pending: pendingInvoices } = await useFetch(
 )
 
 const { data: orgs } = await useFetch('/api/admin/orgs', {
-  query,
+  query: query3,
 })
 
 const { data: allUsers } = await useFetch('/api/users', {
@@ -604,6 +602,8 @@ const onSubmit = handleSubmit(
           <option :value="25">25 per page</option>
           <option :value="50">50 per page</option>
           <option :value="100">100 per page</option>
+          <option :value="250">250 per page</option>
+          <option :value="500">500 per page</option>
         </BaseSelect>
         <BaseButton
           color="primary"

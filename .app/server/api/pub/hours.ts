@@ -68,7 +68,7 @@ async function findOne(id: string, token: string) {
       'Content-type': 'application/json',
     },
   }).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
 
@@ -97,7 +97,7 @@ async function createHour(body: any, token: string) {
     },
     body: body,
   }).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
 
@@ -112,7 +112,7 @@ async function updateHour(id: string, body: any, token: string) {
     },
     body: body,
   }).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
 
@@ -126,6 +126,6 @@ async function deleteHour(id: string, token: string) {
       'Content-type': 'application/json',
     },
   }).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
