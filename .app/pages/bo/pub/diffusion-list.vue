@@ -75,6 +75,7 @@ const query = computed(() => {
     startDate: dates.value?.start.toLocaleDateString(),
     endDate: dates.value?.end.toLocaleDateString(),
     perPage: perPage.value,
+    orgId: currentOrg.value?._id ?? '',
     page: page.value,
     action: 'findAll',
     token: token.value,
@@ -83,9 +84,15 @@ const query = computed(() => {
 
 const query2 = computed(() => {
   return {
-    filter: filter.value,
     perPage: 1000,
-    page: page.value,
+    action: 'findAll',
+    token: token.value,
+  }
+})
+
+const query3 = computed(() => {
+  return {
+    perPage: 500,
     action: 'findAll',
     token: token.value,
   }
@@ -101,7 +108,7 @@ const {
 })
 
 const { data: allHours } = await useFetch('/api/pub/hours', {
-  query: query,
+  query: query3,
   lazy: false,
   transform: (els) => {
     return els.data?.filter((el: any) => {
@@ -111,8 +118,9 @@ const { data: allHours } = await useFetch('/api/pub/hours', {
 })
 
 const { data: orgs } = await useFetch('/api/admin/orgs', {
-  query,
+  query: query3,
 })
+currentOrg.value = orgs.value ? orgs.value.data[0] : {}
 
 const transformedAllHours = allHours.value?.map((e: any) => {
   const hour = {
@@ -826,6 +834,32 @@ const onSubmit = handleSubmit(
             </template>
           </DatePicker>
         </div>
+        <BaseHeading
+          as="h5"
+          size="sm"
+          weight="medium"
+          lead="tight"
+          class="text-muted-500 dark:text-muted-200"
+        >
+          Société
+        </BaseHeading>
+        <div class="text-muted-800 dark:text-muted-100 font-medium !w-64">
+          <BaseListbox
+            label=""
+            :items="orgs.data"
+            :classes="{
+              wrapper: '!w-60',
+            }"
+            :properties="{
+              value: '_id',
+              label: 'name',
+              sublabel: 'email',
+              media: '',
+            }"
+            v-model="currentOrg"
+            :disabled="isSubmitting"
+          />
+        </div>
       </template>
       <template #right>
         <BaseSelect
@@ -1041,7 +1075,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{ data?.metaData?.totalToday }}</span>
+                <span v-if="!pending">{{ data?.data.length ?? '' }}</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -1226,7 +1260,7 @@ const onSubmit = handleSubmit(
                   >
                   <TairoTableHeading uppercase spaced>Durée</TairoTableHeading>
                   <TairoTableHeading v-if="!isPrint" uppercase spaced
-                    >Fichier</TairoTableHeading
+                    >Org</TairoTableHeading
                   >
                   <TairoTableHeading v-if="!isPrint" uppercase spaced
                     >Statut</TairoTableHeading
@@ -1392,7 +1426,7 @@ const onSubmit = handleSubmit(
                       </span>
                     </div>
                   </TairoTableCell>
-                  <TairoTableCell v-if="!isPrint" spaced>
+                  <!-- <TairoTableCell v-if="!isPrint" spaced>
                     <div class="flex">
                       <a
                         v-if="item.product?.file"
@@ -1412,6 +1446,15 @@ const onSubmit = handleSubmit(
                       >
                         <Icon name="lucide:download" class="h-4 w-4" />
                       </BaseButtonAction>
+                    </div>
+                  </TairoTableCell> -->
+                  <TairoTableCell spaced>
+                    <div class="flex items-center">
+                      <span
+                        class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                      >
+                        <!-- {{ item ?? '' }} -->
+                      </span>
                     </div>
                   </TairoTableCell>
                   <TairoTableCell v-if="!isPrint" spaced class="capitalize">

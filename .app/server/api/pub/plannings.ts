@@ -45,7 +45,8 @@ export default defineEventHandler(async (event) => {
         endDate,
         page,
         perPage,
-        true,
+        false,
+        orgId,
       ),
     }
   } else if (action == 'findAllStats') {
