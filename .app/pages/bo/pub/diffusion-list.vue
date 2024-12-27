@@ -844,7 +844,7 @@ const onSubmit = handleSubmit(
         </BaseSelect>
         <BaseButton
           :disabled="
-            authStore.user.appRole.name != UserRole.broadcast &&
+            authStore.user.appRole.name != UserRole.mediaPlanner &&
             authStore.user.appRole.name != UserRole.superAdmin
           "
           @click="openElementModal()"
@@ -856,10 +856,6 @@ const onSubmit = handleSubmit(
         </BaseButton>
         <BaseButton
           data-tooltip="Exporter le conducteur"
-          :disabled="
-            authStore.user.appRole.name != UserRole.broadcast &&
-            authStore.user.appRole.name != UserRole.superAdmin
-          "
           @click="openReportModal()"
           color="primary"
           class="w-full sm:w-28"
@@ -869,13 +865,13 @@ const onSubmit = handleSubmit(
         </BaseButton>
         <BaseButton
           data-tooltip="Importer une playlist"
+          @click="isModalImportPlaylistOpen = true"
+          color="primary"
+          class="w-full sm:w-20"
           :disabled="
             authStore.user.appRole.name != UserRole.broadcast &&
             authStore.user.appRole.name != UserRole.superAdmin
           "
-          @click="isModalImportPlaylistOpen = true"
-          color="primary"
-          class="w-full sm:w-20"
         >
           <Icon name="lucide:import" class="h-4 w-4" />
           <span>PL</span>
@@ -1271,12 +1267,20 @@ const onSubmit = handleSubmit(
                     <BaseButtonAction
                       class="mx-1 !p-1"
                       @click.prevent="updatePosition(item, false)"
+                      :disabled="
+                        authStore.user.appRole.name != UserRole.mediaPlanner &&
+                        authStore.user.appRole.name != UserRole.superAdmin
+                      "
                     >
                       <Icon name="lucide:arrow-up" class="h-4 w-4" />
                     </BaseButtonAction>
                     <BaseButtonAction
                       class="mx-1 !p-1"
                       @click.prevent="updatePosition(item, true)"
+                      :disabled="
+                        authStore.user.appRole.name != UserRole.mediaPlanner &&
+                        authStore.user.appRole.name != UserRole.superAdmin
+                      "
                     >
                       <Icon name="lucide:arrow-down" class="h-4 w-4" />
                     </BaseButtonAction>
@@ -1469,12 +1473,22 @@ const onSubmit = handleSubmit(
                         valider</BaseButtonAction
                       >
                       <BaseButtonAction
+                        :disabled="
+                          authStore.user.appRole.name !=
+                            UserRole.mediaPlanner &&
+                          authStore.user.appRole.name != UserRole.superAdmin
+                        "
                         class="mx-2"
                         @click.prevent="editPlanning(item)"
                       >
                         <Icon name="lucide:edit" class="h-4 w-4" />
                       </BaseButtonAction>
                       <BaseButtonAction
+                        :disabled="
+                          authStore.user.appRole.name !=
+                            UserRole.mediaPlanner &&
+                          authStore.user.appRole.name != UserRole.superAdmin
+                        "
                         class="mx-2"
                         @click.prevent="confirmDeletePlanning(item)"
                       >
