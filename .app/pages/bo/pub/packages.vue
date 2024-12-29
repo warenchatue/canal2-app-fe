@@ -896,6 +896,7 @@ const onSubmit = handleSubmit(
                 </TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>Nom</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Société</TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced
                   >Commandés</TairoTableHeading
@@ -973,6 +974,13 @@ const onSubmit = handleSubmit(
                   style="white-space: pre-wrap; word-wrap: break-word"
                 >
                   <span class="!w-48"> {{ item.label }}</span>
+                </TairoTableCell>
+                <TairoTableCell
+                  light
+                  spaced
+                  style="white-space: pre-wrap; word-wrap: break-word"
+                >
+                  <span class="!w-52"> {{ item.org?.name ?? '' }}</span>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{ item.quantities }} spots
