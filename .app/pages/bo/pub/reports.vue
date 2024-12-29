@@ -26,6 +26,7 @@ const perPage = ref(10)
 const isModalNewPackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
 const isEdit = ref(false)
+const isPrint = ref(false)
 
 const toaster = useToaster()
 // Check if can have access
@@ -87,6 +88,18 @@ const dates = ref({
 const { data, pending, error, refresh } = await useFetch('/api/pub/packages', {
   query,
 })
+
+async function printCampaigns() {
+  isPrint.value = true
+  setTimeout(() => {
+    var printContents = document.getElementById('print-campaigns').innerHTML
+    var originalContents = document.body.innerHTML
+    document.body.innerHTML = printContents
+    window.print()
+    document.body.innerHTML = originalContents
+    location.reload()
+  }, 500)
+}
 
 function editPackage(spotPackage: any) {
   isModalNewPackageOpen.value = true
@@ -439,7 +452,17 @@ const onSubmit = handleSubmit(
           <option :value="25">25 per page</option>
           <option :value="50">50 per page</option>
           <option :value="100">100 per page</option>
+          <option :value="250">250 per page</option>
+          <option :value="500">500 per page</option>
         </BaseSelect>
+        <BaseButton
+          @click="printCampaigns()"
+          color="primary"
+          class="w-full sm:w-48"
+        >
+          <Icon name="ph:printer" class="h-6 w-6" />
+          <span>Exporter</span>
+        </BaseButton>
         <BaseButton color="primary" class="w-full sm:w-16">
           <span></span>
           <Icon name="ph:arrows-clockwise" class="h-6 w-6" />
@@ -457,7 +480,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Commandes</span>
+                <span>Total Campagnes</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -516,13 +539,13 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalAnnouncers }}</span>
+                <span>-</span>
               </BaseHeading>
             </div>
             <div
               class="text-danger-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>-2.7%</span>
+              <span>-0%</span>
               <Icon name="lucide:trending-down" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en baisse</span>
             </div>
@@ -557,13 +580,13 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalSpots }}</span>
+                <span>-</span>
               </BaseHeading>
             </div>
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+4.5%</span>
+              <span>+0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -598,20 +621,13 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>
-                  {{
-                    new Intl.NumberFormat().format(
-                      data?.data[0]?.globalPending ?? 0,
-                    )
-                  }}
-                  XAF</span
-                >
+                <span> -</span>
               </BaseHeading>
             </div>
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+4.5%</span>
+              <span>+0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -639,10 +655,10 @@ const onSubmit = handleSubmit(
           </BasePlaceholderPage>
         </div>
         <div v-else>
-          <div class="w-full">
+          <div id="print-campaigns" class="w-full">
             <TairoTable shape="rounded">
               <template #header>
-                <TairoTableHeading uppercase spaced class="p-4">
+                <TairoTableHeading v-if="!isPrint" uppercase spaced class="p-4">
                   <div class="flex items-center">
                     <BaseCheckbox
                       :model-value="isAllVisibleSelected"
@@ -663,6 +679,7 @@ const onSubmit = handleSubmit(
                 <TairoTableHeading uppercase spaced
                   >Annonceur</TairoTableHeading
                 >
+                <TairoTableHeading uppercase spaced>Société</TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>Nature</TairoTableHeading>
 
@@ -671,19 +688,19 @@ const onSubmit = handleSubmit(
                   >Date Début</TairoTableHeading
                 >
                 <TairoTableHeading uppercase spaced>Date Fin</TairoTableHeading>
-                <TairoTableHeading uppercase spaced
+                <TairoTableHeading v-if="!isPrint" uppercase spaced
                   >Nombre de diffusion par jour</TairoTableHeading
                 >
-                <TairoTableHeading uppercase spaced
+                <TairoTableHeading v-if="!isPrint" uppercase spaced
                   >Total commandés</TairoTableHeading
                 >
-                <TairoTableHeading uppercase spaced
+                <TairoTableHeading v-if="!isPrint" uppercase spaced
                   >Total diffusés</TairoTableHeading
                 >
                 <TairoTableHeading uppercase spaced
                   >Formule d'achat</TairoTableHeading
                 >
-                <TairoTableHeading uppercase spaced
+                <TairoTableHeading v-if="!isPrint" uppercase spaced
                   >Initiateur</TairoTableHeading
                 >
                 <TairoTableHeading uppercase spaced>Note</TairoTableHeading>
@@ -696,8 +713,12 @@ const onSubmit = handleSubmit(
                 <TairoTableHeading uppercase spaced
                   >Montant restant
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
+                <TairoTableHeading v-if="!isPrint" uppercase spaced
+                  >Statut</TairoTableHeading
+                >
+                <TairoTableHeading v-if="!isPrint" uppercase spaced
+                  >Action</TairoTableHeading
+                >
               </template>
 
               <TairoTableRow v-if="selected.length > 0" :hoverable="false">
@@ -716,7 +737,7 @@ const onSubmit = handleSubmit(
               </TairoTableRow>
 
               <TairoTableRow v-for="item in data?.data" :key="item.id">
-                <TairoTableCell spaced>
+                <TairoTableCel v-if="!isPrint" spaced>
                   <div class="flex items-center">
                     <BaseCheckbox
                       v-model="selected"
@@ -726,7 +747,7 @@ const onSubmit = handleSubmit(
                       class="text-primary-500"
                     />
                   </div>
-                </TairoTableCell>
+                </TairoTableCel>
                 <TairoTableCell
                   style="white-space: pre-wrap; word-wrap: break-word"
                   light
@@ -755,11 +776,6 @@ const onSubmit = handleSubmit(
                     style="white-space: pre-wrap; word-wrap: break-word"
                     class="flex items-center"
                   >
-                    <!-- <BaseAvatar
-                      :src="item.announcer?.logo ?? '/img/avatars/company.svg'"
-                      :text="item.initials"
-                      :class="getRandomColor()"
-                    /> -->
                     <div class="!w-44 ms-3 leading-none">
                       <h4 class="font-sans text-sm font-medium">
                         {{ item.announcer?.name }}
@@ -769,6 +785,9 @@ const onSubmit = handleSubmit(
                       </p>
                     </div>
                   </div>
+                </TairoTableCell>
+                <TairoTableCell light spaced>
+                  <span class="text-base"> {{ item.org?.name ?? '' }}</span>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   <p v-if="item.products.length > 0">
@@ -798,25 +817,33 @@ const onSubmit = handleSubmit(
                 <TairoTableCell light spaced>
                   {{ item.endDate ?? '' }}
                 </TairoTableCell>
-                <TairoTableCell light spaced>
+                <TairoTableCell v-if="!isPrint" light spaced>
                   <span class="text-base"> {{ item.numberProducts }}</span>
                 </TairoTableCell>
-                <TairoTableCell light spaced>
+                <TairoTableCell v-if="!isPrint" light spaced>
                   <span class="text-base"> {{ item.quantities }}</span>
                 </TairoTableCell>
-                <TairoTableCell light spaced>
+                <TairoTableCell v-if="!isPrint" light spaced>
                   <span class="text-base"> {{ item.totalDiffused }}</span>
                 </TairoTableCell>
-                <TairoTableCell light spaced>
-                  {{ item.label }}
+                <TairoTableCell
+                  style="white-space: pre-wrap; word-wrap: break-word"
+                  light
+                  spaced
+                >
+                  <span class="!w-48">{{ item.label }}</span>
                 </TairoTableCell>
-                <TairoTableCell light spaced>
+                <TairoTableCell v-if="!isPrint" light spaced>
                   {{
                     item.order?.manager?.firstName ?? item.creator?.firstName
                   }}
                   {{ item.order?.manager?.lastName ?? item.creator?.lastName }}
                 </TairoTableCell>
-                <TairoTableCell light spaced>
+                <TairoTableCell
+                  style="white-space: pre-wrap; word-wrap: break-word"
+                  light
+                  spaced
+                >
                   {{ item.description }}
                 </TairoTableCell>
                 <TairoTableCell light spaced>
@@ -837,7 +864,7 @@ const onSubmit = handleSubmit(
                   }}
                   XAF
                 </TairoTableCell>
-                <TairoTableCell spaced class="capitalize">
+                <TairoTableCell v-if="!isPrint" spaced class="capitalize">
                   <BaseTag
                     v-if="item.status === 'closed'"
                     color="muted"
@@ -863,7 +890,7 @@ const onSubmit = handleSubmit(
                     En cours
                   </BaseTag>
                 </TairoTableCell>
-                <TairoTableCell spaced>
+                <TairoTableCell v-if="!isPrint" spaced>
                   <div class="flex">
                     <BaseButtonAction
                       class="mx-2"
@@ -872,9 +899,6 @@ const onSubmit = handleSubmit(
                     >
                       <Icon name="lucide:settings" class="h-4 w-4"
                     /></BaseButtonAction>
-                    <!-- <BaseButtonAction @click="editPackage(item)">
-                      <Icon name="lucide:edit" class="h-4 w-4"
-                    /></BaseButtonAction> -->
                   </div>
                 </TairoTableCell>
               </TairoTableRow>
