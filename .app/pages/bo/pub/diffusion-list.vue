@@ -90,14 +90,6 @@ const query2 = computed(() => {
   }
 })
 
-const query3 = computed(() => {
-  return {
-    perPage: 500,
-    action: 'findAll',
-    token: token.value,
-  }
-})
-
 const {
   data,
   pending,
@@ -108,7 +100,7 @@ const {
 })
 
 const { data: allHours } = await useFetch('/api/pub/hours', {
-  query: query3,
+  query: query2,
   lazy: false,
   transform: (els) => {
     return els.data?.filter((el: any) => {
@@ -118,7 +110,7 @@ const { data: allHours } = await useFetch('/api/pub/hours', {
 })
 
 const { data: orgs } = await useFetch('/api/admin/orgs', {
-  query: query3,
+  query: query2,
 })
 currentOrg.value = orgs.value ? orgs.value.data[0] : {}
 
@@ -941,7 +933,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{ data?.metaData?.totalDiffused }}</span>
+                <span v-if="!pending">-</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -985,9 +977,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{
-                  data?.metaData?.totalNotDiffused
-                }}</span>
+                <span v-if="!pending">-</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -1031,7 +1021,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{ data?.metaData?.totalPending }}</span>
+                <span v-if="!pending">-</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>

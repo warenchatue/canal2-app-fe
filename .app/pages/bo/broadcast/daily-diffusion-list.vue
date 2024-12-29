@@ -440,7 +440,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalDiffused ?? 0 }}</span>
+                <span>-</span>
               </BaseHeading>
             </div>
             <div
@@ -481,7 +481,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalNotDiffused ?? 0 }}</span>
+                <span>-</span>
               </BaseHeading>
             </div>
             <div
@@ -522,7 +522,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalPending ?? 0 }}</span>
+                <span>-</span>
               </BaseHeading>
             </div>
             <div

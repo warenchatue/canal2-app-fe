@@ -4,7 +4,7 @@ definePageMeta({
   preview: {
     title: 'Organisations',
     description: 'For list views and collections',
-    categories: ['bo','admin'],
+    categories: ['bo', 'admin'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -34,12 +34,9 @@ const query = computed(() => {
   }
 })
 
-const { data, pending, error, refresh } = await useFetch(
-  '/api/orgs',
-  {
-    query,
-  },
-)
+const { data, pending, error, refresh } = await useFetch('/api/admin/orgs', {
+  query,
+})
 
 const selected = ref<number[]>([])
 
@@ -121,9 +118,7 @@ function toggleAllVisibleSelection() {
                     />
                   </div>
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Nom
-                </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Nom </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Slug</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>
@@ -233,7 +228,7 @@ function toggleAllVisibleSelection() {
                       <span
                         class="absolute start-1/2 top-1/2 z-10 ms-0.5 -translate-x-1/2 -translate-y-1/2 font-sans text-[0.65rem] font-semibold"
                       >
-                        {{ 70}}%
+                        {{ 70 }}%
                       </span>
                     </div>
                     <span class="text-muted-400 font-sans text-xs">

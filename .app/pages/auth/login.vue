@@ -3,7 +3,6 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { storeToRefs } from 'pinia'
 import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
-import { User } from '~/types/user'
 
 definePageMeta({
   layout: 'empty',
@@ -88,11 +87,14 @@ const onSubmit = handleSubmit(async (values) => {
           token: token.value,
         }
       })
-      const { data, pending, error, refresh } = await useFetch('/api/orgs', {
-        method: 'get',
-        headers: { 'Content-Type': 'application/json' },
-        query: query,
-      })
+      const { data, pending, error, refresh } = await useFetch(
+        '/api/admin/orgs',
+        {
+          method: 'get',
+          headers: { 'Content-Type': 'application/json' },
+          query: query,
+        },
+      )
       if (data.value) {
       }
       errorMessage = false
