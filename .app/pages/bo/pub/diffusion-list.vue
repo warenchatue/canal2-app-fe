@@ -19,7 +19,6 @@ definePageMeta({
 })
 
 const fakeItems = ref([])
-
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
@@ -50,9 +49,7 @@ const initialDates = {
 
 const startDate = ref(new Date())
 const endDate = ref(new Date())
-
 const dates = ref(initialDates)
-
 const planningDates = ref(initialDates)
 
 watch([filter, perPage, dates], () => {
@@ -1443,7 +1440,6 @@ const onSubmit = handleSubmit(
                       <span
                         class="text-muted-600 dark:text-muted-300 font-sans text-base"
                       >
-                        <!-- {{ item ?? '' }} -->
                       </span>
                     </div>
                   </TairoTableCell>
@@ -1472,16 +1468,6 @@ const onSubmit = handleSubmit(
                     >
                       Non Diffusé
                     </BaseTag>
-                    <!-- <BaseTag
-                    v-else-if="item.status === 'offline'"
-                    color="muted"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    {{ item.status }}
-                  </BaseTag> -->
                   </TairoTableCell>
 
                   <TairoTableCell v-if="!isPrint" spaced>
