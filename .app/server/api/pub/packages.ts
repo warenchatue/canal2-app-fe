@@ -5,6 +5,7 @@ export default defineEventHandler(async (event) => {
   const perPage = parseInt((query.perPage as string) || '5', 10)
   const page = parseInt((query.page as string) || '1', 10)
   const filter = (query.filter as string) || ''
+  const isActive = (query.filter as boolean) || false
   const action = (query.action as string) || 'get'
   const id = (query.id as string) || ''
   const token = (query.token as string) || ''
@@ -14,7 +15,6 @@ export default defineEventHandler(async (event) => {
     return { data: data, success: true }
   } else if (action == 'findAll') {
     const response = await findAllPagination(token, perPage, page, filter)
-
     return {
       total: response.stats.totalItems ?? 0,
       stats: response.stats,
@@ -22,11 +22,11 @@ export default defineEventHandler(async (event) => {
       data: response.results.data,
     }
   } else if (action == 'findAllReport') {
-    const response = await findAll(token)
+    const response = await findAllFollowup(isActive, token)
     return {
-      total: response.metaData.totalItems,
+      total: response.metaData.totalItems ?? 0,
       metaData: response.metaData,
-      data: filterData(response.data, filter, page, perPage, true),
+      data: filterData(response.data, filter, page, perPage, false),
     }
   } else if (action == 'addTvProgram') {
     const body = await readBody(event)
@@ -72,46 +72,47 @@ function filterData(
   page: number,
   perPage: number,
   isReport = false,
+  isActive = false,
 ) {
   const offset = (page - 1) * perPage
   data = data.sort((a: any, b: any) => {
     return a.createdAt < b.createdAt ? 1 : -1
   })
-  if (isReport == true) {
-    let totalPending = 0
-    data = data.map((item) => {
-      totalPending += item.invoice?.pending ?? 0
-      const plannings = item.plannings.sort((a: any, b: any) => {
-        return a.date < b.date ? -1 : 1
-      })
-      // console.log('Sorted plannings')
-      if (plannings.length > 0) {
-        const d2 = new Date(plannings[plannings.length - 1].date ?? '')
-        const d1 = new Date(plannings[0].date ?? '')
-        const diff = Math.abs(d2 - d1)
-        const durationDays = Math.ceil(diff / (1000 * 60 * 60 * 24))
-        const totalDiffused = plannings.filter((e: any) => {
-          return e.isManualPlay == true || e.isAutoPlay == true
-        }).length
-        item.durationDays = durationDays + 1
-        item.totalDiffused = totalDiffused
-        item.startDate = new Date(plannings[0].date).toLocaleDateString('fr-FR')
-        item.endDate = new Date(
-          plannings[plannings.length - 1].date,
-        ).toLocaleDateString('fr-FR')
-      } else {
-        item.durationDays = 0
-        item.totalDiffused = 0
-        item.startDate = ''
-        item.endDate = ''
-      }
-      // console.log(item)
-      return item
-    })
-    if (data.length > 0) {
-      data[0].globalPending = totalPending
-    }
-  }
+  // if (isReport == true) {
+  //   let totalPending = 0
+  //   data = data.map((item) => {
+  //     totalPending += item.invoice?.pending ?? 0
+  //     const plannings = item.plannings.sort((a: any, b: any) => {
+  //       return a.date < b.date ? -1 : 1
+  //     })
+  //     // console.log('Sorted plannings')
+  //     if (plannings.length > 0) {
+  //       const d2 = new Date(plannings[plannings.length - 1].date ?? '')
+  //       const d1 = new Date(plannings[0].date ?? '')
+  //       const diff = Math.abs(d2 - d1)
+  //       const durationDays = Math.ceil(diff / (1000 * 60 * 60 * 24))
+  //       const totalDiffused = plannings.filter((e: any) => {
+  //         return e.isManualPlay == true || e.isAutoPlay == true
+  //       }).length
+  //       item.durationDays = durationDays + 1
+  //       item.totalDiffused = totalDiffused
+  //       item.startDate = new Date(plannings[0].date).toLocaleDateString('fr-FR')
+  //       item.endDate = new Date(
+  //         plannings[plannings.length - 1].date,
+  //       ).toLocaleDateString('fr-FR')
+  //     } else {
+  //       item.durationDays = 0
+  //       item.totalDiffused = 0
+  //       item.startDate = ''
+  //       item.endDate = ''
+  //     }
+  //     // console.log(item)
+  //     return item
+  //   })
+  //   if (data.length > 0) {
+  //     data[0].globalPending = totalPending
+  //   }
+  // }
 
   if (!filter) {
     return data.slice(offset, offset + perPage)
@@ -180,6 +181,27 @@ async function findAll(token: string) {
       'Content-type': 'application/json',
     },
   }).catch((error) => console.log(error))
+  // console.log(data)
+  return Promise.resolve(data)
+}
+
+async function findAllFollowup(isActive: boolean, token: string) {
+  console.log('findAll ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl +
+      '/packages/campaigns-followup?isActive=' +
+      isActive +
+      '&perPage=' +
+      10000,
+    {
+      method: 'get',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
   // console.log(data)
   return Promise.resolve(data)
 }

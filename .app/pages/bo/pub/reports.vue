@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { toTypedSchema } from '@vee-validate/zod'
 import { DatePicker } from 'v-calendar'
-import { Field, useForm } from 'vee-validate'
-import { z } from 'zod'
+import { Field } from 'vee-validate'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
@@ -22,11 +20,10 @@ const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(10)
-const isModalNewPackageOpen = ref(false)
+const perPage = ref(25)
 const isModalDeletePackageOpen = ref(false)
-const isEdit = ref(false)
 const isPrint = ref(false)
+const isActive = ref(false)
 
 const toaster = useToaster()
 // Check if can have access
@@ -62,7 +59,7 @@ watch(orderInvoices, (value) => {
   console.log(orderInvoices.value)
 })
 
-watch([filter, perPage], () => {
+watch([filter, perPage, isActive], () => {
   router.push({
     query: {
       page: undefined,
@@ -75,6 +72,7 @@ const query = computed(() => {
   return {
     filter: filter.value,
     perPage: perPage.value,
+    isActive: isActive.value,
     page: page.value,
     action: 'findAllReport',
     token: token.value,
@@ -122,21 +120,6 @@ async function printElement() {
   }, 500)
 }
 
-function editPackage(spotPackage: any) {
-  isModalNewPackageOpen.value = true
-  isEdit.value = true
-  setFieldValue('spotPackage._id', spotPackage._id)
-  setFieldValue('spotPackage.label', spotPackage.label)
-  setFieldValue('spotPackage.announcer', spotPackage.announcer)
-  setFieldValue('spotPackage.status', spotPackage.status)
-}
-
-function confirmDeletePackage(spotPackage: any) {
-  isModalDeletePackageOpen.value = true
-  isEdit.value = false
-  currentPackage.value = spotPackage
-}
-
 async function deletePackage(spotPackage: any) {
   const query2 = computed(() => {
     return {
@@ -179,211 +162,20 @@ async function deletePackage(spotPackage: any) {
 
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
-  return selected.value.length === data.value?.data.length
+  return selected.value.length === data.value?.data?.length
 })
 
 function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
     selected.value = []
   } else {
-    selected.value = data.value?.data.map((item) => item.id) ?? []
+    selected.value = data.value?.data.map((item) => item._id) ?? []
   }
 }
 
 const currentPackage = ref({})
 
-// This is the object that will contain the validation messages
-const ONE_MB = 1000000
-const VALIDATION_TEXT = {
-  LABEL_REQUIRED: "Label can't be empty",
-  PHONE_REQUIRED: "Phone number can't be empty",
-  EMAIL_REQUIRED: "Email address can't be empty",
-  COUNTRY_REQUIRED: 'Please select a country',
-}
-
-// This is the Zod schema for the form input
-// It's used to define the shape that the form data will have
-const zodSchema = z
-  .object({
-    spotPackage: z.object({
-      _id: z.string().optional(),
-      label: z.string().min(1, VALIDATION_TEXT.LABEL_REQUIRED),
-      totalAmount: z.number(),
-      status: z
-        .union([
-          z.literal('onHold'),
-          z.literal('confirmed'),
-          z.literal('paid'),
-          z.literal('closed'),
-        ])
-        .optional(),
-      period: z.string(),
-      announcer: z
-        .object({
-          _id: z.string(),
-          email: z.string(),
-          name: z.string(),
-          flag: z.string().optional(),
-        })
-        .optional()
-        .nullable(),
-    }),
-  })
-  .superRefine((data, ctx) => {
-    if (!data.spotPackage.label) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: VALIDATION_TEXT.LABEL_REQUIRED,
-        path: ['spotPackage.label'],
-      })
-    }
-  })
-
-// Zod has a great infer method that will
-// infer the shape of the schema into a TypeScript type
-type FormInput = z.infer<typeof zodSchema>
-
-const validationSchema = toTypedSchema(zodSchema)
-const initialValues = computed<FormInput>(() => ({
-  avatar: null,
-  spotPackage: {
-    label: '',
-    totalAmount: 0,
-    period: '',
-    status: 'onHold',
-    announcer: {
-      _id: '',
-      email: '',
-      name: '',
-      flag: '',
-    },
-  },
-}))
-
-const {
-  handleSubmit,
-  isSubmitting,
-  setFieldError,
-  meta,
-  values,
-  errors,
-  resetForm,
-  setFieldValue,
-  setErrors,
-} = useForm({
-  validationSchema,
-  initialValues,
-})
-
 const success = ref(false)
-
-// This is where you would send the form data to the server
-const onSubmit = handleSubmit(
-  async (values) => {
-    success.value = false
-
-    // here you have access to the validated form values
-    console.log('package-create-success', values)
-
-    try {
-      const isSuccess = ref(false)
-      if (isEdit.value == true) {
-        const query2 = computed(() => {
-          return {
-            action: 'updatePackage',
-            token: token.value,
-            id: values.spotPackage._id,
-          }
-        })
-
-        const response = await useFetch('/api/pub/packages', {
-          method: 'put',
-          headers: { 'Content-Type': 'application/json' },
-          query: query2,
-          body: {
-            ...values.spotPackage,
-            announcer: values.spotPackage?.announcer?._id,
-          },
-        })
-        isSuccess.value = response.data.value?.success
-      } else {
-        const query2 = computed(() => {
-          return {
-            action: 'createPackage',
-            token: token.value,
-          }
-        })
-
-        const response = await useFetch('/api/pub/packages', {
-          method: 'post',
-          headers: { 'Content-Type': 'application/json' },
-          query: query2,
-          body: {
-            ...values.spotPackage,
-            announcer: values.spotPackage?.announcer?._id,
-            _id: undefined,
-          },
-        })
-        isSuccess.value = response.data.value?.success
-      }
-      if (isSuccess) {
-        success.value = true
-        toaster.clearAll()
-        toaster.show({
-          title: 'Success',
-          message:
-            isEdit.value == false ? `Package créé !` : `Package mis à jour`,
-          color: 'success',
-          icon: 'ph:check',
-          closable: true,
-        })
-        isModalNewPackageOpen.value = false
-        resetForm()
-        filter.value = 'spotPackage'
-        filter.value = ''
-      } else {
-        toaster.clearAll()
-        toaster.show({
-          title: 'Désolé',
-          message: `Une erreur est survenue !`,
-          color: 'danger',
-          icon: 'ph:check',
-          closable: true,
-        })
-      }
-    } catch (error: any) {
-      console.log(error)
-      document.documentElement.scrollTo({
-        top: 0,
-        behavior: 'smooth',
-      })
-      toaster.clearAll()
-      toaster.show({
-        title: 'Désolé!',
-        message: 'Veuillez examiner les erreurs dans le formulaire',
-        color: 'danger',
-        icon: 'lucide:alert-triangle',
-        closable: true,
-      })
-      // return
-    }
-
-    success.value = true
-  },
-  (error) => {
-    // this callback is optional and called only if the form has errors
-    success.value = false
-
-    // here you have access to the error
-    console.log('payment-create-error', error)
-
-    // you can use it to scroll to the first error
-    document.documentElement.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    })
-  },
-)
 </script>
 
 <template>
@@ -476,18 +268,11 @@ const onSubmit = handleSubmit(
           <option :value="250">250 per page</option>
           <option :value="500">500 per page</option>
         </BaseSelect>
+        <BaseSwitchBall v-model="isActive" label="En cours" color="primary" />
         <BaseButton
           @click="printCampaigns(true)"
           color="primary"
-          class="w-full sm:w-48"
-        >
-          <Icon name="ph:printer" class="h-6 w-6" />
-          <span>C. en cours</span>
-        </BaseButton>
-        <BaseButton
-          @click="printCampaigns(false)"
-          color="primary"
-          class="w-full sm:w-48"
+          class="w-full sm:w-44"
         >
           <Icon name="ph:printer" class="h-6 w-6" />
           <span>Exporter</span>
@@ -533,7 +318,7 @@ const onSubmit = handleSubmit(
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+7.8%</span>
+              <span>+0%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hause</span>
             </div>
@@ -550,7 +335,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Quantité totale</span>
+                <span>Active</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -568,7 +353,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>-</span>
+                <span>{{ data?.metaData?.totalActives }}</span>
               </BaseHeading>
             </div>
             <div
@@ -591,7 +376,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Diffusés</span>
+                <span>Facturés</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -609,7 +394,10 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>-</span>
+                <span>{{
+                  (data?.metaData?.totalItems ?? 0) -
+                  (data?.metaData?.totalNoInvoices ?? 0)
+                }}</span>
               </BaseHeading>
             </div>
             <div
@@ -632,7 +420,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total restant a payer</span>
+                <span>Non Facturés</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
@@ -650,7 +438,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span> -</span>
+                <span>{{ data?.metaData?.totalNoInvoices ?? 0 }}</span>
               </BaseHeading>
             </div>
             <div
@@ -765,13 +553,13 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
               </TairoTableRow>
 
-              <TairoTableRow v-for="item in data?.data" :key="item.id">
+              <TairoTableRow v-for="item in data?.data" :key="item._id">
                 <TairoTableCel v-if="!isPrint" spaced>
-                  <div class="flex items-center">
+                  <div class="flex p-4 items-center">
                     <BaseCheckbox
                       v-model="selected"
-                      :value="item.id"
-                      :name="`item-checkbox-${item.id}`"
+                      :value="item._id"
+                      :name="`item-checkbox-${item._id}`"
                       shape="rounded"
                       class="text-primary-500"
                     />
@@ -782,7 +570,7 @@ const onSubmit = handleSubmit(
                   light
                   spaced
                 >
-                  <div class="!w-44">
+                  <div v-if="item.products" class="!w-44">
                     <p v-if="item.products.length > 0">
                       1- {{ item.products[0].product }}
                     </p>
@@ -944,97 +732,6 @@ const onSubmit = handleSubmit(
         </div>
       </div>
     </TairoContentWrapper>
-
-    <!-- Modal new Package -->
-    <TairoModal
-      :open="isModalNewPackageOpen"
-      size="xl"
-      @close="isModalNewPackageOpen = false"
-    >
-      <template #header>
-        <!-- Header -->
-        <div class="flex w-full items-center justify-between p-4 md:p-6">
-          <h3
-            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
-          >
-            {{ isEdit == true ? 'Editer' : 'Nouvelle' }} commande
-          </h3>
-
-          <BaseButtonClose @click="isModalNewPackageOpen = false" />
-        </div>
-      </template>
-
-      <!-- Body -->
-      <BaseCard class="w-full">
-        <form
-          method="POST"
-          action=""
-          class="divide-muted-200 dark:divide-muted-700"
-          @submit.prevent="onSubmit"
-        >
-          <div
-            shape="curved"
-            class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
-          >
-            <div class="mx-auto flex w-full flex-col">
-              <div>
-                <div class="grid grid-cols-12 gap-4">
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.label"
-                    >
-                      <BaseInput
-                        label="Libéllé"
-                        icon="ph:user-duotone"
-                        placeholder="ref facture : FACT N_ XXXXXX"
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="spotPackage.numberProducts"
-                    >
-                      <BaseInput
-                        label="Nombre de produits"
-                        icon="ph:file-duotone"
-                        type="number"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </form>
-      </BaseCard>
-      <template #footer>
-        <!-- Footer -->
-        <div class="p-4 md:p-6">
-          <div class="flex gap-x-2">
-            <BaseButton @click="isModalNewPackageOpen = false"
-              >Annuler</BaseButton
-            >
-
-            <BaseButton color="primary" flavor="solid" @click="onSubmit">
-              {{ isEdit == true ? 'Modifier' : 'Créer' }}
-            </BaseButton>
-          </div>
-        </div>
-      </template>
-    </TairoModal>
 
     <!-- Modal delete -->
     <TairoModal
