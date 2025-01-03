@@ -13,11 +13,13 @@ export default defineEventHandler(async (event) => {
     const data = await findOne(id, token)
     return { data: data, success: true }
   } else if (action == 'findAll') {
-    const response = await findAll(token)
+    const response = await findAllPagination(token, perPage, page, filter)
+
     return {
-      total: response.metaData.totalItems ?? 0,
-      metaData: response.metaData ?? {},
-      data: filterData(response.data, filter, page, perPage),
+      total: response.stats.totalItems ?? 0,
+      stats: response.stats,
+      metaData: response.results.data ?? {},
+      data: response.results.data,
     }
   } else if (action == 'findAllReport') {
     const response = await findAll(token)
@@ -31,6 +33,21 @@ export default defineEventHandler(async (event) => {
     console.log(body)
     const data = await addTvProgram(id, body, token)
     return { data: data, success: true }
+  } else if (action == 'deleteTvProgram') {
+    const body = await readBody(event)
+    console.log(body)
+    const data = await deleteTvProgram(id, body, token)
+    return { data: data, success: true }
+  } else if (action == 'addHour') {
+    const body = await readBody(event)
+    console.log(body)
+    const data = await addHour(id, body, token)
+    return { data: data, success: true }
+  } else if (action == 'deleteHour') {
+    const body = await readBody(event)
+    console.log(body)
+    const data = await deleteHour(id, body, token)
+    return { data: data, success: true }
   } else if (action == 'createPackage') {
     const body = await readBody(event)
     console.log(body)
@@ -39,6 +56,9 @@ export default defineEventHandler(async (event) => {
   } else if (action == 'updatePackage') {
     const body = await readBody(event)
     const data = await updatePackage(id, body, token)
+    return { data: data, success: true }
+  } else if (action == 'sync') {
+    const data = await syncCampaign(id, token)
     return { data: data, success: true }
   } else if (action == 'delete') {
     const data = await deletePackage(id, token)
@@ -64,8 +84,7 @@ function filterData(
       const plannings = item.plannings.sort((a: any, b: any) => {
         return a.date < b.date ? -1 : 1
       })
-      console.log('Sorted plannings')
-      // console.log(plannings)
+      // console.log('Sorted plannings')
       if (plannings.length > 0) {
         const d2 = new Date(plannings[plannings.length - 1].date ?? '')
         const d1 = new Date(plannings[0].date ?? '')
@@ -100,7 +119,9 @@ function filterData(
   const filterRe = new RegExp(filter, 'i')
   return data
     .filter((item) => {
-      return [item.code, item.label].some((item) => item.match(filterRe))
+      return [item.code ?? '', item.label ?? ''].some((item) =>
+        item.match(filterRe),
+      )
     })
     .slice(offset, offset + perPage)
 }
@@ -115,7 +136,37 @@ async function findOne(id: string, token: string) {
       'Content-type': 'application/json',
     },
   }).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
+  return Promise.resolve(data)
+}
+
+async function findAllPagination(
+  token: string,
+  perPage: number,
+  page: number,
+  search: string,
+) {
+  console.log('findAllPagination ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl +
+      '/packages/paginate?perPage=' +
+      perPage +
+      '&page=' +
+      page +
+      '&states=active' +
+      '&search=' +
+      search,
+
+    {
+      method: 'get',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
+  // console.log(data)
   return Promise.resolve(data)
 }
 
@@ -144,7 +195,7 @@ async function createPackage(body: any, token: string) {
     },
     body: { ...body, code: makeId(4) + '_' + makeId(4) },
   }).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
 
@@ -159,7 +210,7 @@ async function updatePackage(id: string, body: any, token: string) {
     },
     body: body,
   }).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
 
@@ -180,7 +231,79 @@ async function addTvProgram(id: string, body: any, token: string) {
       },
     },
   ).catch((error) => console.log(error))
-  console.log(data)
+  return Promise.resolve(data)
+}
+
+async function deleteTvProgram(id: string, body: any, token: string) {
+  console.log('deleteTvProgram ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl +
+      '/packages/' +
+      id +
+      '/delete-tv-program/' +
+      body.tvProgramId,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
+  return Promise.resolve(data)
+}
+
+async function addHour(id: string, body: any, token: string) {
+  console.log('addHour ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/packages/' + id + '/add-hour/' + body.hourId,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
+  return Promise.resolve(data)
+}
+
+async function deleteHour(id: string, body: any, token: string) {
+  console.log('deleteHour ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl +
+      '/packages/' +
+      id +
+      '/delete-hour/' +
+      body.hourId,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
+  return Promise.resolve(data)
+}
+
+async function syncCampaign(id: string, token: string) {
+  console.log('syncCampaign ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/packages/' + id + '/sync',
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
+  // console.log(data)
   return Promise.resolve(data)
 }
 
@@ -194,6 +317,6 @@ async function deletePackage(id: string, token: string) {
       'Content-type': 'application/json',
     },
   }).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }

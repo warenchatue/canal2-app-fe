@@ -113,7 +113,7 @@ const { data: suppliers, pending: pendingAnnouncer } = await useFetch(
   '/api/purchases/suppliers',
   {
     query: queryLight,
-    lazy: true,
+    lazy: false,
   },
 )
 
@@ -1863,6 +1863,7 @@ const onSubmit = handleSubmit(
                             />
                           </Field>
                         </div>
+
                         <div
                           class="ltablet:col-span-12 col-span-12 lg:col-span-6"
                         >
@@ -2562,9 +2563,7 @@ const onSubmit = handleSubmit(
                 </div>
                 <div class="mt-2 p-8 flex justify-end">
                   <div class="dark:text-muted-400 font-bold">
-                    <BaseParagraph size="sm">
-                      La Direction commerciale
-                    </BaseParagraph>
+                    <BaseParagraph size="md"> La Direction </BaseParagraph>
                   </div>
                 </div>
                 <footer

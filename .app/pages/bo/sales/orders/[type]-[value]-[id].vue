@@ -219,8 +219,11 @@ if (pageType.value == 'view' || pageType.value == 'edit') {
       packageId.value =
         currentOrderInvoice.value.order?.package?._id ?? undefined
       selectedOrder.value = currentOrderInvoice.value.order
-      selectedOrder.value.id = currentOrderInvoice.value.order._id
-      selectedOrder.value.name = currentOrderInvoice.value.order.code
+      if (currentOrderInvoice.value.order) {
+        selectedOrder.value.id =
+          currentOrderInvoice.value.order?._id ?? undefined
+        selectedOrder.value.name = currentOrderInvoice.value.order?.code ?? ''
+      }
       editOrderInvoiceFile(currentOrderInvoice.value)
     }
   }
@@ -1355,7 +1358,7 @@ const onSubmit = handleSubmit(
         </BaseButton>
       </template>
       <form method="POST" action="" @submit.prevent="onSubmit">
-        <div class="mx-auto max-w-7xl py-5">
+        <div class="mx-auto max-w-8xl py-5">
           <div class="mb-4 flex items-center justify-between">
             <div>
               <BaseHeading as="h2" size="xl" weight="medium" lead="none">
@@ -1560,7 +1563,7 @@ const onSubmit = handleSubmit(
                         </BaseHeading>
                         <BaseParagraph
                           size="sm"
-                          class="text-muted-800 dark:text-muted-400 font-semibold !w-64"
+                          class="text-muted-800 dark:text-muted-400 font-semibold !w-96"
                         >
                           {{ currentOrderInvoice?.announcer?.name }}
                         </BaseParagraph>
@@ -1648,6 +1651,16 @@ const onSubmit = handleSubmit(
                         }}
                       </p>
 
+                      <!-- <p
+                        class="text-muted-800 dark:text-muted-100 mt-2 text-[10px] font-semibold"
+                      >
+                        Date de commande :
+                      </p>  -->
+                      <p
+                        class="text-muted-800 dark:text-muted-100 mt-2 text-[10px] font-semibold"
+                      >
+                        Date Echéance :
+                      </p>
                       <p
                         v-if="currentOrderInvoice?.description"
                         class="text-muted-800 dark:text-muted-100 mt-2 text-[10px] font-semibold"
@@ -1655,21 +1668,11 @@ const onSubmit = handleSubmit(
                         Description :
                       </p>
 
-                      <!-- <p
-                        class="text-muted-800 dark:text-muted-100 mt-2 text-[10px] font-semibold"
-                      >
-                        SO :
-                      </p>
-
                       <p
+                        v-if="currentOrderInvoice?.announcer?.supCode"
                         class="text-muted-800 dark:text-muted-100 mt-2 text-[10px] font-semibold"
                       >
-                        Date de commande :
-                      </p> -->
-                      <p
-                        class="text-muted-800 dark:text-muted-100 mt-2 text-[10px] font-semibold"
-                      >
-                        Date Echéance :
+                        Code Fournisseur :
                       </p>
                     </div>
                     <div
@@ -1682,13 +1685,7 @@ const onSubmit = handleSubmit(
                           ).toLocaleDateString('fr-FR')
                         }}
                       </p>
-                      <p
-                        v-if="currentOrderInvoice?.description"
-                        class="mt-2 text-[10px]"
-                      >
-                        {{ currentOrderInvoice?.description }}
-                        <!-- BC N° 33880 DU 18/07/2023 -->
-                      </p>
+
                       <!-- <p class="mt-2 text-[10px]">SO3078</p>
                       <p class="mt-2 text-[10px]">30/05/2023</p> -->
                       <p class="mt-2 text-[10px]">
@@ -1697,6 +1694,19 @@ const onSubmit = handleSubmit(
                             currentOrderInvoice?.dueDate,
                           ).toLocaleDateString('fr-FR')
                         }}
+                      </p>
+                      <p
+                        v-if="currentOrderInvoice?.description"
+                        class="mt-2 text-[10px]"
+                      >
+                        {{ currentOrderInvoice?.description }}
+                        <!-- BC N° 33880 DU 18/07/2023 -->
+                      </p>
+                      <p
+                        v-if="currentOrderInvoice?.announcer?.supCode"
+                        class="mt-2 text-[10px]"
+                      >
+                        {{ currentOrderInvoice?.announcer?.supCode ?? '' }}
                       </p>
                     </div>
                   </div>
@@ -2087,6 +2097,12 @@ const onSubmit = handleSubmit(
                           >
                             Article
                           </th>
+                          <!-- <th
+                            scope="col"
+                            class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-left text-[9px] font-bold sm:ps-6 md:ps-0"
+                          >
+                            Référence Mercuriale
+                          </th> -->
                           <th
                             scope="col"
                             class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-left text-[9px] font-bold sm:ps-6 md:ps-0"
@@ -2181,6 +2197,12 @@ const onSubmit = handleSubmit(
                             v-if="!isPrint"
                             class="text-muted-800 dark:text-muted-400 text-left text-[9px] sm:table-cell"
                           ></td>
+                          <!-- <td
+                            style="white-space: pre-wrap; word-wrap: break-word"
+                            class="text-muted-800 dark:text-muted-400 !w-20 px-3 py-4 text-left font-medium text-[9px] sm:table-cell"
+                          >
+                            <p class="w-20 break-words">48-002-200326</p>
+                          </td> -->
                           <td
                             style="white-space: pre-wrap; word-wrap: break-word"
                             class="text-muted-800 dark:text-muted-400 !w-48 px-3 py-4 text-left font-medium text-[9px] sm:table-cell"
@@ -2219,14 +2241,15 @@ const onSubmit = handleSubmit(
                           <td
                             class="text-muted-800 dark:text-muted-400 px-3 py-4 text-center font-medium text-[9px] sm:table-cell"
                           >
-                            <p v-if="item.taxes.length > 0">
+                            <span v-if="item.taxes.length > 0">
                               {{ item.taxes[0]?.code }} :
                               {{ item.taxes[0]?.value }} %
-                            </p>
-                            <p v-if="item.taxes.length > 1">
+                            </span>
+                            <span v-if="item.taxes.length > 0"> , </span>
+                            <span v-if="item.taxes.length > 1">
                               {{ item.taxes[1]?.code }} :
                               {{ item.taxes[1]?.value }} %
-                            </p>
+                            </span>
                           </td>
                           <td
                             class="text-muted-800 dark:text-muted-100 py-4 pe-4 ps-3 text-right font-medium text-[9px] sm:pe-6 md:pe-0"
@@ -2564,7 +2587,7 @@ const onSubmit = handleSubmit(
                             scope="col"
                             class="text-muted-800 dark:text-muted-400 py-2 pe-3 ps-4 text-center text-[9px] font-bold sm:ps-6 md:ps-0"
                           >
-                            Reference
+                            Référence
                           </th>
                         </tr>
                       </thead>
@@ -2760,7 +2783,7 @@ const onSubmit = handleSubmit(
                         . {{ currentOrderInvoice?.org?.website }}
                       </BaseParagraph>
                       <BaseParagraph size="xs" class="text-[10px] font-medium">
-                        N° Contribuable: NC
+                        N° Contribuable:
                         {{ currentOrderInvoice?.org?.nc }} - RC:
                         {{ currentOrderInvoice?.org?.rc }};
                       </BaseParagraph>

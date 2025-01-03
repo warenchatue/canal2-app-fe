@@ -22,7 +22,7 @@ const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(10)
+const perPage = ref(50)
 const isModalNewHourOpen = ref(false)
 const isModalDeleteHourOpen = ref(false)
 const isEdit = ref(false)
@@ -347,7 +347,7 @@ const onSubmit = handleSubmit(
         <BaseInput
           v-model="filter"
           icon="lucide:search"
-          placeholder="Filtrer opera..."
+          placeholder="Filtrer hours..."
           :classes="{
             wrapper: 'w-full sm:w-auto',
           }"

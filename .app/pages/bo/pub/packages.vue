@@ -24,14 +24,16 @@ const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(50)
+const perPage = ref(10)
 const isModalNewPackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
+const isModalSyncCampaignOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
 const isEdit = ref(false)
 const toaster = useToaster()
 // Check if can have access
 if (
+  authStore.user.appRole.name != UserRole.sale &&
   authStore.user.appRole.name != UserRole.mediaPlanner &&
   authStore.user.appRole?.name != UserRole.admin &&
   authStore.user.appRole.name != UserRole.superAdmin
@@ -83,20 +85,17 @@ const query = computed(() => {
 })
 const query2 = computed(() => {
   return {
-    filter: filter.value,
     perPage: 1000,
     page: page.value,
     action: 'findAll',
     token: token.value,
   }
 })
-
-const queryLight = computed(() => {
+const query3 = computed(() => {
   return {
-    filter: filter.value,
-    perPage: 12000,
+    perPage: 50,
     page: page.value,
-    action: 'findAllLight',
+    action: 'findAll',
     token: token.value,
   }
 })
@@ -106,19 +105,11 @@ const { data, pending, refresh } = await useFetch('/api/pub/packages', {
   lazy: true,
 })
 
-// const { data: announcers, pending: pendingAnnouncer } = await useFetch(
-//   '/api/sales/announcers',
-//   {
-//     query: queryLight,
-//     lazy: true,
-//   },
-// )
-
 const { data: allInvoices, pending: pendingInvoices } = await useFetch(
   '/api/sales/invoices',
   {
     query: query2,
-    lazy: true,
+    lazy: false,
     transform: (els) => {
       return els.data?.map((el) => ({
         name: el.code,
@@ -130,11 +121,11 @@ const { data: allInvoices, pending: pendingInvoices } = await useFetch(
 )
 
 const { data: orgs } = await useFetch('/api/admin/orgs', {
-  query,
+  query: query3,
 })
 
 const { data: allUsers } = await useFetch('/api/users', {
-  query,
+  query: query3,
 })
 const adminsUser = allUsers.value?.data.filter((e: any) => {
   return (
@@ -168,6 +159,12 @@ function editPackage(campaign: any) {
 
 function confirmDeletePackage(campaign: any) {
   isModalDeletePackageOpen.value = true
+  isEdit.value = false
+  currentPackage.value = campaign
+}
+
+function confirmSyncCampaign(campaign: any) {
+  isModalSyncCampaignOpen.value = true
   isEdit.value = false
   currentPackage.value = campaign
 }
@@ -257,6 +254,51 @@ async function deletePackage(campaign: any) {
   }
 }
 
+async function syncCampaign(campaign: any) {
+  const query2 = computed(() => {
+    return {
+      action: 'sync',
+      token: token.value,
+      id: campaign._id,
+    }
+  })
+
+  const response = await $fetch(
+    '/api/pub/packages?action=sync&token=' +
+      token.value +
+      '&id=' +
+      campaign._id,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+    },
+  )
+
+  if (response.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message: `${response.data} plannings synchronisés !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalSyncCampaignOpen.value = false
+    filter.value = 'campaign'
+    filter.value = ''
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Désolé',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+}
+
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
   return selected.value.length === data.value?.data.length
@@ -266,14 +308,13 @@ function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
     selected.value = []
   } else {
-    selected.value = data.value?.data.map((item) => item.id) ?? []
+    selected.value = data.value?.data?.map((item) => item._id) ?? []
   }
 }
 
 const currentPackage = ref({})
 
 // This is the object that will contain the validation messages
-const ONE_MB = 1000000
 const VALIDATION_TEXT = {
   LABEL_REQUIRED: "Label can't be empty",
   PHONE_REQUIRED: "Phone number can't be empty",
@@ -304,6 +345,7 @@ const zodSchema = z
         .object({
           id: z.string(),
           name: z.string(),
+          phone: z.string().optional(),
           email: z.string().optional(),
         })
         .optional()
@@ -335,6 +377,7 @@ const zodSchema = z
         .object({
           id: z.string(),
           name: z.string(),
+          text: z.string(),
         })
         .optional()
         .nullable(),
@@ -369,17 +412,7 @@ const initialValues = computed<FormInput>(() => ({
   },
 }))
 
-const {
-  handleSubmit,
-  isSubmitting,
-  setFieldError,
-  meta,
-  values,
-  errors,
-  resetForm,
-  setFieldValue,
-  setErrors,
-} = useForm({
+const { handleSubmit, isSubmitting, resetForm, setFieldValue } = useForm({
   validationSchema,
   initialValues,
 })
@@ -569,6 +602,8 @@ const onSubmit = handleSubmit(
           <option :value="25">25 per page</option>
           <option :value="50">50 per page</option>
           <option :value="100">100 per page</option>
+          <option :value="250">250 per page</option>
+          <option :value="500">500 per page</option>
         </BaseSelect>
         <BaseButton
           color="primary"
@@ -618,7 +653,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{ data?.metaData?.totalItems }}</span>
+                <span v-if="!pending">{{ data?.stats?.totalItems }}</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -662,9 +697,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{
-                  data?.metaData?.totalAnnouncers
-                }}</span>
+                <span v-if="!pending">{{ data?.stats?.totalAnnouncers }}</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -708,7 +741,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{ data?.metaData?.totalSpots }}</span>
+                <span v-if="!pending">{{ data?.stats?.totalSpots }}</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -752,7 +785,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{ data?.metaData?.totalFiles }}</span>
+                <span v-if="!pending">{{ data?.stats?.totalFiles }}</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -790,7 +823,7 @@ const onSubmit = handleSubmit(
         </div>
         <div v-else-if="pending">
           <TairoTableRow v-for="index in 5" :key="index">
-            <TairoTableCell spaced>
+            <TairoTableCell class="!w-full" spaced>
               <div class="flex items-center">
                 <BaseCheckbox
                   v-model="fakeItems"
@@ -863,6 +896,7 @@ const onSubmit = handleSubmit(
                 </TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>Nom</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Société</TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced
                   >Commandés</TairoTableHeading
@@ -896,8 +930,8 @@ const onSubmit = handleSubmit(
                   <div class="flex items-center">
                     <BaseCheckbox
                       v-model="selected"
-                      :value="item.id"
-                      :name="`item-checkbox-${item.id}`"
+                      :value="item._id"
+                      :name="`item-checkbox-${item._id}`"
                       shape="rounded"
                       class="text-primary-500"
                     />
@@ -919,7 +953,7 @@ const onSubmit = handleSubmit(
                     style="white-space: pre-wrap; word-wrap: break-word"
                     class="flex items-center"
                   >
-                   <!-- <BaseAvatar
+                    <!-- <BaseAvatar
                       :src="item.announcer?.logo ?? '/img/avatars/company.svg'"
                       :text="item.initials"
                       :class="getRandomColor()"
@@ -940,6 +974,13 @@ const onSubmit = handleSubmit(
                   style="white-space: pre-wrap; word-wrap: break-word"
                 >
                   <span class="!w-48"> {{ item.label }}</span>
+                </TairoTableCell>
+                <TairoTableCell
+                  light
+                  spaced
+                  style="white-space: pre-wrap; word-wrap: break-word"
+                >
+                  <span class="!w-52"> {{ item.org?.name ?? '' }}</span>
                 </TairoTableCell>
                 <TairoTableCell light spaced>
                   {{ item.quantities }} spots
@@ -968,24 +1009,24 @@ const onSubmit = handleSubmit(
                 </TairoTableCell> -->
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag
-                    v-if="item.state === 'trashed'"
-                    color="muted"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    {{ item.state }}
-                  </BaseTag>
-                  <BaseTag
-                    v-else-if="item.state === 'active'"
+                    v-if="item.validator == null"
                     color="warning"
                     flavor="pastel"
                     shape="full"
                     condensed
                     class="font-medium"
                   >
-                    {{ item.state }}
+                    Brouillon
+                  </BaseTag>
+                  <BaseTag
+                    v-else-if="item.validator != null"
+                    color="success"
+                    flavor="pastel"
+                    shape="full"
+                    condensed
+                    class="font-medium"
+                  >
+                    Validée
                   </BaseTag>
                 </TairoTableCell>
                 <TairoTableCell spaced>
@@ -999,6 +1040,14 @@ const onSubmit = handleSubmit(
                     /></BaseButtonAction>
                     <BaseButtonAction @click="editPackage(item)">
                       <Icon name="lucide:edit" class="h-4 w-4"
+                    /></BaseButtonAction>
+                    <BaseButtonAction
+                      @click="confirmSyncCampaign(item)"
+                      class="mx-2"
+                    >
+                      <Icon
+                        name="ph:arrows-clockwise"
+                        class="h-4 w-4 text-warning-500"
                     /></BaseButtonAction>
                     <BaseButtonAction
                       @click="confirmDeletePackage(item)"
@@ -1098,7 +1147,7 @@ const onSubmit = handleSubmit(
                       <BaseAutocomplete
                         :model-value="field.value"
                         :error="errorMessage"
-                        :disabled="isSubmitting || pendingAnnouncer"
+                        :disabled="isSubmitting"
                         @update:model-value="handleChange"
                         @blur="handleBlur"
                         :items="[]"
@@ -1328,7 +1377,7 @@ const onSubmit = handleSubmit(
           <h3
             class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
           >
-            Suppression d'un package
+            Suppression d'un planning
           </h3>
 
           <BaseButtonClose @click="isModalDeletePackageOpen = false" />
@@ -1372,6 +1421,61 @@ const onSubmit = handleSubmit(
       </template>
     </TairoModal>
 
+    <!-- Modal Sync campaign -->
+    <TairoModal
+      :open="isModalSyncCampaignOpen"
+      size="sm"
+      @close="isModalSyncCampaignOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Synchronisation d'une campagne
+          </h3>
+
+          <BaseButtonClose @click="isModalSyncCampaignOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <h3
+            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
+          >
+            Synchroniser
+            <span class="text-warning-500">{{ currentPackage?.label }}</span> ?
+          </h3>
+
+          <p
+            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est irreversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalSyncCampaignOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="syncCampaign(currentPackage)"
+              >Valider</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
     <!-- Modal confirm order -->
     <TairoModal
       :open="isModalConfirmOrderOpen"

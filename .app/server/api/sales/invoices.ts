@@ -23,6 +23,13 @@ export default defineEventHandler(async (event) => {
       metaData: response.metaData,
       data: filterData(response.data, filter, page, perPage),
     }
+  } else if (action == 'findAllPaginate') {
+    const response = await findAllPaginate(page, perPage, filter, token)
+    return {
+      stats: response.stats,
+      metaData: response.results.metadata,
+      data: response.results.data,
+    }
   } else if (action == 'findAllFilters') {
     const response = await findAll(token)
     var startTime = new Date(new Date(startDate).toLocaleDateString()).getTime()
@@ -46,7 +53,7 @@ export default defineEventHandler(async (event) => {
   } else if (action == 'findAllUnpaid') {
     const response = await findAll(token)
     response.data = response.data.filter((e: any) => {
-      return (e.amount - e.paid ?? 0) > 0 && e.taxes.length == 0
+      return e.amount - e.paid > 0 && e.taxes.length == 0
     })
     let totalSelection = 0
     for (let index = 0; index < response.data.length; index++) {
@@ -74,7 +81,7 @@ export default defineEventHandler(async (event) => {
       )
     })
     response.data = response.data.filter((e: any) => {
-      return (e.amount - e.paid ?? 0) > 0 && e.taxes.length == 0
+      return e.amount - e.paid > 0 && e.taxes.length == 0
     })
     let totalSelection = 0
     for (let index = 0; index < response.data.length; index++) {
@@ -139,7 +146,7 @@ function filterData(
         item.org?.name ?? '',
         item.announcer?.name ?? '',
         item.team ?? '',
-      ].some((item) => item.match(filterRe))
+      ].some((item) => (item ? item.match(filterRe) : false))
     })
     .sort(function (a, b) {
       return a.code < b.code ? 1 : -1
@@ -172,6 +179,33 @@ async function findAll(token: string) {
     },
   }).catch((error) => console.log(error))
   // console.log(data)
+  return Promise.resolve(data)
+}
+
+async function findAllPaginate(
+  page: number,
+  perPage: number,
+  search: string,
+  token: string,
+) {
+  console.log('findAllPaginate ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl +
+      '/invoices/paginate?page=' +
+      page +
+      '&perPage=' +
+      perPage +
+      '&search=' +
+      search,
+    {
+      method: 'get',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
   return Promise.resolve(data)
 }
 

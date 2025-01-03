@@ -14,26 +14,10 @@ import {
 
 const props = withDefaults(
   defineProps<{
-    /**
-     * Whether the modal is open.
-     */
     open?: boolean
-
-    /**
-     * The size of the modal.
-     */
     size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl'
-
-    /**
-     * The shape of the modal.
-     */
     shape?: 'straight' | 'rounded' | 'curved'
-
-    /**
-     * The alignment of the footer content.
-     */
     footerAlign?: 'start' | 'end' | 'center' | 'between'
-
     classes?: {
       wrapper?: string | string[]
       dialog?: string | string[]
@@ -100,7 +84,9 @@ const dialogClasses = computed(() => {
 <template>
   <TransitionRoot appear :show="props.open" as="template">
     <div class="fixed inset-0 z-[9999] flex items-center justify-center">
+      <!-- Disable background click and Escape key closing -->
       <Dialog class="relative z-[9999]" as="div" @close="emit('close')">
+        <!-- <Dialog class="relative z-[9999]" as="div" @close="() => {}"> -->
         <TransitionChild
           as="template"
           enter="duration-300 ease-out"

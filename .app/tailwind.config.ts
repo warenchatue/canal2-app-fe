@@ -1,5 +1,5 @@
 import { withShurikenUI } from '@shuriken-ui/tailwind'
-import { join } from 'pathe'
+import { join } from 'path'
 import defaultTheme from 'tailwindcss/defaultTheme'
 
 /**

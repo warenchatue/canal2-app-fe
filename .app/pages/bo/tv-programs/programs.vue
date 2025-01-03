@@ -24,7 +24,7 @@ const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(50)
+const perPage = ref(10)
 const isModalNewTvProgramOpen = ref(false)
 const isModalDeleteTvProgramOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
@@ -65,6 +65,15 @@ const query = computed(() => {
     token: token.value,
   }
 })
+
+const queryNF = computed(() => {
+  return {
+    perPage: 1000,
+    page: page.value,
+    action: 'findAll',
+    token: token.value,
+  }
+})
 const query2 = computed(() => {
   return {
     filter: filter.value,
@@ -75,14 +84,16 @@ const query2 = computed(() => {
   }
 })
 
-const queryLight = computed(() => {
-  return {
-    filter: filter.value,
-    perPage: 12000,
-    page: page.value,
-    action: 'findAllLight',
-    token: token.value,
-  }
+const { data: allUsers, pending: pendingUsers } = await useFetch('/api/users', {
+  query: queryNF,
+  lazy: true,
+  transform: (els) => {
+    return els.data?.map((el) => ({
+      name: el.firstName + ' ' + el.lastName,
+      id: el._id,
+      text: el.email,
+    }))
+  },
 })
 
 const { data, pending, refresh } = await useFetch('/api/tv-programs/programs', {
@@ -91,13 +102,13 @@ const { data, pending, refresh } = await useFetch('/api/tv-programs/programs', {
 })
 
 const { data: orgs } = await useFetch('/api/admin/orgs', {
-  query,
+  query: queryNF,
 })
 
 const { data: categories } = await useFetch(
   '/api/tv-programs/program-categories',
   {
-    query,
+    query: queryNF,
   },
 )
 
@@ -108,9 +119,24 @@ function editTvProgram(tvProgram: any) {
   setFieldValue('tvProgram._id', tvProgram._id)
   setFieldValue('tvProgram.name', tvProgram.name)
   setFieldValue('tvProgram.code', tvProgram.code)
+  setFieldValue('tvProgram.duration', tvProgram.duration)
   setFieldValue('tvProgram.category', tvProgram.category)
   setFieldValue('tvProgram.description', tvProgram.description)
   setFieldValue('tvProgram.org', tvProgram.org)
+  if (tvProgram.host) {
+    setFieldValue('tvProgram.host', {
+      id: tvProgram.host?._id,
+      name: tvProgram.host?.firstName + ' ' + tvProgram.host?.lastName,
+      text: tvProgram.host?.email,
+    })
+  }
+  if (tvProgram.host2) {
+    setFieldValue('tvProgram.host2', {
+      id: tvProgram.host2?._id,
+      name: tvProgram.host2?.firstName + ' ' + tvProgram.host2?.lastName,
+      text: tvProgram.host2?.email,
+    })
+  }
 }
 
 function confirmDeleteTvProgram(tvProgram: any) {
@@ -208,6 +234,7 @@ const zodSchema = z
       _id: z.string().optional(),
       code: z.string().optional(),
       name: z.string().optional(),
+      duration: z.number().optional(),
       description: z.string().optional(),
       status: z
         .union([
@@ -229,6 +256,22 @@ const zodSchema = z
           _id: z.string(),
           name: z.string(),
           email: z.string().optional(),
+        })
+        .optional()
+        .nullable(),
+      host: z
+        .object({
+          id: z.string(),
+          name: z.string(),
+          text: z.string().optional(),
+        })
+        .optional()
+        .nullable(),
+      host2: z
+        .object({
+          id: z.string(),
+          name: z.string(),
+          text: z.string().optional(),
         })
         .optional()
         .nullable(),
@@ -254,6 +297,7 @@ const initialValues = computed<FormInput>(() => ({
   tvProgram: {
     label: '',
     code: '',
+    duration: 0,
     description: '',
     status: 'onHold',
   },
@@ -346,6 +390,8 @@ const onSubmit = handleSubmit(
             ...values.tvProgram,
             category: values.tvProgram?.category?._id ?? undefined,
             adminValidator: values.tvProgram?.adminValidator?._id ?? undefined,
+            host: values.tvProgram?.host?.id ?? undefined,
+            host2: values.tvProgram?.host2?.id ?? undefined,
           },
         })
         isSuccess.value = response.data.value?.success
@@ -365,6 +411,8 @@ const onSubmit = handleSubmit(
             ...values.tvProgram,
             category: values.tvProgram?.category?._id ?? undefined,
             adminValidator: values.tvProgram?.adminValidator?._id ?? undefined,
+            host: values.tvProgram?.host?.id ?? undefined,
+            host2: values.tvProgram?.host2?.id ?? undefined,
             _id: undefined,
           },
         })
@@ -437,7 +485,7 @@ const onSubmit = handleSubmit(
         <BaseInput
           v-model="filter"
           icon="lucide:search"
-          placeholder="Filtrer package..."
+          placeholder="Filtrer emi..."
           :classes="{
             wrapper: 'w-full sm:w-auto',
           }"
@@ -749,6 +797,7 @@ const onSubmit = handleSubmit(
                 >
 
                 <TairoTableHeading uppercase spaced>Couleur</TairoTableHeading>
+                <TairoTableHeading uppercase spaced>Durée</TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced>Planning</TairoTableHeading>
                 <TairoTableHeading uppercase spaced>Statut</TairoTableHeading>
@@ -806,6 +855,9 @@ const onSubmit = handleSubmit(
                     >
                     </span></div
                 ></TairoTableCell>
+                <TairoTableCell light spaced>
+                  {{ formattedDuration(item.duration ?? '') }}
+                </TairoTableCell>
                 <TairoTableCell light spaced> </TairoTableCell>
                 <TairoTableCell spaced class="capitalize">
                   <BaseTag
@@ -939,14 +991,16 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
+
                   <div class="col-span-12 md:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="tvProgram.description"
+                      name="tvProgram.duration"
                     >
                       <BaseInput
-                        label="Observations"
-                        icon="ph:file-duotone"
+                        label="Durée(Minutes)"
+                        icon="ph:clock-duotone"
+                        type="number"
                         placeholder=""
                         :model-value="field.value"
                         :error="errorMessage"
@@ -954,6 +1008,54 @@ const onSubmit = handleSubmit(
                         @update:model-value="handleChange"
                         @blur="handleBlur"
                       />
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="tvProgram.host"
+                    >
+                      <BaseAutocomplete
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                        :items="allUsers"
+                        :display-value="(item: any) => item.name || ''"
+                        :filter-items="filterItems"
+                        icon="lucide:user"
+                        placeholder="e.g. User"
+                        label="Présentateur 1"
+                        clearable
+                        :clear-value="''"
+                      >
+                        <template #empty="value"> Aucun resultat </template>
+                      </BaseAutocomplete>
+                    </Field>
+                  </div>
+                  <div class="ltablet:col-span-12 col-span-12 lg:col-span-6">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="tvProgram.host2"
+                    >
+                      <BaseAutocomplete
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                        :items="allUsers"
+                        :display-value="(item: any) => item.name || ''"
+                        :filter-items="filterItems"
+                        icon="lucide:user"
+                        placeholder="e.g. User"
+                        label="Présentateur 2"
+                        clearable
+                        :clear-value="''"
+                      >
+                        <template #empty="value"> Aucun resultat </template>
+                      </BaseAutocomplete>
                     </Field>
                   </div>
 
@@ -971,6 +1073,23 @@ const onSubmit = handleSubmit(
                           sublabel: 'email',
                           media: 'flag',
                         }"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+                  <div class="col-span-12 md:col-span-12">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="tvProgram.description"
+                    >
+                      <BaseInput
+                        label="Description"
+                        icon="ph:file-duotone"
+                        placeholder=""
                         :model-value="field.value"
                         :error="errorMessage"
                         :disabled="isSubmitting"

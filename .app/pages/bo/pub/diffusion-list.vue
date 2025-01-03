@@ -19,13 +19,12 @@ definePageMeta({
 })
 
 const fakeItems = ref([])
-
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(100)
+const perPage = ref(250)
 const isModalImportPlaylistOpen = ref(false)
 const isModalConfirmDiffusionOpen = ref(false)
 const isModalDiffusionListOpen = ref(false)
@@ -50,9 +49,7 @@ const initialDates = {
 
 const startDate = ref(new Date())
 const endDate = ref(new Date())
-
 const dates = ref(initialDates)
-
 const planningDates = ref(initialDates)
 
 watch([filter, perPage, dates], () => {
@@ -68,14 +65,14 @@ if (filter.value == '') {
   filter.value = ''
 }
 
-const app = useAppStore()
 const token = useCookie('token')
 const query = computed(() => {
   return {
     filter: filter.value,
-    startDate: dates.value?.start.toLocaleDateString(),
-    endDate: dates.value?.end.toLocaleDateString(),
+    startDate: dates.value?.start.toLocaleDateString('fr-FR'),
+    endDate: dates.value?.end.toLocaleDateString('fr-FR'),
     perPage: perPage.value,
+    orgId: currentOrg.value?._id ?? '',
     page: page.value,
     action: 'findAll',
     token: token.value,
@@ -84,9 +81,7 @@ const query = computed(() => {
 
 const query2 = computed(() => {
   return {
-    filter: filter.value,
     perPage: 1000,
-    page: page.value,
     action: 'findAll',
     token: token.value,
   }
@@ -95,7 +90,6 @@ const query2 = computed(() => {
 const {
   data,
   pending,
-  error,
   refresh: refreshPlanning,
 } = await useFetch('/api/pub/plannings', {
   query,
@@ -103,7 +97,7 @@ const {
 })
 
 const { data: allHours } = await useFetch('/api/pub/hours', {
-  query: query,
+  query: query2,
   lazy: false,
   transform: (els) => {
     return els.data?.filter((el: any) => {
@@ -113,8 +107,9 @@ const { data: allHours } = await useFetch('/api/pub/hours', {
 })
 
 const { data: orgs } = await useFetch('/api/admin/orgs', {
-  query,
+  query: query2,
 })
+currentOrg.value = orgs.value ? orgs.value.data[0] : {}
 
 const transformedAllHours = allHours.value?.map((e: any) => {
   const hour = {
@@ -124,21 +119,18 @@ const transformedAllHours = allHours.value?.map((e: any) => {
   return hour
 })
 
-const { data: allPackages, pending: pendingPackages } = await useFetch(
-  '/api/pub/packages',
-  {
-    query: query2,
-    lazy: true,
-    transform: (els) => {
-      return els.data?.map((el) => ({
-        name: el.label,
-        id: el._id,
-        text: el.code,
-        products: el.products,
-      }))
-    },
+const { data: allPackages } = await useFetch('/api/pub/packages', {
+  query: query2,
+  lazy: true,
+  transform: (els) => {
+    return els.data?.map((el) => ({
+      name: el.label,
+      id: el._id,
+      text: el.code,
+      products: el.products,
+    }))
   },
-)
+})
 
 function openElementModal() {
   setTimeout(() => {
@@ -293,7 +285,7 @@ function toggleAllVisibleSelection() {
   }
 }
 
-const { text, copy, copied, isSupported } = useClipboard()
+const { copy, copied } = useClipboard()
 const toaster = useToaster()
 const handleClipboard = (textLink: string) => {
   copy(textLink)
@@ -580,7 +572,7 @@ async function importPlayList() {
       }
     })
 
-    const { data: uploadData, refresh } = await useFetch('/api/files/upload', {
+    const { data: uploadData } = await useFetch('/api/files/upload', {
       method: 'POST',
       query: query3,
       body: fd,
@@ -619,7 +611,6 @@ async function importPlayList() {
 // })
 
 // This is the object that will contain the validation messages
-const ONE_MB = 1000000
 const VALIDATION_TEXT = {
   OPERATOR_REQUIRED: "Operator can't be empty",
   PHONE_REQUIRED: "Phone number can't be empty",
@@ -686,17 +677,7 @@ const initialValues = computed<FormInput>(() => ({
   },
 }))
 
-const {
-  handleSubmit,
-  isSubmitting,
-  setFieldError,
-  meta,
-  values,
-  errors,
-  resetForm,
-  setFieldValue,
-  setErrors,
-} = useForm({
+const { handleSubmit, isSubmitting, setFieldError, resetForm } = useForm({
   validationSchema,
   initialValues,
 })
@@ -842,6 +823,32 @@ const onSubmit = handleSubmit(
             </template>
           </DatePicker>
         </div>
+        <BaseHeading
+          as="h5"
+          size="sm"
+          weight="medium"
+          lead="tight"
+          class="text-muted-500 dark:text-muted-200"
+        >
+          Société
+        </BaseHeading>
+        <div class="text-muted-800 dark:text-muted-100 font-medium !w-64">
+          <BaseListbox
+            label=""
+            :items="orgs.data"
+            :classes="{
+              wrapper: '!w-60',
+            }"
+            :properties="{
+              value: '_id',
+              label: 'name',
+              sublabel: 'email',
+              media: '',
+            }"
+            v-model="currentOrg"
+            :disabled="isSubmitting"
+          />
+        </div>
       </template>
       <template #right>
         <BaseSelect
@@ -860,7 +867,7 @@ const onSubmit = handleSubmit(
         </BaseSelect>
         <BaseButton
           :disabled="
-            authStore.user.appRole.name != UserRole.broadcast &&
+            authStore.user.appRole.name != UserRole.mediaPlanner &&
             authStore.user.appRole.name != UserRole.superAdmin
           "
           @click="openElementModal()"
@@ -872,10 +879,6 @@ const onSubmit = handleSubmit(
         </BaseButton>
         <BaseButton
           data-tooltip="Exporter le conducteur"
-          :disabled="
-            authStore.user.appRole.name != UserRole.broadcast &&
-            authStore.user.appRole.name != UserRole.superAdmin
-          "
           @click="openReportModal()"
           color="primary"
           class="w-full sm:w-28"
@@ -885,13 +888,13 @@ const onSubmit = handleSubmit(
         </BaseButton>
         <BaseButton
           data-tooltip="Importer une playlist"
+          @click="isModalImportPlaylistOpen = true"
+          color="primary"
+          class="w-full sm:w-20"
           :disabled="
             authStore.user.appRole.name != UserRole.broadcast &&
             authStore.user.appRole.name != UserRole.superAdmin
           "
-          @click="isModalImportPlaylistOpen = true"
-          color="primary"
-          class="w-full sm:w-20"
         >
           <Icon name="lucide:import" class="h-4 w-4" />
           <span>PL</span>
@@ -927,7 +930,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{ data?.metaData?.totalDiffused }}</span>
+                <span v-if="!pending">-</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -971,9 +974,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{
-                  data?.metaData?.totalNotDiffused
-                }}</span>
+                <span v-if="!pending">-</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -1017,7 +1018,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{ data?.metaData?.totalPending }}</span>
+                <span v-if="!pending">-</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -1061,7 +1062,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{ data?.metaData?.totalToday }}</span>
+                <span v-if="!pending">{{ data?.data.length ?? '' }}</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -1246,7 +1247,7 @@ const onSubmit = handleSubmit(
                   >
                   <TairoTableHeading uppercase spaced>Durée</TairoTableHeading>
                   <TairoTableHeading v-if="!isPrint" uppercase spaced
-                    >Fichier</TairoTableHeading
+                    >Org</TairoTableHeading
                   >
                   <TairoTableHeading v-if="!isPrint" uppercase spaced
                     >Statut</TairoTableHeading
@@ -1287,12 +1288,20 @@ const onSubmit = handleSubmit(
                     <BaseButtonAction
                       class="mx-1 !p-1"
                       @click.prevent="updatePosition(item, false)"
+                      :disabled="
+                        authStore.user.appRole.name != UserRole.mediaPlanner &&
+                        authStore.user.appRole.name != UserRole.superAdmin
+                      "
                     >
                       <Icon name="lucide:arrow-up" class="h-4 w-4" />
                     </BaseButtonAction>
                     <BaseButtonAction
                       class="mx-1 !p-1"
                       @click.prevent="updatePosition(item, true)"
+                      :disabled="
+                        authStore.user.appRole.name != UserRole.mediaPlanner &&
+                        authStore.user.appRole.name != UserRole.superAdmin
+                      "
                     >
                       <Icon name="lucide:arrow-down" class="h-4 w-4" />
                     </BaseButtonAction>
@@ -1311,7 +1320,12 @@ const onSubmit = handleSubmit(
                       <span
                         class="text-muted-600 dark:text-muted-300 font-sans text-base"
                       >
-                        {{ new Date(item.date).toLocaleTimeString('fr-FR') }}
+                        {{
+                          new Date(item.date)
+                            .toLocaleTimeString('fr-FR')
+                            .replace(':00', '')
+                            .replace(':', 'H')
+                        }}
                       </span>
                     </div>
                   </TairoTableCell>
@@ -1399,7 +1413,7 @@ const onSubmit = handleSubmit(
                       </span>
                     </div>
                   </TairoTableCell>
-                  <TairoTableCell v-if="!isPrint" spaced>
+                  <!-- <TairoTableCell v-if="!isPrint" spaced>
                     <div class="flex">
                       <a
                         v-if="item.product?.file"
@@ -1419,6 +1433,14 @@ const onSubmit = handleSubmit(
                       >
                         <Icon name="lucide:download" class="h-4 w-4" />
                       </BaseButtonAction>
+                    </div>
+                  </TairoTableCell> -->
+                  <TairoTableCell spaced>
+                    <div class="flex items-center">
+                      <span
+                        class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                      >
+                      </span>
                     </div>
                   </TairoTableCell>
                   <TairoTableCell v-if="!isPrint" spaced class="capitalize">
@@ -1446,16 +1468,6 @@ const onSubmit = handleSubmit(
                     >
                       Non Diffusé
                     </BaseTag>
-                    <!-- <BaseTag
-                    v-else-if="item.status === 'offline'"
-                    color="muted"
-                    flavor="pastel"
-                    shape="full"
-                    condensed
-                    class="font-medium"
-                  >
-                    {{ item.status }}
-                  </BaseTag> -->
                   </TairoTableCell>
 
                   <TairoTableCell v-if="!isPrint" spaced>
@@ -1480,12 +1492,22 @@ const onSubmit = handleSubmit(
                         valider</BaseButtonAction
                       >
                       <BaseButtonAction
+                        :disabled="
+                          authStore.user.appRole.name !=
+                            UserRole.mediaPlanner &&
+                          authStore.user.appRole.name != UserRole.superAdmin
+                        "
                         class="mx-2"
                         @click.prevent="editPlanning(item)"
                       >
                         <Icon name="lucide:edit" class="h-4 w-4" />
                       </BaseButtonAction>
                       <BaseButtonAction
+                        :disabled="
+                          authStore.user.appRole.name !=
+                            UserRole.mediaPlanner &&
+                          authStore.user.appRole.name != UserRole.superAdmin
+                        "
                         class="mx-2"
                         @click.prevent="confirmDeletePlanning(item)"
                       >
@@ -1546,7 +1568,7 @@ const onSubmit = handleSubmit(
               <div>
                 <div class="col-span-12 sm:col-span-6 mt-2">
                   <Field
-                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    v-slot="{ errorMessage, handleChange, handleBlur }"
                     name="report.org"
                   >
                     <BaseListbox
@@ -1648,7 +1670,6 @@ const onSubmit = handleSubmit(
                 <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                   <BaseAutocomplete
                     v-model="currentCampaign"
-                    :error="errorMessage"
                     :disabled="isSubmitting"
                     :items="allPackages"
                     :display-value="(item: any) => item.name || ''"
@@ -1668,7 +1689,7 @@ const onSubmit = handleSubmit(
                   class="col-span-12 sm:col-span-6"
                 >
                   <Field
-                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    v-slot="{ errorMessage, handleChange, handleBlur }"
                     name="report.product"
                   >
                     <BaseListbox
@@ -1692,7 +1713,7 @@ const onSubmit = handleSubmit(
                 </div>
                 <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                   <Field
-                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    v-slot="{ errorMessage, handleChange, handleBlur }"
                     name="campaign.year"
                   >
                     <BaseSelect
@@ -1710,7 +1731,7 @@ const onSubmit = handleSubmit(
                 </div>
                 <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                   <Field
-                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    v-slot="{ errorMessage, handleChange, handleBlur }"
                     name="campaign.month"
                   >
                     <BaseSelect
@@ -1743,7 +1764,6 @@ const onSubmit = handleSubmit(
                 >
                   <BaseAutocomplete
                     v-model="currentHour"
-                    :error="errorMessage"
                     :disabled="isSubmitting"
                     :items="transformedAllHours"
                     :display-value="(item: any) => item.name || ''"
@@ -1762,7 +1782,7 @@ const onSubmit = handleSubmit(
                   class="ltablet:col-span-6 col-span-12 lg:col-span-6"
                 >
                   <Field
-                    v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                    v-slot="{ errorMessage, handleChange, handleBlur }"
                     name="jour"
                   >
                     <BaseInput

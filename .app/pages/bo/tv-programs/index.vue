@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { Field } from 'vee-validate'
 import 'v-calendar/dist/style.css'
+import { Field } from 'vee-validate'
 import '~/assets/css/vcalendar.css'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Tableau de Bord PUB',
+  title: 'Tableau de Bord Programmes',
   preview: {
     title: 'Analytics dashboard',
     description: 'Analytic',
-    categories: ['bo', 'spots'],
+    categories: ['bo', 'tv-programs'],
     src: '/img/screens/dashboards-analytics.png',
     srcDark: '/img/screens/dashboards-analytics-dark.png',
     order: 2,
@@ -52,9 +52,12 @@ const query = computed(() => {
   }
 })
 
-const { data, pending, error, refresh } = await useFetch('/api/pub/plannings', {
-  query,
-})
+const { data, pending, error, refresh } = await useFetch(
+  '/api/tv-programs/plannings',
+  {
+    query,
+  },
+)
 
 const query2 = computed(() => {
   return {
@@ -640,14 +643,14 @@ function useBarSalesProfit() {
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Commandes</span>
+                <span>Total En Attente</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
                 class="bg-yellow-100 text-yellow-500 dark:bg-yellow-500/20 dark:text-yellow-400 dark:border-yellow-500 dark:border-2"
                 shape="full"
               >
-                <Icon name="ph:package" class="h-5 w-5" />
+                <Icon name="lucide:tv" class="h-5 w-5" />
               </BaseIconBox>
             </div>
             <div class="mb-2">
@@ -658,7 +661,7 @@ function useBarSalesProfit() {
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalPackages }}</span>
+                <span>-</span>
               </BaseHeading>
             </div>
             <div
@@ -681,14 +684,14 @@ function useBarSalesProfit() {
                 lead="tight"
                 class="text-muted-500 dark:text-muted-400"
               >
-                <span>Total Campagnes</span>
+                <span>Total Programmes</span>
               </BaseHeading>
               <BaseIconBox
                 size="xs"
                 class="bg-yellow-100 text-yellow-500 dark:border-2 dark:border-yellow-500 dark:bg-yellow-500/20 dark:text-yellow-400"
                 shape="full"
               >
-                <Icon name="ph:user" class="h-5 w-5" />
+                <Icon name="lucide:tv" class="h-5 w-5" />
               </BaseIconBox>
             </div>
             <div class="mb-2">
@@ -699,7 +702,7 @@ function useBarSalesProfit() {
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ packagesData?.data?.length ?? 0 }}</span>
+                <span>-</span>
               </BaseHeading>
             </div>
             <div
@@ -719,7 +722,7 @@ function useBarSalesProfit() {
               <div>
                 <span class="text-muted-400 font-sans text-xs">Ce mois</span>
                 <p class="text-primary-500 font-sans text-lg font-medium">
-                  {{ data.metaData?.resumeValues[1] ?? 0 }} spots diffusés
+                  {{ data.metaData?.resumeValues[1] ?? 0 }} emissions diffusés
                 </p>
               </div>
               <div>
@@ -729,7 +732,7 @@ function useBarSalesProfit() {
                 <p
                   class="text-muted-800 dark:text-muted-100 font-sans text-lg font-medium"
                 >
-                  {{ data.metaData?.resumeValues[0] ?? 0 }} spots diffusés
+                  {{ data.metaData?.resumeValues[0] ?? 0 }} emissions diffusés
                 </p>
               </div>
             </div>

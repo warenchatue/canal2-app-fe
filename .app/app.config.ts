@@ -82,6 +82,31 @@ export default defineAppConfig({
               },
             ],
           },
+          {
+            name: 'Diffusion',
+            icon: { name: 'lucide:tv', class: 'w-5 h-5' },
+            activePath: '/bo/broadcast',
+            children: [
+              {
+                name: 'Diffusion du jour',
+                to: '/bo/broadcast/daily-diffusion-list',
+                icon: { name: 'ph:target-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Publicités du Jour',
+                to: '/bo/broadcast/pub-daily-diffusion-list',
+                icon: { name: 'ph:target-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Programmes du jour',
+                to: '/bo/broadcast/tv-programs-daily-diffusion-list',
+                icon: {
+                  name: 'lucide:tv',
+                  class: 'w-4 h-4',
+                },
+              },
+            ],
+          },
 
           {
             name: 'PUB',
@@ -92,11 +117,6 @@ export default defineAppConfig({
                 name: 'Tableau de bord',
                 to: '/bo/pub',
                 icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Conducteur du jour',
-                to: '/bo/pub/daily-diffusion-list',
-                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Tous les conducteurs',
@@ -122,13 +142,18 @@ export default defineAppConfig({
           },
           {
             name: 'Programmes TV',
-            icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
+            icon: { name: 'ph:target-duotone', class: 'w-5 h-5' },
             activePath: '/bo/tv-programs',
             children: [
               {
                 name: 'Tableau de bord',
-                to: '',
+                to: '/bo/tv-programs',
                 icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Tous les conducteurs',
+                to: '/bo/tv-programs/diffusion-list',
+                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Planning',
@@ -159,7 +184,7 @@ export default defineAppConfig({
           },
           {
             name: 'Achats',
-            icon: { name: 'ph:target-duotone', class: 'w-5 h-5' },
+            icon: { name: 'ph:money-duotone', class: 'w-5 h-5' },
             activePath: '/bo/purchases',
             children: [
               {
@@ -191,7 +216,7 @@ export default defineAppConfig({
           },
           {
             name: 'Ventes',
-            icon: { name: 'ph:target-duotone', class: 'w-5 h-5' },
+            icon: { name: 'ph:money-duotone', class: 'w-5 h-5' },
             activePath: '/bo/sales',
             children: [
               {
@@ -231,47 +256,9 @@ export default defineAppConfig({
               },
             ],
           },
-
-          {
-            name: 'Programmes TV',
-            icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
-            activePath: '/bo/tv-programs',
-            children: [
-              {
-                name: 'Tableau de bord',
-                to: '',
-                icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Planning',
-                to: '/bo/tv-programs/planning',
-                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Nos emisions',
-                to: '/bo/tv-programs/programs',
-                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Catégories',
-                to: '/bo/tv-programs/categories',
-                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Horaires',
-                to: '/bo/tv-programs/hours',
-                icon: { name: 'ph:list-checks-duotone', class: 'w-4 h-4' },
-              },
-              {
-                name: 'Jounalistes',
-                to: '/bo/tv-programs/journalists',
-                icon: { name: 'ph:users-duotone', class: 'w-4 h-4' },
-              },
-            ],
-          },
           {
             name: 'Recouvrement',
-            icon: { name: 'ph:chat-duotone', class: 'w-5 h-5' },
+            icon: { name: 'ph:money-duotone', class: 'w-5 h-5' },
             activePath: '/bo/sav',
             children: [
               {
@@ -369,27 +356,38 @@ export default defineAppConfig({
           //   ],
           // },
           // {
-          //   name: 'PI',
-          //   icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
-          //   activePath: '/bo/sav',
-          //   children: [
-          //     {
-          //       name: 'Tableau de bord',
-          //       // to: '/bo/pub',
-          //       icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
-          //     },
-          //     {
-          //       name: 'Immobilisations',
-          //       // to: '',
-          //       icon: { name: 'ph:app-window-duotone', class: 'w-4 h-4' },
-          //     },
-          //     {
-          //       name: 'Rapports',
-          //       // to: '/bo/pub/reports',
-          //       icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
-          //     },
-          //   ],
-          // },
+          {
+            name: 'IMMO',
+            icon: { name: 'ph:app-window-duotone', class: 'w-5 h-5' },
+            activePath: '/bo/sav',
+            children: [
+              {
+                name: 'Tableau de bord',
+                // to: '/bo/imo',
+                icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Immobilisations',
+                to: '/bo/immo/assets',
+                icon: { name: 'ph:app-window-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Categories',
+                to: '/bo/immo/assets/asset-categories',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Modeles',
+                to: '/bo/immo/assets/asset-models',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Marques',
+                to: '/bo/immo/assets/asset-brands',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+            ],
+          },
           {
             name: 'Configuration',
             icon: { name: 'lucide:settings', class: 'w-5 h-5' },

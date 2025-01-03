@@ -144,9 +144,7 @@ const transformedDocTypes = allDocTypes.value?.data.map((e: any) => {
   }
   return docType
 })
-//  .filter((e: any) => {
-//     return e.org._id == currentOrg.value._id
-//   })
+
 const transformedJournals = allJournals.value?.data.map((e: any) => {
   const journal = {
     id: e._id,
@@ -764,7 +762,7 @@ const onSubmit = handleSubmit(
         </BaseButton>
       </template>
       <form method="POST" action="" @submit.prevent="onSubmit">
-        <div class="mx-auto max-w-6xl py-5">
+        <div class="mx-auto max-w-8xl py-5">
           <div class="mb-4 flex items-center justify-between">
             <div>
               <BaseHeading as="h2" size="xl" weight="medium" lead="none">

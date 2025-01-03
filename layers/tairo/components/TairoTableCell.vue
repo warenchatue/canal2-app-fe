@@ -18,7 +18,7 @@ const props = withDefaults(
       props.light
         ? 'text-muted-500 dark:text-white'
         : 'text-muted-800 dark:text-white',
-      props.spaced ? 'p-4' : 'py-4',
+      props.spaced ? 'px-4 py-3' : 'py-3',
     ]"
   >
     <slot></slot>

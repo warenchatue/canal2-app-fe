@@ -71,7 +71,7 @@ watch([filter, perPage], () => {
 const token = useCookie('token')
 const query = computed(() => {
   return {
-    filter: filter.value,
+    filter: '',
     perPage: perPage.value,
     page: page.value,
     action: 'findAll',
@@ -79,8 +79,18 @@ const query = computed(() => {
   }
 })
 
+const queryPaginate = computed(() => {
+  return {
+    filter: filter.value,
+    perPage: perPage.value,
+    page: page.value,
+    action: 'findAllPaginate',
+    token: token.value,
+  }
+})
+
 const { data, pending, refresh } = await useFetch('/api/sales/invoices', {
-  query,
+  query: queryPaginate,
   lazy: true,
 })
 
@@ -373,7 +383,7 @@ const success = ref(false)
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{ data?.metaData?.totalItems }}</span>
+                <span v-if="!pending">{{ data?.stats?.totalItems }}</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -418,7 +428,7 @@ const success = ref(false)
                 class="text-muted-800 dark:text-white"
               >
                 <span v-if="!pending">{{
-                  data?.metaData?.totalAnnouncers
+                  data?.stats?.totalItems - data?.stats?.totalUnpaid
                 }}</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
@@ -463,7 +473,7 @@ const success = ref(false)
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{ data?.metaData?.totalSpots }}</span>
+                <span v-if="!pending">{{ data?.stats?.totalUnpaid }}</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -507,7 +517,7 @@ const success = ref(false)
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span v-if="!pending">{{ data?.metaData?.totalFiles }}</span>
+                <span v-if="!pending">-</span>
                 <span v-else
                   ><BasePlaceload class="h-3 w-10 rounded-lg"
                 /></span>
@@ -603,7 +613,7 @@ const success = ref(false)
           </div>
           <div v-else-if="pending">
             <TairoTableRow v-for="index in 5" :key="index">
-              <TairoTableCell spaced>
+              <TairoTableCell class="!w-full" spaced>
                 <div class="flex items-center">
                   <BaseCheckbox
                     v-model="fakeItems"
@@ -645,6 +655,15 @@ const success = ref(false)
               </TairoTableCell>
               <TairoTableCell light spaced>
                 <BasePlaceload class="h-3 w-12 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell spaced>
+                <BasePlaceload class="h-8 w-16 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell spaced>
+                <BasePlaceload class="h-8 w-16 rounded-lg" />
+              </TairoTableCell>
+              <TairoTableCell spaced>
+                <BasePlaceload class="h-8 w-16 rounded-lg" />
               </TairoTableCell>
               <TairoTableCell spaced>
                 <BasePlaceload class="h-8 w-16 rounded-lg" />
@@ -756,7 +775,7 @@ const success = ref(false)
                     class="bg-success-100 text-success-700 dark:bg-success-700 dark:text-success-100 p-4"
                   >
                     You have selected {{ selected.length }} items of the total
-                    {{ data?.total }} items.
+                    {{ data?.metaData.total }} items.
                     <a
                       href="#"
                       class="outline-none hover:underline focus:underline"
@@ -1030,7 +1049,7 @@ const success = ref(false)
             </div>
             <div v-if="!isPrint" class="mt-6">
               <BasePagination
-                :total-items="data?.total ?? 0"
+                :total-items="data?.metaData.total ?? 0"
                 :item-per-page="perPage"
                 :current-page="page"
                 shape="curved"

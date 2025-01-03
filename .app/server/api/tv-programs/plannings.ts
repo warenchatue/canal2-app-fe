@@ -9,7 +9,6 @@ export default defineEventHandler(async (event) => {
   const id = (query.id as string) || ''
   const orderCode = (query.orderCode as string) || ''
   const packageId = (query.packageId as string) || ''
-  const orgId = (query.orgId as string) || ''
   const token = (query.token as string) || ''
   const startDate = (query.startDate as string) || ''
   const endDate = (query.endDate as string) || ''
@@ -29,8 +28,6 @@ export default defineEventHandler(async (event) => {
         endDate,
         page,
         perPage,
-        false,
-        orgId,
       ),
     }
   } else if (action == 'findAll') {
@@ -45,9 +42,14 @@ export default defineEventHandler(async (event) => {
         endDate,
         page,
         perPage,
-        false,
-        orgId,
       ),
+    }
+  } else if (action == 'findAllPlanning') {
+    const response = await findAll(token)
+    return {
+      total: response.metaData.totalItems,
+      metaData: response.metaData,
+      data: response.data,
     }
   } else if (action == 'findAllStats') {
     const response = await findAllStats(token)
@@ -61,23 +63,37 @@ export default defineEventHandler(async (event) => {
         endDate,
         page,
         perPage,
-        false,
       ),
     }
   } else if (action == 'createPlanning') {
     const body = await readBody(event)
     console.log(body)
-    const data = await createPlanning(packageId, orderCode, body, token)
+    const data = await createPlanning(orderCode, body, token)
     return { data: data, success: true }
   } else if (action == 'createPlannings') {
     const body = await readBody(event)
     console.log(body)
     const data = await createPlannings(packageId, orderCode, body, token)
     return { data: data, success: true }
+  } else if (action == 'updateDefaultPlannings') {
+    const body = await readBody(event)
+    console.log(body)
+    const data = await updateDefaultPlannings(body, token)
+    return { data: data, success: true }
+  } else if (action == 'useDefaultPlannings') {
+    const body = await readBody(event)
+    console.log(body)
+    const data = await useDefaultPlannings(body, token)
+    return { data: data, success: true }
   } else if (action == 'updatePlanning') {
     const body = await readBody(event)
     console.log(body)
     const data = await updatePlanning(id, body, token)
+    return { data: data, success: true }
+  } else if (action == 'updatePlanningContent') {
+    const body = await readBody(event)
+    console.log(body)
+    const data = await updatePlanningContent(id, body, token)
     return { data: data, success: true }
   } else if (action == 'validatePlanningDiffusion') {
     const body = await readBody(event)
@@ -102,21 +118,7 @@ function filterData(
   endDate: string,
   page: number,
   perPage: number,
-  isTvProg: boolean,
-  orgId?: string,
 ) {
-  if (orgId) {
-    data = data.filter((item) => item.product?.package?.org == orgId)
-  }
-  if (isTvProg == false) {
-    // console.log(data)
-    data = data.filter(
-      (item) =>
-        item.isTvProgram == false && item.product?.package?.validator != null,
-    )
-  } else {
-    data = data.filter((item) => item.product?.package?.validator != null)
-  }
   data = data.sort((a: any, b: any) => {
     return a.position < b.position ? -1 : 1
   })
@@ -137,7 +139,7 @@ function filterData(
       // console.log('Start date: ' + startDate)
       // console.log('Item date: ' + item.date)
       var itemTime = new Date(
-        new Date(item.date).toLocaleDateString('fr-FR'),
+        new Date(item.date).toLocaleDateString(),
       ).getTime()
       // console.log('itemTime: ' + itemTime)
       var startTime = new Date(startDate).getTime()
@@ -148,9 +150,9 @@ function filterData(
       return itemTime >= startTime && itemTime <= endTime
     } else if (filter) {
       return [
-        item.product?.product,
+        item.tvProgram?.name,
         item.code,
-        item.product?.package?.announcer?.name,
+        item.tvProgramHost?.firstName,
       ].some((item) => item.match(filterRe))
     }
   })
@@ -162,7 +164,7 @@ async function findOne(id: string, token: string) {
   console.log('findOne ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/plannings/' + id,
+    runtimeConfig.env.apiUrl + '/programs-plannings/' + id,
     {
       method: 'get',
       headers: {
@@ -179,7 +181,7 @@ async function findToday(token: string) {
   console.log('findToday ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/plannings/today',
+    runtimeConfig.env.apiUrl + '/programs-plannings/today',
     {
       method: 'get',
       headers: {
@@ -193,24 +195,10 @@ async function findToday(token: string) {
 }
 
 async function findAll(token: string) {
-  console.log('findAll ' + token)
-  const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/plannings', {
-    method: 'get',
-    headers: {
-      Authorization: 'Bearer ' + token,
-      'Content-type': 'application/json',
-    },
-  }).catch((error) => console.log(error))
-  // console.log(data)
-  return Promise.resolve(data)
-}
-
-async function findAllStats(token: string) {
-  console.log('findAllStats ' + token)
+  console.log('findAll - /programs-plannings ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/plannings/stats',
+    runtimeConfig.env.apiUrl + '/programs-plannings',
     {
       method: 'get',
       headers: {
@@ -223,16 +211,28 @@ async function findAllStats(token: string) {
   return Promise.resolve(data)
 }
 
-async function createPlanning(
-  packageId: string,
-  orderCode: string,
-  body: any,
-  token: string,
-) {
+async function findAllStats(token: string) {
+  console.log('findAllStats ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/programs-plannings/stats',
+    {
+      method: 'get',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
+  // console.log(data)
+  return Promise.resolve(data)
+}
+
+async function createPlanning(orderCode: string, body: any, token: string) {
   console.log('createPlanning ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/plannings/' + packageId,
+    runtimeConfig.env.apiUrl + '/programs-plannings',
     {
       method: 'post',
       headers: {
@@ -254,7 +254,7 @@ async function createPlannings(
   console.log('createPlannings ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/plannings/' + packageId + '/bulk',
+    runtimeConfig.env.apiUrl + '/programs-plannings/bulk',
     {
       method: 'post',
       headers: {
@@ -268,11 +268,46 @@ async function createPlannings(
   return Promise.resolve(data)
 }
 
+async function updateDefaultPlannings(body: any, token: string) {
+  console.log('updateDefaultPlannings ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/programs-plannings/default-bulk',
+    {
+      method: 'post',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+      body: body._ids,
+    },
+  ).catch((error) => console.log(error))
+  // console.log(data)
+  return Promise.resolve(data)
+}
+
+async function useDefaultPlannings(body: any, token: string) {
+  console.log('useDefaultPlannings ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/programs-plannings/use-default-bulk',
+    {
+      method: 'post',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
+  // console.log(data)
+  return Promise.resolve(data)
+}
+
 async function updatePlanning(id: string, body: any, token: string) {
   console.log('updatePlanning ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/plannings/' + id,
+    runtimeConfig.env.apiUrl + '/programs-plannings/' + id,
     {
       method: 'PUT',
       headers: {
@@ -286,11 +321,28 @@ async function updatePlanning(id: string, body: any, token: string) {
   return Promise.resolve(data)
 }
 
+async function updatePlanningContent(id: string, body: any, token: string) {
+  console.log('updatePlanningContent ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/programs-plannings/' + id + '/content',
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+      body: body,
+    },
+  ).catch((error) => console.log(error))
+  return Promise.resolve(data)
+}
+
 async function updatePlanningDiffusionBulk(body: any, token: string) {
   console.log('updatePlanningDiffusionBulk ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/plannings/manual-validate/ids',
+    runtimeConfig.env.apiUrl + '/programs-plannings/manual-validate/ids',
     {
       method: 'POST',
       headers: {
@@ -308,7 +360,7 @@ async function deletePlanning(id: string, token: string) {
   console.log('deletePlanning ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/plannings/' + id,
+    runtimeConfig.env.apiUrl + '/programs-plannings/' + id,
     {
       method: 'DELETE',
       headers: {
@@ -325,7 +377,7 @@ async function bulkDeletePlanning(body: any, token: string) {
   console.log('bulkDeletePlanning ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/plannings/bulk-deletion/ids',
+    runtimeConfig.env.apiUrl + '/programs-plannings/bulk-deletion/ids',
     {
       method: 'DELETE',
       headers: {

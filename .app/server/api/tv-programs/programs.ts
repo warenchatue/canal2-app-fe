@@ -95,7 +95,9 @@ function filterData(
   const filterRe = new RegExp(filter, 'i')
   return data
     .filter((item) => {
-      return [item.code, item.label].some((item) => item.match(filterRe))
+      return [item?.name?.toString() ?? ''].some((item) =>
+        item ? item.match(filterRe) : false,
+      )
     })
     .slice(offset, offset + perPage)
 }
@@ -142,7 +144,7 @@ async function createTvProgram(body: any, token: string) {
     },
     body: { ...body, code: makeId(4) + '_' + makeId(4) },
   }).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
 
@@ -160,7 +162,7 @@ async function updateTvProgram(id: string, body: any, token: string) {
       body: body,
     },
   ).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }
 
@@ -177,6 +179,6 @@ async function deleteTvProgram(id: string, token: string) {
       },
     },
   ).catch((error) => console.log(error))
-  console.log(data)
+  // console.log(data)
   return Promise.resolve(data)
 }

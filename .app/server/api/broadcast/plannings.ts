@@ -7,31 +7,19 @@ export default defineEventHandler(async (event) => {
   const filter = (query.filter as string) || ''
   const action = (query.action as string) || 'get'
   const id = (query.id as string) || ''
-  const orderCode = (query.orderCode as string) || ''
-  const packageId = (query.packageId as string) || ''
-  const orgId = (query.orgId as string) || ''
   const token = (query.token as string) || ''
   const startDate = (query.startDate as string) || ''
   const endDate = (query.endDate as string) || ''
 
-  if (action == 'findOne') {
-    const data = await findOne(id, token)
-    return { data: data, success: true }
-  } else if (action == 'findToday') {
-    const response = await findToday(token)
+  if (action == 'findToday') {
+    const responseProg = await findTodayProg(token)
+    const responsePUB = await findTodayPUB(token)
+    const allResp = [...responseProg.data, ...responsePUB.data]
+
     return {
-      total: response.data.length,
-      metaData: response.metaData,
-      data: filterData(
-        response.data,
-        filter,
-        startDate,
-        endDate,
-        page,
-        perPage,
-        false,
-        orgId,
-      ),
+      total: responseProg.data.length + responsePUB.data.length,
+      metaData: responseProg.metaData,
+      data: filterData(allResp, filter, startDate, endDate, page, perPage),
     }
   } else if (action == 'findAll') {
     const response = await findAll(token)
@@ -45,35 +33,8 @@ export default defineEventHandler(async (event) => {
         endDate,
         page,
         perPage,
-        false,
-        orgId,
       ),
     }
-  } else if (action == 'findAllStats') {
-    const response = await findAllStats(token)
-    return {
-      total: response.metaData.totalItems,
-      metaData: response.metaData,
-      data: filterData(
-        response.data,
-        filter,
-        startDate,
-        endDate,
-        page,
-        perPage,
-        false,
-      ),
-    }
-  } else if (action == 'createPlanning') {
-    const body = await readBody(event)
-    console.log(body)
-    const data = await createPlanning(packageId, orderCode, body, token)
-    return { data: data, success: true }
-  } else if (action == 'createPlannings') {
-    const body = await readBody(event)
-    console.log(body)
-    const data = await createPlannings(packageId, orderCode, body, token)
-    return { data: data, success: true }
   } else if (action == 'updatePlanning') {
     const body = await readBody(event)
     console.log(body)
@@ -102,21 +63,13 @@ function filterData(
   endDate: string,
   page: number,
   perPage: number,
-  isTvProg: boolean,
-  orgId?: string,
 ) {
-  if (orgId) {
-    data = data.filter((item) => item.product?.package?.org == orgId)
-  }
-  if (isTvProg == false) {
-    // console.log(data)
-    data = data.filter(
-      (item) =>
-        item.isTvProgram == false && item.product?.package?.validator != null,
-    )
-  } else {
-    data = data.filter((item) => item.product?.package?.validator != null)
-  }
+  data = data.filter(
+    (item) =>
+      (item.isTvProgram ? item.isTvProgram == false : true) &&
+      (item.product ? item.product?.package?.validator != null : true),
+  )
+
   data = data.sort((a: any, b: any) => {
     return a.position < b.position ? -1 : 1
   })
@@ -137,7 +90,7 @@ function filterData(
       // console.log('Start date: ' + startDate)
       // console.log('Item date: ' + item.date)
       var itemTime = new Date(
-        new Date(item.date).toLocaleDateString('fr-FR'),
+        new Date(item.date).toLocaleDateString(),
       ).getTime()
       // console.log('itemTime: ' + itemTime)
       var startTime = new Date(startDate).getTime()
@@ -148,9 +101,10 @@ function filterData(
       return itemTime >= startTime && itemTime <= endTime
     } else if (filter) {
       return [
-        item.product?.product,
+        item.tvProgram?.name ?? '',
+        item.product?.name ?? '',
         item.code,
-        item.product?.package?.announcer?.name,
+        item.tvProgramHost?.firstName ?? '',
       ].some((item) => item.match(filterRe))
     }
   })
@@ -158,11 +112,11 @@ function filterData(
   return filteredData.slice(offset, offset + perPage)
 }
 
-async function findOne(id: string, token: string) {
-  console.log('findOne ' + token)
+async function findTodayProg(token: string) {
+  console.log('findTodayProg ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/plannings/' + id,
+    runtimeConfig.env.apiUrl + '/programs-plannings/today',
     {
       method: 'get',
       headers: {
@@ -175,8 +129,8 @@ async function findOne(id: string, token: string) {
   return Promise.resolve(data)
 }
 
-async function findToday(token: string) {
-  console.log('findToday ' + token)
+async function findTodayPUB(token: string) {
+  console.log('findTodayPUB ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
     runtimeConfig.env.apiUrl + '/plannings/today',
@@ -193,24 +147,10 @@ async function findToday(token: string) {
 }
 
 async function findAll(token: string) {
-  console.log('findAll ' + token)
-  const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/plannings', {
-    method: 'get',
-    headers: {
-      Authorization: 'Bearer ' + token,
-      'Content-type': 'application/json',
-    },
-  }).catch((error) => console.log(error))
-  // console.log(data)
-  return Promise.resolve(data)
-}
-
-async function findAllStats(token: string) {
-  console.log('findAllStats ' + token)
+  console.log('findAll - /programs-plannings ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/plannings/stats',
+    runtimeConfig.env.apiUrl + '/programs-plannings',
     {
       method: 'get',
       headers: {
@@ -223,56 +163,11 @@ async function findAllStats(token: string) {
   return Promise.resolve(data)
 }
 
-async function createPlanning(
-  packageId: string,
-  orderCode: string,
-  body: any,
-  token: string,
-) {
-  console.log('createPlanning ' + token)
-  const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/plannings/' + packageId,
-    {
-      method: 'post',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-type': 'application/json',
-      },
-      body: { ...body, code: orderCode + '_' + makeId(4) },
-    },
-  ).catch((error) => console.log(error))
-  // console.log(data)
-  return Promise.resolve(data)
-}
-async function createPlannings(
-  packageId: string,
-  orderCode: string,
-  body: any,
-  token: string,
-) {
-  console.log('createPlannings ' + token)
-  const runtimeConfig = useRuntimeConfig()
-  const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/plannings/' + packageId + '/bulk',
-    {
-      method: 'post',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-type': 'application/json',
-      },
-      body: body.plannings,
-    },
-  ).catch((error) => console.log(error))
-  // console.log(data)
-  return Promise.resolve(data)
-}
-
 async function updatePlanning(id: string, body: any, token: string) {
   console.log('updatePlanning ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/plannings/' + id,
+    runtimeConfig.env.apiUrl + '/programs-plannings/' + id,
     {
       method: 'PUT',
       headers: {
@@ -290,7 +185,7 @@ async function updatePlanningDiffusionBulk(body: any, token: string) {
   console.log('updatePlanningDiffusionBulk ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/plannings/manual-validate/ids',
+    runtimeConfig.env.apiUrl + '/programs-plannings/manual-validate/ids',
     {
       method: 'POST',
       headers: {
@@ -308,7 +203,7 @@ async function deletePlanning(id: string, token: string) {
   console.log('deletePlanning ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/plannings/' + id,
+    runtimeConfig.env.apiUrl + '/programs-plannings/' + id,
     {
       method: 'DELETE',
       headers: {
@@ -325,7 +220,7 @@ async function bulkDeletePlanning(body: any, token: string) {
   console.log('bulkDeletePlanning ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(
-    runtimeConfig.env.apiUrl + '/plannings/bulk-deletion/ids',
+    runtimeConfig.env.apiUrl + '/programs-plannings/bulk-deletion/ids',
     {
       method: 'DELETE',
       headers: {
@@ -337,16 +232,4 @@ async function bulkDeletePlanning(body: any, token: string) {
   ).catch((error) => console.log(error))
   // console.log(data)
   return Promise.resolve(data)
-}
-
-function makeId(length: number) {
-  let result = ''
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#'
-  const charactersLength = characters.length
-  let counter = 0
-  while (counter < length) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength))
-    counter += 1
-  }
-  return result
 }

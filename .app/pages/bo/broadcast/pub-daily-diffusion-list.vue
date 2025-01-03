@@ -3,12 +3,13 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { DatePicker } from 'v-calendar'
 import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
+import { generateHexColorPalette } from '~/server/utils'
 import { UserRole } from '~/types/user'
 
 definePageMeta({
-  title: 'Conducteur PUB du jour',
+  title: 'Conducteur Publicitaire du jour',
   preview: {
-    title: 'Conducteur publicitaire du jour',
+    title: 'Conducteur Publicitaire du jour',
     description: '',
     categories: ['bo', 'pub', 'diffusion-list'],
     src: '/img/screens/layouts-table-list-1.png',
@@ -16,16 +17,17 @@ definePageMeta({
     order: 44,
   },
 })
-
+const fakeItems = ref([])
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
-const perPage = ref(50)
+const perPage = ref(250)
 const isModalImportPlaylistOpen = ref(false)
 const isModalConfirmDiffusionOpen = ref(false)
 const playedHour = ref('')
+const currentOrg = ref({})
 
 const initialDates = {
   start: new Date(),
@@ -47,6 +49,7 @@ const token = useCookie('token')
 const query = computed(() => {
   return {
     filter: filter.value,
+    orgId: currentOrg.value?._id ?? '',
     perPage: perPage.value,
     page: page.value,
     action: 'findToday',
@@ -54,10 +57,39 @@ const query = computed(() => {
   }
 })
 
+const query2 = computed(() => {
+  return {
+    perPage: 250,
+    action: 'findAll',
+    token: token.value,
+  }
+})
+
 const { data, pending, error, refresh } = await useFetch('/api/pub/plannings', {
+  lazy: true,
   query,
 })
 
+const { data: orgs } = await useFetch('/api/admin/orgs', {
+  query: query2,
+})
+currentOrg.value = orgs.value ? orgs.value.data[0] : {}
+
+const { data: hoursData } = await useFetch('/api/pub/hours', {
+  query: query2,
+  lazy: false,
+  transform: (els) => {
+    return els.data?.filter((el: any) => {
+      return el.type != 'TvProgram'
+    })
+  },
+})
+
+const colors = generateHexColorPalette(hoursData.value.length)
+let hoursWithColors = []
+hoursData.value.forEach((element, i) => {
+  hoursWithColors[element.code] = colors[i]
+})
 const inputPlayListFile = ref<FileList | null>(null)
 const payListFile = ref<File | null>(null)
 watch(inputPlayListFile, (value) => {
@@ -382,6 +414,32 @@ const onSubmit = handleSubmit(
         />
       </template>
       <template #right>
+        <BaseHeading
+          as="h5"
+          size="sm"
+          weight="medium"
+          lead="tight"
+          class="text-muted-500 dark:text-muted-200"
+        >
+          Société :
+        </BaseHeading>
+        <div class="text-muted-800 dark:text-muted-100 font-medium !w-64">
+          <BaseListbox
+            label=""
+            :items="orgs.data"
+            :classes="{
+              wrapper: '!w-60',
+            }"
+            :properties="{
+              value: '_id',
+              label: 'name',
+              sublabel: 'email',
+              media: '',
+            }"
+            v-model="currentOrg"
+            :disabled="isSubmitting"
+          />
+        </div>
         <BaseSelect
           v-model="perPage"
           label=""
@@ -393,6 +451,7 @@ const onSubmit = handleSubmit(
           <option :value="25">25 per page</option>
           <option :value="50">50 per page</option>
           <option :value="100">100 per page</option>
+          <option :value="250">250 per page</option>
         </BaseSelect>
         <BaseButton
           :disabled="
@@ -437,7 +496,7 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data.metaData?.totalDiffused }}</span>
+                <span>-</span>
               </BaseHeading>
             </div>
             <div
@@ -478,13 +537,13 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data.metaData?.totalNotDiffused }}</span>
+                <span>-</span>
               </BaseHeading>
             </div>
             <div
               class="text-danger-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>-0%</span>
+              <span>-%</span>
               <Icon name="lucide:trending-down" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en baisse</span>
             </div>
@@ -519,13 +578,13 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data.metaData?.totalPending }}</span>
+                <span>-</span>
               </BaseHeading>
             </div>
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span>+O% </span>
+              <span>% </span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -560,20 +619,13 @@ const onSubmit = handleSubmit(
                 lead="tight"
                 class="text-muted-800 dark:text-white"
               >
-                <span>{{ data?.metaData?.totalToday ?? 0 }}</span>
+                <span>{{ data?.data.length ?? 0 }}</span>
               </BaseHeading>
             </div>
             <div
               class="text-success-500 flex items-center gap-1 font-sans text-sm"
             >
-              <span
-                >{{
-                  Math.ceil(
-                    (data.metaData?.totalToday / data.metaData?.totalToday) *
-                      100,
-                  )
-                }}%</span
-              >
+              <span>%</span>
               <Icon name="lucide:trending-up" class="h-5 w-5" />
               <span class="text-muted-400 text-xs">en hausse</span>
             </div>
@@ -599,6 +651,53 @@ const onSubmit = handleSubmit(
               />
             </template>
           </BasePlaceholderPage>
+        </div>
+        <div v-else-if="pending">
+          <TairoTableRow v-for="index in 5" :key="index">
+            <TairoTableCell class="!w-full" spaced>
+              <div class="flex items-center">
+                <BaseCheckbox
+                  v-model="fakeItems"
+                  :value="`placeload-item-checkbox-${index}`"
+                  rounded="full"
+                  color="primary"
+                />
+              </div>
+            </TairoTableCell>
+            <TairoTableCell spaced>
+              <BasePlaceload class="h-3 w-24 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell spaced>
+              <div class="flex items-center gap-2">
+                <BasePlaceload class="size-8 shrink-0 rounded-full" />
+                <div class="space-y-1">
+                  <BasePlaceload class="h-2 w-[70px] rounded-lg" />
+                  <BasePlaceload class="h-2 w-[50px] rounded-lg" />
+                </div>
+              </div>
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+            <TairoTableCell light spaced>
+              <BasePlaceload class="h-3 w-12 rounded-lg" />
+            </TairoTableCell>
+          </TairoTableRow>
         </div>
         <div v-else>
           <div class="w-full">
@@ -652,7 +751,7 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
               </TairoTableRow>
 
-              <TairoTableRow v-for="item in data?.data" :key="item.id">
+              <TairoTableRow v-for="(item, i) in data?.data" :key="item.id">
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseCheckbox
@@ -664,21 +763,32 @@ const onSubmit = handleSubmit(
                     />
                   </div>
                 </TairoTableCell>
-                <TairoTableCell spaced>
+                <TairoTableCell
+                  :style="'background-color:' + hoursWithColors[item.hour.code]"
+                  spaced
+                >
                   <div class="flex items-center">
                     <span
-                      class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                      class="text-muted-800 text-bold dark:text-muted-300 font-sans text-base"
                     >
                       {{ new Date(item.date).toLocaleDateString('fr-FR') }}
                     </span>
                   </div>
                 </TairoTableCell>
-                <TairoTableCell spaced>
+                <TairoTableCell
+                  :style="'background-color:' + hoursWithColors[item.hour.code]"
+                  spaced
+                >
                   <div class="flex items-center">
                     <span
-                      class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                      class="text-muted-800 text-bold dark:text-muted-300 font-sans text-base"
                     >
-                      {{ new Date(item.date).toLocaleTimeString('fr-FR') }}
+                      {{
+                        new Date(item.date)
+                          .toLocaleTimeString('fr-FR')
+                          .replace(':00', '')
+                          .replace(':', 'H')
+                      }}
                     </span>
                   </div>
                 </TairoTableCell>
@@ -902,7 +1012,6 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 mx-2 mt-2">
                     <DatePicker
                       v-model.range="planningDates"
-                      :masks="masks"
                       mode="date"
                       hide-time-header
                       trim-weeks
