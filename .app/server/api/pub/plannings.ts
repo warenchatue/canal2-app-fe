@@ -137,7 +137,7 @@ function filterData(
       // console.log('Start date: ' + startDate)
       // console.log('Item date: ' + item.date)
       var itemTime = new Date(
-        new Date(item.date).toLocaleDateString(),
+        new Date(item.date).toLocaleDateString('fr-FR'),
       ).getTime()
       // console.log('itemTime: ' + itemTime)
       var startTime = new Date(startDate).getTime()

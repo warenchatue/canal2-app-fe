@@ -69,8 +69,8 @@ const token = useCookie('token')
 const query = computed(() => {
   return {
     filter: filter.value,
-    startDate: dates.value?.start.toLocaleDateString(),
-    endDate: dates.value?.end.toLocaleDateString(),
+    startDate: dates.value?.start.toLocaleDateString('fr-FR'),
+    endDate: dates.value?.end.toLocaleDateString('fr-FR'),
     perPage: perPage.value,
     orgId: currentOrg.value?._id ?? '',
     page: page.value,

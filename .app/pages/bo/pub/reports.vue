@@ -34,6 +34,7 @@ if (
   authStore.user.appRole.name != UserRole.sale &&
   authStore.user.appRole?.name != UserRole.mediaPlanner &&
   authStore.user.appRole?.name != UserRole.adminSale &&
+  authStore.user.appRole?.name != UserRole.accountancy &&
   authStore.user.appRole?.name != UserRole.admin &&
   authStore.user.appRole.name != UserRole.superAdmin
 ) {
@@ -89,8 +90,28 @@ const { data, pending, error, refresh } = await useFetch('/api/pub/packages', {
   query,
 })
 
-async function printCampaigns() {
+async function printCampaigns(active: boolean) {
   isPrint.value = true
+  if (active) {
+    const queryP = computed(() => {
+      return {
+        perPage: 1000,
+        action: 'findAllReport',
+        token: token.value,
+      }
+    })
+    const { data: reportData } = await useFetch('/api/pub/packages', {
+      query: queryP,
+    })
+    const today = new Date()
+    data.value = reportData.value?.data?.filter(
+      (el) => new Date(el.endDate) >= today,
+    )
+  }
+  await printElement()
+}
+
+async function printElement() {
   setTimeout(() => {
     var printContents = document.getElementById('print-campaigns').innerHTML
     var originalContents = document.body.innerHTML
@@ -456,7 +477,15 @@ const onSubmit = handleSubmit(
           <option :value="500">500 per page</option>
         </BaseSelect>
         <BaseButton
-          @click="printCampaigns()"
+          @click="printCampaigns(true)"
+          color="primary"
+          class="w-full sm:w-48"
+        >
+          <Icon name="ph:printer" class="h-6 w-6" />
+          <span>C. en cours</span>
+        </BaseButton>
+        <BaseButton
+          @click="printCampaigns(false)"
           color="primary"
           class="w-full sm:w-48"
         >
@@ -700,7 +729,7 @@ const onSubmit = handleSubmit(
                 <TairoTableHeading uppercase spaced
                   >Formule d'achat</TairoTableHeading
                 >
-                <TairoTableHeading v-if="!isPrint" uppercase spaced
+                <TairoTableHeading uppercase spaced
                   >Initiateur</TairoTableHeading
                 >
                 <TairoTableHeading uppercase spaced>Note</TairoTableHeading>
@@ -833,7 +862,7 @@ const onSubmit = handleSubmit(
                 >
                   <span class="!w-48">{{ item.label }}</span>
                 </TairoTableCell>
-                <TairoTableCell v-if="!isPrint" light spaced>
+                <TairoTableCell light spaced>
                   {{
                     item.order?.manager?.firstName ?? item.creator?.firstName
                   }}
