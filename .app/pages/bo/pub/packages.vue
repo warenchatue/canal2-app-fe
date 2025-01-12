@@ -925,7 +925,7 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
               </TairoTableRow>
 
-              <TairoTableRow v-for="item in data?.data" :key="item.id">
+              <TairoTableRow v-for="item in data?.data" :key="item._id">
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <BaseCheckbox
