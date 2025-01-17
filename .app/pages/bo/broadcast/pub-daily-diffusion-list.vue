@@ -764,7 +764,9 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell>
                 <TairoTableCell
-                  :style="'background-color:' + hoursWithColors[item.hour.code]"
+                  :style="
+                    'background-color:' + hoursWithColors[item.hour?.code]
+                  "
                   spaced
                 >
                   <div class="flex items-center">
@@ -776,7 +778,9 @@ const onSubmit = handleSubmit(
                   </div>
                 </TairoTableCell>
                 <TairoTableCell
-                  :style="'background-color:' + hoursWithColors[item.hour.code]"
+                  :style="
+                    'background-color:' + hoursWithColors[item.hour?.code]
+                  "
                   spaced
                 >
                   <div class="flex items-center">

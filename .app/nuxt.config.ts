@@ -81,6 +81,12 @@ export default defineNuxtConfig({
       // This enables vue-axe to work (used to check a11y - see .demo/plugins/vue-axe.ts)
       'process.env.ENABLE_A11Y_AXE': process.env.ENABLE_A11Y_AXE,
     },
+    // server: {
+    //   hmr: {
+    //     protocol: 'wss', // Use WebSocket Secure
+    //     host: 'dinoes.canal2international.digitalinnova.tech',
+    //   },
+    // },
     build: {
       target: 'esnext',
       chunkSizeWarningLimit: 1000,
