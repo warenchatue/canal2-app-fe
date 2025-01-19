@@ -33,6 +33,7 @@ const currentOrderInvoice = ref({})
 const token = useCookie('token')
 const isModalCreatePackageOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
+const isModalConfirmInvoiceOpen = ref(false)
 const isModalCreatePaymentOpen = ref(false)
 const isModalCreateTaxOpen = ref(false)
 const currentOrg = ref({})
@@ -572,6 +573,52 @@ async function confirmOrder() {
     isModalConfirmOrderOpen.value = false
     // location.reload()
     currentOrderInvoice.value.validator = authStore.user._id
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Désolé',
+      message: `Une erreur est survenue !`,
+      color: 'danger',
+      icon: 'ph:check',
+      closable: true,
+    })
+  }
+}
+
+async function confirmInvoice() {
+  const query4 = computed(() => {
+    return {
+      action: pageValue.value == 'order' ? 'updateOrder' : 'updateInvoice',
+      token: token.value,
+      id: currentOrderInvoice.value._id,
+    }
+  })
+  const userValidator = authStore.user._id
+
+  const response = await useFetch(
+    pageValue.value == 'order' ? '/api/sales/orders' : '/api/sales/invoices',
+    {
+      method: 'put',
+      headers: { 'Content-Type': 'application/json' },
+      query: query4,
+      body: { ...currentOrderInvoice.value, adminValidator: userValidator },
+    },
+  )
+
+  if (response.data?.value?.success) {
+    success.value = true
+    toaster.clearAll()
+    toaster.show({
+      title: 'Success',
+      message:
+        pageValue.value == 'order' ? `Devis confirmé !` : `Facture confirmée !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalConfirmInvoiceOpen.value = false
+    // location.reload()
+    currentOrderInvoice.value.adminValidator = authStore.user._id
   } else {
     toaster.clearAll()
     toaster.show({
@@ -1349,12 +1396,22 @@ const onSubmit = handleSubmit(
         <BaseButton
           v-if="isEdit"
           :disabled="currentOrderInvoice.validator ? true : false"
-          color="warning"
+          :color="currentOrderInvoice.validator ? 'success' : 'warning'"
           class="w-full sm:w-32"
           @click="isModalConfirmOrderOpen = true"
         >
           <Icon name="ph:check" class="h-4 w-4" />
           <span>Valider</span>
+        </BaseButton>
+        <BaseButton
+          v-if="isEdit && pageValue != 'order'"
+          :disabled="currentOrderInvoice.adminValidator ? true : false"
+          :color="currentOrderInvoice.adminValidator ? 'success' : 'warning'"
+          class="w-full sm:w-44"
+          @click="isModalConfirmInvoiceOpen = true"
+        >
+          <Icon name="ph:check" class="h-4 w-4" />
+          <span>Validation DAF</span>
         </BaseButton>
       </template>
       <form method="POST" action="" @submit.prevent="onSubmit">
@@ -2852,6 +2909,68 @@ const onSubmit = handleSubmit(
             >
 
             <BaseButton color="primary" flavor="solid" @click="confirmOrder()"
+              >Valider</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
+
+    <!-- Modal confirm sale order / invoice -->
+    <TairoModal
+      :open="isModalConfirmInvoiceOpen"
+      size="sm"
+      @close="isModalConfirmInvoiceOpen = false"
+    >
+      <template #header>
+        <!-- Header -->
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Confirmation
+            {{ pageValue == 'order' ? 'du devis' : 'de la facture' }}
+          </h3>
+
+          <BaseButtonClose @click="isModalConfirmInvoiceOpen = false" />
+        </div>
+      </template>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <h3
+            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
+          >
+            Voulez-vous confirmer en tant que DAF
+            {{ pageValue == 'order' ? 'le devis' : 'la facture' }}
+            <span class="text-primary-500">{{
+              currentOrderInvoice.label
+            }}</span>
+            de
+            <span class="text-primary-500"
+              >{{ currentOrderInvoice?.announcer?.name }}
+            </span>
+            ?
+          </h3>
+
+          <p
+            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est reversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <!-- Footer -->
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalConfirmInvoiceOpen = false"
+              >Annuler</BaseButton
+            >
+
+            <BaseButton color="primary" flavor="solid" @click="confirmInvoice()"
               >Valider</BaseButton
             >
           </div>

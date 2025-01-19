@@ -830,9 +830,12 @@ const onSubmit = handleSubmit(
                 </TairoTableCell>
 
                 <TairoTableCell spaced>
-                  <div class="flex items-center">
+                  <div
+                    style="white-space: pre-wrap; word-wrap: break-word"
+                    class="flex items-center"
+                  >
                     <span
-                      class="text-muted-600 dark:text-muted-300 font-sans text-base"
+                      class="text-muted-600 dark:text-muted-300 !w-48 font-sans text-base"
                     >
                       {{ item.product.product }}
                     </span>
@@ -848,14 +851,19 @@ const onSubmit = handleSubmit(
                       class="hover:cursor-pointer"
                       @click="
                         handleClipboard(
-                          item.product.message + '[' + item.code + ']',
+                          item.product.message +
+                            '[' +
+                            item.product?.package?.code +
+                            ']',
                         )
                       "
                     >
                       <span
-                        class="!w-44 text-muted-600 dark:text-muted-300 font-sans !text-sm px-1"
+                        class="!w-48 text-muted-600 dark:text-muted-300 font-sans !text-sm px-1"
                       >
-                        {{ item.product.message }} [{{ item.code }}]
+                        {{ item.product.message }} [{{
+                          item.product?.package?.code
+                        }}]
                       </span></BaseText
                     >
                     <Icon name="ph:link-duotone" class="h-5 w-5" />

@@ -29,6 +29,7 @@ const isModalNewPackageOpen = ref(false)
 const isModalDeletePackageOpen = ref(false)
 const isModalSyncCampaignOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
+const loading = ref(false)
 const isEdit = ref(false)
 const toaster = useToaster()
 // Check if can have access
@@ -465,7 +466,7 @@ async function confirmOrder() {
 const onSubmit = handleSubmit(
   async (values) => {
     success.value = false
-
+    loading.value = true
     // here you have access to the validated form values
     console.log('package-create-success', values)
 
@@ -560,10 +561,12 @@ const onSubmit = handleSubmit(
     }
 
     success.value = true
+    loading.value = false
   },
   (error) => {
     // this callback is optional and called only if the form has errors
     success.value = false
+    loading.value = false
 
     // here you have access to the error
     console.log('package-create-error', error)
@@ -1357,7 +1360,12 @@ const onSubmit = handleSubmit(
               </BaseButton>
             </div>
 
-            <BaseButton color="primary" flavor="solid" @click="onSubmit">
+            <BaseButton
+              :disabled="loading"
+              color="primary"
+              flavor="solid"
+              @click="onSubmit"
+            >
               {{ isEdit == true ? 'Modifier' : 'Créer' }}
             </BaseButton>
           </div>
