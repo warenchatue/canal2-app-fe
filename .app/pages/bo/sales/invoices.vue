@@ -920,6 +920,16 @@ const success = ref(false)
                     >
                       Brouillon
                     </BaseTag>
+                    <BaseTag
+                      v-if="item.adminValidator"
+                      color="success"
+                      flavor="pastel"
+                      shape="full"
+                      condensed
+                      class="font-medium"
+                    >
+                      x2
+                    </BaseTag>
                   </TairoTableCell>
                   <TairoTableCell v-if="!isPrint" spaced>
                     <div class="flex">

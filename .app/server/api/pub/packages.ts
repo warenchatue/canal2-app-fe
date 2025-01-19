@@ -57,6 +57,10 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event)
     const data = await updatePackage(id, body, token)
     return { data: data, success: true }
+  } else if (action == 'updatePackagePartial') {
+    const body = await readBody(event)
+    const data = await updatePackagePartial(id, body, token)
+    return { data: data, success: true }
   } else if (action == 'sync') {
     const data = await syncCampaign(id, token)
     return { data: data, success: true }
@@ -226,6 +230,21 @@ async function updatePackage(id: string, body: any, token: string) {
   const runtimeConfig = useRuntimeConfig()
   const data: any = await $fetch(runtimeConfig.env.apiUrl + '/packages/' + id, {
     method: 'PUT',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-type': 'application/json',
+    },
+    body: body,
+  }).catch((error) => console.log(error))
+  // console.log(data)
+  return Promise.resolve(data)
+}
+
+async function updatePackagePartial(id: string, body: any, token: string) {
+  console.log('updatePackagePartial ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(runtimeConfig.env.apiUrl + '/packages/' + id, {
+    method: 'PATCH',
     headers: {
       Authorization: 'Bearer ' + token,
       'Content-type': 'application/json',

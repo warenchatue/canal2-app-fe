@@ -1,3 +1,4 @@
+import { parse } from 'date-fns'
 import moment from 'moment'
 
 export default defineEventHandler(async (event) => {
@@ -105,11 +106,14 @@ function filterData(
   isTvProg: boolean,
   orgId?: string,
 ) {
+  // console.log(data)
+
   if (orgId) {
-    data = data.filter((item) => item.product?.package?.org == orgId)
+    data = data.filter((item) =>
+      item.product?.package?.org ? item.product?.package?.org == orgId : false,
+    )
   }
   if (isTvProg == false) {
-    // console.log(data)
     data = data.filter(
       (item) =>
         item.isTvProgram == false && item.product?.package?.validator != null,
@@ -135,17 +139,26 @@ function filterData(
   const filteredData = data.filter((item) => {
     if (startDate && !filter) {
       // console.log('Start date: ' + startDate)
-      // console.log('Item date: ' + item.date)
-      var itemTime = new Date(
-        new Date(item.date).toLocaleDateString('fr-FR'),
-      ).getTime()
+      // console.log(
+      //   'Item date: ' + new Date(item.date).toLocaleDateString('fr-FR'),
+      // )
+
+      // Parse item date
+      const itemDate = new Date(item.date).toLocaleDateString('fr-FR')
+      const itemTime = parse(itemDate, 'dd/MM/yyyy', new Date()).getTime()
       // console.log('itemTime: ' + itemTime)
-      var startTime = new Date(startDate).getTime()
+
+      // Parse start date and end date
+      const startTime = parse(startDate, 'dd/MM/yyyy', new Date()).getTime()
+      const endTime = parse(endDate, 'dd/MM/yyyy', new Date()).getTime()
+
       // console.log('startTime: ' + startTime)
-      var endTime = new Date(endDate).getTime()
       // console.log('endTime: ' + endTime)
 
-      return itemTime >= startTime && itemTime <= endTime
+      // Check if the item falls within the range
+      const isWithinRange = itemTime >= startTime && itemTime <= endTime
+
+      return isWithinRange
     } else if (filter) {
       return [
         item.product?.product,

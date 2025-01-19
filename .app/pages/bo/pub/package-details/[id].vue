@@ -1235,7 +1235,7 @@ const zodSchema = z
 async function confirmPlanning() {
   const query4 = computed(() => {
     return {
-      action: 'updatePackage',
+      action: 'updatePackagePartial',
       token: token.value,
       id: data.value.data._id,
     }
@@ -1278,11 +1278,10 @@ async function confirmPlanning() {
   }
 
   const response = await useFetch('/api/pub/packages', {
-    method: 'put',
+    method: 'patch',
     headers: { 'Content-Type': 'application/json' },
     query: query4,
     body: {
-      ...data.value.data,
       validator: authStore.user._id,
       validatorSignature: slug.value,
     },
@@ -2385,15 +2384,21 @@ const onSubmit = handleSubmit(
             <img class="h-32 fit-content" :src="data?.data?.org?.logo ?? ''" />
           </div>
           <div shape="straight" class="border border-t-1"></div>
-          <h3
-            class="font-heading text-muted-900 text-lg font-medium py-2 leading-6 dark:text-white"
-          >
-            {{
-              isPrintPlanning == true
-                ? 'PLANNING DE DIFFUSION'
-                : 'CERTIFICAT DE DIFFUSION'
-            }}
-          </h3>
+          <div class="flex justify-between items-center px-2">
+            <h3
+              class="font-heading text-muted-900 text-lg font-medium py-2 leading-6 dark:text-white"
+            >
+              {{
+                isPrintPlanning == true
+                  ? 'PLANNING DE DIFFUSION'
+                  : 'CERTIFICAT DE DIFFUSION'
+              }}
+            </h3>
+            <h3 class="uppercase">
+              Code Campagne :
+              <span class="text-primary-500">{{ data?.data?.code }}</span>
+            </h3>
+          </div>
         </div>
         <div class="flex justify-between items-center p-2">
           <BaseText size="sm"

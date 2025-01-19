@@ -736,7 +736,7 @@ const onSubmit = handleSubmit(
                             ? item.product.product
                             : '') +
                             ' [' +
-                            item.code +
+                            item.product?.package?.code +
                             ']',
                         )
                       "
@@ -751,7 +751,7 @@ const onSubmit = handleSubmit(
                             ? item.product?.product
                             : '') +
                           ' [' +
-                          item.code +
+                          item.product?.package?.code +
                           ']'
                         }}
                       </span></BaseText

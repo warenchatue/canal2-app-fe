@@ -47,6 +47,10 @@ const initialDates = {
   end: new Date(),
 }
 
+const masks = ref({
+  input: 'DD-MM-YYYY',
+})
+
 const startDate = ref(new Date())
 const endDate = ref(new Date())
 const dates = ref(initialDates)
@@ -766,6 +770,7 @@ const onSubmit = handleSubmit(
           <DatePicker
             v-model.range="dates"
             mode="date"
+            :masks="masks"
             hide-time-header
             trim-weeks
           >
