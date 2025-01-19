@@ -1,7 +1,7 @@
 version: '3'
 services:
-  dinoes-fe:
-    container_name: dinoes-fe
+  dinoes-fe-staging:
+    container_name: dinoes-fe-staging
     build:
       context: .
       dockerfile: ./Dockerfile
