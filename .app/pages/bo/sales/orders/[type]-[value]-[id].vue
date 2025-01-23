@@ -1404,7 +1404,11 @@ const onSubmit = handleSubmit(
           <span>Valider</span>
         </BaseButton>
         <BaseButton
-          v-if="isEdit && pageValue != 'order'"
+          v-if="
+            authStore.user.appRole?.name == UserRole.superAdmin &&
+            isEdit &&
+            pageValue != 'order'
+          "
           :disabled="currentOrderInvoice.adminValidator ? true : false"
           :color="currentOrderInvoice.adminValidator ? 'success' : 'warning'"
           class="w-full sm:w-44"
