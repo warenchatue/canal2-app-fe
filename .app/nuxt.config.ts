@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { isProduction } from 'std-env'
 
 import { appRules, landingRules } from './config/routes-rules'
@@ -30,14 +31,14 @@ export default defineNuxtConfig({
   // nuxt behavior configuration
   runtimeConfig: {
     env: {
-      apiUrl: process.env.NUXT_ENV_API_URL || 'http://localhost:8700',
+      apiUrl: process.env.NUXT_PUBLIC_API_URL || 'http://localhost:8700',
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
     },
     public: {
       // mapbox config
       mapboxToken: process.env.NUXT_PUBLIC_MAPBOX_TOKEN,
       // nuxt-seo-kit config
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL,
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
       siteName: 'DinoEs by Digital Innova',
       siteDescription: 'ERP platform',
       language: 'fr',

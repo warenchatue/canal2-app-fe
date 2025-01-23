@@ -72,12 +72,14 @@
     }
   },
   "dependencies": {
+    "@nuxtjs/dotenv": "^1.4.2",
     "@nuxtjs/moment": "^1.6.1",
     "@pinia/nuxt": "^0.5.0",
     "@tinymce/tinymce-vue": "^6.0.1",
     "@types/events": "^3.0.2",
     "@types/formidable": "^3.4.0",
     "csv": "^6.3.6",
+    "dotenv": "^16.4.7",
     "forever-monitor": "^3.0.3",
     "i18n-num-in-words": "^1.0.4",
     "moment": "^2.29.4",
