@@ -36,18 +36,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { toTypedSchema } from '@vee-validate/zod';
 import { Field, useForm } from 'vee-validate';
 import { z } from 'zod';
-import Modal from '@/components/Modal.vue';
-
-definePageMeta({
-  layout: 'empty',
-  title: 'Broadcast Authorization Nature',
-  preview: {
-    order: 96,
-    title: '',
-    description: '',
-    src: ''
-  },
-});
+import Modal from '@/components/Modal.vue'; // Ensure this path is correct
 
 const isModalVisible = ref(false);
 const isEditModalVisible = ref(false);
