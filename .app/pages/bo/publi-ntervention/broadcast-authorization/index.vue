@@ -23,9 +23,8 @@ const appStore = useAppStore()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(10)
-const isModalNewBroadcastAuthOpen = ref(false)
-const isModalDeleteBroadcastAuthOpen = ref(false)
 const isEdit = ref(false)
+const showForm = ref(false) // Controls whether the form is visible
 
 const toaster = useToaster()
 // Check if can have access
@@ -64,7 +63,7 @@ const query = computed(() => {
 })
 
 const { data, pending, error, refresh } = await useFetch(
-  '/api/broadcast/authorizations',
+  '/api/broadcast-aut',
   {
     query,
   },
@@ -186,7 +185,7 @@ const {
 const success = ref(false)
 
 function editBroadcastAuth(auth: any) {
-  isModalNewBroadcastAuthOpen.value = true
+  showForm.value = true
   isEdit.value = true
   setFieldValue('broadcastAuthorization._id', auth._id)
   setFieldValue('broadcastAuthorization.announcer', auth.announcer)
@@ -225,12 +224,6 @@ function selectBroadcastAuth(auth: any) {
   expanded.value = false
 }
 
-function confirmDeleteBroadcastAuth(auth: any) {
-  isModalDeleteBroadcastAuthOpen.value = true
-  isEdit.value = false
-  currentBroadcastAuth.value = auth
-}
-
 async function deleteBroadcastAuth(auth: any) {
   const query2 = computed(() => {
     return {
@@ -256,9 +249,9 @@ async function deleteBroadcastAuth(auth: any) {
       icon: 'ph:check',
       closable: true,
     })
-    isModalDeleteBroadcastAuthOpen.value = false
     filter.value = 'broadcast'
     filter.value = ''
+    refresh() // Refresh the table data
   } else {
     toaster.clearAll()
     toaster.show({
@@ -273,60 +266,25 @@ async function deleteBroadcastAuth(auth: any) {
 
 const onSubmit = handleSubmit(
   async (values) => {
-    success.value = false
-    console.log('broadcast-auth-create-success', values)
-
     try {
-      const isSuccess = ref(false)
-      if (isEdit.value == true) {
-        const query2 = computed(() => {
-          return {
-            action: 'updateBroadcastAuth',
-            token: token.value,
-            id: values.broadcastAuthorization._id,
-          }
-        })
+      const response = await useFetch('/api/broadcast-auth', {
+        method: isEdit.value ? 'put' : 'post',
+        headers: { 'Content-Type': 'application/json' },
+        body: values.broadcastAuthorization,
+      })
 
-        const response = await useFetch('/api/broadcast-auth', {
-          method: 'put',
-          headers: { 'Content-Type': 'application/json' },
-          query: query2,
-          body: values.broadcastAuthorization,
-        })
-        isSuccess.value = response.data.value?.success
-      } else {
-        const query2 = computed(() => {
-          return {
-            action: 'createBroadcastAuth',
-            token: token.value,
-          }
-        })
-
-        const response = await useFetch('/api/broadcast-auth', {
-          method: 'post',
-          headers: { 'Content-Type': 'application/json' },
-          query: query2,
-          body: values.broadcastAuthorization,
-        })
-        isSuccess.value = response.data.value?.success
-      }
-      if (isSuccess) {
+      if (response.data.value?.success) {
         success.value = true
         toaster.clearAll()
         toaster.show({
           title: 'Success',
-          message:
-            isEdit.value == false
-              ? `Authorization créée !`
-              : `Authorization mise à jour`,
+          message: isEdit.value ? `Authorization mise à jour !` : `Authorization créée !`,
           color: 'success',
           icon: 'ph:check',
           closable: true,
         })
-        isModalNewBroadcastAuthOpen.value = false
-        resetForm()
-        filter.value = 'broadcast'
-        filter.value = ''
+        showForm.value = false // Return to the table view
+        refresh() // Refresh the table data
       } else {
         toaster.clearAll()
         toaster.show({
@@ -339,10 +297,6 @@ const onSubmit = handleSubmit(
       }
     } catch (error: any) {
       console.log(error)
-      document.documentElement.scrollTo({
-        top: 0,
-        behavior: 'smooth',
-      })
       toaster.clearAll()
       toaster.show({
         title: 'Désolé!',
@@ -352,15 +306,10 @@ const onSubmit = handleSubmit(
         closable: true,
       })
     }
-    success.value = true
   },
   (error) => {
     success.value = false
     console.log('broadcast-auth-create-error', error)
-    document.documentElement.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    })
   },
 )
 </script>
@@ -378,6 +327,7 @@ const onSubmit = handleSubmit(
           }"
         />
       </template>
+
       <template #right>
         <BaseSelect
           v-model="perPage"
@@ -391,8 +341,10 @@ const onSubmit = handleSubmit(
           <option :value="50">50 per page</option>
           <option :value="100">100 per page</option>
         </BaseSelect>
+
         <BaseButton
-          @click=";(isModalNewBroadcastAuthOpen = true), (isEdit = false)"
+          v-if="!showForm"
+          @click="showForm = true"
           color="primary"
           class="w-full sm:w-48"
           :disabled="
@@ -403,9 +355,19 @@ const onSubmit = handleSubmit(
           <Icon name="lucide:plus" class="h-4 w-4" />
           <span>Nouvelle Autorisation</span>
         </BaseButton>
+        <BaseButton
+          v-else
+          @click="showForm = false"
+          color="muted"
+          class="w-full sm:w-48"
+        >
+          <Icon name="lucide:arrow-left" class="h-4 w-4" />
+          <span>Retour à la liste</span>
+        </BaseButton>
       </template>
 
-      <div>
+      <div v-if="!showForm">
+        <!-- Table View -->
         <div v-if="!pending && data?.data.length === 0">
           <BasePlaceholderPage
             title="No matching results"
@@ -526,7 +488,7 @@ const onSubmit = handleSubmit(
                       <Icon name="lucide:edit" class="h-4 w-4"
                     /></BaseButtonAction>
                     <BaseButtonAction
-                      @click="confirmDeleteBroadcastAuth(item)"
+                      @click="deleteBroadcastAuth(item)"
                       :disabled="
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
@@ -549,284 +511,586 @@ const onSubmit = handleSubmit(
           </div>
         </div>
       </div>
-    </TairoContentWrapper>
 
-    <!-- Modal new Broadcast Authorization -->
-    <TairoModal
-      :open="isModalNewBroadcastAuthOpen"
-      size="xl"
-      @close="isModalNewBroadcastAuthOpen = false"
-    >
-      <template #header>
-        <div class="flex w-full items-center justify-between p-4 md:p-6">
-          <h3
-            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+      <div v-else>
+        <!-- Form View -->
+        <BaseCard class="w-full">
+          <form
+            method="POST"
+            action=""
+            class="divide-muted-200 dark:divide-muted-700"
+            @submit.prevent="onSubmit"
           >
-            {{ isEdit == true ? 'Mise à jour' : 'Nouvelle' }} Autorisation
-          </h3>
+            <div
+              shape="curved"
+              class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
+            >
+              <div class="mx-auto flex w-full flex-col">
+                <div>
+                  <div class="grid grid-cols-12 gap-4">
+                    <!-- Announcer -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.announcer"
+                      >
+                        <BaseListbox
+                          label="Annonceur"
+                          :items="announcers"
+                          :properties="{ value: '_id', label: 'name' }"
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
 
-          <BaseButtonClose @click="isModalNewBroadcastAuthOpen = false" />
-        </div>
-      </template>
+                    <!-- Invoice -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.invoice"
+                      >
+                        <BaseInput
+                          label="Facture"
+                          icon="ph:receipt-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
 
-      <!-- Body -->
-      <BaseCard class="w-full">
-        <form
-          method="POST"
-          action=""
-          class="divide-muted-200 dark:divide-muted-700"
-          @submit.prevent="onSubmit"
-        >
-          <div
-            shape="curved"
-            class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
-          >
-            <div class="mx-auto flex w-full flex-col">
-              <div>
-                <div class="grid grid-cols-12 gap-4">
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="broadcastAuthorization.announcer"
-                    >
-                      <BaseInput
-                        label="Annonceur"
-                        icon="ph:user-duotone"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="broadcastAuthorization.nature"
-                    >
-                      <BaseInput
-                        label="Nature"
-                        icon="ph:file-duotone"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="broadcastAuthorization.date"
-                    >
-                      <BaseInput
-                        label="Date"
-                        type="date"
-                        icon="ph:calendar-duotone"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
-                  </div>
-                  <div class="col-span-12 md:col-span-6">
-                    <Field
-                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="broadcastAuthorization.location"
-                    >
-                      <BaseInput
-                        label="Location"
-                        icon="ph:map-pin-duotone"
-                        placeholder=""
-                        :model-value="field.value"
-                        :error="errorMessage"
-                        :disabled="isSubmitting"
-                        @update:model-value="handleChange"
-                        @blur="handleBlur"
-                      />
-                    </Field>
+                    <!-- Campaign -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.campaign"
+                      >
+                        <BaseInput
+                          label="Campagne"
+                          icon="ph:megaphone-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Nature -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.nature"
+                      >
+                        <BaseListbox
+                          label="Nature"
+                          :items="natures"
+                          :properties="{ value: '_id', label: 'name' }"
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Nature Description -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.natureDescription"
+                      >
+                        <BaseInput
+                          label="Description de la nature"
+                          icon="ph:note-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Date -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.date"
+                      >
+                        <BaseInput
+                          label="Date"
+                          type="date"
+                          icon="ph:calendar-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Start Date -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.startDate"
+                      >
+                        <BaseInput
+                          label="Date de début"
+                          type="date"
+                          icon="ph:calendar-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- End Date -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.endDate"
+                      >
+                        <BaseInput
+                          label="Date de fin"
+                          type="date"
+                          icon="ph:calendar-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Payment Method -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.paymentMethod"
+                      >
+                        <BaseListbox
+                          label="Méthode de paiement"
+                          :items="paymentMethods"
+                          :properties="{ value: '_id', label: 'name' }"
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Duration -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.duration"
+                      >
+                        <BaseInput
+                          label="Durée (en minutes)"
+                          type="number"
+                          icon="ph:clock-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Hour -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.hour"
+                      >
+                        <BaseInput
+                          label="Heure"
+                          type="time"
+                          icon="ph:clock-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Hours -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.hours"
+                      >
+                        <BaseInput
+                          label="Heures"
+                          icon="ph:clock-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Real Hours -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.realHours"
+                      >
+                        <BaseInput
+                          label="Heures réelles"
+                          icon="ph:clock-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Real Hour -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.realHour"
+                      >
+                        <BaseInput
+                          label="Heure réelle"
+                          type="time"
+                          icon="ph:clock-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="col-span-12 md:col-span-12">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.description"
+                      >
+                        <BaseTextarea
+                          label="Description"
+                          icon="ph:note-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Participants -->
+                    <div class="col-span-12 md:col-span-12">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.participants"
+                      >
+                        <BaseInput
+                          label="Participants"
+                          icon="ph:users-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Questions -->
+                    <div class="col-span-12 md:col-span-12">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.questions"
+                      >
+                        <BaseTextarea
+                          label="Questions"
+                          icon="ph:question-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Note -->
+                    <div class="col-span-12 md:col-span-12">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.note"
+                      >
+                        <BaseTextarea
+                          label="Note"
+                          icon="ph:note-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Service in Charge -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.serviceInCharge"
+                      >
+                        <BaseInput
+                          label="Service en charge"
+                          icon="ph:buildings-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Validator -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.validator"
+                      >
+                        <BaseListbox
+                          label="Validateur"
+                          :items="validators"
+                          :properties="{ value: '_id', label: 'name' }"
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Admin Validator -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.admiValidator"
+                      >
+                        <BaseListbox
+                          label="Validateur Admin"
+                          :items="adminValidators"
+                          :properties="{ value: '_id', label: 'name' }"
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Location -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.location"
+                      >
+                        <BaseInput
+                          label="Location"
+                          icon="ph:map-pin-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Commercials -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.commercials"
+                      >
+                        <BaseListbox
+                          label="Commerciaux"
+                          :items="commercials"
+                          :properties="{ value: '_id', label: 'name' }"
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Contact Details -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.contactDetails"
+                      >
+                        <BaseInput
+                          label="Coordonnées"
+                          icon="ph:phone-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Production Partner -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.productionPartner"
+                      >
+                        <BaseListbox
+                          label="Partenaire de production"
+                          :items="productionPartners"
+                          :properties="{ value: '_id', label: 'name' }"
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Other Production Partner -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.otherProductionPartner"
+                      >
+                        <BaseInput
+                          label="Autre partenaire de production"
+                          icon="ph:handshake-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Key Contact -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.keyContact"
+                      >
+                        <BaseListbox
+                          label="Contact clé"
+                          :items="keyContacts"
+                          :properties="{ value: '_id', label: 'name' }"
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Other Key Contact -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.otherKeyContact"
+                      >
+                        <BaseInput
+                          label="Autre contact clé"
+                          icon="ph:user-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
+                    <!-- Contact Details to Show -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.contactDetailsToShow"
+                      >
+                        <BaseInput
+                          label="Coordonnées à afficher"
+                          icon="ph:phone-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </form>
-      </BaseCard>
-      <template #footer>
-        <div class="p-4 md:p-6">
-          <div class="flex gap-x-2">
-            <BaseButton @click="isModalNewBroadcastAuthOpen = false"
-              >Annuler</BaseButton
-            >
-
-            <BaseButton color="primary" flavor="solid" @click="onSubmit">
-              {{ isEdit == true ? 'Modifier' : 'Créer' }}
-            </BaseButton>
-          </div>
-        </div>
-      </template>
-    </TairoModal>
-
-    <!-- Modal delete -->
-    <TairoModal
-      :open="isModalDeleteBroadcastAuthOpen"
-      size="sm"
-      @close="isModalDeleteBroadcastAuthOpen = false"
-    >
-      <template #header>
-        <div class="flex w-full items-center justify-between p-4 md:p-6">
-          <h3
-            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
-          >
-            Suppression d'une autorisation
-          </h3>
-
-          <BaseButtonClose @click="isModalDeleteBroadcastAuthOpen = false" />
-        </div>
-      </template>
-
-      <!-- Body -->
-      <div class="p-4 md:p-6">
-        <div class="mx-auto w-full max-w-xs text-center">
-          <h3
-            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
-          >
-            Supprimer
-            <span class="text-red-500">{{ currentBroadcastAuth?.name }}</span> ?
-          </h3>
-
-          <p
-            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
-          >
-            Cette action est irreversible
-          </p>
-        </div>
+          </form>
+        </BaseCard>
       </div>
-
-      <template #footer>
-        <div class="p-4 md:p-6">
-          <div class="flex gap-x-2">
-            <BaseButton @click="isModalDeleteBroadcastAuthOpen = false"
-              >Annuler</BaseButton
-            >
-
-            <BaseButton
-              color="primary"
-              flavor="solid"
-              @click="deleteBroadcastAuth(currentBroadcastAuth)"
-              >Supprimer</BaseButton
-            >
-          </div>
-        </div>
-      </template>
-    </TairoModal>
-
-    <!-- Current Operation -->
-    <div
-      class="ltablet:w-[310px] dark:bg-muted-800 fixed end-0 top-0 z-50 h-full w-[390px] bg-white transition-transform duration-300"
-      :class="expanded ? 'translate-x-full' : 'translate-x-0'"
-    >
-      <div class="flex h-16 w-full items-center justify-between px-8">
-        <BaseHeading tag="h3" size="lg" class="text-muted-800 dark:text-white">
-          <span>Détails Autorisation</span>
-        </BaseHeading>
-        <BaseButtonIcon small @click="expanded = true">
-          <Icon name="lucide:arrow-right" class="pointer-events-none h-4 w-4" />
-        </BaseButtonIcon>
-      </div>
-      <div class="relative flex w-full flex-col px-8">
-        <!-- Loader -->
-        <div v-if="loading" class="mt-8">
-          <div class="mb-3 flex items-center justify-center">
-            <BasePlaceload
-              class="h-24 w-24 shrink-0 rounded-full"
-              :width="96"
-              :height="96"
-            />
-          </div>
-          <div class="flex flex-col items-center">
-            <BasePlaceload class="mb-2 h-3 w-full max-w-[10rem] rounded" />
-            <BasePlaceload class="mb-2 h-3 w-full max-w-[6rem] rounded" />
-            <div class="my-4 flex w-full flex-col items-center">
-              <BasePlaceload class="mb-2 h-2 w-full max-w-[15rem] rounded" />
-              <BasePlaceload class="mb-2 h-2 w-full max-w-[13rem] rounded" />
-            </div>
-            <div class="mb-6 flex w-full items-center justify-center">
-              <div class="px-4">
-                <BasePlaceload class="h-3 w-[3.5rem] rounded" />
-              </div>
-              <div class="px-4">
-                <BasePlaceload class="h-3 w-[3.5rem] rounded" />
-              </div>
-            </div>
-            <div class="w-full">
-              <BasePlaceload class="h-10 w-full rounded-xl" />
-              <BasePlaceload class="mx-auto mt-3 h-3 w-[7.5rem] rounded" />
-            </div>
-          </div>
-        </div>
-        <!-- Operation details -->
-        <div v-else class="mt-8" @click.>
-          <div class="flex items-center justify-center">
-            <BaseAvatar
-              :src="currentBroadcastAuth?.logo"
-              :text="currentBroadcastAuth.initials"
-              :class="getRandomColor()"
-              size="2xl"
-            />
-          </div>
-          <div class="text-center">
-            <BaseHeading tag="h3" size="lg" class="mt-4">
-              <span>{{ currentBroadcastAuth?.name }}</span>
-            </BaseHeading>
-            <BaseParagraph size="sm" class="text-muted-400">
-              <span>{{ currentBroadcastAuth?.description }}</span>
-            </BaseParagraph>
-            <div class="my-4">
-              <BaseParagraph
-                size="sm"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <span></span>
-              </BaseParagraph>
-              <BaseParagraph
-                size="sm"
-                class="text-muted-500 dark:text-muted-400"
-              >
-                <span></span>
-              </BaseParagraph>
-            </div>
-            <div
-              class="divide-muted-200 dark:divide-muted-700 flex items-center justify-center divide-x"
-            >
-              <div class="flex items-center justify-center gap-2 px-4">
-                <Icon name="ph:pen" class="text-muted-400 h-4 w-4" />
-                <span class="text-muted-400 font-sans text-xs">
-                  Mêttre à jour
-                </span>
-              </div>
-              <div class="flex items-center justify-center gap-2 px-4">
-                <Icon name="ph:trash" class="text-muted-400 h-4 w-4" />
-                <span class="text-muted-400 font-sans text-xs">
-                  Supprimer
-                </span>
-              </div>
-            </div>
-            <div class="mt-6">
-              <BaseButton shape="curved" class="w-full">
-                <span> Consulter </span>
-              </BaseButton>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    </TairoContentWrapper>
   </div>
 </template>
