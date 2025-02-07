@@ -25,6 +25,7 @@ const filter = ref('')
 const perPage = ref(10)
 const isEdit = ref(false)
 const showForm = ref(false) // Controls whether the form is visible
+const showNatureModal = ref(true)
 
 const toaster = useToaster()
 // Check if can have access
@@ -62,12 +63,9 @@ const query = computed(() => {
   }
 })
 
-const { data, pending, error, refresh } = await useFetch(
-  '/api/broadcast-aut',
-  {
-    query,
-  },
-)
+const { data, pending, error, refresh } = await useFetch('/api/broadcast-aut', {
+  query,
+})
 
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
@@ -192,7 +190,10 @@ function editBroadcastAuth(auth: any) {
   setFieldValue('broadcastAuthorization.invoice', auth.invoice)
   setFieldValue('broadcastAuthorization.campaign', auth.campaign)
   setFieldValue('broadcastAuthorization.nature', auth.nature)
-  setFieldValue('broadcastAuthorization.natureDescription', auth.natureDescription)
+  setFieldValue(
+    'broadcastAuthorization.natureDescription',
+    auth.natureDescription,
+  )
   setFieldValue('broadcastAuthorization.date', auth.date)
   setFieldValue('broadcastAuthorization.startDate', auth.startDate)
   setFieldValue('broadcastAuthorization.endDate', auth.endDate)
@@ -212,11 +213,20 @@ function editBroadcastAuth(auth: any) {
   setFieldValue('broadcastAuthorization.location', auth.location)
   setFieldValue('broadcastAuthorization.commercials', auth.commercials)
   setFieldValue('broadcastAuthorization.contactDetails', auth.contactDetails)
-  setFieldValue('broadcastAuthorization.productionPartner', auth.productionPartner)
-  setFieldValue('broadcastAuthorization.otherProductionPartner', auth.otherProductionPartner)
+  setFieldValue(
+    'broadcastAuthorization.productionPartner',
+    auth.productionPartner,
+  )
+  setFieldValue(
+    'broadcastAuthorization.otherProductionPartner',
+    auth.otherProductionPartner,
+  )
   setFieldValue('broadcastAuthorization.keyContact', auth.keyContact)
   setFieldValue('broadcastAuthorization.otherKeyContact', auth.otherKeyContact)
-  setFieldValue('broadcastAuthorization.contactDetailsToShow', auth.contactDetailsToShow)
+  setFieldValue(
+    'broadcastAuthorization.contactDetailsToShow',
+    auth.contactDetailsToShow,
+  )
 }
 
 function selectBroadcastAuth(auth: any) {
@@ -278,7 +288,9 @@ const onSubmit = handleSubmit(
         toaster.clearAll()
         toaster.show({
           title: 'Success',
-          message: isEdit.value ? `Authorization mise à jour !` : `Authorization créée !`,
+          message: isEdit.value
+            ? `Authorization mise à jour !`
+            : `Authorization créée !`,
           color: 'success',
           icon: 'ph:check',
           closable: true,
@@ -364,6 +376,17 @@ const onSubmit = handleSubmit(
           <Icon name="lucide:arrow-left" class="h-4 w-4" />
           <span>Retour à la liste</span>
         </BaseButton>
+
+        <!-- Add this button to open the nature registration modal -->
+        <BaseButton
+          @click="showNatureModal = true"
+          color="info"
+          class="w-full sm:w-48 ml-2"
+        >
+          <Icon name="lucide:plus" class="h-4 w-4" />
+          <span>Ajouter une Nature</span>
+        </BaseButton>
+
       </template>
 
       <div v-if="!showForm">
@@ -405,10 +428,14 @@ const onSubmit = handleSubmit(
                     />
                   </div>
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Announcer </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>
+                  Announcer
+                </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Nature </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
-                <TairoTableHeading uppercase spaced> Location </TairoTableHeading>
+                <TairoTableHeading uppercase spaced>
+                  Location
+                </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Action </TairoTableHeading>
               </template>
 
@@ -531,7 +558,12 @@ const onSubmit = handleSubmit(
                     <!-- Announcer -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.announcer"
                       >
                         <BaseListbox
@@ -550,7 +582,12 @@ const onSubmit = handleSubmit(
                     <!-- Invoice -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.invoice"
                       >
                         <BaseInput
@@ -569,7 +606,12 @@ const onSubmit = handleSubmit(
                     <!-- Campaign -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.campaign"
                       >
                         <BaseInput
@@ -588,7 +630,12 @@ const onSubmit = handleSubmit(
                     <!-- Nature -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.nature"
                       >
                         <BaseListbox
@@ -607,7 +654,12 @@ const onSubmit = handleSubmit(
                     <!-- Nature Description -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.natureDescription"
                       >
                         <BaseInput
@@ -626,7 +678,12 @@ const onSubmit = handleSubmit(
                     <!-- Date -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.date"
                       >
                         <BaseInput
@@ -646,7 +703,12 @@ const onSubmit = handleSubmit(
                     <!-- Start Date -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.startDate"
                       >
                         <BaseInput
@@ -666,7 +728,12 @@ const onSubmit = handleSubmit(
                     <!-- End Date -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.endDate"
                       >
                         <BaseInput
@@ -686,7 +753,12 @@ const onSubmit = handleSubmit(
                     <!-- Payment Method -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.paymentMethod"
                       >
                         <BaseListbox
@@ -705,7 +777,12 @@ const onSubmit = handleSubmit(
                     <!-- Duration -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.duration"
                       >
                         <BaseInput
@@ -725,7 +802,12 @@ const onSubmit = handleSubmit(
                     <!-- Hour -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.hour"
                       >
                         <BaseInput
@@ -745,7 +827,12 @@ const onSubmit = handleSubmit(
                     <!-- Hours -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.hours"
                       >
                         <BaseInput
@@ -764,7 +851,12 @@ const onSubmit = handleSubmit(
                     <!-- Real Hours -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.realHours"
                       >
                         <BaseInput
@@ -783,7 +875,12 @@ const onSubmit = handleSubmit(
                     <!-- Real Hour -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.realHour"
                       >
                         <BaseInput
@@ -803,7 +900,12 @@ const onSubmit = handleSubmit(
                     <!-- Description -->
                     <div class="col-span-12 md:col-span-12">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.description"
                       >
                         <BaseTextarea
@@ -822,7 +924,12 @@ const onSubmit = handleSubmit(
                     <!-- Participants -->
                     <div class="col-span-12 md:col-span-12">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.participants"
                       >
                         <BaseInput
@@ -841,7 +948,12 @@ const onSubmit = handleSubmit(
                     <!-- Questions -->
                     <div class="col-span-12 md:col-span-12">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.questions"
                       >
                         <BaseTextarea
@@ -860,7 +972,12 @@ const onSubmit = handleSubmit(
                     <!-- Note -->
                     <div class="col-span-12 md:col-span-12">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.note"
                       >
                         <BaseTextarea
@@ -879,7 +996,12 @@ const onSubmit = handleSubmit(
                     <!-- Service in Charge -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.serviceInCharge"
                       >
                         <BaseInput
@@ -898,7 +1020,12 @@ const onSubmit = handleSubmit(
                     <!-- Validator -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.validator"
                       >
                         <BaseListbox
@@ -917,7 +1044,12 @@ const onSubmit = handleSubmit(
                     <!-- Admin Validator -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.admiValidator"
                       >
                         <BaseListbox
@@ -936,7 +1068,12 @@ const onSubmit = handleSubmit(
                     <!-- Location -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.location"
                       >
                         <BaseInput
@@ -955,7 +1092,12 @@ const onSubmit = handleSubmit(
                     <!-- Commercials -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.commercials"
                       >
                         <BaseListbox
@@ -974,7 +1116,12 @@ const onSubmit = handleSubmit(
                     <!-- Contact Details -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.contactDetails"
                       >
                         <BaseInput
@@ -993,7 +1140,12 @@ const onSubmit = handleSubmit(
                     <!-- Production Partner -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.productionPartner"
                       >
                         <BaseListbox
@@ -1012,7 +1164,12 @@ const onSubmit = handleSubmit(
                     <!-- Other Production Partner -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.otherProductionPartner"
                       >
                         <BaseInput
@@ -1031,7 +1188,12 @@ const onSubmit = handleSubmit(
                     <!-- Key Contact -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.keyContact"
                       >
                         <BaseListbox
@@ -1050,7 +1212,12 @@ const onSubmit = handleSubmit(
                     <!-- Other Key Contact -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.otherKeyContact"
                       >
                         <BaseInput
@@ -1069,7 +1236,12 @@ const onSubmit = handleSubmit(
                     <!-- Contact Details to Show -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.contactDetailsToShow"
                       >
                         <BaseInput
@@ -1092,5 +1264,74 @@ const onSubmit = handleSubmit(
         </BaseCard>
       </div>
     </TairoContentWrapper>
+
+    <TairoModal 
+      :show="true" 
+      :open="showNatureModal" 
+      @close="showNatureModal = false"
+      >
+
+      <template #header>
+        <h3 class="text-lg font-semibold">Ajouter une Nature</h3>
+      </template>
+
+      <template #body>
+  <div class="max-h-[70vh] overflow-y-auto">
+    <form @submit.prevent="onSubmitNature">
+        <div class="space-y-4">
+          <!-- Name Field -->
+          <Field
+            v-slot="{ field, errorMessage, handleChange, handleBlur }"
+            name="name"
+          >
+            <BaseInput
+              label="Nom"
+              placeholder="Entrez le nom"
+              :model-value="field.value"
+              :error="errorMessage"
+              @update:model-value="handleChange"
+              @blur="handleBlur"
+            />
+          </Field>
+
+          <!-- Type Field -->
+          <Field
+            v-slot="{ field, errorMessage, handleChange, handleBlur }"
+            name="type"
+          >
+            <BaseListbox
+              label="Type"
+              :items="natureTypes"
+              :properties="{ value: '_id', label: 'name' }"
+              :model-value="field.value"
+              :error="errorMessage"
+              @update:model-value="handleChange"
+              @blur="handleBlur"
+            />
+          </Field>
+
+          <!-- Program Field -->
+          <Field
+            v-slot="{ field, errorMessage, handleChange, handleBlur }"
+            name="program"
+          >
+            <BaseListbox
+              label="Programme"
+              :items="programs"
+              :properties="{ value: '_id', label: 'name' }"
+              :model-value="field.value"
+              :error="errorMessage"
+              @update:model-value="handleChange"
+              @blur="handleBlur"
+            />
+          </Field>
+        </div>
+      </form>
+    </div>
+  </template>
+
+      
+    </TairoModal>
+
   </div>
 </template>
