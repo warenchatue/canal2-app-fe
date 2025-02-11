@@ -54,7 +54,7 @@ export default defineEventHandler(async (event) => {
     console.log('findOne ' + token)
     const runtimeConfig = useRuntimeConfig()
     const data = await $fetch(
-      runtimeConfig.env.apiUrl + '/broadcastAuthorization/' + id,
+      runtimeConfig.env.apiUrl + '/broadcast-authorization/' + id,
       {
         method: 'GET',
         headers: {
@@ -70,7 +70,7 @@ export default defineEventHandler(async (event) => {
     console.log('findAll ' + token)
     const runtimeConfig = useRuntimeConfig()
     const data = await $fetch(
-      runtimeConfig.env.apiUrl + '/broadcastAuthorization',
+      runtimeConfig.env.apiUrl + '/broadcast-authorization',
       {
         method: 'GET',
         headers: {
@@ -86,7 +86,7 @@ export default defineEventHandler(async (event) => {
     console.log('createAuthorization ' + token)
     const runtimeConfig = useRuntimeConfig()
     const data = await $fetch(
-      runtimeConfig.env.apiUrl + '/broadcastAuthorization',
+      runtimeConfig.env.apiUrl + '/broadcast-authorization',
       {
         method: 'POST',
         headers: {
@@ -103,7 +103,7 @@ export default defineEventHandler(async (event) => {
     console.log('updateAuthorization ' + token)
     const runtimeConfig = useRuntimeConfig()
     const data = await $fetch(
-      runtimeConfig.env.apiUrl + '/broadcastAuthorization/' + id,
+      runtimeConfig.env.apiUrl + '/broadcast-authorization/' + id,
       {
         method: 'PUT',
         headers: {
@@ -120,7 +120,7 @@ export default defineEventHandler(async (event) => {
     console.log('deleteAuthorization ' + token)
     const runtimeConfig = useRuntimeConfig()
     const data = await $fetch(
-      runtimeConfig.env.apiUrl + '/broadcastAuthorization/' + id,
+      runtimeConfig.env.apiUrl + '/broadcast-authorization/' + id,
       {
         method: 'DELETE',
         headers: {
