@@ -30,6 +30,7 @@ const isModalDeleteTvProgramOpen = ref(false)
 const isModalConfirmOrderOpen = ref(false)
 const isEdit = ref(false)
 const toaster = useToaster()
+
 // Check if can have access
 if (
   authStore.user.appRole.name != UserRole.programPlanner &&

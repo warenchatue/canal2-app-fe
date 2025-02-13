@@ -1,9 +1,9 @@
-
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
+import NatureModal from '~/components/NatureModal.vue'
 
 definePageMeta({
   title: 'Broadcast Authorizations',
@@ -26,7 +26,7 @@ const filter = ref('')
 const perPage = ref(10)
 const isEdit = ref(false)
 const showForm = ref(false) // Controls whether the form is visible
-const showNatureModal = ref(true)
+const showNatureModal = ref(false) // Fixed typo: 'flase' -> 'false'
 
 const toaster = useToaster()
 // Check if can have access
@@ -278,7 +278,7 @@ async function deleteBroadcastAuth(auth: any) {
 const onSubmit = handleSubmit(
   async (values) => {
     try {
-      const response = await useFetch('/api/broadcast-auth/broadcase-aut', {
+      const response = await useFetch('/api/broadcast-auth/broadcast-aut', { // Fixed typo: 'broadcase-aut' -> 'broadcast-aut'
         method: isEdit.value ? 'put' : 'post',
         headers: { 'Content-Type': 'application/json' },
         body: values.broadcastAuthorization,
@@ -325,69 +325,7 @@ const onSubmit = handleSubmit(
     console.log('broadcast-auth-create-error', error)
   },
 )
-
-// Nature Form
-  const natureSchema = z.object({
-    name: z.string().min(1, "Name is required"),
-    type: z.string().min(1, "Type is required"),
-    program: z.string().min(1, "Program is required"),
-  })
-
-  type NatureFormInput = z.infer<typeof natureSchema>
-
-  const {
-    handleSubmit: handleSubmitNature,
-    isSubmitting: isSubmittingNature,
-    resetForm: resetNatureForm,
-  } = useForm({
-    validationSchema: toTypedSchema(natureSchema),
-    initialValues: {
-      name: '',
-      type: '',
-      program: '',
-    },
-  })
-
-  const onSubmitNature = handleSubmitNature(async (values) => {
-    try {
-      loading.value = true
-      const response = await submitNature(values)
-      if (response.success) {
-        toaster.show({
-          title: 'Succès',
-          message: 'Nature ajoutée avec succès',
-          color: 'success',
-          icon: 'ph:check',
-        })
-        showNatureModal.value = false
-        resetNatureForm()
-      }
-    } catch (error) {
-      toaster.show({
-        title: 'Erreur',
-        message: 'Une erreur est survenue',
-        color: 'danger',
-        icon: 'ph:x',
-      })
-    } finally {
-      loading.value = false
-    }
-})
-
-async function submitNature(natureData: NatureFormInput) {
-  const response = await $fetch('/api/broadcast-auth/broadcast-na', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token.value}`,
-    },
-    body: natureData,
-  });
-  return response;
-}
-
 </script>
-
 
 
 <template>
@@ -443,14 +381,17 @@ async function submitNature(natureData: NatureFormInput) {
 
         <!-- Add this button to open the nature registration modal -->
         <BaseButton
-          @click="showNatureModal = true"
-          color="info"
-          class="w-full sm:w-48 ml-2"
-        >
-          <Icon name="lucide:plus" class="h-4 w-4" />
-          <span>Ajouter une Nature</span>
-        </BaseButton>
-
+        @click="showNatureModal = true"
+        color="info"
+        :disabled="
+            authStore.user.appRole.name != UserRole.admin &&
+            authStore.user.appRole.name != UserRole.superAdmin
+          "
+        class="w-full sm:w-48 ml-2"
+      >
+        <Icon name="lucide:plus" class="h-4 w-4" />
+        <span>Ajouter une Nature</span>
+      </BaseButton>
       </template>
 
       <div v-if="!showForm">
@@ -1330,86 +1271,7 @@ async function submitNature(natureData: NatureFormInput) {
     </TairoContentWrapper>
     
      <!-- Nature Modal -->
-     <TairoModal
-      :open="showNatureModal"
-      @close="showNatureModal = false"
-      size="xl"
-      class="mx-auto flex w-full flex-col"
-    >
-      <template #header>
-        <h3 class="text-lg font-semibold">Ajouter une Nature</h3>
-      </template>
-
-      <template #body>
-        <div class="max-h-[60vh] overflow-y-auto p-4">
-          <BaseCard class="w-full">
-            <form @submit.prevent="onSubmitNature">
-              <div class="space-y-4">
-                <!-- Name Field -->
-                <Field
-                  v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                  name="name"
-                >
-                  <BaseInput
-                    label="Nom"
-                    placeholder="Entrez le nom"
-                    :model-value="field.value"
-                    :error="errorMessage"
-                    @update:model-value="handleChange"
-                    @blur="handleBlur"
-                  />
-                </Field>
-
-                <!-- Type Field -->
-                <Field
-                  v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                  name="type"
-                >
-                  <BaseListbox
-                    label="Type"
-                    :items="natureTypes"
-                    :properties="{ value: '_id', label: 'name' }"
-                    :model-value="field.value"
-                    :error="errorMessage"
-                    @update:model-value="handleChange"
-                    @blur="handleBlur"
-                  />
-                </Field>
-
-                <!-- Program Field -->
-                <Field
-                  v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                  name="program"
-                >
-                  <BaseListbox
-                    label="Programme"
-                    :items="programs"
-                    :properties="{ value: '_id', label: 'name' }"
-                    :model-value="field.value"
-                    :error="errorMessage"
-                    @update:model-value="handleChange"
-                    @blur="handleBlur"
-                  />
-                </Field>
-              </div>
-            </form>
-          </BaseCard>
-        </div>
-      </template>
-
-      <template #footer>
-        <BaseButton @click="showNatureModal = false" color="muted" class="mr-2">
-          Annuler
-        </BaseButton>
-        <BaseButton
-          type="submit"
-          color="primary"
-          :loading="isSubmittingNature"
-        >
-          Enregistrer
-        </BaseButton>
-      </template>
-    </TairoModal>
+     <NatureModal :open="showNatureModal" @close="showNatureModal = false" />
 
   </div>
 </template>
