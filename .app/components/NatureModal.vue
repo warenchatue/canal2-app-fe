@@ -73,6 +73,8 @@ import { Field, useForm } from 'vee-validate';
 import { z } from 'zod';
 import { ref, computed } from 'vue';
 
+const emit = defineEmits(['close', 'success']);
+
 const feedback = ref({
   show: false,
   type: 'success',
@@ -116,6 +118,17 @@ const { data: programs } = await useFetch('/api/tv-programs/programs', {
   query: queryNF,
 });
 
+const showFeedback = (type: 'success' | 'error', message: string) => {
+  feedback.value = {
+    show: true,
+    type,
+    message
+  };
+  setTimeout(() => {
+    feedback.value.show = false;
+  }, 3000);
+};
+
 const onSubmit = handleSubmit(async (values) => {
   try {
     console.log('Selected Program ID:', values.program_id); // Debugging log
@@ -129,48 +142,37 @@ const onSubmit = handleSubmit(async (values) => {
 
     console.log('Form Data:', formData); // Debugging log
 
-    const response = await fetch('/api/broadcast-auth/broadcast-na', {
+    const { data, error } = await useFetch('/api/broadcast-auth/broadcast-na', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
+      body: JSON.stringify(formData),
+      query: {
+        action: 'createNature',
+        token: token.value,
+      }
     });
 
-    if (response.status === 201 || response.status === 200 || response.status === 204) {
+    if (error.value) {
+      // Handle fetch error
+      console.error('Fetch error:', error.value);
+      showFeedback('error', 'Erreur lors de l\'enregistrement. Veuillez réessayer.');
+      return;
+    }
+
+    const response = data.value;
+    if (response?.success) {
       showFeedback('success', 'Nature ajoutée avec succès');
       resetForm();
       emit('success');
       setTimeout(() => emit('close'), 1000);
-    } else if (response.status === 409) {
-      showFeedback('error', 'Cette nature existe déjà dans la base de données');
     } else {
-      let errorMessage = 'Échec de l\'enregistrement';
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-          console.error('Error parsing error response:', e);
-        }
-      }
-      showFeedback('error', errorMessage);
+      showFeedback('error', response?.message || 'Échec de l\'enregistrement');
     }
   } catch (error) {
     console.error('Form submission error:', error);
     showFeedback('error', 'Erreur lors de l\'enregistrement. Veuillez réessayer.');
   }
 });
-
-const showFeedback = (type: 'success' | 'error', message: string) => {
-  feedback.value = {
-    show: true,
-    type,
-    message
-  };
-  setTimeout(() => {
-    feedback.value.show = false;
-  }, 3000);
-};
 
 defineProps({
   open: {

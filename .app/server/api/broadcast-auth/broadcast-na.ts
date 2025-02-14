@@ -41,8 +41,12 @@ export default defineEventHandler(async (event) => {
       }
 
       const data = await createNature(body, token);
-      event.node.res.statusCode = 204;
-      return;
+      event.node.res.statusCode = 201; // Use 201 Created for successful creation
+      return {
+        success: true,
+        data,
+        message: 'Nature créée avec succès'
+      };
     } else if (action === 'updateNature') {
       const body = await readBody(event);
       
@@ -116,39 +120,54 @@ async function findOne(id: string, token: string) {
   return Promise.resolve(data);
 }
 
+
 async function findAll(token: string) {
   console.log('findAll ' + token);
   const runtimeConfig = useRuntimeConfig();
-  const data = await $fetch(
-    runtimeConfig.env.apiUrl + '/broadcast-authorization-nature',
-    {
-      method: 'GET',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-type': 'application/json',
-      },
-    }
-  ).catch((error) => console.log(error));
-  return Promise.resolve(data);
+  try {
+    const data = await $fetch(
+      runtimeConfig.env.apiUrl + '/broadcast-authorization-nature',
+      {
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer ' + token,
+          'Content-type': 'application/json',
+        },
+      }
+    );
+    // Ensure the response is an array
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error('Error fetching all natures:', error);
+    return []; // Return an empty array in case of error
+  }
 }
+
+
 
 async function createNature(body: any, token: string) {
   console.log('createNature ' + token);
   const runtimeConfig = useRuntimeConfig();
-  const data = await $fetch(
-    runtimeConfig.env.apiUrl + '/broadcast-authorization-nature',
-    {
-      method: 'POST',
-      headers: {
-        Authorization: 'Bearer ' + token,
-        'Content-type': 'application/json',
-      },
-      body,
-    }
-  ).catch((error) => console.log(error));
-  return Promise.resolve(data);
-  
+  try {
+    const data = await $fetch(
+      runtimeConfig.env.apiUrl + '/broadcast-authorization-nature',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + token,
+          'Content-type': 'application/json',
+        },
+        body,
+      }
+    );
+    return data;
+  } catch (error) {
+    console.error('Error creating nature:', error);
+    console.error('Request body:', body); // Log the request body
+    throw new Error('Failed to create nature: ' + error.message);
+  }
 }
+
 
 async function updateNature(id: string, body: any, token: string) {
   console.log('updateNature ' + token);
