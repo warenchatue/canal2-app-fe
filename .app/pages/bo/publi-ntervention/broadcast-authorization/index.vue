@@ -20,11 +20,9 @@ definePageMeta({
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
-const appStore = useAppStore()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(10)
-const isEdit = ref(false)
 const showForm = ref(false) // Controls whether the form is visible
 const showNatureModal = ref(false) // Fixed typo: 'flase' -> 'false'
 
@@ -64,6 +62,14 @@ const query = computed(() => {
   }
 })
 
+const queryNF = computed(() => ({
+  perPage: 1000,
+  page: 1,
+  action: 'findAll',
+  token: token.value,
+}));
+
+
 const { data, pending, error, refresh } = await useFetch('/api/broadcast-aut', {
   query,
 })
@@ -93,33 +99,42 @@ const VALIDATION_TEXT = {
   LOCATION_REQUIRED: "Location can't be empty",
 }
 
+
 // Zod schema for the form
 const zodSchema = z.object({
   broadcastAuthorization: z.object({
-    _id: z.string().optional(),
-    announcer: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED),
-    invoice: z.string().optional(),
-    campaign: z.string().optional(),
-    nature: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED),
+    announcer: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
+    invoice: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
+    campaign:z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
+    nature:z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
     natureDescription: z.string().optional(),
     date: z.date(),
     startDate: z.date(),
     endDate: z.date(),
-    paymentMethod: z.string().optional(),
+    paymentMethod: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
     duration: z.number().optional(),
     hour: z.string().optional(),
     hours: z.array(z.string()).optional(),
     realHours: z.array(z.string()).optional(),
     realHour: z.string().optional(),
     description: z.string().optional(),
-    participants: z.array(z.string()).optional(),
+    participants: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
     questions: z.array(z.string()).optional(),
     note: z.string().optional(),
     serviceInCharge: z.string().optional(),
-    validator: z.string().optional(),
-    admiValidator: z.string().optional(),
+    validator: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
+    admiValidator: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
     location: z.string().min(1, VALIDATION_TEXT.LOCATION_REQUIRED),
-    commercials: z.array(z.string()).optional(),
+    commercials: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
     contactDetails: z.string().optional(),
     productionPartner: z.string().optional(),
     otherProductionPartner: z.string().optional(),
@@ -183,148 +198,11 @@ const {
 
 const success = ref(false)
 
-function editBroadcastAuth(auth: any) {
-  showForm.value = true
-  isEdit.value = true
-  setFieldValue('broadcastAuthorization._id', auth._id)
-  setFieldValue('broadcastAuthorization.announcer', auth.announcer)
-  setFieldValue('broadcastAuthorization.invoice', auth.invoice)
-  setFieldValue('broadcastAuthorization.campaign', auth.campaign)
-  setFieldValue('broadcastAuthorization.nature', auth.nature)
-  setFieldValue(
-    'broadcastAuthorization.natureDescription',
-    auth.natureDescription,
-  )
-  setFieldValue('broadcastAuthorization.date', auth.date)
-  setFieldValue('broadcastAuthorization.startDate', auth.startDate)
-  setFieldValue('broadcastAuthorization.endDate', auth.endDate)
-  setFieldValue('broadcastAuthorization.paymentMethod', auth.paymentMethod)
-  setFieldValue('broadcastAuthorization.duration', auth.duration)
-  setFieldValue('broadcastAuthorization.hour', auth.hour)
-  setFieldValue('broadcastAuthorization.hours', auth.hours)
-  setFieldValue('broadcastAuthorization.realHours', auth.realHours)
-  setFieldValue('broadcastAuthorization.realHour', auth.realHour)
-  setFieldValue('broadcastAuthorization.description', auth.description)
-  setFieldValue('broadcastAuthorization.participants', auth.participants)
-  setFieldValue('broadcastAuthorization.questions', auth.questions)
-  setFieldValue('broadcastAuthorization.note', auth.note)
-  setFieldValue('broadcastAuthorization.serviceInCharge', auth.serviceInCharge)
-  setFieldValue('broadcastAuthorization.validator', auth.validator)
-  setFieldValue('broadcastAuthorization.admiValidator', auth.admiValidator)
-  setFieldValue('broadcastAuthorization.location', auth.location)
-  setFieldValue('broadcastAuthorization.commercials', auth.commercials)
-  setFieldValue('broadcastAuthorization.contactDetails', auth.contactDetails)
-  setFieldValue(
-    'broadcastAuthorization.productionPartner',
-    auth.productionPartner,
-  )
-  setFieldValue(
-    'broadcastAuthorization.otherProductionPartner',
-    auth.otherProductionPartner,
-  )
-  setFieldValue('broadcastAuthorization.keyContact', auth.keyContact)
-  setFieldValue('broadcastAuthorization.otherKeyContact', auth.otherKeyContact)
-  setFieldValue(
-    'broadcastAuthorization.contactDetailsToShow',
-    auth.contactDetailsToShow,
-  )
-}
-
 function selectBroadcastAuth(auth: any) {
   currentBroadcastAuth.value = auth
   expanded.value = false
 }
 
-async function deleteBroadcastAuth(auth: any) {
-  const query2 = computed(() => {
-    return {
-      action: 'delete',
-      token: token.value,
-      id: auth._id,
-    }
-  })
-
-  const response = await useFetch('/api/broadcast-auth', {
-    method: 'delete',
-    headers: { 'Content-Type': 'application/json' },
-    query: query2,
-  })
-
-  if (response.data?.value?.success) {
-    success.value = true
-    toaster.clearAll()
-    toaster.show({
-      title: 'Success',
-      message: `Authorization supprimée !`,
-      color: 'success',
-      icon: 'ph:check',
-      closable: true,
-    })
-    filter.value = 'broadcast'
-    filter.value = ''
-    refresh() // Refresh the table data
-  } else {
-    toaster.clearAll()
-    toaster.show({
-      title: 'Désolé',
-      message: `Une erreur est survenue !`,
-      color: 'danger',
-      icon: 'ph:check',
-      closable: true,
-    })
-  }
-}
-
-const onSubmit = handleSubmit(
-  async (values) => {
-    try {
-      const response = await useFetch('/api/broadcast-auth/broadcast-aut', { // Fixed typo: 'broadcase-aut' -> 'broadcast-aut'
-        method: isEdit.value ? 'put' : 'post',
-        headers: { 'Content-Type': 'application/json' },
-        body: values.broadcastAuthorization,
-      })
-
-      if (response.data.value?.success) {
-        success.value = true
-        toaster.clearAll()
-        toaster.show({
-          title: 'Success',
-          message: isEdit.value
-            ? `Authorization mise à jour !`
-            : `Authorization créée !`,
-          color: 'success',
-          icon: 'ph:check',
-          closable: true,
-        })
-        showForm.value = false // Return to the table view
-        refresh() // Refresh the table data
-      } else {
-        toaster.clearAll()
-        toaster.show({
-          title: 'Désolé',
-          message: `Une erreur est survenue !`,
-          color: 'danger',
-          icon: 'ph:check',
-          closable: true,
-        })
-      }
-    } catch (error: any) {
-      console.log(error)
-      toaster.clearAll()
-      toaster.show({
-        title: 'Désolé!',
-        message: 'Veuillez examiner les erreurs dans le formulaire',
-        color: 'danger',
-        icon: 'lucide:alert-triangle',
-        closable: true,
-      })
-    }
-  },
-  (error) => {
-    success.value = false
-    console.log('broadcast-auth-create-error', error)
-  },
-)
 </script>
 
 
@@ -595,10 +473,10 @@ const onSubmit = handleSubmit(
                         }"
                         name="broadcastAuthorization.invoice"
                       >
-                        <BaseInput
+                        <BaseListbox
                           label="Facture"
-                          icon="ph:receipt-duotone"
-                          placeholder=""
+                          :items="invoice"
+                          :properties="{ value: '_id', label: 'name' }"
                           :model-value="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"
@@ -619,10 +497,10 @@ const onSubmit = handleSubmit(
                         }"
                         name="broadcastAuthorization.campaign"
                       >
-                        <BaseInput
+                        <BaseListbox
                           label="Campagne"
-                          icon="ph:megaphone-duotone"
-                          placeholder=""
+                          :items="campaingn"
+                          :properties="{ value: '_id', label: 'name' }"
                           :model-value="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"
@@ -937,11 +815,11 @@ const onSubmit = handleSubmit(
                         }"
                         name="broadcastAuthorization.participants"
                       >
-                        <BaseInput
+                        <BaseListbox
                           label="Participants"
-                          icon="ph:users-duotone"
-                          placeholder=""
-                          :model-value="field.value"
+                          :items="users"
+                          :properties="{ value: 'name', label: 'name' }"
+                          v-model="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"
                           @update:model-value="handleChange"
@@ -1275,3 +1153,5 @@ const onSubmit = handleSubmit(
 
   </div>
 </template>
+
+
