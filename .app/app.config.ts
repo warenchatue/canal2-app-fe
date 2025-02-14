@@ -183,6 +183,28 @@ export default defineAppConfig({
             ],
           },
           {
+            name: 'Publi / Couvertures',
+            icon: { name: 'ph:money-duotone', class: 'w-5 h-5' },
+            activePath: '/bo/public-intervention/broadcast-authorization',
+            children: [
+              {
+                name: 'Tableau de bord',
+                // to: '/bo/publi-intervention/broadcast-authorization',
+                icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Autorisation de diffusion',
+                to: '/bo/publi-intervention/broadcast-authorization',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Natures',
+                to: '/bo/publi-intervention/broadcast-authorization-nature',
+                icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
+              },
+            ],
+          },
+          {
             name: 'Achats',
             icon: { name: 'ph:money-duotone', class: 'w-5 h-5' },
             activePath: '/bo/purchases',
@@ -295,7 +317,7 @@ export default defineAppConfig({
               },
               {
                 name: 'Catégories de dépenses',
-                to: '/bo/accountancy/doc-accounts',
+                to: '/bo/accountancy/expense-categories',
                 icon: { name: 'ph:money-duotone', class: 'w-4 h-4' },
               },
               {

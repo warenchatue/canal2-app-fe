@@ -9,7 +9,7 @@ definePageMeta({
   preview: {
     title: 'Categories',
     description: 'Gestion des categories',
-    categories: ['bo', 'immo', 'asset-categories'],
+    categories: ['bo', 'accountancy', 'expense-categories'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 44,
@@ -23,8 +23,8 @@ const appStore = useAppStore()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(10)
-const isModalNewAssetCategoryOpen = ref(false)
-const isModalDeleteAssetModelOpen = ref(false)
+const isModalNewExpenseCategoryOpen = ref(false)
+const isModalDeleteExpenseModelOpen = ref(false)
 const isEdit = ref(false)
 
 const toaster = useToaster()
@@ -65,7 +65,7 @@ const query = computed(() => {
 })
 
 const { data, pending, error, refresh } = await useFetch(
-  '/api/immo/assets/asset-categories',
+  '/api/accountancy/expense-categories',
   {
     query,
   },
@@ -84,7 +84,7 @@ function toggleAllVisibleSelection() {
   }
 }
 
-const currentAssetCategory = ref({})
+const currentExpenseCategory = ref({})
 const chatEl = ref<HTMLElement>()
 const expanded = ref(true)
 const loading = ref(false)
@@ -100,7 +100,7 @@ const VALIDATION_TEXT = {
 // It's used to define the shape that the form data will have
 const zodSchema = z
   .object({
-    assetCategory: z.object({
+    expenseCategory: z.object({
       _id: z.string().optional(),
       code: z.string().min(1, VALIDATION_TEXT.CODE_REQUIRED),
       name: z.string().min(1, VALIDATION_TEXT.NAME_REQUIRED),
@@ -118,11 +118,11 @@ const zodSchema = z
     }),
   })
   .superRefine((data, ctx) => {
-    if (!data.assetCategory.code) {
+    if (!data.expenseCategory.code) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: VALIDATION_TEXT.CODE_REQUIRED,
-        path: ['assetCategory.code'],
+        path: ['expenseCategory.code'],
       })
     }
   })
@@ -134,7 +134,7 @@ type FormInput = z.infer<typeof zodSchema>
 const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
   avatar: null,
-  assetCategory: {
+  expenseCategory: {
     code: '',
     name: '',
     description: '',
@@ -166,36 +166,38 @@ const {
 
 const success = ref(false)
 
-function editAssetCategory(assetCategory: any) {
-  isModalNewAssetCategoryOpen.value = true
+function editExpenseCategory(expenseCategory: any) {
+  isModalNewExpenseCategoryOpen.value = true
   isEdit.value = true
-  setFieldValue('assetCategory._id', assetCategory._id)
-  setFieldValue('assetCategory.code', assetCategory.code)
-  setFieldValue('assetCategory.name', assetCategory.name)
-  setFieldValue('assetCategory.description', assetCategory.description)
+  setFieldValue('expenseCategory._id', expenseCategory._id)
+  setFieldValue('expenseCategory.code', expenseCategory.code)
+  setFieldValue('expenseCategory.name', expenseCategory.name)
+  setFieldValue('expenseCategory.level', expenseCategory.level)
+  setFieldValue('expenseCategory.description', expenseCategory.description)
+  setFieldValue('expenseCategory.parent', expenseCategory.parent)
 }
 
-function selectAssetCategory(assetCategory: any) {
-  currentAssetCategory.value = assetCategory
+function selectExpenseCategory(expenseCategory: any) {
+  currentExpenseCategory.value = expenseCategory
   expanded.value = false
 }
 
-function confirmDeleteAssetCategory(assetCategory: any) {
-  isModalDeleteAssetModelOpen.value = true
+function confirmDeleteExpenseCategory(expenseCategory: any) {
+  isModalDeleteExpenseModelOpen.value = true
   isEdit.value = false
-  currentAssetCategory.value = assetCategory
+  currentExpenseCategory.value = expenseCategory
 }
 
-async function deleteAssetCategory(assetCategory: any) {
+async function deleteExpenseCategory(expenseCategory: any) {
   const query2 = computed(() => {
     return {
       action: 'delete',
       token: token.value,
-      id: assetCategory._id,
+      id: expenseCategory._id,
     }
   })
 
-  const response = await useFetch('/api/immo/assets/asset-categories', {
+  const response = await useFetch('/api/accountancy/expense-categories', {
     method: 'delete',
     headers: { 'Content-Type': 'application/json' },
     query: query2,
@@ -211,8 +213,8 @@ async function deleteAssetCategory(assetCategory: any) {
       icon: 'ph:check',
       closable: true,
     })
-    isModalDeleteAssetModelOpen.value = false
-    filter.value = 'assetCategory'
+    isModalDeleteExpenseModelOpen.value = false
+    filter.value = 'expenseCategory'
     filter.value = ''
   } else {
     toaster.clearAll()
@@ -231,44 +233,44 @@ const onSubmit = handleSubmit(
   async (values) => {
     success.value = false
     // here you have access to the validated form values
-    console.log('assetCategory-create-success', values)
+    console.log('expenseCategory-create-success', values)
 
     try {
       const isSuccess = ref(false)
       if (isEdit.value == true) {
         const query2 = computed(() => {
           return {
-            action: 'updateAssetCategory',
+            action: 'updateExpenseCategory',
             token: token.value,
-            id: values.assetCategory._id,
+            id: values.expenseCategory._id,
           }
         })
 
-        const response = await useFetch('/api/immo/assets/asset-categories', {
+        const response = await useFetch('/api/accountancy/expense-categories', {
           method: 'put',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.assetCategory,
-            parent: values.assetCategory?.parent?._id ?? undefined,
+            ...values.expenseCategory,
+            parent: values.expenseCategory?.parent?._id ?? undefined,
           },
         })
         isSuccess.value = response.data.value?.success
       } else {
         const query2 = computed(() => {
           return {
-            action: 'createAssetCategory',
+            action: 'createExpenseCategory',
             token: token.value,
           }
         })
 
-        const response = await useFetch('/api/immo/assets/asset-categories', {
+        const response = await useFetch('/api/accountancy/expense-categories', {
           method: 'post',
           headers: { 'Content-Type': 'application/json' },
           query: query2,
           body: {
-            ...values.assetCategory,
-            parent: values.assetCategory?.parent?._id ?? undefined,
+            ...values.expenseCategory,
+            parent: values.expenseCategory?.parent?._id ?? undefined,
             _id: undefined,
           },
         })
@@ -287,9 +289,9 @@ const onSubmit = handleSubmit(
           icon: 'ph:check',
           closable: true,
         })
-        isModalNewAssetCategoryOpen.value = false
+        isModalNewExpenseCategoryOpen.value = false
         resetForm()
-        filter.value = 'assetCategory'
+        filter.value = 'expenseCategory'
         filter.value = ''
       } else {
         toaster.clearAll()
@@ -324,7 +326,7 @@ const onSubmit = handleSubmit(
     success.value = false
 
     // here you have access to the error
-    console.log('assetCategory-create-error', error)
+    console.log('expenseCategory-create-error', error)
 
     // you can use it to scroll to the first error
     document.documentElement.scrollTo({
@@ -362,7 +364,7 @@ const onSubmit = handleSubmit(
           <option :value="100">100 per page</option>
         </BaseSelect>
         <BaseButton
-          @click=";(isModalNewAssetCategoryOpen = true), (isEdit = false)"
+          @click=";(isModalNewExpenseCategoryOpen = true), (isEdit = false)"
           color="primary"
           class="w-full sm:w-48"
           :disabled="
@@ -502,7 +504,7 @@ const onSubmit = handleSubmit(
                   <div class="flex">
                     <BaseButtonAction
                       class="mx-2"
-                      @click.prevent="selectAssetCategory(item)"
+                      @click.prevent="selectExpenseCategory(item)"
                       muted
                     >
                       <Icon name="lucide:eye" class="h-4 w-4"
@@ -514,12 +516,12 @@ const onSubmit = handleSubmit(
                         authStore.user.appRole.name != UserRole.admin &&
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
-                      @click="editAssetCategory(item)"
+                      @click="editExpenseCategory(item)"
                     >
                       <Icon name="lucide:edit" class="h-4 w-4"
                     /></BaseButtonAction>
                     <BaseButtonAction
-                      @click="confirmDeleteAssetCategory(item)"
+                      @click="confirmDeleteExpenseCategory(item)"
                       :disabled="
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
@@ -546,9 +548,9 @@ const onSubmit = handleSubmit(
 
     <!-- Modal new Categorie -->
     <TairoModal
-      :open="isModalNewAssetCategoryOpen"
+      :open="isModalNewExpenseCategoryOpen"
       size="xl"
-      @close="isModalNewAssetCategoryOpen = false"
+      @close="isModalNewExpenseCategoryOpen = false"
     >
       <template #header>
         <!-- Header -->
@@ -559,7 +561,7 @@ const onSubmit = handleSubmit(
             {{ isEdit == true ? 'Mise à jour' : 'Nouvelle' }} Categorie
           </h3>
 
-          <BaseButtonClose @click="isModalNewAssetCategoryOpen = false" />
+          <BaseButtonClose @click="isModalNewExpenseCategoryOpen = false" />
         </div>
       </template>
 
@@ -581,7 +583,7 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="assetCategory.code"
+                      name="expenseCategory.code"
                     >
                       <BaseInput
                         label="Code"
@@ -598,7 +600,7 @@ const onSubmit = handleSubmit(
                   <div class="col-span-12 md:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="assetCategory.name"
+                      name="expenseCategory.name"
                     >
                       <BaseInput
                         label="Nom"
@@ -617,7 +619,7 @@ const onSubmit = handleSubmit(
                   <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="assetCategory.parent"
+                      name="expenseCategory.parent"
                     >
                       <BaseListbox
                         label="parent"
@@ -638,7 +640,7 @@ const onSubmit = handleSubmit(
                   <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                      name="assetCategory.level"
+                      name="expenseCategory.level"
                     >
                       <BaseInput
                         label="Niveau"
@@ -657,7 +659,7 @@ const onSubmit = handleSubmit(
                 <div class="col-span-12 md:col-span-12">
                   <Field
                     v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                    name="assetCategory.description"
+                    name="expenseCategory.description"
                   >
                     <BaseInput
                       label="Description"
@@ -680,7 +682,7 @@ const onSubmit = handleSubmit(
         <!-- Footer -->
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
-            <BaseButton @click="isModalNewAssetCategoryOpen = false"
+            <BaseButton @click="isModalNewExpenseCategoryOpen = false"
               >Annuler</BaseButton
             >
 
@@ -694,9 +696,9 @@ const onSubmit = handleSubmit(
 
     <!-- Modal delete -->
     <TairoModal
-      :open="isModalDeleteAssetModelOpen"
+      :open="isModalDeleteExpenseModelOpen"
       size="sm"
-      @close="isModalDeleteAssetModelOpen = false"
+      @close="isModalDeleteExpenseModelOpen = false"
     >
       <template #header>
         <!-- Header -->
@@ -707,7 +709,7 @@ const onSubmit = handleSubmit(
             Suppression d'une categorie
           </h3>
 
-          <BaseButtonClose @click="isModalDeleteAssetModelOpen = false" />
+          <BaseButtonClose @click="isModalDeleteExpenseModelOpen = false" />
         </div>
       </template>
 
@@ -718,7 +720,8 @@ const onSubmit = handleSubmit(
             class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
           >
             Supprimer
-            <span class="text-red-500">{{ currentAssetCategory?.name }}</span> ?
+            <span class="text-red-500">{{ currentExpenseCategory?.name }}</span>
+            ?
           </h3>
 
           <p
@@ -733,14 +736,14 @@ const onSubmit = handleSubmit(
         <!-- Footer -->
         <div class="p-4 md:p-6">
           <div class="flex gap-x-2">
-            <BaseButton @click="isModalDeleteAssetModelOpen = false"
+            <BaseButton @click="isModalDeleteExpenseModelOpen = false"
               >Annuler</BaseButton
             >
 
             <BaseButton
               color="primary"
               flavor="solid"
-              @click="deleteAssetCategory(currentAssetCategory)"
+              @click="deleteExpenseCategory(currentExpenseCategory)"
               >Suppimer</BaseButton
             >
           </div>
@@ -796,18 +799,18 @@ const onSubmit = handleSubmit(
         <div v-else class="mt-8" @click.>
           <div class="flex items-center justify-center">
             <BaseAvatar
-              :src="currentAssetCategory?.logo"
-              :text="currentAssetCategory.initials"
+              :src="currentExpenseCategory?.logo"
+              :text="currentExpenseCategory.initials"
               :class="getRandomColor()"
               size="2xl"
             />
           </div>
           <div class="text-center">
             <BaseHeading tag="h3" size="lg" class="mt-4">
-              <span>{{ currentAssetCategory?.name }}</span>
+              <span>{{ currentExpenseCategory?.name }}</span>
             </BaseHeading>
             <BaseParagraph size="sm" class="text-muted-400">
-              <span>{{ currentAssetCategory?.description }}</span>
+              <span>{{ currentExpenseCategory?.description }}</span>
             </BaseParagraph>
             <div class="my-4">
               <BaseParagraph
