@@ -954,33 +954,6 @@ const totalData = computed(() => {
     return acc + totalTaxes
   }, 0)
 
-  // const vatValue = orderData.value.reduce((acc, item: any) => {
-  //   const baseAmount =
-  //     item.quantity * item.rate * (1 - item.discount / 100 ?? 0)
-  //   let tspAmount = 0
-  //   let tvaAmount = 0
-  //   let totalTaxes = 0
-  //   const tsp = item.taxes.filter((el: any) => el.code == 'TSP')
-  //   if (tsp.length == 1) {
-  //     tspAmount = baseAmount * (tsp[0].value / 100 ?? 0)
-  //     totalTaxes += tspAmount
-  //   }
-
-  //   const tva = item.taxes.filter((el: any) => el.code == 'TVA')
-  //   if (tva.length == 1) {
-  //     tvaAmount = (baseAmount + tspAmount) * (tva[0].value / 100 ?? 0)
-  //     totalTaxes += tvaAmount
-  //   }
-
-  //   const otherTaxes = item.taxes.filter(
-  //     (el: any) => el.code != 'TSP' && el.code != 'TVA',
-  //   )
-  //   for (let index = 0; index < otherTaxes.length; index++) {
-  //     totalTaxes += baseAmount * (otherTaxes[index].value / 100 ?? 0)
-  //   }
-  //   return acc + totalTaxes
-  // }, 0)
-
   const total = subtotal - discount + tspValue + vatValue
 
   return [
@@ -1007,6 +980,10 @@ const totalData = computed(() => {
     {
       label: 'Montant TTC',
       value: Math.ceil(total),
+    },
+    {
+      label: 'Montant Dû',
+      value: Math.ceil(total - (currentOrderInvoice.value?.paid ?? 0)),
     },
   ]
 })
