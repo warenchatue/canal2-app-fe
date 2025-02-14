@@ -129,6 +129,23 @@ const { data: allUsers } = await useFetch('/api/users', {
   query,
 })
 
+const { data: allExpensesCategories } = await useFetch(
+  '/api/accountancy/expense-categories',
+  {
+    query,
+  },
+)
+
+const transformedExpensesCategories = allExpensesCategories.value?.data.map(
+  (e: any) => {
+    const user = {
+      id: e._id,
+      name: e.name + ' (' + (e.parent?.name ?? '') + ')',
+    }
+    return user
+  },
+)
+
 const transformedUsers = allUsers.value?.data.map((e: any) => {
   const user = {
     id: e._id,
@@ -276,6 +293,13 @@ const zodSchema = z
         })
         .optional()
         .nullable(),
+      category: z
+        .object({
+          id: z.string(),
+          name: z.string(),
+        })
+        .optional()
+        .nullable(),
       docType: z
         .object({
           id: z.string(),
@@ -366,7 +390,18 @@ function editAccountingDoc(currentAccountingDoc: any) {
           currentAccountingDoc.beneficiary?.firstName +
           ' ' +
           currentAccountingDoc.beneficiary?.lastName,
-        text: currentAccountingDoc.beneficiary?.phone,
+        email: currentAccountingDoc.beneficiary?.email,
+      })
+    }
+
+    if (currentAccountingDoc.category) {
+      setFieldValue('accountingDoc.category', {
+        id: currentAccountingDoc.category?._id,
+        name:
+          currentAccountingDoc.category?.name +
+          ' (' +
+          (currentAccountingDoc.category?.parent?.name ?? '') +
+          ')',
       })
     }
 
@@ -376,17 +411,15 @@ function editAccountingDoc(currentAccountingDoc: any) {
         currentAccountingDoc.authorizer?.firstName +
         ' ' +
         currentAccountingDoc.authorizer?.lastName,
-      text: currentAccountingDoc.authorizer?.phone,
+      email: currentAccountingDoc.authorizer?.email,
     })
     setFieldValue('accountingDoc.journal', {
       id: currentAccountingDoc.journal?._id,
       name: currentAccountingDoc.journal?.label,
-      text: currentAccountingDoc.journal?.code,
     })
     setFieldValue('accountingDoc.docType', {
       id: currentAccountingDoc.docType?._id,
       name: currentAccountingDoc.docType?.label,
-      text: currentAccountingDoc.docType?.code,
     })
     currentOrg.value = currentAccountingDoc.org
     accountingDocData.value = currentAccountingDoc.items
@@ -577,6 +610,7 @@ const onSubmit = handleSubmit(
           body: {
             ...values.accountingDoc,
             beneficiary: values.accountingDoc?.beneficiary?.id ?? undefined,
+            category: values.accountingDoc?.category?.id ?? undefined,
             authorizer: values.accountingDoc?.authorizer?.id ?? undefined,
             journal: values.accountingDoc?.journal?.id,
             docType: values.accountingDoc?.docType?.id,
@@ -607,6 +641,7 @@ const onSubmit = handleSubmit(
           body: {
             ...values.accountingDoc,
             beneficiary: values.accountingDoc?.beneficiary?.id ?? undefined,
+            category: values.accountingDoc?.category?.id ?? undefined,
             authorizer: values.accountingDoc?.authorizer?.id ?? undefined,
             journal: values.accountingDoc?.journal?.id,
             docType: values.accountingDoc?.docType?.id,
@@ -1117,6 +1152,43 @@ const onSubmit = handleSubmit(
                               icon="ph:file-duotone"
                               placeholder="Ex: Pice de caisse dépense"
                               label="Type de document"
+                              clearable
+                              :clear-value="''"
+                            >
+                              <template #empty="value">
+                                <!-- Use destruct to keep what you need -->
+                                <div v-if="value.query.length < 2">
+                                  Saisissez au-moins 2 caractères
+                                </div>
+                                <div v-else>Aucun resultat.</div>
+                              </template>
+                            </BaseAutocomplete>
+                          </Field>
+                        </div>
+                        <div
+                          class="ltablet:col-span-6 col-span-12 lg:col-span-6"
+                        >
+                          <Field
+                            v-slot="{
+                              field,
+                              errorMessage,
+                              handleChange,
+                              handleBlur,
+                            }"
+                            name="accountingDoc.category"
+                          >
+                            <BaseAutocomplete
+                              :model-value="field.value"
+                              :error="errorMessage"
+                              :disabled="isSubmitting"
+                              @update:model-value="handleChange"
+                              @blur="handleBlur"
+                              :items="transformedExpensesCategories"
+                              :display-value="(item: any) => item.name || ''"
+                              :filter-items="filterItems"
+                              icon="lucide:filter"
+                              placeholder="Ex: carburant"
+                              label="Catégorie dépense"
                               clearable
                               :clear-value="''"
                             >

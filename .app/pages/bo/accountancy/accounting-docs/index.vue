@@ -892,6 +892,9 @@ const onSubmit = handleSubmit(
                   <TairoTableHeading v-if="!isPrint" uppercase spaced>
                     Pièce
                   </TairoTableHeading>
+                  <TairoTableHeading uppercase spaced>
+                    Categorie
+                  </TairoTableHeading>
                   <TairoTableHeading uppercase spaced> Ref </TairoTableHeading>
                   <TairoTableHeading uppercase spaced>
                     Motif
@@ -967,7 +970,9 @@ const onSubmit = handleSubmit(
                   <TairoTableCell v-if="!isPrint" light spaced>
                     {{ item.docType?.label }}
                   </TairoTableCell>
-
+                  <TairoTableCell light spaced>
+                    {{ item.category?.name }}
+                  </TairoTableCell>
                   <TairoTableCell light spaced>
                     {{ item.ref ?? item.invoiceNumber }}
                   </TairoTableCell>
