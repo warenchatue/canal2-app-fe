@@ -107,35 +107,42 @@ const VALIDATION_TEXT = {
 const zodSchema = z.object({
   broadcastAuthorization: z.object({
     announcer: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
     invoice: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
     campaign: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
     nature: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
     natureDescription: z.string().optional(),
-    date: z.string().transform((str) => parseDate(str)),
-    startDate: z.string().transform((str) => parseDate(str)),
-    endDate: z.string().transform((str) => parseDate(str)),
+    date: z.string().transform((str) => str ? new Date(str).toISOString() : null),
+    startDate: z.string().transform((str) => str ? new Date(str).toISOString() : null),
+    endDate: z.string().transform((str) => str ? new Date(str).toISOString() : null),
     paymentMethod: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
     duration: z.number().optional(),
     hour: z.string().optional(),
-    hours: z.array(z.string()).optional(),
-    realHours: z.array(z.string()).optional(),
+    hours: z.array(z.string()).default([]),
+    realHours: z.array(z.string()).default([]),
     realHour: z.string().optional(),
     description: z.string().optional(),
     participants: z.array(z.string()).default([]),
-    questions: z.array(z.string()).default([]).optional(),
+    questions: z.array(z.string()).default([]),
     note: z.string().optional(),
     serviceInCharge: z.string().optional(),
     validator: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
     admiValidator: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
     location: z.string().min(1, VALIDATION_TEXT.LOCATION_REQUIRED),
-    commercials: z.array(z.string().min(1, 'At least one commercial must be selected')).default([]),
+    commercials: z.array(z.string()).default([]),
     contactDetails: z.string().optional(),
     productionPartner: z.string().optional(),
     otherProductionPartner: z.string().optional(),
@@ -335,7 +342,7 @@ const removeQuestion1 = (index, handleChange) => {
 const { data: commercials } = await useFetch('/api/users/', {
   query: queryNF,
 });
-console.log('Commercials API Response:', commercials.value);
+//console.log('Commercials API Response:', commercials.value);
 const commercialsList = computed(() => {
   if (!commercials.value || !Array.isArray(commercials.value.data)) {
     return [];
@@ -382,12 +389,83 @@ const {
 
 const success = ref(false)
 
-function selectBroadcastAuth(auth: any) {
-  currentBroadcastAuth.value = auth
-  expanded.value = false
-}
+const onSubmit = handleSubmit(async (values) => {
+  try {
+    const token = useCookie('token').value
+    
+    // Format the data to match backend expectations
+    const formattedData = {
+      announcer: values.broadcastAuthorization.announcer?._id,
+      invoice: values.broadcastAuthorization.invoice?._id,
+      campaign: values.broadcastAuthorization.campaign?._id,
+      nature: values.broadcastAuthorization.nature?._id,
+      natureDescription: values.broadcastAuthorization.natureDescription || '',
+      date: values.broadcastAuthorization.date ? new Date(values.broadcastAuthorization.date).toISOString() : null,
+      startDate: values.broadcastAuthorization.startDate ? new Date(values.broadcastAuthorization.startDate).toISOString() : null,
+      endDate: values.broadcastAuthorization.endDate ? new Date(values.broadcastAuthorization.endDate).toISOString() : null,
+      paymentMethod: values.broadcastAuthorization.paymentMethod?._id,
+      duration: Number(values.broadcastAuthorization.duration) || 0,
+      hour: values.broadcastAuthorization.hour || '',
+      hours: Array.isArray(values.broadcastAuthorization.hours) ? values.broadcastAuthorization.hours : [],
+      realHours: Array.isArray(values.broadcastAuthorization.realHours) ? values.broadcastAuthorization.realHours : [],
+      realHour: values.broadcastAuthorization.realHour || '',
+      description: values.broadcastAuthorization.description || '',
+      participants: Array.isArray(values.broadcastAuthorization.participants) ? values.broadcastAuthorization.participants : [],
+      questions: Array.isArray(values.broadcastAuthorization.questions) ? values.broadcastAuthorization.questions : [],
+      note: values.broadcastAuthorization.note || '',
+      serviceInCharge: values.broadcastAuthorization.serviceInCharge || '',
+      validator: values.broadcastAuthorization.validator?._id,
+      adminValidator: values.broadcastAuthorization.adminValidator?._id,
+      location: values.broadcastAuthorization.location || '',
+      commercials: Array.isArray(values.broadcastAuthorization.commercials) ? values.broadcastAuthorization.commercials : [],
+      contactDetails: values.broadcastAuthorization.contactDetails || '',
+      productionPartner: values.broadcastAuthorization.productionPartner || '',
+      otherProductionPartner: values.broadcastAuthorization.otherProductionPartner || '',
+      keyContact: values.broadcastAuthorization.keyContact || '',
+      otherKeyContact: values.broadcastAuthorization.otherKeyContact || '',
+      contactDetailsToShow: values.broadcastAuthorization.contactDetailsToShow || ''
+    }
 
+    const response = await $fetch('/api/broadcast-auth/broadcast-aut?action=createAuthorization', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: formattedData, // Remove action from body, it's now in query params
+    })
 
+    if (response.success) {
+      toaster.show({
+        title: 'Success',
+        message: 'Broadcast authorization created successfully',
+        color: 'success',
+        icon: 'ph:check',
+        closable: true,
+      })
+      resetForm()
+      showForm.value = false
+      refresh()
+    } else {
+      toaster.show({
+        title: 'Error',
+        message: response.message || 'Failed to create broadcast authorization',
+        color: 'danger',
+        icon: 'ph:warning',
+        closable: true,
+      })
+    }
+  } catch (error) {
+    console.error('Submission error:', error)
+    toaster.show({
+      title: 'Error',
+      message: error.message || 'Failed to submit form',
+      color: 'danger',
+      icon: 'ph:warning',
+      closable: true,
+    })
+  }
+})
 
 
 </script>
@@ -618,12 +696,13 @@ function selectBroadcastAuth(auth: any) {
             class="divide-muted-200 dark:divide-muted-700"
             @submit.prevent="onSubmit"
           >
-            <div
+          <div
               shape="curved"
               class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
             >
               <div class="mx-auto flex w-full flex-col">
                 <div>
+
                   <div class="grid grid-cols-12 gap-4">
 
                     <!-- Announcer -->
@@ -911,7 +990,7 @@ function selectBroadcastAuth(auth: any) {
                             :error="errorMessage"
                             :disabled="isSubmitting"
                             @update:model-value="updateInputValue2"
-                            @keyup.enter="(e) => {
+                            @keydown.enter.prevent="(e) => {
                               if (inputValue2) {
                                 addHour1(inputValue2, handleChange)
                                 inputValue2 = ''
@@ -959,7 +1038,7 @@ function selectBroadcastAuth(auth: any) {
                             :error="errorMessage"
                             :disabled="isSubmitting"
                             @update:model-value="updateInputValue3"
-                            @keyup.enter="(e) => {
+                            @keydown.enter.prevent="(e) => {
                               if (inputValue3) {
                                 addrealHour1(inputValue3, handleChange)
                                 inputValue3 = ''
@@ -1033,7 +1112,7 @@ function selectBroadcastAuth(auth: any) {
                             :error="errorMessage"
                             :disabled="isSubmitting"
                             @update:model-value="updateInputValue"
-                            @keyup.enter="(e) => {
+                            @keydown.enter.prevent="(e) => {
                               if (inputValue) {
                                 addParticipant1(inputValue, handleChange)
                                 inputValue = ''
@@ -1082,7 +1161,7 @@ function selectBroadcastAuth(auth: any) {
                             :error="errorMessage"
                             :disabled="isSubmitting"
                             @update:model-value="updateInputValue1"
-                            @keyup.enter="(e) => {
+                            @keydown.enter.prevent="(e) => {
                               if (inputValue1) {
                                 addQuestion1(inputValue1, handleChange)
                                 inputValue1 = ''
@@ -1429,10 +1508,27 @@ function selectBroadcastAuth(auth: any) {
                         />
                       </Field>
                     </div>
+
                   </div>
                 </div>
               </div>
-            </div>
+
+                <!-- Submit Button -->
+                <div class="mt-6 bp-6">
+                  <BaseButton
+                    type="submit"
+                    color="primary"
+                    class="w-full sm:w-48"
+                    :disabled="isSubmitting"
+                  >
+                    <span v-if="!isSubmitting">Submit</span>
+                    <span v-else>Submitting...</span>
+                  </BaseButton>
+                </div>
+
+          </div>
+
+
           </form>
         </BaseCard>
       </div>
