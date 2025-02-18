@@ -331,6 +331,7 @@ async function viewOrder() {
 }
 
 async function addInvoicePayment() {
+  ;[2]
   const query2 = computed(() => {
     return {
       action: 'addInvoicePayment',
@@ -1068,11 +1069,11 @@ const onSubmit = handleSubmit(
               ),
               amountHT:
                 totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 3].value
+                  ? totalData.value[totalData.value.length - 5].value
                   : 0,
               amount:
                 totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 1].value
+                  ? totalData.value[totalData.value.length - 2].value
                   : 0,
             },
           })
@@ -1107,11 +1108,11 @@ const onSubmit = handleSubmit(
               ),
               amountHT:
                 totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 3].value
+                  ? totalData.value[totalData.value.length - 5].value
                   : 0,
               amount:
                 totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 1].value
+                  ? totalData.value[totalData.value.length - 2].value
                   : 0,
             },
           })
@@ -1156,19 +1157,19 @@ const onSubmit = handleSubmit(
               ),
               amountHT:
                 totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 4].value
+                  ? totalData.value[totalData.value.length - 5].value
                   : 0,
               tsp:
                 totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 3].value
+                  ? totalData.value[totalData.value.length - 4].value
                   : 0,
               tva:
                 totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 2].value
+                  ? totalData.value[totalData.value.length - 3].value
                   : 0,
               amount:
                 totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 1].value
+                  ? totalData.value[totalData.value.length - 2].value
                   : 0,
             },
           })
@@ -1204,19 +1205,19 @@ const onSubmit = handleSubmit(
               ),
               amountHT:
                 totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 4].value
+                  ? totalData.value[totalData.value.length - 5].value
                   : 0,
               tsp:
                 totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 3].value
+                  ? totalData.value[totalData.value.length - 4].value
                   : 0,
               tva:
                 totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 2].value
+                  ? totalData.value[totalData.value.length - 3].value
                   : 0,
               amount:
                 totalData.value.length > 0
-                  ? totalData.value[totalData.value.length - 1].value
+                  ? totalData.value[totalData.value.length - 2].value
                   : 0,
             },
           })
