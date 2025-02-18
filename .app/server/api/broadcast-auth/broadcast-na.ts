@@ -30,12 +30,12 @@ export default defineEventHandler(async (event) => {
       console.log('Request body:', body); // Log the request body
 
       // Check for existing record with same name
-      const existingRecords = await findAll1(token);
-      const exists = existingRecords.some(
+      const existingData = await findAll1(token);
+      const exists = existingData.some(
         (record: any) =>
           record.name.toLowerCase() === body.name.toLowerCase() &&
           record.type === body.type &&
-          record.program === body.program
+          record.program_id === body.program_id
       );
 
       if (exists) {
@@ -58,13 +58,15 @@ export default defineEventHandler(async (event) => {
       console.log('Request body:', body); // Log the request body
 
       // For updates, check if another record (besides the one being updated) has the same values
-      const existingRecords = await findAll(token);
+      const existingData = await findAll(token);
+      const existingRecords = existingData.data; // Get the actual array of records
+      
       const exists = existingRecords.some(
         (record: any) =>
           record._id !== id &&
           record.name.toLowerCase() === body.name.toLowerCase() &&
           record.type === body.type &&
-          record.program === body.program
+          record.program_id === body.program_id
       );
 
       if (exists) {
@@ -97,6 +99,7 @@ export default defineEventHandler(async (event) => {
     };
   }
 });
+
 // Helper function to filter and paginate data
 function filterData(
   response: any, // Accept the full response object
@@ -114,7 +117,7 @@ function filterData(
   const filterRe = new RegExp(filter, 'i');
   return data
     .filter((item) =>
-      [item.name, item.type, item.program].some((field) => field.match(filterRe))
+      [item.name, item.type, item.program].some((field) => field && field.match(filterRe))
     )
     .slice(offset, offset + perPage);
 }

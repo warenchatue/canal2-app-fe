@@ -370,16 +370,21 @@ const { data, pending, error, refresh } = await useFetch('/api/broadcast-auth/br
   query,
 })
 
+
+const { data: broadcastAuth } = await useFetch('/api/broadcast-auth/braodcast-aut', {
+  query: queryNF,
+});
+console.log('BroadcastAuth API Response:', broadcastAuth.value)
+
+
+
+
 type FormInput = z.infer<typeof zodSchema>
 const validationSchema = toTypedSchema(zodSchema)
 
 const {
   handleSubmit,
   isSubmitting,
-  setFieldError,
-  meta,
-  values,
-  errors,
   resetForm,
   setFieldValue,
   setErrors,
