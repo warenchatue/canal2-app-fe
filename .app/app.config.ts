@@ -185,7 +185,7 @@ export default defineAppConfig({
           {
             name: 'Publi / Couvertures',
             icon: { name: 'ph:money-duotone', class: 'w-5 h-5' },
-            activePath: '/bo/public-intervention/broadcast-authorization',
+            activePath: '/bo/publi-intervention',
             children: [
               {
                 name: 'Tableau de bord',

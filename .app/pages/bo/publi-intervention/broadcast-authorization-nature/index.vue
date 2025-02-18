@@ -1,24 +1,24 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useForm } from 'vee-validate'
+import { computed, ref } from 'vue'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
-import { ref, computed } from 'vue';
 
-const emit = defineEmits(['close', 'success']);
+const emit = defineEmits(['close', 'success'])
 
 const feedback = ref({
   show: false,
   type: 'success',
-  message: ''
-});
+  message: '',
+})
 
 definePageMeta({
   title: 'Natures',
   preview: {
     title: 'Natures',
     description: 'Gestion des natures',
-    categories: ['bo', 'natures'],
+    categories: ['bo', 'publi-intervention'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 45,
@@ -108,18 +108,18 @@ const loading = ref(false)
 
 // Validation schema for Nature
 const VALIDATION_TEXT = {
-  NAME_REQUIRED: "Le nom est requis",
-  TYPE_REQUIRED: "Le type est requis",
-  PROGRAM_REQUIRED: "Le programme est requis",
+  NAME_REQUIRED: 'Le nom est requis',
+  TYPE_REQUIRED: 'Le type est requis',
+  PROGRAM_REQUIRED: 'Le programme est requis',
 }
 
 const zodSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(1, 'Name is required'),
   type: z.object({
-    name: z.string().min(1, "Type is required"),
+    name: z.string().min(1, 'Type is required'),
   }),
   program_id: z.object({
-    _id: z.string().min(1, "Program is required")
+    _id: z.string().min(1, 'Program is required'),
   }),
 })
 
@@ -214,61 +214,77 @@ const showFeedback = (type: 'success' | 'error', message: string) => {
   feedback.value = {
     show: true,
     type,
-    message
-  };
+    message,
+  }
   setTimeout(() => {
-    feedback.value.show = false;
-  }, 3000);
-};
+    feedback.value.show = false
+  }, 3000)
+}
 
 const onSubmit = handleSubmit(
-  
   async (values) => {
     try {
-      console.log('Selected Program ID:', values.program_id); // Debugging log
-      console.log('Selected Type:', values.type); // Debugging log
+      console.log('Selected Program ID:', values.program_id) // Debugging log
+      console.log('Selected Type:', values.type) // Debugging log
 
       const formData = {
         name: values.name.trim(),
         type: values.type.name.trim(),
         program_id: values.program_id._id,
-      };
+      }
 
-      const { data, error } = await useFetch('/api/broadcast-auth/broadcast-na', {
-        method: isEdit.value ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-        query: {
-          action: isEdit.value ? 'updateNature' : 'createNature',
-          token: token.value,
-          id: isEdit.value ? currentNature.value._id : undefined,
+      const { data, error } = await useFetch(
+        '/api/broadcast-auth/broadcast-na',
+        {
+          method: isEdit.value ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+          query: {
+            action: isEdit.value ? 'updateNature' : 'createNature',
+            token: token.value,
+            id: isEdit.value ? currentNature.value._id : undefined,
+          },
         },
-      });
+      )
 
       if (error.value) {
-        console.error('Fetch error:', error.value);
-        showFeedback('error', 'Erreur lors de l\'enregistrement. Veuillez réessayer.');
-        return;
+        console.error('Fetch error:', error.value)
+        showFeedback(
+          'error',
+          "Erreur lors de l'enregistrement. Veuillez réessayer.",
+        )
+        return
       }
 
       if (data.value?.success) {
-        showFeedback('success', isEdit.value ? 'Nature mise à jour avec succès' : 'Nature ajoutée avec succès');
-        resetForm();
-        isModalNewNatureOpen.value = false;
-        refresh();
+        showFeedback(
+          'success',
+          isEdit.value
+            ? 'Nature mise à jour avec succès'
+            : 'Nature ajoutée avec succès',
+        )
+        resetForm()
+        isModalNewNatureOpen.value = false
+        refresh()
       } else {
-        showFeedback('error', data.value?.message || 'Échec de l\'enregistrement');
+        showFeedback(
+          'error',
+          data.value?.message || "Échec de l'enregistrement",
+        )
       }
     } catch (error) {
-      console.error('Form submission error:', error);
-      showFeedback('error', 'Erreur lors de l\'enregistrement. Veuillez réessayer.');
+      console.error('Form submission error:', error)
+      showFeedback(
+        'error',
+        "Erreur lors de l'enregistrement. Veuillez réessayer.",
+      )
     }
   },
   (error) => {
-    console.error('Form validation error:', error);
-    showFeedback('error', 'Veuillez corriger les erreurs dans le formulaire.');
-  }
-);
+    console.error('Form validation error:', error)
+    showFeedback('error', 'Veuillez corriger les erreurs dans le formulaire.')
+  },
+)
 </script>
 
 <template>
@@ -351,7 +367,9 @@ const onSubmit = handleSubmit(
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Nom </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Type </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>Programme</TairoTableHeading>
+                <TairoTableHeading uppercase spaced
+                  >Programme</TairoTableHeading
+                >
                 <TairoTableHeading uppercase spaced>Action</TairoTableHeading>
               </template>
 
