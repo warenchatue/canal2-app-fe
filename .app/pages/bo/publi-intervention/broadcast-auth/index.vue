@@ -70,9 +70,7 @@ const queryNF = computed(() => ({
 }));
 
 
-const { data, pending, error, refresh } = await useFetch('/api/broadcast-aut', {
-  query,
-})
+
 
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
@@ -87,6 +85,12 @@ function toggleAllVisibleSelection() {
   }
 }
 
+const parseDate = (dateStr: string) => {
+  if (!dateStr) return undefined;
+  const date = new Date(dateStr);
+  return isNaN(date.getTime()) ? undefined : date;
+};
+
 const currentBroadcastAuth = ref({})
 const chatEl = ref<HTMLElement>()
 const expanded = ref(true)
@@ -99,42 +103,46 @@ const VALIDATION_TEXT = {
   LOCATION_REQUIRED: "Location can't be empty",
 }
 
-
 // Zod schema for the form
 const zodSchema = z.object({
   broadcastAuthorization: z.object({
     announcer: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
     invoice: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
-    campaign:z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
-    nature:z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
+    campaign: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
+    nature: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
     natureDescription: z.string().optional(),
-    date: z.date(),
-    startDate: z.date(),
-    endDate: z.date(),
+    date: z.string().transform((str) => str ? new Date(str).toISOString() : null),
+    startDate: z.string().transform((str) => str ? new Date(str).toISOString() : null),
+    endDate: z.string().transform((str) => str ? new Date(str).toISOString() : null),
     paymentMethod: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
     duration: z.number().optional(),
     hour: z.string().optional(),
-    hours: z.array(z.string()).optional(),
-    realHours: z.array(z.string()).optional(),
+    hours: z.array(z.string()).default([]),
+    realHours: z.array(z.string()).default([]),
     realHour: z.string().optional(),
     description: z.string().optional(),
-    participants: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
-    questions: z.array(z.string()).optional(),
+    participants: z.array(z.string()).default([]),
+    questions: z.array(z.string()).default([]),
     note: z.string().optional(),
     serviceInCharge: z.string().optional(),
     validator: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
     admiValidator: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
     location: z.string().min(1, VALIDATION_TEXT.LOCATION_REQUIRED),
-    commercials: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)}),
+    commercials: z.array(z.string()).default([]),
     contactDetails: z.string().optional(),
     productionPartner: z.string().optional(),
     otherProductionPartner: z.string().optional(),
@@ -144,64 +152,326 @@ const zodSchema = z.object({
   }),
 })
 
-type FormInput = z.infer<typeof zodSchema>
 
+//announcer
+const { data: announcers } = await useFetch('/api/sales/announcers', {
+  query: queryNF,
+});
+const announcersList = computed(() => {
+  if (!announcers.value || !Array.isArray(announcers.value.data)) {
+    return [];
+  }
+  return announcers.value.data.map(item => ({
+    _id: item._id, // Ensure this field exists in the API response
+    name: item.name,
+    code: item.code
+  }));
+});
+
+//invoices
+const { data: invoices } = await useFetch('/api/sales/invoices', {
+  query: queryNF,
+});
+const invoicesList = computed(() => {
+  if (!invoices.value || !Array.isArray(invoices.value.data)) {
+    return [];
+  }
+  return invoices.value.data.map(item => ({
+    _id: item._id, // Ensure this field exists in the API response
+    code: item.code
+  }));
+});
+
+// campaingn
+const { data: campaingn } = await useFetch('/api/pub/packages', {
+  query: queryNF,
+});
+const campaingnList = computed(() => {
+  if (!campaingn.value || !Array.isArray(campaingn.value.data)) {
+    return [];
+  }
+  return campaingn.value.data.map(item => ({
+    _id: item._id, // Ensure this field exists in the API response
+    code: item.code
+  }));
+});
+
+// nature
+const { data: natures } = await useFetch('/api/broadcast-auth/broadcast-na', {
+  query: queryNF,
+});
+const naturesList = computed(() => {
+  if (!natures.value || !natures.value.data || !Array.isArray(natures.value.data)) {
+    console.warn('Natures data is not available or invalid:', natures.value);
+    return [];
+  }
+  return natures.value.data.map(item => ({
+    _id: item._id, // Ensure this field exists in the API response
+    name: item.name
+  }));
+});
+
+//Payment methods
+const { data: paymentMethod } = await useFetch('/api/accountancy/payment-methods', {
+  query: queryNF,
+});
+const paymentMethodList = computed(() => {
+  if (!paymentMethod.value || !Array.isArray(paymentMethod.value.data)) {
+    return [];
+  }
+  return paymentMethod.value.data.map(item => ({
+    _id: item._id, // Ensure this field exists in the API response
+    label: item.label
+  }));
+});
+
+//Validatur
+const { data: validatur } = await useFetch('/api/admin/orgs', {
+  query: queryNF,
+});
+const validaturList = computed(() => {
+  if (!validatur.value || !Array.isArray(validatur.value.data)) {
+    return [];
+  }
+  return validatur.value.data.map(item => ({
+    _id: item._id, // Ensure this field exists in the API response
+    name: item.name
+  }));
+});
+
+
+//ValidaturAdmin
+const { data: validaturAdmin } = await useFetch('/api/admin/orgs', {
+  query: queryNF,
+});
+const validaturAdminList = computed(() => {
+  if (!validaturAdmin.value || !Array.isArray(validaturAdmin.value.data)) {
+    return [];
+  }
+  return validaturAdmin.value.data.map(item => ({
+    _id: item._id, // Ensure this field exists in the API response
+    name: item.name
+  }));
+});
+
+
+
+
+//Hours
+const hours = ref([])
+const inputValue2 = ref('')
+const updateInputValue2 = (value) => {
+  inputValue2.value = value
+}
+const addHour1 = (hour, handleChange) => {
+  if (!hour?.trim()) return
+  const newHours = [...hours.value, hour.trim()]
+  hours.value = newHours
+  handleChange(newHours)
+  inputValue2.value = ''
+}
+const removeHour1 = (index, handleChange) => {
+  const newHours = hours.value.filter((_, i) => i !== index)
+  hours.value = newHours
+  handleChange(newHours)
+}
+
+//RealHours
+const realHours = ref([])
+const inputValue3 = ref('')
+const updateInputValue3 = (value) => {
+  inputValue3.value = value
+}
+const addrealHour1 = (realHour, handleChange) => {
+  if (!realHour?.trim()) return
+  const newrealHours = [...realHours.value, realHour.trim()]
+  realHours.value = newrealHours
+  handleChange(newrealHours)
+  inputValue3.value = ''
+}
+const removerealHour1 = (index, handleChange) => {
+  const newrealHours = realHours.value.filter((_, i) => i !== index)
+  realHours.value = newrealHours
+  handleChange(newrealHours)
+}
+
+
+//partisipant
+const participants = ref([])
+const inputValue = ref('')
+const updateInputValue = (value) => {
+  inputValue.value = value
+}
+const addParticipant1 = (participant, handleChange) => {
+  if (!participant?.trim()) return
+  const newParticipants = [...participants.value, participant.trim()]
+  participants.value = newParticipants
+  handleChange(newParticipants)
+  inputValue.value = ''
+}
+const removeParticipant1 = (index, handleChange) => {
+  const newParticipants = participants.value.filter((_, i) => i !== index)
+  participants.value = newParticipants
+  
+  handleChange(newParticipants)
+}
+
+
+//Questions
+const questions = ref([])
+const inputValue1 = ref('')
+const updateInputValue1 = (value) => {
+  inputValue1.value = value
+}
+const addQuestion1 = (question, handleChange) => {
+  if (!question?.trim()) return
+  const newQuestions = [...questions.value, question.trim()]
+  questions.value = newQuestions
+  handleChange(newQuestions)
+  inputValue1.value = ''
+}
+const removeQuestion1 = (index, handleChange) => {
+  const newQuestions = questions.value.filter((_, i) => i !== index)
+  questions.value = newQuestions
+  handleChange(newQuestions)
+}
+
+
+
+//commercials
+const { data: commercials } = await useFetch('/api/users/', {
+  query: queryNF,
+});
+//console.log('Commercials API Response:', commercials.value);
+const commercialsList = computed(() => {
+  if (!commercials.value || !Array.isArray(commercials.value.data)) {
+    return [];
+  }
+  return commercials.value.data.map(item => ({
+    _id: item._id,
+    name: item.lastName
+  }));
+});
+const selectedCommercials = ref([]);
+function handleCommercialChange(event, handleChange) {
+  const selectedOptions = Array.from(event.target.selectedOptions).map(
+    option => option.value
+  );
+  selectedCommercials.value = [...new Set([...selectedCommercials.value, ...selectedOptions])];
+  handleChange(selectedCommercials.value);
+}
+function removeCommercial(commercialId, handleChange) {
+  selectedCommercials.value = selectedCommercials.value.filter(id => id !== commercialId);
+  handleChange(selectedCommercials.value);
+}
+
+
+const { data, pending, error, refresh } = await useFetch('/api/broadcast-auth/braodcast-aut', {
+  query,
+})
+
+
+const { data: broadcastAuth } = await useFetch('/api/broadcast-auth/braodcast-aut', {
+  query: queryNF,
+});
+console.log('BroadcastAuth API Response:', broadcastAuth.value)
+
+
+
+
+type FormInput = z.infer<typeof zodSchema>
 const validationSchema = toTypedSchema(zodSchema)
-const initialValues = computed<FormInput>(() => ({
-  broadcastAuthorization: {
-    announcer: '',
-    invoice: '',
-    campaign: '',
-    nature: '',
-    natureDescription: '',
-    date: new Date(),
-    startDate: new Date(),
-    endDate: new Date(),
-    paymentMethod: '',
-    duration: 0,
-    hour: '',
-    hours: [],
-    realHours: [],
-    realHour: '',
-    description: '',
-    participants: [],
-    questions: [],
-    note: '',
-    serviceInCharge: '',
-    validator: '',
-    admiValidator: '',
-    location: '',
-    commercials: [],
-    contactDetails: '',
-    productionPartner: '',
-    otherProductionPartner: '',
-    keyContact: '',
-    otherKeyContact: '',
-    contactDetailsToShow: '',
-  },
-}))
 
 const {
   handleSubmit,
   isSubmitting,
-  setFieldError,
-  meta,
-  values,
-  errors,
   resetForm,
   setFieldValue,
   setErrors,
 } = useForm({
   validationSchema,
-  initialValues,
 })
 
 const success = ref(false)
 
-function selectBroadcastAuth(auth: any) {
-  currentBroadcastAuth.value = auth
-  expanded.value = false
-}
+const onSubmit = handleSubmit(async (values) => {
+  try {
+    const token = useCookie('token').value
+    
+    // Format the data to match backend expectations
+    const formattedData = {
+      announcer: values.broadcastAuthorization.announcer?._id,
+      invoice: values.broadcastAuthorization.invoice?._id,
+      campaign: values.broadcastAuthorization.campaign?._id,
+      nature: values.broadcastAuthorization.nature?._id,
+      natureDescription: values.broadcastAuthorization.natureDescription || '',
+      date: values.broadcastAuthorization.date ? new Date(values.broadcastAuthorization.date).toISOString() : null,
+      startDate: values.broadcastAuthorization.startDate ? new Date(values.broadcastAuthorization.startDate).toISOString() : null,
+      endDate: values.broadcastAuthorization.endDate ? new Date(values.broadcastAuthorization.endDate).toISOString() : null,
+      paymentMethod: values.broadcastAuthorization.paymentMethod?._id,
+      duration: Number(values.broadcastAuthorization.duration) || 0,
+      hour: values.broadcastAuthorization.hour || '',
+      hours: Array.isArray(values.broadcastAuthorization.hours) ? values.broadcastAuthorization.hours : [],
+      realHours: Array.isArray(values.broadcastAuthorization.realHours) ? values.broadcastAuthorization.realHours : [],
+      realHour: values.broadcastAuthorization.realHour || '',
+      description: values.broadcastAuthorization.description || '',
+      participants: Array.isArray(values.broadcastAuthorization.participants) ? values.broadcastAuthorization.participants : [],
+      questions: Array.isArray(values.broadcastAuthorization.questions) ? values.broadcastAuthorization.questions : [],
+      note: values.broadcastAuthorization.note || '',
+      serviceInCharge: values.broadcastAuthorization.serviceInCharge || '',
+      validator: values.broadcastAuthorization.validator?._id,
+      adminValidator: values.broadcastAuthorization.adminValidator?._id,
+      location: values.broadcastAuthorization.location || '',
+      commercials: Array.isArray(values.broadcastAuthorization.commercials) ? values.broadcastAuthorization.commercials : [],
+      contactDetails: values.broadcastAuthorization.contactDetails || '',
+      productionPartner: values.broadcastAuthorization.productionPartner || '',
+      otherProductionPartner: values.broadcastAuthorization.otherProductionPartner || '',
+      keyContact: values.broadcastAuthorization.keyContact || '',
+      otherKeyContact: values.broadcastAuthorization.otherKeyContact || '',
+      contactDetailsToShow: values.broadcastAuthorization.contactDetailsToShow || ''
+    }
+
+    const response = await $fetch('/api/broadcast-auth/broadcast-aut?action=createAuthorization', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: formattedData, // Remove action from body, it's now in query params
+    })
+
+    if (response.success) {
+      toaster.show({
+        title: 'Success',
+        message: 'Broadcast authorization created successfully',
+        color: 'success',
+        icon: 'ph:check',
+        closable: true,
+      })
+      resetForm()
+      showForm.value = false
+      refresh()
+    } else {
+      toaster.show({
+        title: 'Error',
+        message: response.message || 'Failed to create broadcast authorization',
+        color: 'danger',
+        icon: 'ph:warning',
+        closable: true,
+      })
+    }
+  } catch (error) {
+    console.error('Submission error:', error)
+    toaster.show({
+      title: 'Error',
+      message: error.message || 'Failed to submit form',
+      color: 'danger',
+      icon: 'ph:warning',
+      closable: true,
+    })
+  }
+})
+
 
 </script>
 
@@ -431,13 +701,15 @@ function selectBroadcastAuth(auth: any) {
             class="divide-muted-200 dark:divide-muted-700"
             @submit.prevent="onSubmit"
           >
-            <div
+          <div
               shape="curved"
               class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
             >
               <div class="mx-auto flex w-full flex-col">
                 <div>
+
                   <div class="grid grid-cols-12 gap-4">
+
                     <!-- Announcer -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
@@ -450,15 +722,16 @@ function selectBroadcastAuth(auth: any) {
                         name="broadcastAuthorization.announcer"
                       >
                         <BaseListbox
-                          label="Annonceur"
-                          :items="announcers"
-                          :properties="{ value: '_id', label: 'name' }"
-                          :model-value="field.value"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        />
+                        label="Annonceur"
+                        :items="announcersList"
+                        :properties="{ value: '_id', label: 'name' }"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        placeholder="Sélectionnez un annonceur"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                          />
                       </Field>
                     </div>
 
@@ -475,8 +748,8 @@ function selectBroadcastAuth(auth: any) {
                       >
                         <BaseListbox
                           label="Facture"
-                          :items="invoice"
-                          :properties="{ value: '_id', label: 'name' }"
+                          :items="invoicesList"
+                          :properties="{ value: '_id', label: 'code' }"
                           :model-value="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"
@@ -499,8 +772,8 @@ function selectBroadcastAuth(auth: any) {
                       >
                         <BaseListbox
                           label="Campagne"
-                          :items="campaingn"
-                          :properties="{ value: '_id', label: 'name' }"
+                          :items="campaingnList"
+                          :properties="{ value: '_id', label: 'code' }"
                           :model-value="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"
@@ -523,13 +796,13 @@ function selectBroadcastAuth(auth: any) {
                       >
                         <BaseListbox
                           label="Nature"
-                          :items="natures"
+                          :items="naturesList"
                           :properties="{ value: '_id', label: 'name' }"
                           :model-value="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"
                           @update:model-value="handleChange"
-                          @blur="handleBlur"
+                          @blur="handleBlur"    
                         />
                       </Field>
                     </div>
@@ -646,8 +919,8 @@ function selectBroadcastAuth(auth: any) {
                       >
                         <BaseListbox
                           label="Méthode de paiement"
-                          :items="paymentMethods"
-                          :properties="{ value: '_id', label: 'name' }"
+                          :items="paymentMethodList"
+                          :properties="{ value: '_id', label: 'label' }"
                           :model-value="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"
@@ -710,78 +983,101 @@ function selectBroadcastAuth(auth: any) {
                     <!-- Hours -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
                         name="broadcastAuthorization.hours"
                       >
-                        <BaseInput
-                          label="Heures"
-                          icon="ph:clock-duotone"
-                          placeholder=""
-                          :model-value="field.value"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        />
-                      </Field>
-                    </div>
-
-                    <!-- Real Hours -->
-                    <div class="col-span-12 md:col-span-6">
-                      <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
-                        name="broadcastAuthorization.realHours"
-                      >
-                        <BaseInput
-                          label="Heures réelles"
-                          icon="ph:clock-duotone"
-                          placeholder=""
-                          :model-value="field.value"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        />
+                        <div>
+                          <BaseInput
+                            label="Hours"
+                            icon="ph:clock-duotone"
+                            placeholder="Type a Hours  and press Enter"
+                            :model-value="inputValue2"
+                            :error="errorMessage"
+                            :disabled="isSubmitting"
+                            @update:model-value="updateInputValue2"
+                            @keydown.enter.prevent="(e) => {
+                              if (inputValue2) {
+                                addHour1(inputValue2, handleChange)
+                                inputValue2 = ''
+                              }
+                              
+                            }"
+                            @blur="(e) => handleBlur(e)"
+                          />
+                          
+                          <!-- Display Hours -->
+                          <div class="mt-4">
+                            <TransitionGroup name="list" tag="ul">
+                              <li
+                                v-for="(hour, index) in hours"
+                                :key="hour"
+                                class="inline-flex items-center px-2 py-1 mr-2 mb-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-full"
+                              >
+                                <span>{{ hour }}</span>
+                                <button 
+                                  @click="() => removeHour1(index, handleChange)"
+                                  class="text-red-500 hover:text-red-700 ml-2"
+                                  type="button"
+                                >
+                                  ×
+                                </button>
+                              </li>
+                            </TransitionGroup>
+                          </div>
+                        </div>
                       </Field>
                     </div>
 
                     <!-- Real Hour -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
-                        name="broadcastAuthorization.realHour"
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        name="broadcastAuthorization.realHours"
                       >
-                        <BaseInput
-                          label="Heure réelle"
-                          type="time"
-                          icon="ph:clock-duotone"
-                          placeholder=""
-                          :model-value="field.value"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        />
+                        <div>
+                          <BaseInput
+                            label="Real Hours"
+                            icon="ph:clock-duotone"
+                            placeholder="Type a Real Hours  and press Enter"
+                            :model-value="inputValue3"
+                            :error="errorMessage"
+                            :disabled="isSubmitting"
+                            @update:model-value="updateInputValue3"
+                            @keydown.enter.prevent="(e) => {
+                              if (inputValue3) {
+                                addrealHour1(inputValue3, handleChange)
+                                inputValue3 = ''
+                              }
+                              
+                            }"
+                            @blur="(e) => handleBlur(e)"
+                          />
+                          
+                          <!-- Display Real  Hours -->
+                          <div class="mt-4">
+                            <TransitionGroup name="list" tag="ul">
+                              <li
+                                v-for="(realHour, index) in realHours"
+                                :key="realHour"
+                                class="inline-flex items-center px-2 py-1 mr-2 mb-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-full"
+                              >
+                                <span>{{ realHour }}</span>
+                                <button 
+                                  @click="() => removerealHour1(index, handleChange)"
+                                  class="text-red-500 hover:text-red-700 ml-2"
+                                  type="button"
+                                >
+                                  ×
+                                </button>
+                              </li>
+                            </TransitionGroup>
+                          </div>
+                        </div>
                       </Field>
                     </div>
 
                     <!-- Description -->
-                    <div class="col-span-12 md:col-span-12">
+                    <div class="col-span-12 md:col-span-6">
                       <Field
                         v-slot="{
                           field,
@@ -804,56 +1100,108 @@ function selectBroadcastAuth(auth: any) {
                       </Field>
                     </div>
 
+                    
                     <!-- Participants -->
-                    <div class="col-span-12 md:col-span-12">
+
+                    <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
                         name="broadcastAuthorization.participants"
                       >
-                        <BaseListbox
-                          label="Participants"
-                          :items="users"
-                          :properties="{ value: 'name', label: 'name' }"
-                          v-model="field.value"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        />
+                        <div>
+                          <BaseInput
+                            label="Participants"
+                            icon="ph:user"
+                            placeholder="Type a Participants Names and press Enter"
+                            :model-value="inputValue"
+                            :error="errorMessage"
+                            :disabled="isSubmitting"
+                            @update:model-value="updateInputValue"
+                            @keydown.enter.prevent="(e) => {
+                              if (inputValue) {
+                                addParticipant1(inputValue, handleChange)
+                                inputValue = ''
+                              }
+                              
+                            }"
+                            @blur="(e) => handleBlur(e)"
+                          />
+                          
+                          <!-- Display Participants -->
+                          <div class="mt-4">
+                            <TransitionGroup name="list" tag="ul">
+                              <li
+                                v-for="(participant, index) in participants"
+                                :key="participant"
+                                class="inline-flex items-center px-2 py-1 mr-2 mb-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-full"
+                              >
+                                <span>{{ participant }}</span>
+                                <button 
+                                  @click="() => removeParticipant1(index, handleChange)"
+                                  class="text-red-500 hover:text-red-700 ml-2"
+                                  type="button"
+                                >
+                                  ×
+                                </button>
+                              </li>
+                            </TransitionGroup>
+                          </div>
+                        </div>
                       </Field>
                     </div>
-
-                    <!-- Questions -->
-                    <div class="col-span-12 md:col-span-12">
+                        
+                                        
+                     <!-- Questions Input -->
+                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
                         name="broadcastAuthorization.questions"
                       >
-                        <BaseTextarea
-                          label="Questions"
-                          icon="ph:question-duotone"
-                          placeholder=""
-                          :model-value="field.value"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        />
+                        <div>
+                          <BaseInput
+                            label="Questions"
+                            icon="ph:question-duotone"
+                            placeholder="Type a Questions  and press Enter"
+                            :model-value="inputValue1"
+                            :error="errorMessage"
+                            :disabled="isSubmitting"
+                            @update:model-value="updateInputValue1"
+                            @keydown.enter.prevent="(e) => {
+                              if (inputValue1) {
+                                addQuestion1(inputValue1, handleChange)
+                                inputValue1 = ''
+                              }
+                              
+                            }"
+                            @blur="(e) => handleBlur(e)"
+                          />
+                          
+                          <!-- Display Questions -->
+                          <div class="mt-4">
+                            <TransitionGroup name="list" tag="ul">
+                              <li
+                                v-for="(question, index) in questions"
+                                :key="question"
+                                class="inline-flex items-center px-2 py-1 mr-2 mb-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-full"
+                              >
+                                <span>{{ question }}</span>
+                                <button 
+                                  @click="() => removeQuestion1(index, handleChange)"
+                                  class="text-red-500 hover:text-red-700 ml-2"
+                                  type="button"
+                                >
+                                  ×
+                                </button>
+                              </li>
+                            </TransitionGroup>
+                          </div>
+                        </div>
                       </Field>
                     </div>
 
+
                     <!-- Note -->
-                    <div class="col-span-12 md:col-span-12">
+                    <div class="col-span-12 md:col-span-6">
                       <Field
                         v-slot="{
                           field,
@@ -913,7 +1261,7 @@ function selectBroadcastAuth(auth: any) {
                       >
                         <BaseListbox
                           label="Validateur"
-                          :items="validators"
+                          :items="validaturList"
                           :properties="{ value: '_id', label: 'name' }"
                           :model-value="field.value"
                           :error="errorMessage"
@@ -937,7 +1285,7 @@ function selectBroadcastAuth(auth: any) {
                       >
                         <BaseListbox
                           label="Validateur Admin"
-                          :items="adminValidators"
+                          :items="validaturAdminList"
                           :properties="{ value: '_id', label: 'name' }"
                           :model-value="field.value"
                           :error="errorMessage"
@@ -973,26 +1321,54 @@ function selectBroadcastAuth(auth: any) {
                     </div>
 
                     <!-- Commercials -->
+                    
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
+                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
                         name="broadcastAuthorization.commercials"
+                        :value="selectedCommercials"
                       >
-                        <BaseListbox
-                          label="Commerciaux"
-                          :items="commercials"
-                          :properties="{ value: '_id', label: 'name' }"
-                          :model-value="field.value"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        />
+                        <div>
+                          <label class="block text-sm font-medium text-gray-700">Commercials</label>
+                          <div class="mt-1">
+                            <select
+                              :value="selectedCommercials"
+                              multiple
+                              class="mt-1 block w-full rounded-md bg-[#0f172a] border border--color-[#64748b] focus:ring-indigo-500 sm:text-sm burder-muted-30"
+                              @change="(e) => handleCommercialChange(e, handleChange)"
+                              @blur="handleBlur"
+                            >
+                              <option
+                                v-for="commercial in commercialsList"
+                                :key="commercial._id"
+                                :value="commercial._id"
+                              >
+                                {{ commercial.name }}
+                              </option>
+                            </select>
+                          </div>
+                          <!-- Display selected Commercials -->
+                          <div class="mt-2">
+                            <div
+                              v-for="commercialId in selectedCommercials"
+                              :key="commercialId"
+                              class="inline-flex items-center px-2 py-1 mr-2 mb-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-full"
+                            >
+                              {{ commercialsList.find(commercial => commercial._id === commercialId)?.name }}
+                              <button
+                                type="button"
+                                class="ml-2 text-gray-500 hover:text-gray-700"
+                                @click="() => removeCommercial(commercialId, handleChange)"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          </div>
+                          <!-- Error message -->
+                          <p v-if="errorMessage" class="mt-2 text-sm text-red-600">
+                            {{ errorMessage }}
+                          </p>
+                        </div>
                       </Field>
                     </div>
 
@@ -1031,10 +1407,9 @@ function selectBroadcastAuth(auth: any) {
                         }"
                         name="broadcastAuthorization.productionPartner"
                       >
-                        <BaseListbox
+                        <BaseInput
                           label="Partenaire de production"
-                          :items="productionPartners"
-                          :properties="{ value: '_id', label: 'name' }"
+                          icon="ph:handshake-duotone"
                           :model-value="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"
@@ -1079,10 +1454,9 @@ function selectBroadcastAuth(auth: any) {
                         }"
                         name="broadcastAuthorization.keyContact"
                       >
-                        <BaseListbox
+                        <BaseInput
                           label="Contact clé"
-                          :items="keyContacts"
-                          :properties="{ value: '_id', label: 'name' }"
+                          icon="ph:phone-duotone"
                           :model-value="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"
@@ -1139,10 +1513,27 @@ function selectBroadcastAuth(auth: any) {
                         />
                       </Field>
                     </div>
+
                   </div>
                 </div>
               </div>
-            </div>
+
+                <!-- Submit Button -->
+                <div class="mt-6 bp-6">
+                  <BaseButton
+                    type="submit"
+                    color="primary"
+                    class="w-full sm:w-48"
+                    :disabled="isSubmitting"
+                  >
+                    <span v-if="!isSubmitting">Submit</span>
+                    <span v-else>Submitting...</span>
+                  </BaseButton>
+                </div>
+
+          </div>
+
+
           </form>
         </BaseCard>
       </div>
@@ -1153,5 +1544,3 @@ function selectBroadcastAuth(auth: any) {
 
   </div>
 </template>
-
-
