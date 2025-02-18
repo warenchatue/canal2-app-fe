@@ -257,6 +257,23 @@ function filterItems(query?: string, items?: any[]) {
   })
 }
 
+function filterItemsCategory(query?: string, items?: any[]) {
+  if (query.length < 2) {
+    return []
+  }
+
+  if (!query || !items) {
+    return items ?? []
+  }
+
+  // search by name
+  return items.filter((item) => {
+    const nameMatches = item?.name?.toLowerCase().includes(query.toLowerCase())
+    // const textMatches = item?.text?.toLowerCase().includes(query.toLowerCase())
+    return nameMatches
+  })
+}
+
 function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
     selected.value = []
@@ -1185,7 +1202,7 @@ const onSubmit = handleSubmit(
                               @blur="handleBlur"
                               :items="transformedExpensesCategories"
                               :display-value="(item: any) => item.name || ''"
-                              :filter-items="filterItems"
+                              :filter-items="filterItemsCategory"
                               icon="lucide:filter"
                               placeholder="Ex: carburant"
                               label="Catégorie dépense"
