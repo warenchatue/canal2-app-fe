@@ -23,14 +23,11 @@ const router = useRouter()
 const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(10)
-const showForm = ref(false)
-const showNatureModal = ref(false)
-const toaster = useToaster()
-const currentBroadcastAuth = ref({})
-const isEditMode = ref(false)
-const loading = ref(false)
+const showForm = ref(false) // Controls whether the form is visible
+const showNatureModal = ref(false) // Fixed typo: 'flase' -> 'false'
 
-// Check if user has access
+const toaster = useToaster()
+// Check if can have access
 if (
   authStore.user.appRole?.name != UserRole.admin &&
   authStore.user.appRole?.name != UserRole.superAdmin
@@ -55,20 +52,30 @@ watch([filter, perPage], () => {
 })
 
 const token = useCookie('token')
-const query = computed(() => ({
-  filter: filter.value,
-  perPage: perPage.value,
-  page: page.value,
-  action: 'findAll',
-  token: token.value,
-}))
-
-const { data, pending, error, refresh } = await useFetch('/api/broadcast-auth/broadcast-aut', {
-  query,
+const query = computed(() => {
+  return {
+    filter: filter.value,
+    perPage: perPage.value,
+    page: page.value,
+    action: 'findAll',
+    token: token.value,
+  }
 })
 
+const queryNF = computed(() => ({
+  perPage: 1000,
+  page: 1,
+  action: 'findAll',
+  token: token.value,
+}));
+
+
+
+
 const selected = ref<number[]>([])
-const isAllVisibleSelected = computed(() => selected.value.length === data.value?.data.length)
+const isAllVisibleSelected = computed(() => {
+  return selected.value.length === data.value?.data.length
+})
 
 function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
@@ -78,50 +85,45 @@ function toggleAllVisibleSelection() {
   }
 }
 
-// Fetch data for select options
-const { data: announcers } = await useFetch('/api/sales/announcers', {
-  query: { action: 'findAll', token: token.value },
-})
-const { data: invoices } = await useFetch('/api/sales/invoices', {
-  query: { action: 'findAll', token: token.value },
-})
-const { data: campaigns } = await useFetch('/api/pub/packages', {
-  query: { action: 'findAll', token: token.value },
-})
-const { data: natures } = await useFetch('/api/broadcast-auth/broadcast-na', {
-  query: { action: 'findAll', token: token.value },
-})
-const { data: paymentMethods } = await useFetch('/api/accountancy/payment-methods', {
-  query: { action: 'findAll', token: token.value },
-})
-const { data: validators } = await useFetch('/api/admin/orgs', {
-  query: { action: 'findAll', token: token.value },
-})
-const { data: commercials } = await useFetch('/api/users', {
-  query: { action: 'findAll', token: token.value },
-})
+const parseDate = (dateStr: string) => {
+  if (!dateStr) return undefined;
+  const date = new Date(dateStr);
+  return isNaN(date.getTime()) ? undefined : date;
+};
 
-// Validation schema
+const currentBroadcastAuth = ref({})
+const chatEl = ref<HTMLElement>()
+const expanded = ref(true)
+const loading = ref(false)
+
+// Validation messages
+const VALIDATION_TEXT = {
+  NATURE_REQUIRED: "Nature can't be empty",
+  DATE_REQUIRED: "Date can't be empty",
+  LOCATION_REQUIRED: "Location can't be empty",
+}
+
+// Zod schema for the form
 const zodSchema = z.object({
   broadcastAuthorization: z.object({
     announcer: z.object({
-      _id: z.string().min(1, "Annonceur est requis")
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
     }),
     invoice: z.object({
-      _id: z.string().min(1, "Facture est requise")
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
     }),
     campaign: z.object({
-      _id: z.string().min(1, "Campagne est requise")
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
     }),
     nature: z.object({
-      _id: z.string().min(1, "Nature est requise")
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
     }),
     natureDescription: z.string().optional(),
     date: z.string().transform((str) => str ? new Date(str).toISOString() : null),
     startDate: z.string().transform((str) => str ? new Date(str).toISOString() : null),
     endDate: z.string().transform((str) => str ? new Date(str).toISOString() : null),
     paymentMethod: z.object({
-      _id: z.string().min(1, "Méthode de paiement est requise")
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
     }),
     duration: z.number().optional(),
     hour: z.string().optional(),
@@ -134,12 +136,12 @@ const zodSchema = z.object({
     note: z.string().optional(),
     serviceInCharge: z.string().optional(),
     validator: z.object({
-      _id: z.string().min(1, "Validateur est requis")
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
     }),
-    adminValidator: z.object({
-      _id: z.string().min(1, "Validateur Admin est requis")
+    admiValidator: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
     }),
-    location: z.string().min(1, "Location est requise"),
+    location: z.string().min(1, VALIDATION_TEXT.LOCATION_REQUIRED),
     commercials: z.array(z.string()).default([]),
     contactDetails: z.string().optional(),
     productionPartner: z.string().optional(),
@@ -150,18 +152,253 @@ const zodSchema = z.object({
   }),
 })
 
+
+//announcer
+const { data: announcers } = await useFetch('/api/sales/announcers', {
+  query: queryNF,
+});
+const announcersList = computed(() => {
+  if (!announcers.value || !Array.isArray(announcers.value.data)) {
+    return [];
+  }
+  return announcers.value.data.map(item => ({
+    _id: item._id, // Ensure this field exists in the API response
+    name: item.name,
+    code: item.code
+  }));
+});
+
+//invoices
+const { data: invoices } = await useFetch('/api/sales/invoices', {
+  query: queryNF,
+});
+const invoicesList = computed(() => {
+  if (!invoices.value || !Array.isArray(invoices.value.data)) {
+    return [];
+  }
+  return invoices.value.data.map(item => ({
+    _id: item._id, // Ensure this field exists in the API response
+    code: item.code
+  }));
+});
+
+// campaingn
+const { data: campaingn } = await useFetch('/api/pub/packages', {
+  query: queryNF,
+});
+const campaingnList = computed(() => {
+  if (!campaingn.value || !Array.isArray(campaingn.value.data)) {
+    return [];
+  }
+  return campaingn.value.data.map(item => ({
+    _id: item._id, // Ensure this field exists in the API response
+    code: item.code
+  }));
+});
+
+// nature
+const { data: natures } = await useFetch('/api/broadcast-auth/broadcast-na', {
+  query: queryNF,
+});
+const naturesList = computed(() => {
+  if (!natures.value || !natures.value.data || !Array.isArray(natures.value.data)) {
+    console.warn('Natures data is not available or invalid:', natures.value);
+    return [];
+  }
+  return natures.value.data.map(item => ({
+    _id: item._id, // Ensure this field exists in the API response
+    name: item.name
+  }));
+});
+
+//Payment methods
+const { data: paymentMethod } = await useFetch('/api/accountancy/payment-methods', {
+  query: queryNF,
+});
+const paymentMethodList = computed(() => {
+  if (!paymentMethod.value || !Array.isArray(paymentMethod.value.data)) {
+    return [];
+  }
+  return paymentMethod.value.data.map(item => ({
+    _id: item._id, // Ensure this field exists in the API response
+    label: item.label
+  }));
+});
+
+//Validatur
+const { data: validatur } = await useFetch('/api/admin/orgs', {
+  query: queryNF,
+});
+const validaturList = computed(() => {
+  if (!validatur.value || !Array.isArray(validatur.value.data)) {
+    return [];
+  }
+  return validatur.value.data.map(item => ({
+    _id: item._id, // Ensure this field exists in the API response
+    name: item.name
+  }));
+});
+
+
+//ValidaturAdmin
+const { data: validaturAdmin } = await useFetch('/api/admin/orgs', {
+  query: queryNF,
+});
+const validaturAdminList = computed(() => {
+  if (!validaturAdmin.value || !Array.isArray(validaturAdmin.value.data)) {
+    return [];
+  }
+  return validaturAdmin.value.data.map(item => ({
+    _id: item._id, // Ensure this field exists in the API response
+    name: item.name
+  }));
+});
+
+
+
+
+//Hours
+const hours = ref([])
+const inputValue2 = ref('')
+const updateInputValue2 = (value) => {
+  inputValue2.value = value
+}
+const addHour1 = (hour, handleChange) => {
+  if (!hour?.trim()) return
+  const newHours = [...hours.value, hour.trim()]
+  hours.value = newHours
+  handleChange(newHours)
+  inputValue2.value = ''
+}
+const removeHour1 = (index, handleChange) => {
+  const newHours = hours.value.filter((_, i) => i !== index)
+  hours.value = newHours
+  handleChange(newHours)
+}
+
+//RealHours
+const realHours = ref([])
+const inputValue3 = ref('')
+const updateInputValue3 = (value) => {
+  inputValue3.value = value
+}
+const addrealHour1 = (realHour, handleChange) => {
+  if (!realHour?.trim()) return
+  const newrealHours = [...realHours.value, realHour.trim()]
+  realHours.value = newrealHours
+  handleChange(newrealHours)
+  inputValue3.value = ''
+}
+const removerealHour1 = (index, handleChange) => {
+  const newrealHours = realHours.value.filter((_, i) => i !== index)
+  realHours.value = newrealHours
+  handleChange(newrealHours)
+}
+
+
+//partisipant
+const participants = ref([])
+const inputValue = ref('')
+const updateInputValue = (value) => {
+  inputValue.value = value
+}
+const addParticipant1 = (participant, handleChange) => {
+  if (!participant?.trim()) return
+  const newParticipants = [...participants.value, participant.trim()]
+  participants.value = newParticipants
+  handleChange(newParticipants)
+  inputValue.value = ''
+}
+const removeParticipant1 = (index, handleChange) => {
+  const newParticipants = participants.value.filter((_, i) => i !== index)
+  participants.value = newParticipants
+  
+  handleChange(newParticipants)
+}
+
+
+//Questions
+const questions = ref([])
+const inputValue1 = ref('')
+const updateInputValue1 = (value) => {
+  inputValue1.value = value
+}
+const addQuestion1 = (question, handleChange) => {
+  if (!question?.trim()) return
+  const newQuestions = [...questions.value, question.trim()]
+  questions.value = newQuestions
+  handleChange(newQuestions)
+  inputValue1.value = ''
+}
+const removeQuestion1 = (index, handleChange) => {
+  const newQuestions = questions.value.filter((_, i) => i !== index)
+  questions.value = newQuestions
+  handleChange(newQuestions)
+}
+
+
+
+//commercials
+const { data: commercials } = await useFetch('/api/users/', {
+  query: queryNF,
+});
+//console.log('Commercials API Response:', commercials.value);
+const commercialsList = computed(() => {
+  if (!commercials.value || !Array.isArray(commercials.value.data)) {
+    return [];
+  }
+  return commercials.value.data.map(item => ({
+    _id: item._id,
+    name: item.lastName
+  }));
+});
+const selectedCommercials = ref([]);
+function handleCommercialChange(event, handleChange) {
+  const selectedOptions = Array.from(event.target.selectedOptions).map(
+    option => option.value
+  );
+  selectedCommercials.value = [...new Set([...selectedCommercials.value, ...selectedOptions])];
+  handleChange(selectedCommercials.value);
+}
+function removeCommercial(commercialId, handleChange) {
+  selectedCommercials.value = selectedCommercials.value.filter(id => id !== commercialId);
+  handleChange(selectedCommercials.value);
+}
+
+
+const { data, pending, error, refresh } = await useFetch('/api/broadcast-auth/braodcast-aut', {
+  query,
+})
+
+
+const { data: broadcastAuth } = await useFetch('/api/broadcast-auth/braodcast-aut', {
+  query: queryNF,
+});
+console.log('BroadcastAuth API Response:', broadcastAuth.value)
+
+
+
+
+type FormInput = z.infer<typeof zodSchema>
 const validationSchema = toTypedSchema(zodSchema)
 
-const { handleSubmit, isSubmitting, resetForm, setFieldValue, setErrors } = useForm({
+const {
+  handleSubmit,
+  isSubmitting,
+  resetForm,
+  setFieldValue,
+  setErrors,
+} = useForm({
   validationSchema,
 })
 
 const success = ref(false)
 
-// Handle form submission (create or update)
 const onSubmit = handleSubmit(async (values) => {
   try {
     const token = useCookie('token').value
+    
+    // Format the data to match backend expectations
     const formattedData = {
       announcer: values.broadcastAuthorization.announcer?._id,
       invoice: values.broadcastAuthorization.invoice?._id,
@@ -194,24 +431,19 @@ const onSubmit = handleSubmit(async (values) => {
       contactDetailsToShow: values.broadcastAuthorization.contactDetailsToShow || ''
     }
 
-    const action = isEditMode.value ? 'updateAuthorization' : 'createAuthorization'
-    const url = isEditMode.value
-      ? `/api/broadcast-auth/broadcast-aut/${currentBroadcastAuth.value._id}?action=${action}`
-      : `/api/broadcast-auth/broadcast-aut?action=${action}`
-
-    const response = await $fetch(url, {
-      method: isEditMode.value ? 'PUT' : 'POST',
+    const response = await $fetch('/api/broadcast-auth/broadcast-aut?action=createAuthorization', {
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      body: formattedData,
+      body: formattedData, // Remove action from body, it's now in query params
     })
 
     if (response.success) {
       toaster.show({
         title: 'Success',
-        message: `Broadcast authorization ${isEditMode.value ? 'updated' : 'created'} successfully`,
+        message: 'Broadcast authorization created successfully',
         color: 'success',
         icon: 'ph:check',
         closable: true,
@@ -222,7 +454,7 @@ const onSubmit = handleSubmit(async (values) => {
     } else {
       toaster.show({
         title: 'Error',
-        message: response.message || `Failed to ${isEditMode.value ? 'update' : 'create'} broadcast authorization`,
+        message: response.message || 'Failed to create broadcast authorization',
         color: 'danger',
         icon: 'ph:warning',
         closable: true,
@@ -240,85 +472,9 @@ const onSubmit = handleSubmit(async (values) => {
   }
 })
 
-// Edit functionality
-function editBroadcastAuth(item) {
-  currentBroadcastAuth.value = item;
-  isEditMode.value = true;
-  showForm.value = true;
 
-  // Set all form fields
-  setFieldValue('broadcastAuthorization.announcer', item.announcer);
-  setFieldValue('broadcastAuthorization.invoice', item.invoice);
-  setFieldValue('broadcastAuthorization.campaign', item.campaign);
-  setFieldValue('broadcastAuthorization.nature', item.nature);
-  setFieldValue('broadcastAuthorization.natureDescription', item.natureDescription);
-  setFieldValue('broadcastAuthorization.date', item.date ? new Date(item.date).toISOString().split('T')[0] : '');
-  setFieldValue('broadcastAuthorization.startDate', item.startDate ? new Date(item.startDate).toISOString().split('T')[0] : '');
-  setFieldValue('broadcastAuthorization.endDate', item.endDate ? new Date(item.endDate).toISOString().split('T')[0] : '');
-  setFieldValue('broadcastAuthorization.paymentMethod', item.paymentMethod);
-  setFieldValue('broadcastAuthorization.duration', item.duration);
-  setFieldValue('broadcastAuthorization.hour', item.hour);
-  setFieldValue('broadcastAuthorization.hours', item.hours || []);
-  setFieldValue('broadcastAuthorization.realHours', item.realHours || []);
-  setFieldValue('broadcastAuthorization.realHour', item.realHour);
-  setFieldValue('broadcastAuthorization.description', item.description);
-  setFieldValue('broadcastAuthorization.participants', item.participants || []);
-  setFieldValue('broadcastAuthorization.questions', item.questions || []);
-  setFieldValue('broadcastAuthorization.note', item.note);
-  setFieldValue('broadcastAuthorization.serviceInCharge', item.serviceInCharge);
-  setFieldValue('broadcastAuthorization.validator', item.validator);
-  setFieldValue('broadcastAuthorization.adminValidator', item.adminValidator);
-  setFieldValue('broadcastAuthorization.location', item.location);
-  setFieldValue('broadcastAuthorization.commercials', item.commercials || []);
-  setFieldValue('broadcastAuthorization.contactDetails', item.contactDetails);
-  setFieldValue('broadcastAuthorization.productionPartner', item.productionPartner);
-  setFieldValue('broadcastAuthorization.otherProductionPartner', item.otherProductionPartner);
-  setFieldValue('broadcastAuthorization.keyContact', item.keyContact);
-  setFieldValue('broadcastAuthorization.otherKeyContact', item.otherKeyContact);
-  setFieldValue('broadcastAuthorization.contactDetailsToShow', item.contactDetailsToShow);
-}
-
-// Delete functionality
-async function deleteBroadcastAuth(item) {
-  try {
-    const token = useCookie('token').value
-    const response = await $fetch(`/api/broadcast-auth/broadcast-aut/${item._id}?action=delete`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-
-    if (response.success) {
-      toaster.show({
-        title: 'Success',
-        message: 'Broadcast authorization deleted successfully',
-        color: 'success',
-        icon: 'ph:check',
-        closable: true,
-      })
-      refresh()
-    } else {
-      toaster.show({
-        title: 'Error',
-        message: response.message || 'Failed to delete broadcast authorization',
-        color: 'danger',
-        icon: 'ph:warning',
-        closable: true,
-      })
-    }
-  } catch (error) {
-    console.error('Deletion error:', error)
-    toaster.show({
-      title: 'Error',
-      message: error.message || 'Failed to delete broadcast authorization',
-      color: 'danger',
-      icon: 'ph:warning',
-      closable: true,
-    })
-  }
-}
 </script>
+
 
 <template>
   <div>
@@ -350,7 +506,7 @@ async function deleteBroadcastAuth(item) {
 
         <BaseButton
           v-if="!showForm"
-          @click="showForm = true; isEditMode = false; resetForm()"
+          @click="showForm = true"
           color="primary"
           class="w-full sm:w-48"
           :disabled="
@@ -415,19 +571,10 @@ async function deleteBroadcastAuth(item) {
                   Announcer
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Nature </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Start Date
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  End Date
-                </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Date </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>
                   Location
                 </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Payment Method
-                </TairoTableHeading>
-
                 <TairoTableHeading uppercase spaced> Action </TairoTableHeading>
               </template>
 
@@ -437,7 +584,7 @@ async function deleteBroadcastAuth(item) {
                   class="bg-success-100 text-success-700 dark:bg-success-700 dark:text-success-100 p-4"
                 >
                   You have selected {{ selected.length }} items of the total
-                  {{ data?.data.length }} items.
+                  {{ data?.total }} items.
                   <a
                     href="#"
                     class="outline-none hover:underline focus:underline"
@@ -462,28 +609,21 @@ async function deleteBroadcastAuth(item) {
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
-                      {{ item.announcer?.name }}
+                      {{ item.announcer }}
                     </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
-                      {{ item.nature?.name }}
+                      {{ item.nature }}
                     </span>
                   </div>
                 </TairoTableCell>
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
-                      {{ new Date(item.startDate).toLocaleDateString() }}
-                    </span>
-                  </div>
-                </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
-                      {{ new Date(item.endDate).toLocaleDateString() }}
+                      {{ item.date }}
                     </span>
                   </div>
                 </TairoTableCell>
@@ -494,19 +634,12 @@ async function deleteBroadcastAuth(item) {
                     </span>
                   </div>
                 </TairoTableCell>
-                <TairoTableCell spaced>
-                  <div class="flex items-center">
-                    <span class="text-muted-400 font-sans text-xs">
-                      {{ item.paymentMethod?.label }}
-                    </span>
-                  </div>
-                </TairoTableCell>
 
                 <TairoTableCell spaced>
                   <div class="flex">
                     <BaseButtonAction
                       class="mx-2"
-                      @click.prevent="editBroadcastAuth(item)"
+                      @click.prevent="selectBroadcastAuth(item)"
                       muted
                     >
                       <Icon name="lucide:eye" class="h-4 w-4"
@@ -554,13 +687,15 @@ async function deleteBroadcastAuth(item) {
             class="divide-muted-200 dark:divide-muted-700"
             @submit.prevent="onSubmit"
           >
-            <div
+          <div
               shape="curved"
               class="bg-muted-50 dark:bg-muted-800/60 space-y-8 p-5 md:px-5"
             >
               <div class="mx-auto flex w-full flex-col">
                 <div>
+
                   <div class="grid grid-cols-12 gap-4">
+
                     <!-- Announcer -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
@@ -573,16 +708,16 @@ async function deleteBroadcastAuth(item) {
                         name="broadcastAuthorization.announcer"
                       >
                         <BaseListbox
-                          label="Annonceur"
-                          :items="announcersList"
-                          :properties="{ value: '_id', label: 'name' }"
-                          :model-value="field.value"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          placeholder="Sélectionnez un annonceur"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        />
+                        label="Annonceur"
+                        :items="announcersList"
+                        :properties="{ value: '_id', label: 'name' }"
+                        :model-value="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        placeholder="Sélectionnez un annonceur"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                          />
                       </Field>
                     </div>
 
@@ -653,7 +788,7 @@ async function deleteBroadcastAuth(item) {
                           :error="errorMessage"
                           :disabled="isSubmitting"
                           @update:model-value="handleChange"
-                          @blur="handleBlur"
+                          @blur="handleBlur"    
                         />
                       </Field>
                     </div>
