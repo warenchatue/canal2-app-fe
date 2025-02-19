@@ -18,7 +18,7 @@ definePageMeta({
   preview: {
     title: 'Natures',
     description: 'Gestion des natures',
-    categories: ['bo', 'publi-intervention'],
+    categories: ['bo', 'natures'],
     src: '/img/screens/layouts-table-list-1.png',
     srcDark: '/img/screens/layouts-table-list-1-dark.png',
     order: 45,
