@@ -3,7 +3,7 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
-import NatureModal from '~/components/NatureModal.vue'
+
 
 definePageMeta({
   title: 'Broadcast Authorizations',
@@ -101,6 +101,38 @@ const { data: commercials } = await useFetch('/api/users', {
   query: { action: 'findAll', token: token.value },
 })
 
+//print 
+// Update the print function
+function printAuthorizations() {
+  // Create a new window for printing
+  const printWindow = window.open('', '_blank');
+  
+  // Get the content to print
+  const tableContent = document.getElementById('print-authorizations')?.innerHTML;
+  
+  if (printWindow && tableContent) {
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Broadcast Authorizations</title>
+          <style>
+            table { border-collapse: collapse; width: 100%; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+          </style>
+        </head>
+        <body>
+          ${tableContent}
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  }
+}
 // Validation schema
 const zodSchema = z.object({
   broadcastAuthorization: z.object({
@@ -240,6 +272,8 @@ const onSubmit = handleSubmit(async (values) => {
   }
 })
 
+
+
 // Edit functionality
 function editBroadcastAuth(item) {
   currentBroadcastAuth.value = item;
@@ -278,16 +312,59 @@ function editBroadcastAuth(item) {
   setFieldValue('broadcastAuthorization.contactDetailsToShow', item.contactDetailsToShow);
 }
 
+
+function handleNewAuthorization() {
+  showForm.value = true;
+  isEditMode.value = false;
+  resetForm();
+  currentBroadcastAuth.value = {};
+  
+  // Reset all form fields to empty values
+  setFieldValue('broadcastAuthorization.announcer', null);
+  setFieldValue('broadcastAuthorization.invoice', null);
+  setFieldValue('broadcastAuthorization.campaign', null);
+  setFieldValue('broadcastAuthorization.nature', null);
+  setFieldValue('broadcastAuthorization.natureDescription', '');
+  setFieldValue('broadcastAuthorization.date', '');
+  setFieldValue('broadcastAuthorization.startDate', '');
+  setFieldValue('broadcastAuthorization.endDate', '');
+  setFieldValue('broadcastAuthorization.paymentMethod', null);
+  setFieldValue('broadcastAuthorization.duration', '');
+  setFieldValue('broadcastAuthorization.hour', '');
+  setFieldValue('broadcastAuthorization.hours', []);
+  setFieldValue('broadcastAuthorization.realHours', []);
+  setFieldValue('broadcastAuthorization.realHour', '');
+  setFieldValue('broadcastAuthorization.description', '');
+  setFieldValue('broadcastAuthorization.participants', []);
+  setFieldValue('broadcastAuthorization.questions', []);
+  setFieldValue('broadcastAuthorization.note', '');
+  setFieldValue('broadcastAuthorization.serviceInCharge', '');
+  setFieldValue('broadcastAuthorization.validator', null);
+  setFieldValue('broadcastAuthorization.adminValidator', null);
+  setFieldValue('broadcastAuthorization.location', '');
+  setFieldValue('broadcastAuthorization.commercials', []);
+  setFieldValue('broadcastAuthorization.contactDetails', '');
+  setFieldValue('broadcastAuthorization.productionPartner', '');
+  setFieldValue('broadcastAuthorization.otherProductionPartner', '');
+  setFieldValue('broadcastAuthorization.keyContact', '');
+  setFieldValue('broadcastAuthorization.otherKeyContact', '');
+  setFieldValue('broadcastAuthorization.contactDetailsToShow', '');
+}
 // Delete functionality
+// Update the delete function
 async function deleteBroadcastAuth(item) {
   try {
-    const token = useCookie('token').value
-    const response = await $fetch(`/api/broadcast-auth/broadcast-aut/${item._id}?action=delete`, {
+    const token = useCookie('token').value;
+    const response = await $fetch(`/api/broadcast-auth/broadcast-aut`, {
       method: 'DELETE',
+      query: {
+        action: 'delete',
+        id: item._id
+      },
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    })
+    });
 
     if (response.success) {
       toaster.show({
@@ -296,26 +373,20 @@ async function deleteBroadcastAuth(item) {
         color: 'success',
         icon: 'ph:check',
         closable: true,
-      })
-      refresh()
+      });
+      refresh();
     } else {
-      toaster.show({
-        title: 'Error',
-        message: response.message || 'Failed to delete broadcast authorization',
-        color: 'danger',
-        icon: 'ph:warning',
-        closable: true,
-      })
+      throw new Error(response.message || 'Failed to delete broadcast authorization');
     }
   } catch (error) {
-    console.error('Deletion error:', error)
+    console.error('Deletion error:', error);
     toaster.show({
       title: 'Error',
       message: error.message || 'Failed to delete broadcast authorization',
       color: 'danger',
       icon: 'ph:warning',
       closable: true,
-    })
+    });
   }
 }
 </script>
@@ -349,8 +420,17 @@ async function deleteBroadcastAuth(item) {
         </BaseSelect>
 
         <BaseButton
+          color="primary"
+          class="w-full sm:w-48"
+          @click="printAuthorizations"
+        >
+          <Icon name="ph:file" class="h-4 w-4" />
+          <span>Print Authorizations</span>
+        </BaseButton>
+
+        <BaseButton
           v-if="!showForm"
-          @click="showForm = true; isEditMode = false; resetForm()"
+          @click="handleNewAuthorization"
           color="primary"
           class="w-full sm:w-48"
           :disabled="
@@ -394,7 +474,7 @@ async function deleteBroadcastAuth(item) {
           </BasePlaceholderPage>
         </div>
         <div v-else>
-          <div class="w-full">
+          <div class="w-full" id="print-authorizations">
             <TairoTable shape="rounded">
               <template #header>
                 <TairoTableHeading uppercase spaced class="p-4">
