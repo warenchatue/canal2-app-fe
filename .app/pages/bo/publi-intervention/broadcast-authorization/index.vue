@@ -24,7 +24,6 @@ const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(10)
 const showForm = ref(false)
-const showNatureModal = ref(false)
 const toaster = useToaster()
 const currentBroadcastAuth = ref({})
 const isEditMode = ref(false)
@@ -32,8 +31,9 @@ const loading = ref(false)
 
 // Check if user has access
 if (
-  authStore.user.appRole?.name != UserRole.admin &&
-  authStore.user.appRole?.name != UserRole.superAdmin
+  authStore.user.appRole && 
+  (authStore.user.appRole.name != UserRole.admin &&
+  authStore.user.appRole.name != UserRole.superAdmin)
 ) {
   toaster.clearAll()
   toaster.show({
@@ -68,7 +68,7 @@ const { data, pending, error, refresh } = await useFetch('/api/broadcast-auth/br
 })
 
 const selected = ref<number[]>([])
-const isAllVisibleSelected = computed(() => selected.value.length === data.value?.data.length)
+const isAllVisibleSelected = computed(() => selected.value.length === (data.value?.data?.length || 0))
 
 function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
@@ -97,9 +97,121 @@ const { data: paymentMethods } = await useFetch('/api/accountancy/payment-method
 const { data: validators } = await useFetch('/api/admin/orgs', {
   query: { action: 'findAll', token: token.value },
 })
-const { data: commercials } = await useFetch('/api/users', {
+
+
+
+
+
+//Hours
+const hours = ref([])
+const inputValue2 = ref('')
+const updateInputValue2 = (value) => {
+  inputValue2.value = value
+}
+const addHour1 = (hour, handleChange) => {
+  if (!hour?.trim()) return
+  const newHours = [...hours.value, hour.trim()]
+  hours.value = newHours
+  handleChange(newHours)
+  inputValue2.value = ''
+}
+const removeHour1 = (index, handleChange) => {
+  const newHours = hours.value.filter((_, i) => i !== index)
+  hours.value = newHours
+  handleChange(newHours)
+}
+
+//RealHours
+const realHours = ref([])
+const inputValue3 = ref('')
+const updateInputValue3 = (value) => {
+  inputValue3.value = value
+}
+const addrealHour1 = (realHour, handleChange) => {
+  if (!realHour?.trim()) return
+  const newrealHours = [...realHours.value, realHour.trim()]
+  realHours.value = newrealHours
+  handleChange(newrealHours)
+  inputValue3.value = ''
+}
+const removerealHour1 = (index, handleChange) => {
+  const newrealHours = realHours.value.filter((_, i) => i !== index)
+  realHours.value = newrealHours
+  handleChange(newrealHours)
+}
+
+
+
+
+//partisipant
+const participants = ref([])
+const inputValue = ref('')
+const updateInputValue = (value: string) => {
+  inputValue.value = value
+}
+const addParticipant1 = (participant, handleChange) => {
+  if (!participant?.trim()) return
+  const newParticipants = [...participants.value, participant.trim()]
+  participants.value = newParticipants
+  handleChange(newParticipants)
+  inputValue.value = ''
+}
+const removeParticipant1 = (index, handleChange) => {
+  const newParticipants = participants.value.filter((_, i) => i !== index)
+  participants.value = newParticipants
+  
+  handleChange(newParticipants)
+}
+
+
+//Questions
+const questions = ref([])
+const inputValue1 = ref('')
+const updateInputValue1 = (value) => {
+  inputValue1.value = value
+}
+const addQuestion1 = (question, handleChange) => {
+  if (!question?.trim()) return
+  const newQuestions = [...questions.value, question.trim()]
+  questions.value = newQuestions
+  handleChange(newQuestions)
+  inputValue1.value = ''
+}
+const removeQuestion1 = (index, handleChange) => {
+  const newQuestions = questions.value.filter((_, i) => i !== index)
+  questions.value = newQuestions
+  handleChange(newQuestions)
+}
+
+
+
+
+//commercials
+const { data: commercials } = await useFetch('/api/users/', {
   query: { action: 'findAll', token: token.value },
-})
+});
+//console.log('Commercials API Response:', commercials.value);
+const commercialsList = computed(() => {
+  if (!commercials.value || !Array.isArray(commercials.value.data)) {
+    return [];
+  }
+  return commercials.value.data.map(item => ({
+    _id: item._id,
+    name: item.lastName
+  }));
+});
+const selectedCommercials = ref<string[]>([]);
+function handleCommercialChange(event, handleChange) {
+  const selectedOptions = Array.from(event.target.selectedOptions).map(
+    option => option.value
+  );
+  selectedCommercials.value = [...new Set([...selectedCommercials.value, ...selectedOptions])];
+  handleChange(selectedCommercials.value);
+}
+function removeCommercial(commercialId, handleChange) {
+  selectedCommercials.value = selectedCommercials.value.filter(id => id !== commercialId);
+  handleChange(selectedCommercials.value);
+}
 
 //print 
 // Update the print function
@@ -192,8 +304,12 @@ const success = ref(false)
 
 // Handle form submission (create or update)
 const onSubmit = handleSubmit(async (values) => {
+  console.log('values', values)
+
   try {
-    const token = useCookie('token').value
+    const token = useCookie('token').value;
+
+    // Format the data to match backend expectations
     const formattedData = {
       announcer: values.broadcastAuthorization.announcer?._id,
       invoice: values.broadcastAuthorization.invoice?._id,
@@ -223,59 +339,62 @@ const onSubmit = handleSubmit(async (values) => {
       otherProductionPartner: values.broadcastAuthorization.otherProductionPartner || '',
       keyContact: values.broadcastAuthorization.keyContact || '',
       otherKeyContact: values.broadcastAuthorization.otherKeyContact || '',
-      contactDetailsToShow: values.broadcastAuthorization.contactDetailsToShow || ''
-    }
+      contactDetailsToShow: values.broadcastAuthorization.contactDetailsToShow || '',
+    };
 
-    const action = isEditMode.value ? 'updateAuthorization' : 'createAuthorization'
+    // Determine the API endpoint and method based on whether we're in edit mode
+    const action = isEditMode.value ? 'updateAuthorization' : 'createAuthorization';
     const url = isEditMode.value
       ? `/api/broadcast-auth/broadcast-aut/${currentBroadcastAuth.value._id}?action=${action}`
-      : `/api/broadcast-auth/broadcast-aut?action=${action}`
+      : `/api/broadcast-auth/broadcast-aut?action=${action}`;
 
+    const method = isEditMode.value ? 'PUT' : 'POST';
+
+    // Make the API request
     const response = await $fetch(url, {
-      method: isEditMode.value ? 'PUT' : 'POST',
+      method,
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: formattedData,
-    })
+    });
 
-    if (response.success) {
+    if ((response as any).success) {
       toaster.show({
         title: 'Success',
         message: `Broadcast authorization ${isEditMode.value ? 'updated' : 'created'} successfully`,
         color: 'success',
         icon: 'ph:check',
         closable: true,
-      })
-      resetForm()
-      showForm.value = false
-      refresh()
+      });
+      resetForm();
+      showForm.value = false;
+      refresh();
     } else {
       toaster.show({
         title: 'Error',
-        message: response.message || `Failed to ${isEditMode.value ? 'update' : 'create'} broadcast authorization`,
+        message: (response as any).message || `Failed to ${isEditMode.value ? 'update' : 'create'} broadcast authorization`,
         color: 'danger',
         icon: 'ph:warning',
         closable: true,
-      })
+      });
     }
   } catch (error) {
-    console.error('Submission error:', error)
+    console.error('Submission error:', error);
     toaster.show({
       title: 'Error',
-      message: error.message || 'Failed to submit form',
+      message: (error as any).message || 'Failed to submit form',
       color: 'danger',
       icon: 'ph:warning',
       closable: true,
-    })
+    });
   }
-})
-
+});
 
 
 // Edit functionality
-function editBroadcastAuth(item) {
+function editBroadcastAuth(item: { announcer?: any; invoice?: any; campaign?: any; nature?: any; natureDescription?: any; date?: any; startDate?: any; endDate?: any; paymentMethod?: any; duration?: any; hour?: any; hours?: any; realHours?: any; realHour?: any; description?: any; participants?: any; questions?: any; note?: any; serviceInCharge?: any; validator?: any; adminValidator?: any; location?: any; commercials?: any; contactDetails?: any; productionPartner?: any; otherProductionPartner?: any; keyContact?: any; otherKeyContact?: any; contactDetailsToShow?: any }) {
   currentBroadcastAuth.value = item;
   isEditMode.value = true;
   showForm.value = true;
@@ -320,15 +439,15 @@ function handleNewAuthorization() {
   currentBroadcastAuth.value = {};
   
   // Reset all form fields to empty values
-  setFieldValue('broadcastAuthorization.announcer', null);
-  setFieldValue('broadcastAuthorization.invoice', null);
-  setFieldValue('broadcastAuthorization.campaign', null);
-  setFieldValue('broadcastAuthorization.nature', null);
+  setFieldValue('broadcastAuthorization.announcer', {});
+  setFieldValue('broadcastAuthorization.invoice', {});
+  setFieldValue('broadcastAuthorization.campaign', {});
+  setFieldValue('broadcastAuthorization.nature', {});
   setFieldValue('broadcastAuthorization.natureDescription', '');
   setFieldValue('broadcastAuthorization.date', '');
   setFieldValue('broadcastAuthorization.startDate', '');
   setFieldValue('broadcastAuthorization.endDate', '');
-  setFieldValue('broadcastAuthorization.paymentMethod', null);
+  setFieldValue('broadcastAuthorization.paymentMethod', {});
   setFieldValue('broadcastAuthorization.duration', '');
   setFieldValue('broadcastAuthorization.hour', '');
   setFieldValue('broadcastAuthorization.hours', []);
@@ -339,8 +458,8 @@ function handleNewAuthorization() {
   setFieldValue('broadcastAuthorization.questions', []);
   setFieldValue('broadcastAuthorization.note', '');
   setFieldValue('broadcastAuthorization.serviceInCharge', '');
-  setFieldValue('broadcastAuthorization.validator', null);
-  setFieldValue('broadcastAuthorization.adminValidator', null);
+  setFieldValue('broadcastAuthorization.validator', {});
+  setFieldValue('broadcastAuthorization.adminValidator', {});
   setFieldValue('broadcastAuthorization.location', '');
   setFieldValue('broadcastAuthorization.commercials', []);
   setFieldValue('broadcastAuthorization.contactDetails', '');
@@ -382,7 +501,7 @@ async function deleteBroadcastAuth(item) {
     console.error('Deletion error:', error);
     toaster.show({
       title: 'Error',
-      message: error.message || 'Failed to delete broadcast authorization',
+      message: (error as any).message || 'Failed to delete broadcast authorization',
       color: 'danger',
       icon: 'ph:warning',
       closable: true,
@@ -633,6 +752,7 @@ async function deleteBroadcastAuth(item) {
             action=""
             class="divide-muted-200 dark:divide-muted-700"
             @submit.prevent="onSubmit"
+            @submit="(e) => console.log('Form submit event triggered', e)"
           >
             <div
               shape="curved"
@@ -654,7 +774,7 @@ async function deleteBroadcastAuth(item) {
                       >
                         <BaseListbox
                           label="Annonceur"
-                          :items="announcersList"
+                          :items="announcers.data"
                           :properties="{ value: '_id', label: 'name' }"
                           :model-value="field.value"
                           :error="errorMessage"
@@ -679,7 +799,7 @@ async function deleteBroadcastAuth(item) {
                       >
                         <BaseListbox
                           label="Facture"
-                          :items="invoicesList"
+                          :items="invoices.data"
                           :properties="{ value: '_id', label: 'code' }"
                           :model-value="field.value"
                           :error="errorMessage"
@@ -703,7 +823,7 @@ async function deleteBroadcastAuth(item) {
                       >
                         <BaseListbox
                           label="Campagne"
-                          :items="campaingnList"
+                          :items="campaigns.data"
                           :properties="{ value: '_id', label: 'code' }"
                           :model-value="field.value"
                           :error="errorMessage"
@@ -727,7 +847,7 @@ async function deleteBroadcastAuth(item) {
                       >
                         <BaseListbox
                           label="Nature"
-                          :items="naturesList"
+                          :items="natures.data"
                           :properties="{ value: '_id', label: 'name' }"
                           :model-value="field.value"
                           :error="errorMessage"
@@ -806,7 +926,7 @@ async function deleteBroadcastAuth(item) {
                           :model-value="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"
-                          @update:model-value="handleChange"
+                          @update:model-valuthe submit fuction is not called beccuase it should at list print that consol in it onsubmit, when i click on the submit button nothing happens we can try to verify that the submit function is called:the submit fuction is not called beccuase it should at list print that consol in it onsubmit, when i click on the submit button nothing happens we can try to verify that the submit function is called:e="handleChange"
                           @blur="handleBlur"
                         />
                       </Field>
@@ -850,7 +970,7 @@ async function deleteBroadcastAuth(item) {
                       >
                         <BaseListbox
                           label="Méthode de paiement"
-                          :items="paymentMethodList"
+                          :items="paymentMethods.data"
                           :properties="{ value: '_id', label: 'label' }"
                           :model-value="field.value"
                           :error="errorMessage"
@@ -1192,7 +1312,7 @@ async function deleteBroadcastAuth(item) {
                       >
                         <BaseListbox
                           label="Validateur"
-                          :items="validaturList"
+                          :items="validators.data"
                           :properties="{ value: '_id', label: 'name' }"
                           :model-value="field.value"
                           :error="errorMessage"
@@ -1216,7 +1336,7 @@ async function deleteBroadcastAuth(item) {
                       >
                         <BaseListbox
                           label="Validateur Admin"
-                          :items="validaturAdminList"
+                          :items="validators.data"
                           :properties="{ value: '_id', label: 'name' }"
                           :model-value="field.value"
                           :error="errorMessage"
@@ -1456,15 +1576,14 @@ async function deleteBroadcastAuth(item) {
                     color="primary"
                     class="w-full sm:w-48"
                     :disabled="isSubmitting"
+                    @click="() => console.log('Button clicked')"
                   >
                     <span v-if="!isSubmitting">Submit</span>
                     <span v-else>Submitting...</span>
                   </BaseButton>
-                </div>
+                  </div>
 
           </div>
-
-
           </form>
         </BaseCard>
       </div>
