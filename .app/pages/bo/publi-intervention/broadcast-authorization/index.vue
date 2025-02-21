@@ -31,9 +31,8 @@ const loading = ref(false)
 
 // Check if user has access
 if (
-  authStore.user.appRole && 
-  (authStore.user.appRole.name != UserRole.admin &&
-  authStore.user.appRole.name != UserRole.superAdmin)
+  authStore.user.appRole?.name != UserRole.admin &&
+  authStore.user.appRole?.name != UserRole.superAdmin
 ) {
   toaster.clearAll()
   toaster.show({
@@ -68,7 +67,7 @@ const { data, pending, error, refresh } = await useFetch('/api/broadcast-auth/br
 })
 
 const selected = ref<number[]>([])
-const isAllVisibleSelected = computed(() => selected.value.length === (data.value?.data?.length || 0))
+const isAllVisibleSelected = computed(() => selected.value.length === data.value?.data.length)
 
 function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
@@ -146,7 +145,7 @@ const removerealHour1 = (index, handleChange) => {
 //partisipant
 const participants = ref([])
 const inputValue = ref('')
-const updateInputValue = (value: string) => {
+const updateInputValue = (value) => {
   inputValue.value = value
 }
 const addParticipant1 = (participant, handleChange) => {
@@ -200,7 +199,7 @@ const commercialsList = computed(() => {
     name: item.lastName
   }));
 });
-const selectedCommercials = ref<string[]>([]);
+const selectedCommercials = ref([]);
 function handleCommercialChange(event, handleChange) {
   const selectedOptions = Array.from(event.target.selectedOptions).map(
     option => option.value
@@ -360,7 +359,7 @@ const onSubmit = handleSubmit(async (values) => {
       body: formattedData,
     });
 
-    if ((response as any).success) {
+    if (response.success) {
       toaster.show({
         title: 'Success',
         message: `Broadcast authorization ${isEditMode.value ? 'updated' : 'created'} successfully`,
@@ -374,7 +373,7 @@ const onSubmit = handleSubmit(async (values) => {
     } else {
       toaster.show({
         title: 'Error',
-        message: (response as any).message || `Failed to ${isEditMode.value ? 'update' : 'create'} broadcast authorization`,
+        message: response.message || `Failed to ${isEditMode.value ? 'update' : 'create'} broadcast authorization`,
         color: 'danger',
         icon: 'ph:warning',
         closable: true,
@@ -384,7 +383,7 @@ const onSubmit = handleSubmit(async (values) => {
     console.error('Submission error:', error);
     toaster.show({
       title: 'Error',
-      message: (error as any).message || 'Failed to submit form',
+      message: error.message || 'Failed to submit form',
       color: 'danger',
       icon: 'ph:warning',
       closable: true,
@@ -394,7 +393,7 @@ const onSubmit = handleSubmit(async (values) => {
 
 
 // Edit functionality
-function editBroadcastAuth(item: { announcer?: any; invoice?: any; campaign?: any; nature?: any; natureDescription?: any; date?: any; startDate?: any; endDate?: any; paymentMethod?: any; duration?: any; hour?: any; hours?: any; realHours?: any; realHour?: any; description?: any; participants?: any; questions?: any; note?: any; serviceInCharge?: any; validator?: any; adminValidator?: any; location?: any; commercials?: any; contactDetails?: any; productionPartner?: any; otherProductionPartner?: any; keyContact?: any; otherKeyContact?: any; contactDetailsToShow?: any }) {
+function editBroadcastAuth(item) {
   currentBroadcastAuth.value = item;
   isEditMode.value = true;
   showForm.value = true;
@@ -439,15 +438,15 @@ function handleNewAuthorization() {
   currentBroadcastAuth.value = {};
   
   // Reset all form fields to empty values
-  setFieldValue('broadcastAuthorization.announcer', {});
-  setFieldValue('broadcastAuthorization.invoice', {});
-  setFieldValue('broadcastAuthorization.campaign', {});
-  setFieldValue('broadcastAuthorization.nature', {});
+  setFieldValue('broadcastAuthorization.announcer', null);
+  setFieldValue('broadcastAuthorization.invoice', null);
+  setFieldValue('broadcastAuthorization.campaign', null);
+  setFieldValue('broadcastAuthorization.nature', null);
   setFieldValue('broadcastAuthorization.natureDescription', '');
   setFieldValue('broadcastAuthorization.date', '');
   setFieldValue('broadcastAuthorization.startDate', '');
   setFieldValue('broadcastAuthorization.endDate', '');
-  setFieldValue('broadcastAuthorization.paymentMethod', {});
+  setFieldValue('broadcastAuthorization.paymentMethod', null);
   setFieldValue('broadcastAuthorization.duration', '');
   setFieldValue('broadcastAuthorization.hour', '');
   setFieldValue('broadcastAuthorization.hours', []);
@@ -458,8 +457,8 @@ function handleNewAuthorization() {
   setFieldValue('broadcastAuthorization.questions', []);
   setFieldValue('broadcastAuthorization.note', '');
   setFieldValue('broadcastAuthorization.serviceInCharge', '');
-  setFieldValue('broadcastAuthorization.validator', {});
-  setFieldValue('broadcastAuthorization.adminValidator', {});
+  setFieldValue('broadcastAuthorization.validator', null);
+  setFieldValue('broadcastAuthorization.adminValidator', null);
   setFieldValue('broadcastAuthorization.location', '');
   setFieldValue('broadcastAuthorization.commercials', []);
   setFieldValue('broadcastAuthorization.contactDetails', '');
@@ -501,7 +500,7 @@ async function deleteBroadcastAuth(item) {
     console.error('Deletion error:', error);
     toaster.show({
       title: 'Error',
-      message: (error as any).message || 'Failed to delete broadcast authorization',
+      message: error.message || 'Failed to delete broadcast authorization',
       color: 'danger',
       icon: 'ph:warning',
       closable: true,
@@ -752,7 +751,6 @@ async function deleteBroadcastAuth(item) {
             action=""
             class="divide-muted-200 dark:divide-muted-700"
             @submit.prevent="onSubmit"
-            @submit="(e) => console.log('Form submit event triggered', e)"
           >
             <div
               shape="curved"
@@ -926,7 +924,7 @@ async function deleteBroadcastAuth(item) {
                           :model-value="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"
-                          @update:model-valuthe submit fuction is not called beccuase it should at list print that consol in it onsubmit, when i click on the submit button nothing happens we can try to verify that the submit function is called:the submit fuction is not called beccuase it should at list print that consol in it onsubmit, when i click on the submit button nothing happens we can try to verify that the submit function is called:e="handleChange"
+                          @update:model-value="handleChange"
                           @blur="handleBlur"
                         />
                       </Field>
@@ -1576,14 +1574,15 @@ async function deleteBroadcastAuth(item) {
                     color="primary"
                     class="w-full sm:w-48"
                     :disabled="isSubmitting"
-                    @click="() => console.log('Button clicked')"
                   >
                     <span v-if="!isSubmitting">Submit</span>
                     <span v-else>Submitting...</span>
                   </BaseButton>
-                  </div>
+                </div>
 
           </div>
+
+
           </form>
         </BaseCard>
       </div>
