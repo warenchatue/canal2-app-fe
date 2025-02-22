@@ -3,6 +3,10 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
+import { ref, computed } from 'vue'
+import { useAuthStore } from '~/stores/auth'
+import { useRoute, useRouter } from 'vue-router'
+
 
 
 definePageMeta({
@@ -27,7 +31,7 @@ const showForm = ref(false)
 const toaster = useToaster()
 const currentBroadcastAuth = ref({})
 const isEditMode = ref(false)
-const loading = ref(false)
+
 
 // Check if user has access
 if (
@@ -67,7 +71,9 @@ const { data, pending, error, refresh } = await useFetch('/api/broadcast-auth/br
 })
 
 const selected = ref<number[]>([])
-const isAllVisibleSelected = computed(() => selected.value.length === data.value?.data.length)
+const isAllVisibleSelected = computed(() => {
+  return selected.value.length === data.value?.data.length
+})
 
 function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
@@ -76,6 +82,70 @@ function toggleAllVisibleSelection() {
     selected.value = data.value?.data.map((item) => item.id) ?? []
   }
 }
+
+
+// Validation messages
+const VALIDATION_TEXT = {
+  NATURE_REQUIRED: "Nature can't be empty",
+  DATE_REQUIRED: "Date can't be empty",
+  LOCATION_REQUIRED: "Location can't be empty",
+  ANNOUNCER_REQUIRED: "Announcer can't be empty",
+  INVOICE_REQUIRED: "Invoice can't be empty",
+  CAMPAIGN_REQUIRED: "Campaign can't be empty",
+  PAYMENT_METHOD_REQUIRED: "Payment method can't be empty",
+  VALIDATOR_REQUIRED: "Validator can't be empty",
+  ADMIN_VALIDATOR_REQUIRED: "Admin validator can't be empty",
+}
+
+// Validation schema
+const zodSchema = z.object({
+  broadcastAuthorization: z.object({
+    announcer: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
+    invoice: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
+    campaign: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
+    nature: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
+    natureDescription: z.string().optional(),
+    date: z.string().transform((str) => str ? new Date(str).toISOString() : null),
+    startDate: z.string().transform((str) => str ? new Date(str).toISOString() : null),
+    endDate: z.string().transform((str) => str ? new Date(str).toISOString() : null),
+    paymentMethod: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
+    duration: z.number().optional(),
+    hour: z.string().optional(),
+    hours: z.array(z.string()).default([]),
+    realHours: z.array(z.string()).default([]),
+    realHour: z.string().optional(),
+    description: z.string().optional(),
+    participants: z.array(z.string()).default([]),
+    questions: z.array(z.string()).default([]),
+    note: z.string().optional(),
+    serviceInCharge: z.string().optional(),
+    validator: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
+    admiValidator: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
+    location: z.string().min(1, VALIDATION_TEXT.LOCATION_REQUIRED),
+    commercials: z.array(z.string()).default([]),
+    contactDetails: z.string().optional(),
+    productionPartner: z.string().optional(),
+    otherProductionPartner: z.string().optional(),
+    keyContact: z.string().optional(),
+    otherKeyContact: z.string().optional(),
+    contactDetailsToShow: z.string().optional(),
+  }),
+})
+
 
 // Fetch data for select options
 const { data: announcers } = await useFetch('/api/sales/announcers', {
@@ -96,9 +166,6 @@ const { data: paymentMethods } = await useFetch('/api/accountancy/payment-method
 const { data: validators } = await useFetch('/api/admin/orgs', {
   query: { action: 'findAll', token: token.value },
 })
-
-
-
 
 
 //Hours
@@ -138,8 +205,6 @@ const removerealHour1 = (index, handleChange) => {
   realHours.value = newrealHours
   handleChange(newrealHours)
 }
-
-
 
 
 //partisipant
@@ -183,8 +248,6 @@ const removeQuestion1 = (index, handleChange) => {
 }
 
 
-
-
 //commercials
 const { data: commercials } = await useFetch('/api/users/', {
   query: { action: 'findAll', token: token.value },
@@ -213,14 +276,9 @@ function removeCommercial(commercialId, handleChange) {
 }
 
 //print 
-// Update the print function
 function printAuthorizations() {
-  // Create a new window for printing
   const printWindow = window.open('', '_blank');
-  
-  // Get the content to print
   const tableContent = document.getElementById('print-authorizations')?.innerHTML;
-  
   if (printWindow && tableContent) {
     printWindow.document.write(`
       <html>
@@ -244,68 +302,143 @@ function printAuthorizations() {
     printWindow.close();
   }
 }
-// Validation schema
-const zodSchema = z.object({
-  broadcastAuthorization: z.object({
-    announcer: z.object({
-      _id: z.string().min(1, "Annonceur est requis")
-    }),
-    invoice: z.object({
-      _id: z.string().min(1, "Facture est requise")
-    }),
-    campaign: z.object({
-      _id: z.string().min(1, "Campagne est requise")
-    }),
-    nature: z.object({
-      _id: z.string().min(1, "Nature est requise")
-    }),
-    natureDescription: z.string().optional(),
-    date: z.string().transform((str) => str ? new Date(str).toISOString() : null),
-    startDate: z.string().transform((str) => str ? new Date(str).toISOString() : null),
-    endDate: z.string().transform((str) => str ? new Date(str).toISOString() : null),
-    paymentMethod: z.object({
-      _id: z.string().min(1, "Méthode de paiement est requise")
-    }),
-    duration: z.number().optional(),
-    hour: z.string().optional(),
-    hours: z.array(z.string()).default([]),
-    realHours: z.array(z.string()).default([]),
-    realHour: z.string().optional(),
-    description: z.string().optional(),
-    participants: z.array(z.string()).default([]),
-    questions: z.array(z.string()).default([]),
-    note: z.string().optional(),
-    serviceInCharge: z.string().optional(),
-    validator: z.object({
-      _id: z.string().min(1, "Validateur est requis")
-    }),
-    adminValidator: z.object({
-      _id: z.string().min(1, "Validateur Admin est requis")
-    }),
-    location: z.string().min(1, "Location est requise"),
-    commercials: z.array(z.string()).default([]),
-    contactDetails: z.string().optional(),
-    productionPartner: z.string().optional(),
-    otherProductionPartner: z.string().optional(),
-    keyContact: z.string().optional(),
-    otherKeyContact: z.string().optional(),
-    contactDetailsToShow: z.string().optional(),
-  }),
-})
 
+
+type FormInput = z.infer<typeof zodSchema>
 const validationSchema = toTypedSchema(zodSchema)
-
-const { handleSubmit, isSubmitting, resetForm, setFieldValue, setErrors } = useForm({
+const { 
+  handleSubmit, 
+  isSubmitting, 
+  resetForm, 
+  setFieldValue
+ } = useForm({
   validationSchema,
 })
+
+
+// Edit functionality
+function editBroadcastAuth(item) {
+  currentBroadcastAuth.value = item;
+  isEditMode.value = true;
+  showForm.value = true;
+
+  // Set all form fields
+  setFieldValue('broadcastAuthorization.announcer', item.announcer);
+  setFieldValue('broadcastAuthorization.invoice', item.invoice);
+  setFieldValue('broadcastAuthorization.campaign', item.campaign);
+  setFieldValue('broadcastAuthorization.nature', item.nature);
+  setFieldValue('broadcastAuthorization.natureDescription', item.natureDescription);
+  setFieldValue('broadcastAuthorization.date', item.date ? new Date(item.date).toISOString().split('T')[0] : '');
+  setFieldValue('broadcastAuthorization.startDate', item.startDate ? new Date(item.startDate).toISOString().split('T')[0] : '');
+  setFieldValue('broadcastAuthorization.endDate', item.endDate ? new Date(item.endDate).toISOString().split('T')[0] : '');
+  setFieldValue('broadcastAuthorization.paymentMethod', item.paymentMethod);
+  setFieldValue('broadcastAuthorization.duration', item.duration);
+  setFieldValue('broadcastAuthorization.hour', item.hour);
+  setFieldValue('broadcastAuthorization.hours', item.hours || []);
+  setFieldValue('broadcastAuthorization.realHours', item.realHours || []);
+  setFieldValue('broadcastAuthorization.realHour', item.realHour);
+  setFieldValue('broadcastAuthorization.description', item.description);
+  setFieldValue('broadcastAuthorization.participants', item.participants || []);
+  setFieldValue('broadcastAuthorization.questions', item.questions || []);
+  setFieldValue('broadcastAuthorization.note', item.note);
+  setFieldValue('broadcastAuthorization.serviceInCharge', item.serviceInCharge);
+  setFieldValue('broadcastAuthorization.validator', item.validator);
+  setFieldValue('broadcastAuthorization.admiValidator', item.admiValidator);
+  setFieldValue('broadcastAuthorization.location', item.location);
+  setFieldValue('broadcastAuthorization.commercials', item.commercials || []);
+  setFieldValue('broadcastAuthorization.contactDetails', item.contactDetails);
+  setFieldValue('broadcastAuthorization.productionPartner', item.productionPartner);
+  setFieldValue('broadcastAuthorization.otherProductionPartner', item.otherProductionPartner);
+  setFieldValue('broadcastAuthorization.keyContact', item.keyContact);
+  setFieldValue('broadcastAuthorization.otherKeyContact', item.otherKeyContact);
+  setFieldValue('broadcastAuthorization.contactDetailsToShow', item.contactDetailsToShow);
+}
+
+
+function handleNewAuthorization() {
+  showForm.value = true;
+  isEditMode.value = false;
+  resetForm();
+  currentBroadcastAuth.value = {};
+  
+  // Reset all form fields to empty values
+  setFieldValue('broadcastAuthorization.announcer', null);
+  setFieldValue('broadcastAuthorization.invoice', null);
+  setFieldValue('broadcastAuthorization.campaign', null);
+  setFieldValue('broadcastAuthorization.nature', null);
+  setFieldValue('broadcastAuthorization.natureDescription', '');
+  setFieldValue('broadcastAuthorization.date', '');
+  setFieldValue('broadcastAuthorization.startDate', '');
+  setFieldValue('broadcastAuthorization.endDate', '');
+  setFieldValue('broadcastAuthorization.paymentMethod', null);
+  setFieldValue('broadcastAuthorization.duration', '');
+  setFieldValue('broadcastAuthorization.hour', '');
+  setFieldValue('broadcastAuthorization.hours', []);
+  setFieldValue('broadcastAuthorization.realHours', []);
+  setFieldValue('broadcastAuthorization.realHour', '');
+  setFieldValue('broadcastAuthorization.description', '');
+  setFieldValue('broadcastAuthorization.participants', []);
+  setFieldValue('broadcastAuthorization.questions', []);
+  setFieldValue('broadcastAuthorization.note', '');
+  setFieldValue('broadcastAuthorization.serviceInCharge', '');
+  setFieldValue('broadcastAuthorization.validator', null);
+  setFieldValue('broadcastAuthorization.admiValidator', null);
+  setFieldValue('broadcastAuthorization.location', '');
+  setFieldValue('broadcastAuthorization.commercials', []);
+  setFieldValue('broadcastAuthorization.contactDetails', '');
+  setFieldValue('broadcastAuthorization.productionPartner', '');
+  setFieldValue('broadcastAuthorization.otherProductionPartner', '');
+  setFieldValue('broadcastAuthorization.keyContact', '');
+  setFieldValue('broadcastAuthorization.otherKeyContact', '');
+  setFieldValue('broadcastAuthorization.contactDetailsToShow', '');
+}
+
+// Delete functionality
+async function deleteBroadcastAuth(item) {
+  try {
+    const token = useCookie('token').value;
+    const response = await $fetch(`/api/broadcast-auth/broadcast-aut`, {
+      method: 'DELETE',
+      query: {
+        action: 'delete',
+        id: item._id
+      },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.success) {
+      toaster.show({
+        title: 'Success',
+        message: 'Broadcast authorization deleted successfully',
+        color: 'success',
+        icon: 'ph:check',
+        closable: true,
+      });
+      refresh();
+    } else {
+      throw new Error(response.message || 'Failed to delete broadcast authorization');
+    }
+  } catch (error) {
+    console.error('Deletion error:', error);
+    toaster.show({
+      title: 'Error',
+      message: error.message || 'Failed to delete broadcast authorization',
+      color: 'danger',
+      icon: 'ph:warning',
+      closable: true,
+    });
+  }
+}
+
 
 const success = ref(false)
 
 // Handle form submission (create or update)
 const onSubmit = handleSubmit(async (values) => {
-  console.log('values', values)
-
   try {
+    console.log('Form submitted with values:', values);
     const token = useCookie('token').value;
 
     // Format the data to match backend expectations
@@ -369,7 +502,7 @@ const onSubmit = handleSubmit(async (values) => {
       });
       resetForm();
       showForm.value = false;
-      refresh();
+      await refresh();
     } else {
       toaster.show({
         title: 'Error',
@@ -388,125 +521,11 @@ const onSubmit = handleSubmit(async (values) => {
       icon: 'ph:warning',
       closable: true,
     });
+  } finally {
+    isSubmitting.value = false;
   }
 });
 
-
-// Edit functionality
-function editBroadcastAuth(item) {
-  currentBroadcastAuth.value = item;
-  isEditMode.value = true;
-  showForm.value = true;
-
-  // Set all form fields
-  setFieldValue('broadcastAuthorization.announcer', item.announcer);
-  setFieldValue('broadcastAuthorization.invoice', item.invoice);
-  setFieldValue('broadcastAuthorization.campaign', item.campaign);
-  setFieldValue('broadcastAuthorization.nature', item.nature);
-  setFieldValue('broadcastAuthorization.natureDescription', item.natureDescription);
-  setFieldValue('broadcastAuthorization.date', item.date ? new Date(item.date).toISOString().split('T')[0] : '');
-  setFieldValue('broadcastAuthorization.startDate', item.startDate ? new Date(item.startDate).toISOString().split('T')[0] : '');
-  setFieldValue('broadcastAuthorization.endDate', item.endDate ? new Date(item.endDate).toISOString().split('T')[0] : '');
-  setFieldValue('broadcastAuthorization.paymentMethod', item.paymentMethod);
-  setFieldValue('broadcastAuthorization.duration', item.duration);
-  setFieldValue('broadcastAuthorization.hour', item.hour);
-  setFieldValue('broadcastAuthorization.hours', item.hours || []);
-  setFieldValue('broadcastAuthorization.realHours', item.realHours || []);
-  setFieldValue('broadcastAuthorization.realHour', item.realHour);
-  setFieldValue('broadcastAuthorization.description', item.description);
-  setFieldValue('broadcastAuthorization.participants', item.participants || []);
-  setFieldValue('broadcastAuthorization.questions', item.questions || []);
-  setFieldValue('broadcastAuthorization.note', item.note);
-  setFieldValue('broadcastAuthorization.serviceInCharge', item.serviceInCharge);
-  setFieldValue('broadcastAuthorization.validator', item.validator);
-  setFieldValue('broadcastAuthorization.adminValidator', item.adminValidator);
-  setFieldValue('broadcastAuthorization.location', item.location);
-  setFieldValue('broadcastAuthorization.commercials', item.commercials || []);
-  setFieldValue('broadcastAuthorization.contactDetails', item.contactDetails);
-  setFieldValue('broadcastAuthorization.productionPartner', item.productionPartner);
-  setFieldValue('broadcastAuthorization.otherProductionPartner', item.otherProductionPartner);
-  setFieldValue('broadcastAuthorization.keyContact', item.keyContact);
-  setFieldValue('broadcastAuthorization.otherKeyContact', item.otherKeyContact);
-  setFieldValue('broadcastAuthorization.contactDetailsToShow', item.contactDetailsToShow);
-}
-
-
-function handleNewAuthorization() {
-  showForm.value = true;
-  isEditMode.value = false;
-  resetForm();
-  currentBroadcastAuth.value = {};
-  
-  // Reset all form fields to empty values
-  setFieldValue('broadcastAuthorization.announcer', null);
-  setFieldValue('broadcastAuthorization.invoice', null);
-  setFieldValue('broadcastAuthorization.campaign', null);
-  setFieldValue('broadcastAuthorization.nature', null);
-  setFieldValue('broadcastAuthorization.natureDescription', '');
-  setFieldValue('broadcastAuthorization.date', '');
-  setFieldValue('broadcastAuthorization.startDate', '');
-  setFieldValue('broadcastAuthorization.endDate', '');
-  setFieldValue('broadcastAuthorization.paymentMethod', null);
-  setFieldValue('broadcastAuthorization.duration', '');
-  setFieldValue('broadcastAuthorization.hour', '');
-  setFieldValue('broadcastAuthorization.hours', []);
-  setFieldValue('broadcastAuthorization.realHours', []);
-  setFieldValue('broadcastAuthorization.realHour', '');
-  setFieldValue('broadcastAuthorization.description', '');
-  setFieldValue('broadcastAuthorization.participants', []);
-  setFieldValue('broadcastAuthorization.questions', []);
-  setFieldValue('broadcastAuthorization.note', '');
-  setFieldValue('broadcastAuthorization.serviceInCharge', '');
-  setFieldValue('broadcastAuthorization.validator', null);
-  setFieldValue('broadcastAuthorization.adminValidator', null);
-  setFieldValue('broadcastAuthorization.location', '');
-  setFieldValue('broadcastAuthorization.commercials', []);
-  setFieldValue('broadcastAuthorization.contactDetails', '');
-  setFieldValue('broadcastAuthorization.productionPartner', '');
-  setFieldValue('broadcastAuthorization.otherProductionPartner', '');
-  setFieldValue('broadcastAuthorization.keyContact', '');
-  setFieldValue('broadcastAuthorization.otherKeyContact', '');
-  setFieldValue('broadcastAuthorization.contactDetailsToShow', '');
-}
-// Delete functionality
-// Update the delete function
-async function deleteBroadcastAuth(item) {
-  try {
-    const token = useCookie('token').value;
-    const response = await $fetch(`/api/broadcast-auth/broadcast-aut`, {
-      method: 'DELETE',
-      query: {
-        action: 'delete',
-        id: item._id
-      },
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.success) {
-      toaster.show({
-        title: 'Success',
-        message: 'Broadcast authorization deleted successfully',
-        color: 'success',
-        icon: 'ph:check',
-        closable: true,
-      });
-      refresh();
-    } else {
-      throw new Error(response.message || 'Failed to delete broadcast authorization');
-    }
-  } catch (error) {
-    console.error('Deletion error:', error);
-    toaster.show({
-      title: 'Error',
-      message: error.message || 'Failed to delete broadcast authorization',
-      color: 'danger',
-      icon: 'ph:warning',
-      closable: true,
-    });
-  }
-}
 </script>
 
 <template>
@@ -1566,9 +1585,9 @@ async function deleteBroadcastAuth(item) {
                   </div>
                 </div>
               </div>
-
-                <!-- Submit Button -->
-                <div class="mt-6 bp-6">
+          </div>
+                          <!-- Submit Button -->
+                          <div class="mt-6 bp-6">
                   <BaseButton
                     type="submit"
                     color="primary"
@@ -1579,10 +1598,6 @@ async function deleteBroadcastAuth(item) {
                     <span v-else>Submitting...</span>
                   </BaseButton>
                 </div>
-
-          </div>
-
-
           </form>
         </BaseCard>
       </div>
