@@ -3,7 +3,11 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useForm } from 'vee-validate'
 import { z } from 'zod'
 import { UserRole } from '~/types/user'
-import NatureModal from '~/components/NatureModal.vue'
+import { ref, computed } from 'vue'
+import { useAuthStore } from '~/stores/auth'
+import { useRoute, useRouter } from 'vue-router'
+
+
 
 definePageMeta({
   title: 'Broadcast Authorizations',
@@ -24,11 +28,10 @@ const page = computed(() => parseInt((route.query.page as string) ?? '1'))
 const filter = ref('')
 const perPage = ref(10)
 const showForm = ref(false)
-const showNatureModal = ref(false)
 const toaster = useToaster()
 const currentBroadcastAuth = ref({})
 const isEditMode = ref(false)
-const loading = ref(false)
+
 
 // Check if user has access
 if (
@@ -68,7 +71,9 @@ const { data, pending, error, refresh } = await useFetch('/api/broadcast-auth/br
 })
 
 const selected = ref<number[]>([])
-const isAllVisibleSelected = computed(() => selected.value.length === data.value?.data.length)
+const isAllVisibleSelected = computed(() => {
+  return selected.value.length === data.value?.data.length
+})
 
 function toggleAllVisibleSelection() {
   if (isAllVisibleSelected.value) {
@@ -77,6 +82,70 @@ function toggleAllVisibleSelection() {
     selected.value = data.value?.data.map((item) => item.id) ?? []
   }
 }
+
+
+// Validation messages
+const VALIDATION_TEXT = {
+  NATURE_REQUIRED: "Nature can't be empty",
+  DATE_REQUIRED: "Date can't be empty",
+  LOCATION_REQUIRED: "Location can't be empty",
+  ANNOUNCER_REQUIRED: "Announcer can't be empty",
+  INVOICE_REQUIRED: "Invoice can't be empty",
+  CAMPAIGN_REQUIRED: "Campaign can't be empty",
+  PAYMENT_METHOD_REQUIRED: "Payment method can't be empty",
+  VALIDATOR_REQUIRED: "Validator can't be empty",
+  ADMIN_VALIDATOR_REQUIRED: "Admin validator can't be empty",
+}
+
+// Validation schema
+const zodSchema = z.object({
+  broadcastAuthorization: z.object({
+    announcer: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
+    invoice: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
+    campaign: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
+    nature: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
+    natureDescription: z.string().optional(),
+    date: z.string().transform((str) => str ? new Date(str).toISOString() : null),
+    startDate: z.string().transform((str) => str ? new Date(str).toISOString() : null),
+    endDate: z.string().transform((str) => str ? new Date(str).toISOString() : null),
+    paymentMethod: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
+    duration: z.number().optional(),
+    hour: z.string().optional(),
+    hours: z.array(z.string()).default([]),
+    realHours: z.array(z.string()).default([]),
+    realHour: z.string().optional(),
+    description: z.string().optional(),
+    participants: z.array(z.string()).default([]),
+    questions: z.array(z.string()).default([]),
+    note: z.string().optional(),
+    serviceInCharge: z.string().optional(),
+    validator: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
+    admiValidator: z.object({
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+    }),
+    location: z.string().min(1, VALIDATION_TEXT.LOCATION_REQUIRED),
+    commercials: z.array(z.string()).default([]),
+    contactDetails: z.string().optional(),
+    productionPartner: z.string().optional(),
+    otherProductionPartner: z.string().optional(),
+    keyContact: z.string().optional(),
+    otherKeyContact: z.string().optional(),
+    contactDetailsToShow: z.string().optional(),
+  }),
+})
+
 
 // Fetch data for select options
 const { data: announcers } = await useFetch('/api/sales/announcers', {
@@ -97,71 +166,282 @@ const { data: paymentMethods } = await useFetch('/api/accountancy/payment-method
 const { data: validators } = await useFetch('/api/admin/orgs', {
   query: { action: 'findAll', token: token.value },
 })
-const { data: commercials } = await useFetch('/api/users', {
+
+
+//Hours
+const hours = ref([])
+const inputValue2 = ref('')
+const updateInputValue2 = (value) => {
+  inputValue2.value = value
+}
+const addHour1 = (hour, handleChange) => {
+  if (!hour?.trim()) return
+  const newHours = [...hours.value, hour.trim()]
+  hours.value = newHours
+  handleChange(newHours)
+  inputValue2.value = ''
+}
+const removeHour1 = (index, handleChange) => {
+  const newHours = hours.value.filter((_, i) => i !== index)
+  hours.value = newHours
+  handleChange(newHours)
+}
+
+//RealHours
+const realHours = ref([])
+const inputValue3 = ref('')
+const updateInputValue3 = (value) => {
+  inputValue3.value = value
+}
+const addrealHour1 = (realHour, handleChange) => {
+  if (!realHour?.trim()) return
+  const newrealHours = [...realHours.value, realHour.trim()]
+  realHours.value = newrealHours
+  handleChange(newrealHours)
+  inputValue3.value = ''
+}
+const removerealHour1 = (index, handleChange) => {
+  const newrealHours = realHours.value.filter((_, i) => i !== index)
+  realHours.value = newrealHours
+  handleChange(newrealHours)
+}
+
+
+//partisipant
+const participants = ref([])
+const inputValue = ref('')
+const updateInputValue = (value) => {
+  inputValue.value = value
+}
+const addParticipant1 = (participant, handleChange) => {
+  if (!participant?.trim()) return
+  const newParticipants = [...participants.value, participant.trim()]
+  participants.value = newParticipants
+  handleChange(newParticipants)
+  inputValue.value = ''
+}
+const removeParticipant1 = (index, handleChange) => {
+  const newParticipants = participants.value.filter((_, i) => i !== index)
+  participants.value = newParticipants
+  
+  handleChange(newParticipants)
+}
+
+
+//Questions
+const questions = ref([])
+const inputValue1 = ref('')
+const updateInputValue1 = (value) => {
+  inputValue1.value = value
+}
+const addQuestion1 = (question, handleChange) => {
+  if (!question?.trim()) return
+  const newQuestions = [...questions.value, question.trim()]
+  questions.value = newQuestions
+  handleChange(newQuestions)
+  inputValue1.value = ''
+}
+const removeQuestion1 = (index, handleChange) => {
+  const newQuestions = questions.value.filter((_, i) => i !== index)
+  questions.value = newQuestions
+  handleChange(newQuestions)
+}
+
+
+//commercials
+const { data: commercials } = await useFetch('/api/users/', {
   query: { action: 'findAll', token: token.value },
-})
+});
+//console.log('Commercials API Response:', commercials.value);
+const commercialsList = computed(() => {
+  if (!commercials.value || !Array.isArray(commercials.value.data)) {
+    return [];
+  }
+  return commercials.value.data.map(item => ({
+    _id: item._id,
+    name: item.lastName
+  }));
+});
+const selectedCommercials = ref([]);
+function handleCommercialChange(event, handleChange) {
+  const selectedOptions = Array.from(event.target.selectedOptions).map(
+    option => option.value
+  );
+  selectedCommercials.value = [...new Set([...selectedCommercials.value, ...selectedOptions])];
+  handleChange(selectedCommercials.value);
+}
+function removeCommercial(commercialId, handleChange) {
+  selectedCommercials.value = selectedCommercials.value.filter(id => id !== commercialId);
+  handleChange(selectedCommercials.value);
+}
 
-// Validation schema
-const zodSchema = z.object({
-  broadcastAuthorization: z.object({
-    announcer: z.object({
-      _id: z.string().min(1, "Annonceur est requis")
-    }),
-    invoice: z.object({
-      _id: z.string().min(1, "Facture est requise")
-    }),
-    campaign: z.object({
-      _id: z.string().min(1, "Campagne est requise")
-    }),
-    nature: z.object({
-      _id: z.string().min(1, "Nature est requise")
-    }),
-    natureDescription: z.string().optional(),
-    date: z.string().transform((str) => str ? new Date(str).toISOString() : null),
-    startDate: z.string().transform((str) => str ? new Date(str).toISOString() : null),
-    endDate: z.string().transform((str) => str ? new Date(str).toISOString() : null),
-    paymentMethod: z.object({
-      _id: z.string().min(1, "Méthode de paiement est requise")
-    }),
-    duration: z.number().optional(),
-    hour: z.string().optional(),
-    hours: z.array(z.string()).default([]),
-    realHours: z.array(z.string()).default([]),
-    realHour: z.string().optional(),
-    description: z.string().optional(),
-    participants: z.array(z.string()).default([]),
-    questions: z.array(z.string()).default([]),
-    note: z.string().optional(),
-    serviceInCharge: z.string().optional(),
-    validator: z.object({
-      _id: z.string().min(1, "Validateur est requis")
-    }),
-    adminValidator: z.object({
-      _id: z.string().min(1, "Validateur Admin est requis")
-    }),
-    location: z.string().min(1, "Location est requise"),
-    commercials: z.array(z.string()).default([]),
-    contactDetails: z.string().optional(),
-    productionPartner: z.string().optional(),
-    otherProductionPartner: z.string().optional(),
-    keyContact: z.string().optional(),
-    otherKeyContact: z.string().optional(),
-    contactDetailsToShow: z.string().optional(),
-  }),
-})
+//print 
+function printAuthorizations() {
+  const printWindow = window.open('', '_blank');
+  const tableContent = document.getElementById('print-authorizations')?.innerHTML;
+  if (printWindow && tableContent) {
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Broadcast Authorizations</title>
+          <style>
+            table { border-collapse: collapse; width: 100%; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+          </style>
+        </head>
+        <body>
+          ${tableContent}
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  }
+}
 
+
+type FormInput = z.infer<typeof zodSchema>
 const validationSchema = toTypedSchema(zodSchema)
-
-const { handleSubmit, isSubmitting, resetForm, setFieldValue, setErrors } = useForm({
+const { 
+  handleSubmit, 
+  isSubmitting, 
+  resetForm, 
+  setFieldValue
+ } = useForm({
   validationSchema,
 })
+
+
+// Edit functionality
+function editBroadcastAuth(item) {
+  currentBroadcastAuth.value = item;
+  isEditMode.value = true;
+  showForm.value = true;
+
+  // Set all form fields
+  setFieldValue('broadcastAuthorization.announcer', item.announcer);
+  setFieldValue('broadcastAuthorization.invoice', item.invoice);
+  setFieldValue('broadcastAuthorization.campaign', item.campaign);
+  setFieldValue('broadcastAuthorization.nature', item.nature);
+  setFieldValue('broadcastAuthorization.natureDescription', item.natureDescription);
+  setFieldValue('broadcastAuthorization.date', item.date ? new Date(item.date).toISOString().split('T')[0] : '');
+  setFieldValue('broadcastAuthorization.startDate', item.startDate ? new Date(item.startDate).toISOString().split('T')[0] : '');
+  setFieldValue('broadcastAuthorization.endDate', item.endDate ? new Date(item.endDate).toISOString().split('T')[0] : '');
+  setFieldValue('broadcastAuthorization.paymentMethod', item.paymentMethod);
+  setFieldValue('broadcastAuthorization.duration', item.duration);
+  setFieldValue('broadcastAuthorization.hour', item.hour);
+  setFieldValue('broadcastAuthorization.hours', item.hours || []);
+  setFieldValue('broadcastAuthorization.realHours', item.realHours || []);
+  setFieldValue('broadcastAuthorization.realHour', item.realHour);
+  setFieldValue('broadcastAuthorization.description', item.description);
+  setFieldValue('broadcastAuthorization.participants', item.participants || []);
+  setFieldValue('broadcastAuthorization.questions', item.questions || []);
+  setFieldValue('broadcastAuthorization.note', item.note);
+  setFieldValue('broadcastAuthorization.serviceInCharge', item.serviceInCharge);
+  setFieldValue('broadcastAuthorization.validator', item.validator);
+  setFieldValue('broadcastAuthorization.admiValidator', item.admiValidator);
+  setFieldValue('broadcastAuthorization.location', item.location);
+  setFieldValue('broadcastAuthorization.commercials', item.commercials || []);
+  setFieldValue('broadcastAuthorization.contactDetails', item.contactDetails);
+  setFieldValue('broadcastAuthorization.productionPartner', item.productionPartner);
+  setFieldValue('broadcastAuthorization.otherProductionPartner', item.otherProductionPartner);
+  setFieldValue('broadcastAuthorization.keyContact', item.keyContact);
+  setFieldValue('broadcastAuthorization.otherKeyContact', item.otherKeyContact);
+  setFieldValue('broadcastAuthorization.contactDetailsToShow', item.contactDetailsToShow);
+}
+
+
+function handleNewAuthorization() {
+  showForm.value = true;
+  isEditMode.value = false;
+  resetForm();
+  currentBroadcastAuth.value = {};
+  
+  // Reset all form fields to empty values
+  setFieldValue('broadcastAuthorization.announcer', null);
+  setFieldValue('broadcastAuthorization.invoice', null);
+  setFieldValue('broadcastAuthorization.campaign', null);
+  setFieldValue('broadcastAuthorization.nature', null);
+  setFieldValue('broadcastAuthorization.natureDescription', '');
+  setFieldValue('broadcastAuthorization.date', '');
+  setFieldValue('broadcastAuthorization.startDate', '');
+  setFieldValue('broadcastAuthorization.endDate', '');
+  setFieldValue('broadcastAuthorization.paymentMethod', null);
+  setFieldValue('broadcastAuthorization.duration', '');
+  setFieldValue('broadcastAuthorization.hour', '');
+  setFieldValue('broadcastAuthorization.hours', []);
+  setFieldValue('broadcastAuthorization.realHours', []);
+  setFieldValue('broadcastAuthorization.realHour', '');
+  setFieldValue('broadcastAuthorization.description', '');
+  setFieldValue('broadcastAuthorization.participants', []);
+  setFieldValue('broadcastAuthorization.questions', []);
+  setFieldValue('broadcastAuthorization.note', '');
+  setFieldValue('broadcastAuthorization.serviceInCharge', '');
+  setFieldValue('broadcastAuthorization.validator', null);
+  setFieldValue('broadcastAuthorization.admiValidator', null);
+  setFieldValue('broadcastAuthorization.location', '');
+  setFieldValue('broadcastAuthorization.commercials', []);
+  setFieldValue('broadcastAuthorization.contactDetails', '');
+  setFieldValue('broadcastAuthorization.productionPartner', '');
+  setFieldValue('broadcastAuthorization.otherProductionPartner', '');
+  setFieldValue('broadcastAuthorization.keyContact', '');
+  setFieldValue('broadcastAuthorization.otherKeyContact', '');
+  setFieldValue('broadcastAuthorization.contactDetailsToShow', '');
+}
+
+// Delete functionality
+async function deleteBroadcastAuth(item) {
+  try {
+    const token = useCookie('token').value;
+    const response = await $fetch(`/api/broadcast-auth/broadcast-aut`, {
+      method: 'DELETE',
+      query: {
+        action: 'delete',
+        id: item._id
+      },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.success) {
+      toaster.show({
+        title: 'Success',
+        message: 'Broadcast authorization deleted successfully',
+        color: 'success',
+        icon: 'ph:check',
+        closable: true,
+      });
+      refresh();
+    } else {
+      throw new Error(response.message || 'Failed to delete broadcast authorization');
+    }
+  } catch (error) {
+    console.error('Deletion error:', error);
+    toaster.show({
+      title: 'Error',
+      message: error.message || 'Failed to delete broadcast authorization',
+      color: 'danger',
+      icon: 'ph:warning',
+      closable: true,
+    });
+  }
+}
+
 
 const success = ref(false)
 
 // Handle form submission (create or update)
 const onSubmit = handleSubmit(async (values) => {
   try {
-    const token = useCookie('token').value
+    console.log('Form submitted with values:', values);
+    const token = useCookie('token').value;
+
+    // Format the data to match backend expectations
     const formattedData = {
       announcer: values.broadcastAuthorization.announcer?._id,
       invoice: values.broadcastAuthorization.invoice?._id,
@@ -191,22 +471,26 @@ const onSubmit = handleSubmit(async (values) => {
       otherProductionPartner: values.broadcastAuthorization.otherProductionPartner || '',
       keyContact: values.broadcastAuthorization.keyContact || '',
       otherKeyContact: values.broadcastAuthorization.otherKeyContact || '',
-      contactDetailsToShow: values.broadcastAuthorization.contactDetailsToShow || ''
-    }
+      contactDetailsToShow: values.broadcastAuthorization.contactDetailsToShow || '',
+    };
 
-    const action = isEditMode.value ? 'updateAuthorization' : 'createAuthorization'
+    // Determine the API endpoint and method based on whether we're in edit mode
+    const action = isEditMode.value ? 'updateAuthorization' : 'createAuthorization';
     const url = isEditMode.value
       ? `/api/broadcast-auth/broadcast-aut/${currentBroadcastAuth.value._id}?action=${action}`
-      : `/api/broadcast-auth/broadcast-aut?action=${action}`
+      : `/api/broadcast-auth/broadcast-aut?action=${action}`;
 
+    const method = isEditMode.value ? 'PUT' : 'POST';
+
+    // Make the API request
     const response = await $fetch(url, {
-      method: isEditMode.value ? 'PUT' : 'POST',
+      method,
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: formattedData,
-    })
+    });
 
     if (response.success) {
       toaster.show({
@@ -215,10 +499,10 @@ const onSubmit = handleSubmit(async (values) => {
         color: 'success',
         icon: 'ph:check',
         closable: true,
-      })
-      resetForm()
-      showForm.value = false
-      refresh()
+      });
+      resetForm();
+      showForm.value = false;
+      await refresh();
     } else {
       toaster.show({
         title: 'Error',
@@ -226,98 +510,22 @@ const onSubmit = handleSubmit(async (values) => {
         color: 'danger',
         icon: 'ph:warning',
         closable: true,
-      })
+      });
     }
   } catch (error) {
-    console.error('Submission error:', error)
+    console.error('Submission error:', error);
     toaster.show({
       title: 'Error',
       message: error.message || 'Failed to submit form',
       color: 'danger',
       icon: 'ph:warning',
       closable: true,
-    })
+    });
+  } finally {
+    isSubmitting.value = false;
   }
-})
+});
 
-// Edit functionality
-function editBroadcastAuth(item) {
-  currentBroadcastAuth.value = item;
-  isEditMode.value = true;
-  showForm.value = true;
-
-  // Set all form fields
-  setFieldValue('broadcastAuthorization.announcer', item.announcer);
-  setFieldValue('broadcastAuthorization.invoice', item.invoice);
-  setFieldValue('broadcastAuthorization.campaign', item.campaign);
-  setFieldValue('broadcastAuthorization.nature', item.nature);
-  setFieldValue('broadcastAuthorization.natureDescription', item.natureDescription);
-  setFieldValue('broadcastAuthorization.date', item.date ? new Date(item.date).toISOString().split('T')[0] : '');
-  setFieldValue('broadcastAuthorization.startDate', item.startDate ? new Date(item.startDate).toISOString().split('T')[0] : '');
-  setFieldValue('broadcastAuthorization.endDate', item.endDate ? new Date(item.endDate).toISOString().split('T')[0] : '');
-  setFieldValue('broadcastAuthorization.paymentMethod', item.paymentMethod);
-  setFieldValue('broadcastAuthorization.duration', item.duration);
-  setFieldValue('broadcastAuthorization.hour', item.hour);
-  setFieldValue('broadcastAuthorization.hours', item.hours || []);
-  setFieldValue('broadcastAuthorization.realHours', item.realHours || []);
-  setFieldValue('broadcastAuthorization.realHour', item.realHour);
-  setFieldValue('broadcastAuthorization.description', item.description);
-  setFieldValue('broadcastAuthorization.participants', item.participants || []);
-  setFieldValue('broadcastAuthorization.questions', item.questions || []);
-  setFieldValue('broadcastAuthorization.note', item.note);
-  setFieldValue('broadcastAuthorization.serviceInCharge', item.serviceInCharge);
-  setFieldValue('broadcastAuthorization.validator', item.validator);
-  setFieldValue('broadcastAuthorization.adminValidator', item.adminValidator);
-  setFieldValue('broadcastAuthorization.location', item.location);
-  setFieldValue('broadcastAuthorization.commercials', item.commercials || []);
-  setFieldValue('broadcastAuthorization.contactDetails', item.contactDetails);
-  setFieldValue('broadcastAuthorization.productionPartner', item.productionPartner);
-  setFieldValue('broadcastAuthorization.otherProductionPartner', item.otherProductionPartner);
-  setFieldValue('broadcastAuthorization.keyContact', item.keyContact);
-  setFieldValue('broadcastAuthorization.otherKeyContact', item.otherKeyContact);
-  setFieldValue('broadcastAuthorization.contactDetailsToShow', item.contactDetailsToShow);
-}
-
-// Delete functionality
-async function deleteBroadcastAuth(item) {
-  try {
-    const token = useCookie('token').value
-    const response = await $fetch(`/api/broadcast-auth/broadcast-aut/${item._id}?action=delete`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-
-    if (response.success) {
-      toaster.show({
-        title: 'Success',
-        message: 'Broadcast authorization deleted successfully',
-        color: 'success',
-        icon: 'ph:check',
-        closable: true,
-      })
-      refresh()
-    } else {
-      toaster.show({
-        title: 'Error',
-        message: response.message || 'Failed to delete broadcast authorization',
-        color: 'danger',
-        icon: 'ph:warning',
-        closable: true,
-      })
-    }
-  } catch (error) {
-    console.error('Deletion error:', error)
-    toaster.show({
-      title: 'Error',
-      message: error.message || 'Failed to delete broadcast authorization',
-      color: 'danger',
-      icon: 'ph:warning',
-      closable: true,
-    })
-  }
-}
 </script>
 
 <template>
@@ -349,8 +557,17 @@ async function deleteBroadcastAuth(item) {
         </BaseSelect>
 
         <BaseButton
+          color="primary"
+          class="w-full sm:w-48"
+          @click="printAuthorizations"
+        >
+          <Icon name="ph:file" class="h-4 w-4" />
+          <span>Print Authorizations</span>
+        </BaseButton>
+
+        <BaseButton
           v-if="!showForm"
-          @click="showForm = true; isEditMode = false; resetForm()"
+          @click="handleNewAuthorization"
           color="primary"
           class="w-full sm:w-48"
           :disabled="
@@ -394,7 +611,7 @@ async function deleteBroadcastAuth(item) {
           </BasePlaceholderPage>
         </div>
         <div v-else>
-          <div class="w-full">
+          <div class="w-full" id="print-authorizations">
             <TairoTable shape="rounded">
               <template #header>
                 <TairoTableHeading uppercase spaced class="p-4">
@@ -574,7 +791,7 @@ async function deleteBroadcastAuth(item) {
                       >
                         <BaseListbox
                           label="Annonceur"
-                          :items="announcersList"
+                          :items="announcers.data"
                           :properties="{ value: '_id', label: 'name' }"
                           :model-value="field.value"
                           :error="errorMessage"
@@ -599,7 +816,7 @@ async function deleteBroadcastAuth(item) {
                       >
                         <BaseListbox
                           label="Facture"
-                          :items="invoicesList"
+                          :items="invoices.data"
                           :properties="{ value: '_id', label: 'code' }"
                           :model-value="field.value"
                           :error="errorMessage"
@@ -623,7 +840,7 @@ async function deleteBroadcastAuth(item) {
                       >
                         <BaseListbox
                           label="Campagne"
-                          :items="campaingnList"
+                          :items="campaigns.data"
                           :properties="{ value: '_id', label: 'code' }"
                           :model-value="field.value"
                           :error="errorMessage"
@@ -647,7 +864,7 @@ async function deleteBroadcastAuth(item) {
                       >
                         <BaseListbox
                           label="Nature"
-                          :items="naturesList"
+                          :items="natures.data"
                           :properties="{ value: '_id', label: 'name' }"
                           :model-value="field.value"
                           :error="errorMessage"
@@ -770,7 +987,7 @@ async function deleteBroadcastAuth(item) {
                       >
                         <BaseListbox
                           label="Méthode de paiement"
-                          :items="paymentMethodList"
+                          :items="paymentMethods.data"
                           :properties="{ value: '_id', label: 'label' }"
                           :model-value="field.value"
                           :error="errorMessage"
@@ -1112,7 +1329,7 @@ async function deleteBroadcastAuth(item) {
                       >
                         <BaseListbox
                           label="Validateur"
-                          :items="validaturList"
+                          :items="validators.data"
                           :properties="{ value: '_id', label: 'name' }"
                           :model-value="field.value"
                           :error="errorMessage"
@@ -1136,7 +1353,7 @@ async function deleteBroadcastAuth(item) {
                       >
                         <BaseListbox
                           label="Validateur Admin"
-                          :items="validaturAdminList"
+                          :items="validators.data"
                           :properties="{ value: '_id', label: 'name' }"
                           :model-value="field.value"
                           :error="errorMessage"
@@ -1368,9 +1585,9 @@ async function deleteBroadcastAuth(item) {
                   </div>
                 </div>
               </div>
-
-                <!-- Submit Button -->
-                <div class="mt-6 bp-6">
+          </div>
+                          <!-- Submit Button -->
+                          <div class="mt-6 bp-6">
                   <BaseButton
                     type="submit"
                     color="primary"
@@ -1381,10 +1598,6 @@ async function deleteBroadcastAuth(item) {
                     <span v-else>Submitting...</span>
                   </BaseButton>
                 </div>
-
-          </div>
-
-
           </form>
         </BaseCard>
       </div>
