@@ -90,11 +90,7 @@ const VALIDATION_TEXT = {
   DATE_REQUIRED: "Date can't be empty",
   LOCATION_REQUIRED: "Location can't be empty",
   ANNOUNCER_REQUIRED: "Announcer can't be empty",
-  INVOICE_REQUIRED: "Invoice can't be empty",
-  CAMPAIGN_REQUIRED: "Campaign can't be empty",
   PAYMENT_METHOD_REQUIRED: "Payment method can't be empty",
-  VALIDATOR_REQUIRED: "Validator can't be empty",
-  ADMIN_VALIDATOR_REQUIRED: "Admin validator can't be empty",
 }
 
 // Validation schema
@@ -104,14 +100,18 @@ const zodSchema = z.object({
       id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED),
       name: z.string(),
     }),
-    invoice: z.object({
-      id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED),
-      name: z.string(),
-      text: z.string(),
-    }),
-    campaign: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED),
-    }),
+    invoice: z
+      .object({
+        id: z.string().optional(),
+        name: z.string().optional(),
+      })
+      .optional(),
+    campaign: z
+      .object({
+        id: z.string().optional(),
+        name: z.string().optional(),
+      })
+      .optional(),
     nature: z.object({
       _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED),
     }),
@@ -138,12 +138,16 @@ const zodSchema = z.object({
     questions: z.array(z.string()).default([]),
     note: z.string().optional(),
     serviceInCharge: z.string().optional(),
-    validator: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED),
-    }),
-    admiValidator: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED),
-    }),
+    validator: z
+      .object({
+        _id: z.string().optional(),
+      })
+      .optional(),
+    adminValidator: z
+      .object({
+        _id: z.string().optional(),
+      })
+      .optional(),
     location: z.string().min(1, VALIDATION_TEXT.LOCATION_REQUIRED),
     commercials: z.array(z.string()).default([]),
     contactDetails: z.string().optional(),
@@ -167,9 +171,7 @@ async function filterAnnouncersItems(query?: string, items?: any[]) {
 
   const queryLightByName = computed(() => {
     return {
-      filter: filter.value,
       perPage: 10000,
-      page: page.value,
       action: 'findAllLightByName',
       name: query,
       token: token.value,
@@ -184,7 +186,7 @@ async function filterAnnouncersItems(query?: string, items?: any[]) {
   return announcersData.value?.data ?? false
 }
 
-function filterItems(query?: string, items?: any[]) {
+async function filterInvoiceItems(query?: string, items?: any[]) {
   if (query.length < 3) {
     return []
   }
@@ -193,20 +195,49 @@ function filterItems(query?: string, items?: any[]) {
     return items ?? []
   }
 
-  // search by name or text
-  return items.filter((item) => {
-    const nameMatches = item?.name?.toLowerCase().includes(query.toLowerCase())
-    // const textMatches = item?.text?.toLowerCase().includes(query.toLowerCase())
-    return nameMatches
+  const queryLightByName = computed(() => {
+    return {
+      perPage: 10000,
+      action: 'findAllLightByCode',
+      name: query,
+      token: token.value,
+    }
   })
+
+  const { data: invoicesData } = await useFetch('/api/sales/invoices', {
+    query: queryLightByName,
+  })
+
+  // search by name
+  return invoicesData.value?.data ?? false
 }
 
-// const { data: invoices } = await useFetch('/api/sales/invoices', {
-//   query: { action: 'findAll', token: token.value },
-// })
-// const { data: campaigns } = await useFetch('/api/pub/packages', {
-//   query: { action: 'findAll', token: token.value },
-// })
+async function filterCampaignItems(query?: string, items?: any[]) {
+  if (query.length < 3) {
+    return []
+  }
+
+  if (!query || !items) {
+    return items ?? []
+  }
+
+  const queryLightByName = computed(() => {
+    return {
+      perPage: 10000,
+      action: 'findAllLightByCode',
+      name: query,
+      token: token.value,
+    }
+  })
+
+  const { data: campaignsData } = await useFetch('/api/pub/packages', {
+    query: queryLightByName,
+  })
+
+  // search by name
+  return campaignsData.value?.data ?? false
+}
+
 const { data: natures } = await useFetch('/api/broadcast-auth/broadcast-na', {
   query: { action: 'findAll', token: token.value },
 })
@@ -365,15 +396,24 @@ const { handleSubmit, isSubmitting, resetForm, setFieldValue } = useForm({
 })
 
 // Edit functionality
-function editBroadcastAuth(item) {
+function editBroadcastAuth(item: any) {
   currentBroadcastAuth.value = item
   isEditMode.value = true
   showForm.value = true
 
   // Set all form fields
-  setFieldValue('broadcastAuthorization.announcer', item.announcer)
-  setFieldValue('broadcastAuthorization.invoice', item.invoice)
-  setFieldValue('broadcastAuthorization.campaign', item.campaign)
+  setFieldValue('broadcastAuthorization.announcer', {
+    id: item.announcer._id,
+    name: item.announcer.name,
+  })
+  setFieldValue('broadcastAuthorization.invoice', {
+    id: item.invoice._id,
+    name: item.invoice.code,
+  })
+  setFieldValue('broadcastAuthorization.campaign', {
+    id: item.campaign._id,
+    name: item.campaign.code,
+  })
   setFieldValue('broadcastAuthorization.nature', item.nature)
   setFieldValue(
     'broadcastAuthorization.natureDescription',
@@ -403,7 +443,7 @@ function editBroadcastAuth(item) {
   setFieldValue('broadcastAuthorization.note', item.note)
   setFieldValue('broadcastAuthorization.serviceInCharge', item.serviceInCharge)
   setFieldValue('broadcastAuthorization.validator', item.validator)
-  setFieldValue('broadcastAuthorization.admiValidator', item.admiValidator)
+  setFieldValue('broadcastAuthorization.adminValidator', item.adminValidator)
   setFieldValue('broadcastAuthorization.location', item.location)
   setFieldValue('broadcastAuthorization.commercials', item.commercials || [])
   setFieldValue('broadcastAuthorization.contactDetails', item.contactDetails)
@@ -450,7 +490,7 @@ function handleNewAuthorization() {
   setFieldValue('broadcastAuthorization.note', '')
   setFieldValue('broadcastAuthorization.serviceInCharge', '')
   setFieldValue('broadcastAuthorization.validator', null)
-  setFieldValue('broadcastAuthorization.admiValidator', null)
+  setFieldValue('broadcastAuthorization.adminValidator', null)
   setFieldValue('broadcastAuthorization.location', '')
   setFieldValue('broadcastAuthorization.commercials', [])
   setFieldValue('broadcastAuthorization.contactDetails', '')
@@ -513,8 +553,8 @@ const onSubmit = handleSubmit(async (values) => {
     // Format the data to match backend expectations
     const formattedData = {
       announcer: values.broadcastAuthorization.announcer?.id ?? undefined,
-      invoice: values.broadcastAuthorization.invoice?._id,
-      campaign: values.broadcastAuthorization.campaign?._id,
+      invoice: values.broadcastAuthorization.invoice?.id,
+      campaign: values.broadcastAuthorization.campaign?.id,
       nature: values.broadcastAuthorization.nature?._id,
       natureDescription: values.broadcastAuthorization.natureDescription || '',
       date: values.broadcastAuthorization.date
@@ -546,7 +586,8 @@ const onSubmit = handleSubmit(async (values) => {
       note: values.broadcastAuthorization.note || '',
       serviceInCharge: values.broadcastAuthorization.serviceInCharge || '',
       validator: values.broadcastAuthorization.validator?._id,
-      adminValidator: values.broadcastAuthorization.adminValidator?._id,
+      adminValidator:
+        values.broadcastAuthorization.adminValidator?._id ?? undefined,
       location: values.broadcastAuthorization.location || '',
       commercials: Array.isArray(values.broadcastAuthorization.commercials)
         ? values.broadcastAuthorization.commercials
@@ -566,7 +607,7 @@ const onSubmit = handleSubmit(async (values) => {
       ? 'updateAuthorization'
       : 'createAuthorization'
     const url = isEditMode.value
-      ? `/api/broadcast-auth/broadcast-aut/${currentBroadcastAuth.value._id}?action=${action}`
+      ? `/api/broadcast-auth/broadcast-aut?id=${currentBroadcastAuth.value._id}&&action=${action}`
       : `/api/broadcast-auth/broadcast-aut?action=${action}`
 
     const method = isEditMode.value ? 'PUT' : 'POST'
@@ -917,7 +958,7 @@ const onSubmit = handleSubmit(async (values) => {
                       </Field>
                     </div>
                     <!-- Invoice -->
-                    <!-- <div class="col-span-12 md:col-span-6">
+                    <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                       <Field
                         v-slot="{
                           field,
@@ -927,21 +968,42 @@ const onSubmit = handleSubmit(async (values) => {
                         }"
                         name="broadcastAuthorization.invoice"
                       >
-                        <BaseListbox
-                          label="Facture"
-                          :items="invoices.data"
-                          :properties="{ value: '_id', label: 'code' }"
+                        <BaseAutocomplete
                           :model-value="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"
                           @update:model-value="handleChange"
                           @blur="handleBlur"
-                        />
+                          :items="[]"
+                          :display-value="(item: any) => item?.name || ''"
+                          :filter-items="filterInvoiceItems"
+                          icon="lucide:file"
+                          placeholder="e.g. FAC/2025"
+                          label="Facture"
+                          clearable
+                          :clear-value="''"
+                        >
+                          <template #empty="value">
+                            <!-- Use destruct to keep what you need -->
+                            <div v-if="value.query.length < 3">
+                              Saisissez au-moins 3 caractères
+                            </div>
+                            <div v-else>
+                              Aucun resultat. Veuillez
+                              <NuxtLink
+                                class="text-primary-500 hover:underline"
+                                to="/bo/sales/invoices"
+                              >
+                                créer un nouvelle facture </NuxtLink
+                              >.
+                            </div>
+                          </template>
+                        </BaseAutocomplete>
                       </Field>
-                    </div> -->
+                    </div>
 
                     <!-- Campaign -->
-                    <!-- <div class="col-span-12 md:col-span-6">
+                    <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                       <Field
                         v-slot="{
                           field,
@@ -951,18 +1013,39 @@ const onSubmit = handleSubmit(async (values) => {
                         }"
                         name="broadcastAuthorization.campaign"
                       >
-                        <BaseListbox
-                          label="Campagne"
-                          :items="campaigns.data"
-                          :properties="{ value: '_id', label: 'code' }"
+                        <BaseAutocomplete
                           :model-value="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"
                           @update:model-value="handleChange"
                           @blur="handleBlur"
-                        />
+                          :items="[]"
+                          :display-value="(item: any) => item?.name || ''"
+                          :filter-items="filterCampaignItems"
+                          icon="lucide:file"
+                          placeholder="e.g. cp-00000"
+                          label="Campagne"
+                          clearable
+                          :clear-value="''"
+                        >
+                          <template #empty="value">
+                            <!-- Use destruct to keep what you need -->
+                            <div v-if="value.query.length < 3">
+                              Saisissez au-moins 3 caractères
+                            </div>
+                            <div v-else>
+                              Aucun resultat. Veuillez
+                              <NuxtLink
+                                class="text-primary-500 hover:underline"
+                                to="/bo/pub/packages"
+                              >
+                                créer un nouvelle campagne </NuxtLink
+                              >.
+                            </div>
+                          </template>
+                        </BaseAutocomplete>
                       </Field>
-                    </div> -->
+                    </div>
 
                     <!-- Nature -->
                     <div class="col-span-12 md:col-span-6">
@@ -1148,7 +1231,7 @@ const onSubmit = handleSubmit(async (values) => {
                         name="broadcastAuthorization.hour"
                       >
                         <BaseInput
-                          label="Heure"
+                          label="Heure de passage"
                           type="time"
                           icon="ph:clock-duotone"
                           placeholder=""
@@ -1174,9 +1257,9 @@ const onSubmit = handleSubmit(async (values) => {
                       >
                         <div>
                           <BaseInput
-                            label="Hours"
+                            label="Heures de passage"
                             icon="ph:clock-duotone"
-                            placeholder="Type a Hours  and press Enter"
+                            placeholder="Saisir l'heure et appuyer sur entrer"
                             :model-value="inputValue2"
                             :error="errorMessage"
                             :disabled="isSubmitting"
@@ -1230,9 +1313,9 @@ const onSubmit = handleSubmit(async (values) => {
                       >
                         <div>
                           <BaseInput
-                            label="Real Hours"
+                            label="Heures réelles de passage"
                             icon="ph:clock-duotone"
-                            placeholder="Type a Real Hours  and press Enter"
+                            placeholder="Saisir l'heure et appuyer sur entrer"
                             :model-value="inputValue3"
                             :error="errorMessage"
                             :disabled="isSubmitting"
@@ -1270,30 +1353,6 @@ const onSubmit = handleSubmit(async (values) => {
                             </TransitionGroup>
                           </div>
                         </div>
-                      </Field>
-                    </div>
-
-                    <!-- Description -->
-                    <div class="col-span-12 md:col-span-6">
-                      <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
-                        name="broadcastAuthorization.description"
-                      >
-                        <BaseTextarea
-                          label="Description"
-                          icon="ph:note-duotone"
-                          placeholder=""
-                          :model-value="field.value"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        />
                       </Field>
                     </div>
 
@@ -1410,6 +1469,29 @@ const onSubmit = handleSubmit(async (values) => {
                         </div>
                       </Field>
                     </div>
+                    <!-- Service in Charge -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
+                        name="broadcastAuthorization.serviceInCharge"
+                      >
+                        <BaseInput
+                          label="Service en charge"
+                          icon="ph:buildings-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
 
                     <!-- Note -->
                     <div class="col-span-12 md:col-span-6">
@@ -1434,8 +1516,7 @@ const onSubmit = handleSubmit(async (values) => {
                         />
                       </Field>
                     </div>
-
-                    <!-- Service in Charge -->
+                    <!-- Description -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
                         v-slot="{
@@ -1444,11 +1525,11 @@ const onSubmit = handleSubmit(async (values) => {
                           handleChange,
                           handleBlur,
                         }"
-                        name="broadcastAuthorization.serviceInCharge"
+                        name="broadcastAuthorization.description"
                       >
-                        <BaseInput
-                          label="Service en charge"
-                          icon="ph:buildings-duotone"
+                        <BaseTextarea
+                          label="Description"
+                          icon="ph:note-duotone"
                           placeholder=""
                           :model-value="field.value"
                           :error="errorMessage"
@@ -1545,8 +1626,8 @@ const onSubmit = handleSubmit(async (values) => {
                         :value="selectedCommercials"
                       >
                         <div>
-                          <label class="block text-sm font-medium text-gray-700"
-                            >Commercials</label
+                          <label class="block text-sm font-medium text-gray-400"
+                            >Commerciaux</label
                           >
                           <div class="mt-1">
                             <select

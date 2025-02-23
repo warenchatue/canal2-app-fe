@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
   const team = (query.team as string) || ''
   const startDate = (query.startDate as string) || ''
   const endDate = (query.endDate as string) || ''
+  const code = (query.code as string) || ''
 
   if (action == 'findOne') {
     const data = await findOne(id, token)
@@ -29,6 +30,12 @@ export default defineEventHandler(async (event) => {
       stats: response.stats,
       metaData: response.results.metadata,
       data: response.results.data,
+    }
+  } else if (action == 'findAllLightByCode') {
+    const data = await findAllLightByCode(code, token)
+    return {
+      total: data.length,
+      data: filterData(data, filter, page, perPage),
     }
   } else if (action == 'findAllFilters') {
     const response = await findAll(token)
@@ -198,6 +205,22 @@ async function findAllPaginate(
       perPage +
       '&search=' +
       search,
+    {
+      method: 'get',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-type': 'application/json',
+      },
+    },
+  ).catch((error) => console.log(error))
+  return Promise.resolve(data)
+}
+
+async function findAllLightByCode(code: string, token: string) {
+  console.log('findAllLightByCode ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  const data: any = await $fetch(
+    runtimeConfig.env.apiUrl + '/invoices/all/by/code?invoiceCode=' + code,
     {
       method: 'get',
       headers: {
