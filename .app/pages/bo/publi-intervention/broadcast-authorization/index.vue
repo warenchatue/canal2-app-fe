@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useForm } from 'vee-validate'
-import { z } from 'zod'
-import { UserRole } from '~/types/user'
-import { ref, computed } from 'vue'
-import { useAuthStore } from '~/stores/auth'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-
-
+import 'vue-select/dist/vue-select.css'
+import { z } from 'zod'
+import { useAuthStore } from '~/stores/auth'
+import { UserRole } from '~/types/user'
 
 definePageMeta({
   title: 'Broadcast Authorizations',
@@ -31,7 +30,6 @@ const showForm = ref(false)
 const toaster = useToaster()
 const currentBroadcastAuth = ref({})
 const isEditMode = ref(false)
-
 
 // Check if user has access
 if (
@@ -66,9 +64,12 @@ const query = computed(() => ({
   token: token.value,
 }))
 
-const { data, pending, error, refresh } = await useFetch('/api/broadcast-auth/broadcast-aut', {
-  query,
-})
+const { data, pending, error, refresh } = await useFetch(
+  '/api/broadcast-auth/broadcast-aut',
+  {
+    query,
+  },
+)
 
 const selected = ref<number[]>([])
 const isAllVisibleSelected = computed(() => {
@@ -83,41 +84,49 @@ function toggleAllVisibleSelection() {
   }
 }
 
-
 // Validation messages
 const VALIDATION_TEXT = {
   NATURE_REQUIRED: "Nature can't be empty",
   DATE_REQUIRED: "Date can't be empty",
   LOCATION_REQUIRED: "Location can't be empty",
   ANNOUNCER_REQUIRED: "Announcer can't be empty",
-  INVOICE_REQUIRED: "Invoice can't be empty",
-  CAMPAIGN_REQUIRED: "Campaign can't be empty",
   PAYMENT_METHOD_REQUIRED: "Payment method can't be empty",
-  VALIDATOR_REQUIRED: "Validator can't be empty",
-  ADMIN_VALIDATOR_REQUIRED: "Admin validator can't be empty",
 }
 
 // Validation schema
 const zodSchema = z.object({
   broadcastAuthorization: z.object({
     announcer: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+      id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED),
+      name: z.string(),
     }),
-    invoice: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
-    }),
-    campaign: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
-    }),
+    invoice: z
+      .object({
+        id: z.string().optional(),
+        name: z.string().optional(),
+      })
+      .optional(),
+    campaign: z
+      .object({
+        id: z.string().optional(),
+        name: z.string().optional(),
+      })
+      .optional(),
     nature: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED),
     }),
     natureDescription: z.string().optional(),
-    date: z.string().transform((str) => str ? new Date(str).toISOString() : null),
-    startDate: z.string().transform((str) => str ? new Date(str).toISOString() : null),
-    endDate: z.string().transform((str) => str ? new Date(str).toISOString() : null),
+    date: z
+      .string()
+      .transform((str) => (str ? new Date(str).toISOString() : null)),
+    startDate: z
+      .string()
+      .transform((str) => (str ? new Date(str).toISOString() : null)),
+    endDate: z
+      .string()
+      .transform((str) => (str ? new Date(str).toISOString() : null)),
     paymentMethod: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
+      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED),
     }),
     duration: z.number().optional(),
     hour: z.string().optional(),
@@ -129,12 +138,16 @@ const zodSchema = z.object({
     questions: z.array(z.string()).default([]),
     note: z.string().optional(),
     serviceInCharge: z.string().optional(),
-    validator: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
-    }),
-    admiValidator: z.object({
-      _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED)
-    }),
+    validator: z
+      .object({
+        _id: z.string().optional(),
+      })
+      .optional(),
+    adminValidator: z
+      .object({
+        _id: z.string().optional(),
+      })
+      .optional(),
     location: z.string().min(1, VALIDATION_TEXT.LOCATION_REQUIRED),
     commercials: z.array(z.string()).default([]),
     contactDetails: z.string().optional(),
@@ -146,27 +159,97 @@ const zodSchema = z.object({
   }),
 })
 
-
 // Fetch data for select options
-const { data: announcers } = await useFetch('/api/sales/announcers', {
-  query: { action: 'findAll', token: token.value },
-})
-const { data: invoices } = await useFetch('/api/sales/invoices', {
-  query: { action: 'findAll', token: token.value },
-})
-const { data: campaigns } = await useFetch('/api/pub/packages', {
-  query: { action: 'findAll', token: token.value },
-})
+async function filterAnnouncersItems(query?: string, items?: any[]) {
+  if (query.length < 3) {
+    return []
+  }
+
+  if (!query || !items) {
+    return items ?? []
+  }
+
+  const queryLightByName = computed(() => {
+    return {
+      perPage: 10000,
+      action: 'findAllLightByName',
+      name: query,
+      token: token.value,
+    }
+  })
+
+  const { data: announcersData } = await useFetch('/api/sales/announcers', {
+    query: queryLightByName,
+  })
+
+  // search by name
+  return announcersData.value?.data ?? false
+}
+
+async function filterInvoiceItems(query?: string, items?: any[]) {
+  if (query.length < 3) {
+    return []
+  }
+
+  if (!query || !items) {
+    return items ?? []
+  }
+
+  const queryLightByName = computed(() => {
+    return {
+      perPage: 10000,
+      action: 'findAllLightByCode',
+      name: query,
+      token: token.value,
+    }
+  })
+
+  const { data: invoicesData } = await useFetch('/api/sales/invoices', {
+    query: queryLightByName,
+  })
+
+  // search by name
+  return invoicesData.value?.data ?? false
+}
+
+async function filterCampaignItems(query?: string, items?: any[]) {
+  if (query.length < 3) {
+    return []
+  }
+
+  if (!query || !items) {
+    return items ?? []
+  }
+
+  const queryLightByName = computed(() => {
+    return {
+      perPage: 10000,
+      action: 'findAllLightByCode',
+      name: query,
+      token: token.value,
+    }
+  })
+
+  const { data: campaignsData } = await useFetch('/api/pub/packages', {
+    query: queryLightByName,
+  })
+
+  // search by name
+  return campaignsData.value?.data ?? false
+}
+
 const { data: natures } = await useFetch('/api/broadcast-auth/broadcast-na', {
   query: { action: 'findAll', token: token.value },
 })
-const { data: paymentMethods } = await useFetch('/api/accountancy/payment-methods', {
-  query: { action: 'findAll', token: token.value },
-})
+const { data: paymentMethods } = await useFetch(
+  '/api/accountancy/payment-methods',
+  {
+    query: { action: 'findAll', token: token.value },
+  },
+)
 const { data: validators } = await useFetch('/api/admin/orgs', {
   query: { action: 'findAll', token: token.value },
 })
-
 
 //Hours
 const hours = ref([])
@@ -206,7 +289,6 @@ const removerealHour1 = (index, handleChange) => {
   handleChange(newrealHours)
 }
 
-
 //partisipant
 const participants = ref([])
 const inputValue = ref('')
@@ -223,10 +305,9 @@ const addParticipant1 = (participant, handleChange) => {
 const removeParticipant1 = (index, handleChange) => {
   const newParticipants = participants.value.filter((_, i) => i !== index)
   participants.value = newParticipants
-  
+
   handleChange(newParticipants)
 }
-
 
 //Questions
 const questions = ref([])
@@ -247,38 +328,43 @@ const removeQuestion1 = (index, handleChange) => {
   handleChange(newQuestions)
 }
 
-
 //commercials
 const { data: commercials } = await useFetch('/api/users/', {
   query: { action: 'findAll', token: token.value },
-});
+})
 //console.log('Commercials API Response:', commercials.value);
 const commercialsList = computed(() => {
   if (!commercials.value || !Array.isArray(commercials.value.data)) {
-    return [];
+    return []
   }
-  return commercials.value.data.map(item => ({
+  return commercials.value.data.map((item) => ({
     _id: item._id,
-    name: item.lastName
-  }));
-});
-const selectedCommercials = ref([]);
+    name: item.lastName,
+  }))
+})
+const selectedCommercials = ref([])
 function handleCommercialChange(event, handleChange) {
   const selectedOptions = Array.from(event.target.selectedOptions).map(
-    option => option.value
-  );
-  selectedCommercials.value = [...new Set([...selectedCommercials.value, ...selectedOptions])];
-  handleChange(selectedCommercials.value);
+    (option) => option.value,
+  )
+  selectedCommercials.value = [
+    ...new Set([...selectedCommercials.value, ...selectedOptions]),
+  ]
+  handleChange(selectedCommercials.value)
 }
 function removeCommercial(commercialId, handleChange) {
-  selectedCommercials.value = selectedCommercials.value.filter(id => id !== commercialId);
-  handleChange(selectedCommercials.value);
+  selectedCommercials.value = selectedCommercials.value.filter(
+    (id) => id !== commercialId,
+  )
+  handleChange(selectedCommercials.value)
 }
 
-//print 
+//print
 function printAuthorizations() {
-  const printWindow = window.open('', '_blank');
-  const tableContent = document.getElementById('print-authorizations')?.innerHTML;
+  const printWindow = window.open('', '_blank')
+  const tableContent = document.getElementById(
+    'print-authorizations',
+  )?.innerHTML
   if (printWindow && tableContent) {
     printWindow.document.write(`
       <html>
@@ -294,119 +380,141 @@ function printAuthorizations() {
           ${tableContent}
         </body>
       </html>
-    `);
-    
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
+    `)
+
+    printWindow.document.close()
+    printWindow.focus()
+    printWindow.print()
+    printWindow.close()
   }
 }
 
-
 type FormInput = z.infer<typeof zodSchema>
 const validationSchema = toTypedSchema(zodSchema)
-const { 
-  handleSubmit, 
-  isSubmitting, 
-  resetForm, 
-  setFieldValue
- } = useForm({
+const { handleSubmit, isSubmitting, resetForm, setFieldValue } = useForm({
   validationSchema,
 })
 
-
 // Edit functionality
-function editBroadcastAuth(item) {
-  currentBroadcastAuth.value = item;
-  isEditMode.value = true;
-  showForm.value = true;
+function editBroadcastAuth(item: any) {
+  currentBroadcastAuth.value = item
+  isEditMode.value = true
+  showForm.value = true
 
   // Set all form fields
-  setFieldValue('broadcastAuthorization.announcer', item.announcer);
-  setFieldValue('broadcastAuthorization.invoice', item.invoice);
-  setFieldValue('broadcastAuthorization.campaign', item.campaign);
-  setFieldValue('broadcastAuthorization.nature', item.nature);
-  setFieldValue('broadcastAuthorization.natureDescription', item.natureDescription);
-  setFieldValue('broadcastAuthorization.date', item.date ? new Date(item.date).toISOString().split('T')[0] : '');
-  setFieldValue('broadcastAuthorization.startDate', item.startDate ? new Date(item.startDate).toISOString().split('T')[0] : '');
-  setFieldValue('broadcastAuthorization.endDate', item.endDate ? new Date(item.endDate).toISOString().split('T')[0] : '');
-  setFieldValue('broadcastAuthorization.paymentMethod', item.paymentMethod);
-  setFieldValue('broadcastAuthorization.duration', item.duration);
-  setFieldValue('broadcastAuthorization.hour', item.hour);
-  setFieldValue('broadcastAuthorization.hours', item.hours || []);
-  setFieldValue('broadcastAuthorization.realHours', item.realHours || []);
-  setFieldValue('broadcastAuthorization.realHour', item.realHour);
-  setFieldValue('broadcastAuthorization.description', item.description);
-  setFieldValue('broadcastAuthorization.participants', item.participants || []);
-  setFieldValue('broadcastAuthorization.questions', item.questions || []);
-  setFieldValue('broadcastAuthorization.note', item.note);
-  setFieldValue('broadcastAuthorization.serviceInCharge', item.serviceInCharge);
-  setFieldValue('broadcastAuthorization.validator', item.validator);
-  setFieldValue('broadcastAuthorization.admiValidator', item.admiValidator);
-  setFieldValue('broadcastAuthorization.location', item.location);
-  setFieldValue('broadcastAuthorization.commercials', item.commercials || []);
-  setFieldValue('broadcastAuthorization.contactDetails', item.contactDetails);
-  setFieldValue('broadcastAuthorization.productionPartner', item.productionPartner);
-  setFieldValue('broadcastAuthorization.otherProductionPartner', item.otherProductionPartner);
-  setFieldValue('broadcastAuthorization.keyContact', item.keyContact);
-  setFieldValue('broadcastAuthorization.otherKeyContact', item.otherKeyContact);
-  setFieldValue('broadcastAuthorization.contactDetailsToShow', item.contactDetailsToShow);
+  setFieldValue('broadcastAuthorization.announcer', {
+    id: item.announcer._id,
+    name: item.announcer.name,
+  })
+  setFieldValue('broadcastAuthorization.invoice', {
+    id: item.invoice._id,
+    name: item.invoice.code,
+  })
+  setFieldValue('broadcastAuthorization.campaign', {
+    id: item.campaign._id,
+    name: item.campaign.code,
+  })
+  setFieldValue('broadcastAuthorization.nature', item.nature)
+  setFieldValue(
+    'broadcastAuthorization.natureDescription',
+    item.natureDescription,
+  )
+  setFieldValue(
+    'broadcastAuthorization.date',
+    item.date ? new Date(item.date).toISOString().split('T')[0] : '',
+  )
+  setFieldValue(
+    'broadcastAuthorization.startDate',
+    item.startDate ? new Date(item.startDate).toISOString().split('T')[0] : '',
+  )
+  setFieldValue(
+    'broadcastAuthorization.endDate',
+    item.endDate ? new Date(item.endDate).toISOString().split('T')[0] : '',
+  )
+  setFieldValue('broadcastAuthorization.paymentMethod', item.paymentMethod)
+  setFieldValue('broadcastAuthorization.duration', item.duration)
+  setFieldValue('broadcastAuthorization.hour', item.hour)
+  setFieldValue('broadcastAuthorization.hours', item.hours || [])
+  setFieldValue('broadcastAuthorization.realHours', item.realHours || [])
+  setFieldValue('broadcastAuthorization.realHour', item.realHour)
+  setFieldValue('broadcastAuthorization.description', item.description)
+  setFieldValue('broadcastAuthorization.participants', item.participants || [])
+  setFieldValue('broadcastAuthorization.questions', item.questions || [])
+  setFieldValue('broadcastAuthorization.note', item.note)
+  setFieldValue('broadcastAuthorization.serviceInCharge', item.serviceInCharge)
+  setFieldValue('broadcastAuthorization.validator', item.validator)
+  setFieldValue('broadcastAuthorization.adminValidator', item.adminValidator)
+  setFieldValue('broadcastAuthorization.location', item.location)
+  setFieldValue('broadcastAuthorization.commercials', item.commercials || [])
+  setFieldValue('broadcastAuthorization.contactDetails', item.contactDetails)
+  setFieldValue(
+    'broadcastAuthorization.productionPartner',
+    item.productionPartner,
+  )
+  setFieldValue(
+    'broadcastAuthorization.otherProductionPartner',
+    item.otherProductionPartner,
+  )
+  setFieldValue('broadcastAuthorization.keyContact', item.keyContact)
+  setFieldValue('broadcastAuthorization.otherKeyContact', item.otherKeyContact)
+  setFieldValue(
+    'broadcastAuthorization.contactDetailsToShow',
+    item.contactDetailsToShow,
+  )
 }
 
-
 function handleNewAuthorization() {
-  showForm.value = true;
-  isEditMode.value = false;
-  resetForm();
-  currentBroadcastAuth.value = {};
-  
+  showForm.value = true
+  isEditMode.value = false
+  resetForm()
+  currentBroadcastAuth.value = {}
+
   // Reset all form fields to empty values
-  setFieldValue('broadcastAuthorization.announcer', null);
-  setFieldValue('broadcastAuthorization.invoice', null);
-  setFieldValue('broadcastAuthorization.campaign', null);
-  setFieldValue('broadcastAuthorization.nature', null);
-  setFieldValue('broadcastAuthorization.natureDescription', '');
-  setFieldValue('broadcastAuthorization.date', '');
-  setFieldValue('broadcastAuthorization.startDate', '');
-  setFieldValue('broadcastAuthorization.endDate', '');
-  setFieldValue('broadcastAuthorization.paymentMethod', null);
-  setFieldValue('broadcastAuthorization.duration', '');
-  setFieldValue('broadcastAuthorization.hour', '');
-  setFieldValue('broadcastAuthorization.hours', []);
-  setFieldValue('broadcastAuthorization.realHours', []);
-  setFieldValue('broadcastAuthorization.realHour', '');
-  setFieldValue('broadcastAuthorization.description', '');
-  setFieldValue('broadcastAuthorization.participants', []);
-  setFieldValue('broadcastAuthorization.questions', []);
-  setFieldValue('broadcastAuthorization.note', '');
-  setFieldValue('broadcastAuthorization.serviceInCharge', '');
-  setFieldValue('broadcastAuthorization.validator', null);
-  setFieldValue('broadcastAuthorization.admiValidator', null);
-  setFieldValue('broadcastAuthorization.location', '');
-  setFieldValue('broadcastAuthorization.commercials', []);
-  setFieldValue('broadcastAuthorization.contactDetails', '');
-  setFieldValue('broadcastAuthorization.productionPartner', '');
-  setFieldValue('broadcastAuthorization.otherProductionPartner', '');
-  setFieldValue('broadcastAuthorization.keyContact', '');
-  setFieldValue('broadcastAuthorization.otherKeyContact', '');
-  setFieldValue('broadcastAuthorization.contactDetailsToShow', '');
+  setFieldValue('broadcastAuthorization.announcer', null)
+  setFieldValue('broadcastAuthorization.invoice', null)
+  setFieldValue('broadcastAuthorization.campaign', null)
+  setFieldValue('broadcastAuthorization.nature', null)
+  setFieldValue('broadcastAuthorization.natureDescription', '')
+  setFieldValue('broadcastAuthorization.date', '')
+  setFieldValue('broadcastAuthorization.startDate', '')
+  setFieldValue('broadcastAuthorization.endDate', '')
+  setFieldValue('broadcastAuthorization.paymentMethod', null)
+  setFieldValue('broadcastAuthorization.duration', '')
+  setFieldValue('broadcastAuthorization.hour', '')
+  setFieldValue('broadcastAuthorization.hours', [])
+  setFieldValue('broadcastAuthorization.realHours', [])
+  setFieldValue('broadcastAuthorization.realHour', '')
+  setFieldValue('broadcastAuthorization.description', '')
+  setFieldValue('broadcastAuthorization.participants', [])
+  setFieldValue('broadcastAuthorization.questions', [])
+  setFieldValue('broadcastAuthorization.note', '')
+  setFieldValue('broadcastAuthorization.serviceInCharge', '')
+  setFieldValue('broadcastAuthorization.validator', null)
+  setFieldValue('broadcastAuthorization.adminValidator', null)
+  setFieldValue('broadcastAuthorization.location', '')
+  setFieldValue('broadcastAuthorization.commercials', [])
+  setFieldValue('broadcastAuthorization.contactDetails', '')
+  setFieldValue('broadcastAuthorization.productionPartner', '')
+  setFieldValue('broadcastAuthorization.otherProductionPartner', '')
+  setFieldValue('broadcastAuthorization.keyContact', '')
+  setFieldValue('broadcastAuthorization.otherKeyContact', '')
+  setFieldValue('broadcastAuthorization.contactDetailsToShow', '')
 }
 
 // Delete functionality
 async function deleteBroadcastAuth(item) {
   try {
-    const token = useCookie('token').value;
+    const token = useCookie('token').value
     const response = await $fetch(`/api/broadcast-auth/broadcast-aut`, {
       method: 'DELETE',
       query: {
         action: 'delete',
-        id: item._id
+        id: item._id,
       },
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    });
+    })
 
     if (response.success) {
       toaster.show({
@@ -415,72 +523,94 @@ async function deleteBroadcastAuth(item) {
         color: 'success',
         icon: 'ph:check',
         closable: true,
-      });
-      refresh();
+      })
+      refresh()
     } else {
-      throw new Error(response.message || 'Failed to delete broadcast authorization');
+      throw new Error(
+        response.message || 'Failed to delete broadcast authorization',
+      )
     }
   } catch (error) {
-    console.error('Deletion error:', error);
+    console.error('Deletion error:', error)
     toaster.show({
       title: 'Error',
       message: error.message || 'Failed to delete broadcast authorization',
       color: 'danger',
       icon: 'ph:warning',
       closable: true,
-    });
+    })
   }
 }
-
 
 const success = ref(false)
 
 // Handle form submission (create or update)
 const onSubmit = handleSubmit(async (values) => {
   try {
-    console.log('Form submitted with values:', values);
-    const token = useCookie('token').value;
+    console.log('Form submitted with values:', values)
+    const token = useCookie('token').value
 
     // Format the data to match backend expectations
     const formattedData = {
-      announcer: values.broadcastAuthorization.announcer?._id,
-      invoice: values.broadcastAuthorization.invoice?._id,
-      campaign: values.broadcastAuthorization.campaign?._id,
+      announcer: values.broadcastAuthorization.announcer?.id ?? undefined,
+      invoice: values.broadcastAuthorization.invoice?.id,
+      campaign: values.broadcastAuthorization.campaign?.id,
       nature: values.broadcastAuthorization.nature?._id,
       natureDescription: values.broadcastAuthorization.natureDescription || '',
-      date: values.broadcastAuthorization.date ? new Date(values.broadcastAuthorization.date).toISOString() : null,
-      startDate: values.broadcastAuthorization.startDate ? new Date(values.broadcastAuthorization.startDate).toISOString() : null,
-      endDate: values.broadcastAuthorization.endDate ? new Date(values.broadcastAuthorization.endDate).toISOString() : null,
+      date: values.broadcastAuthorization.date
+        ? new Date(values.broadcastAuthorization.date).toISOString()
+        : null,
+      startDate: values.broadcastAuthorization.startDate
+        ? new Date(values.broadcastAuthorization.startDate).toISOString()
+        : null,
+      endDate: values.broadcastAuthorization.endDate
+        ? new Date(values.broadcastAuthorization.endDate).toISOString()
+        : null,
       paymentMethod: values.broadcastAuthorization.paymentMethod?._id,
       duration: Number(values.broadcastAuthorization.duration) || 0,
       hour: values.broadcastAuthorization.hour || '',
-      hours: Array.isArray(values.broadcastAuthorization.hours) ? values.broadcastAuthorization.hours : [],
-      realHours: Array.isArray(values.broadcastAuthorization.realHours) ? values.broadcastAuthorization.realHours : [],
+      hours: Array.isArray(values.broadcastAuthorization.hours)
+        ? values.broadcastAuthorization.hours
+        : [],
+      realHours: Array.isArray(values.broadcastAuthorization.realHours)
+        ? values.broadcastAuthorization.realHours
+        : [],
       realHour: values.broadcastAuthorization.realHour || '',
       description: values.broadcastAuthorization.description || '',
-      participants: Array.isArray(values.broadcastAuthorization.participants) ? values.broadcastAuthorization.participants : [],
-      questions: Array.isArray(values.broadcastAuthorization.questions) ? values.broadcastAuthorization.questions : [],
+      participants: Array.isArray(values.broadcastAuthorization.participants)
+        ? values.broadcastAuthorization.participants
+        : [],
+      questions: Array.isArray(values.broadcastAuthorization.questions)
+        ? values.broadcastAuthorization.questions
+        : [],
       note: values.broadcastAuthorization.note || '',
       serviceInCharge: values.broadcastAuthorization.serviceInCharge || '',
       validator: values.broadcastAuthorization.validator?._id,
-      adminValidator: values.broadcastAuthorization.adminValidator?._id,
+      adminValidator:
+        values.broadcastAuthorization.adminValidator?._id ?? undefined,
       location: values.broadcastAuthorization.location || '',
-      commercials: Array.isArray(values.broadcastAuthorization.commercials) ? values.broadcastAuthorization.commercials : [],
+      commercials: Array.isArray(values.broadcastAuthorization.commercials)
+        ? values.broadcastAuthorization.commercials
+        : [],
       contactDetails: values.broadcastAuthorization.contactDetails || '',
       productionPartner: values.broadcastAuthorization.productionPartner || '',
-      otherProductionPartner: values.broadcastAuthorization.otherProductionPartner || '',
+      otherProductionPartner:
+        values.broadcastAuthorization.otherProductionPartner || '',
       keyContact: values.broadcastAuthorization.keyContact || '',
       otherKeyContact: values.broadcastAuthorization.otherKeyContact || '',
-      contactDetailsToShow: values.broadcastAuthorization.contactDetailsToShow || '',
-    };
+      contactDetailsToShow:
+        values.broadcastAuthorization.contactDetailsToShow || '',
+    }
 
     // Determine the API endpoint and method based on whether we're in edit mode
-    const action = isEditMode.value ? 'updateAuthorization' : 'createAuthorization';
+    const action = isEditMode.value
+      ? 'updateAuthorization'
+      : 'createAuthorization'
     const url = isEditMode.value
-      ? `/api/broadcast-auth/broadcast-aut/${currentBroadcastAuth.value._id}?action=${action}`
-      : `/api/broadcast-auth/broadcast-aut?action=${action}`;
+      ? `/api/broadcast-auth/broadcast-aut?id=${currentBroadcastAuth.value._id}&&action=${action}`
+      : `/api/broadcast-auth/broadcast-aut?action=${action}`
 
-    const method = isEditMode.value ? 'PUT' : 'POST';
+    const method = isEditMode.value ? 'PUT' : 'POST'
 
     // Make the API request
     const response = await $fetch(url, {
@@ -490,42 +620,47 @@ const onSubmit = handleSubmit(async (values) => {
         'Content-Type': 'application/json',
       },
       body: formattedData,
-    });
+    })
 
     if (response.success) {
       toaster.show({
         title: 'Success',
-        message: `Broadcast authorization ${isEditMode.value ? 'updated' : 'created'} successfully`,
+        message: `Broadcast authorization ${
+          isEditMode.value ? 'updated' : 'created'
+        } successfully`,
         color: 'success',
         icon: 'ph:check',
         closable: true,
-      });
-      resetForm();
-      showForm.value = false;
-      await refresh();
+      })
+      resetForm()
+      showForm.value = false
+      await refresh()
     } else {
       toaster.show({
         title: 'Error',
-        message: response.message || `Failed to ${isEditMode.value ? 'update' : 'create'} broadcast authorization`,
+        message:
+          response.message ||
+          `Failed to ${
+            isEditMode.value ? 'update' : 'create'
+          } broadcast authorization`,
         color: 'danger',
         icon: 'ph:warning',
         closable: true,
-      });
+      })
     }
   } catch (error) {
-    console.error('Submission error:', error);
+    console.error('Submission error:', error)
     toaster.show({
       title: 'Error',
       message: error.message || 'Failed to submit form',
       color: 'danger',
       icon: 'ph:warning',
       closable: true,
-    });
+    })
   } finally {
-    isSubmitting.value = false;
+    isSubmitting.value = false
   }
-});
-
+})
 </script>
 
 <template>
@@ -779,7 +914,7 @@ const onSubmit = handleSubmit(async (values) => {
                 <div>
                   <div class="grid grid-cols-12 gap-4">
                     <!-- Announcer -->
-                    <div class="col-span-12 md:col-span-6">
+                    <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                       <Field
                         v-slot="{
                           field,
@@ -789,22 +924,41 @@ const onSubmit = handleSubmit(async (values) => {
                         }"
                         name="broadcastAuthorization.announcer"
                       >
-                        <BaseListbox
-                          label="Annonceur"
-                          :items="announcers.data"
-                          :properties="{ value: '_id', label: 'name' }"
+                        <BaseAutocomplete
                           :model-value="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"
-                          placeholder="Sélectionnez un annonceur"
                           @update:model-value="handleChange"
                           @blur="handleBlur"
-                        />
+                          :items="[]"
+                          :display-value="(item: any) => item?.name || ''"
+                          :filter-items="filterAnnouncersItems"
+                          icon="lucide:file"
+                          placeholder="e.g. Canal2 International"
+                          label="Annonceur"
+                          clearable
+                          :clear-value="''"
+                        >
+                          <template #empty="value">
+                            <!-- Use destruct to keep what you need -->
+                            <div v-if="value.query.length < 3">
+                              Saisissez au-moins 3 caractères
+                            </div>
+                            <div v-else>
+                              Aucun resultat. Veuillez
+                              <NuxtLink
+                                class="text-primary-500 hover:underline"
+                                to="/bo/sales/announcers"
+                              >
+                                créer un nouvel annonceur </NuxtLink
+                              >.
+                            </div>
+                          </template>
+                        </BaseAutocomplete>
                       </Field>
                     </div>
-
                     <!-- Invoice -->
-                    <div class="col-span-12 md:col-span-6">
+                    <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                       <Field
                         v-slot="{
                           field,
@@ -814,21 +968,42 @@ const onSubmit = handleSubmit(async (values) => {
                         }"
                         name="broadcastAuthorization.invoice"
                       >
-                        <BaseListbox
-                          label="Facture"
-                          :items="invoices.data"
-                          :properties="{ value: '_id', label: 'code' }"
+                        <BaseAutocomplete
                           :model-value="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"
                           @update:model-value="handleChange"
                           @blur="handleBlur"
-                        />
+                          :items="[]"
+                          :display-value="(item: any) => item?.name || ''"
+                          :filter-items="filterInvoiceItems"
+                          icon="lucide:file"
+                          placeholder="e.g. FAC/2025"
+                          label="Facture"
+                          clearable
+                          :clear-value="''"
+                        >
+                          <template #empty="value">
+                            <!-- Use destruct to keep what you need -->
+                            <div v-if="value.query.length < 3">
+                              Saisissez au-moins 3 caractères
+                            </div>
+                            <div v-else>
+                              Aucun resultat. Veuillez
+                              <NuxtLink
+                                class="text-primary-500 hover:underline"
+                                to="/bo/sales/invoices"
+                              >
+                                créer un nouvelle facture </NuxtLink
+                              >.
+                            </div>
+                          </template>
+                        </BaseAutocomplete>
                       </Field>
                     </div>
 
                     <!-- Campaign -->
-                    <div class="col-span-12 md:col-span-6">
+                    <div class="ltablet:col-span-6 col-span-12 lg:col-span-6">
                       <Field
                         v-slot="{
                           field,
@@ -838,16 +1013,37 @@ const onSubmit = handleSubmit(async (values) => {
                         }"
                         name="broadcastAuthorization.campaign"
                       >
-                        <BaseListbox
-                          label="Campagne"
-                          :items="campaigns.data"
-                          :properties="{ value: '_id', label: 'code' }"
+                        <BaseAutocomplete
                           :model-value="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"
                           @update:model-value="handleChange"
                           @blur="handleBlur"
-                        />
+                          :items="[]"
+                          :display-value="(item: any) => item?.name || ''"
+                          :filter-items="filterCampaignItems"
+                          icon="lucide:file"
+                          placeholder="e.g. cp-00000"
+                          label="Campagne"
+                          clearable
+                          :clear-value="''"
+                        >
+                          <template #empty="value">
+                            <!-- Use destruct to keep what you need -->
+                            <div v-if="value.query.length < 3">
+                              Saisissez au-moins 3 caractères
+                            </div>
+                            <div v-else>
+                              Aucun resultat. Veuillez
+                              <NuxtLink
+                                class="text-primary-500 hover:underline"
+                                to="/bo/pub/packages"
+                              >
+                                créer un nouvelle campagne </NuxtLink
+                              >.
+                            </div>
+                          </template>
+                        </BaseAutocomplete>
                       </Field>
                     </div>
 
@@ -1035,7 +1231,7 @@ const onSubmit = handleSubmit(async (values) => {
                         name="broadcastAuthorization.hour"
                       >
                         <BaseInput
-                          label="Heure"
+                          label="Heure de passage"
                           type="time"
                           icon="ph:clock-duotone"
                           placeholder=""
@@ -1051,28 +1247,34 @@ const onSubmit = handleSubmit(async (values) => {
                     <!-- Hours -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.hours"
                       >
                         <div>
                           <BaseInput
-                            label="Hours"
+                            label="Heures de passage"
                             icon="ph:clock-duotone"
-                            placeholder="Type a Hours  and press Enter"
+                            placeholder="Saisir l'heure et appuyer sur entrer"
                             :model-value="inputValue2"
                             :error="errorMessage"
                             :disabled="isSubmitting"
                             @update:model-value="updateInputValue2"
-                            @keydown.enter.prevent="(e) => {
-                              if (inputValue2) {
-                                addHour1(inputValue2, handleChange)
-                                inputValue2 = ''
+                            @keydown.enter.prevent="
+                              (e) => {
+                                if (inputValue2) {
+                                  addHour1(inputValue2, handleChange)
+                                  inputValue2 = ''
+                                }
                               }
-                              
-                            }"
+                            "
                             @blur="(e) => handleBlur(e)"
                           />
-                          
+
                           <!-- Display Hours -->
                           <div class="mt-4">
                             <TransitionGroup name="list" tag="ul">
@@ -1082,8 +1284,10 @@ const onSubmit = handleSubmit(async (values) => {
                                 class="inline-flex items-center px-2 py-1 mr-2 mb-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-full"
                               >
                                 <span>{{ hour }}</span>
-                                <button 
-                                  @click="() => removeHour1(index, handleChange)"
+                                <button
+                                  @click="
+                                    () => removeHour1(index, handleChange)
+                                  "
                                   class="text-red-500 hover:text-red-700 ml-2"
                                   type="button"
                                 >
@@ -1099,28 +1303,34 @@ const onSubmit = handleSubmit(async (values) => {
                     <!-- Real Hour -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.realHours"
                       >
                         <div>
                           <BaseInput
-                            label="Real Hours"
+                            label="Heures réelles de passage"
                             icon="ph:clock-duotone"
-                            placeholder="Type a Real Hours  and press Enter"
+                            placeholder="Saisir l'heure et appuyer sur entrer"
                             :model-value="inputValue3"
                             :error="errorMessage"
                             :disabled="isSubmitting"
                             @update:model-value="updateInputValue3"
-                            @keydown.enter.prevent="(e) => {
-                              if (inputValue3) {
-                                addrealHour1(inputValue3, handleChange)
-                                inputValue3 = ''
+                            @keydown.enter.prevent="
+                              (e) => {
+                                if (inputValue3) {
+                                  addrealHour1(inputValue3, handleChange)
+                                  inputValue3 = ''
+                                }
                               }
-                              
-                            }"
+                            "
                             @blur="(e) => handleBlur(e)"
                           />
-                          
+
                           <!-- Display Real  Hours -->
                           <div class="mt-4">
                             <TransitionGroup name="list" tag="ul">
@@ -1130,8 +1340,10 @@ const onSubmit = handleSubmit(async (values) => {
                                 class="inline-flex items-center px-2 py-1 mr-2 mb-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-full"
                               >
                                 <span>{{ realHour }}</span>
-                                <button 
-                                  @click="() => removerealHour1(index, handleChange)"
+                                <button
+                                  @click="
+                                    () => removerealHour1(index, handleChange)
+                                  "
                                   class="text-red-500 hover:text-red-700 ml-2"
                                   type="button"
                                 >
@@ -1144,7 +1356,8 @@ const onSubmit = handleSubmit(async (values) => {
                       </Field>
                     </div>
 
-                    <!-- Description -->
+                    <!-- Participants -->
+
                     <div class="col-span-12 md:col-span-6">
                       <Field
                         v-slot="{
@@ -1153,27 +1366,6 @@ const onSubmit = handleSubmit(async (values) => {
                           handleChange,
                           handleBlur,
                         }"
-                        name="broadcastAuthorization.description"
-                      >
-                        <BaseTextarea
-                          label="Description"
-                          icon="ph:note-duotone"
-                          placeholder=""
-                          :model-value="field.value"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        />
-                      </Field>
-                    </div>
-
-                    
-                    <!-- Participants -->
-
-                    <div class="col-span-12 md:col-span-6">
-                      <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
                         name="broadcastAuthorization.participants"
                       >
                         <div>
@@ -1185,16 +1377,17 @@ const onSubmit = handleSubmit(async (values) => {
                             :error="errorMessage"
                             :disabled="isSubmitting"
                             @update:model-value="updateInputValue"
-                            @keydown.enter.prevent="(e) => {
-                              if (inputValue) {
-                                addParticipant1(inputValue, handleChange)
-                                inputValue = ''
+                            @keydown.enter.prevent="
+                              (e) => {
+                                if (inputValue) {
+                                  addParticipant1(inputValue, handleChange)
+                                  inputValue = ''
+                                }
                               }
-                              
-                            }"
+                            "
                             @blur="(e) => handleBlur(e)"
                           />
-                          
+
                           <!-- Display Participants -->
                           <div class="mt-4">
                             <TransitionGroup name="list" tag="ul">
@@ -1204,57 +1397,11 @@ const onSubmit = handleSubmit(async (values) => {
                                 class="inline-flex items-center px-2 py-1 mr-2 mb-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-full"
                               >
                                 <span>{{ participant }}</span>
-                                <button 
-                                  @click="() => removeParticipant1(index, handleChange)"
-                                  class="text-red-500 hover:text-red-700 ml-2"
-                                  type="button"
-                                >
-                                  ×
-                                </button>
-                              </li>
-                            </TransitionGroup>
-                          </div>
-                        </div>
-                      </Field>
-                    </div>
-                        
-                                        
-                     <!-- Questions Input -->
-                     <div class="col-span-12 md:col-span-6">
-                      <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
-                        name="broadcastAuthorization.questions"
-                      >
-                        <div>
-                          <BaseInput
-                            label="Questions"
-                            icon="ph:question-duotone"
-                            placeholder="Type a Questions  and press Enter"
-                            :model-value="inputValue1"
-                            :error="errorMessage"
-                            :disabled="isSubmitting"
-                            @update:model-value="updateInputValue1"
-                            @keydown.enter.prevent="(e) => {
-                              if (inputValue1) {
-                                addQuestion1(inputValue1, handleChange)
-                                inputValue1 = ''
-                              }
-                              
-                            }"
-                            @blur="(e) => handleBlur(e)"
-                          />
-                          
-                          <!-- Display Questions -->
-                          <div class="mt-4">
-                            <TransitionGroup name="list" tag="ul">
-                              <li
-                                v-for="(question, index) in questions"
-                                :key="question"
-                                class="inline-flex items-center px-2 py-1 mr-2 mb-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-full"
-                              >
-                                <span>{{ question }}</span>
-                                <button 
-                                  @click="() => removeQuestion1(index, handleChange)"
+                                <button
+                                  @click="
+                                    () =>
+                                      removeParticipant1(index, handleChange)
+                                  "
                                   class="text-red-500 hover:text-red-700 ml-2"
                                   type="button"
                                 >
@@ -1267,6 +1414,84 @@ const onSubmit = handleSubmit(async (values) => {
                       </Field>
                     </div>
 
+                    <!-- Questions Input -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
+                        name="broadcastAuthorization.questions"
+                      >
+                        <div>
+                          <BaseInput
+                            label="Questions"
+                            icon="ph:question-duotone"
+                            placeholder="Type a Questions  and press Enter"
+                            :model-value="inputValue1"
+                            :error="errorMessage"
+                            :disabled="isSubmitting"
+                            @update:model-value="updateInputValue1"
+                            @keydown.enter.prevent="
+                              (e) => {
+                                if (inputValue1) {
+                                  addQuestion1(inputValue1, handleChange)
+                                  inputValue1 = ''
+                                }
+                              }
+                            "
+                            @blur="(e) => handleBlur(e)"
+                          />
+
+                          <!-- Display Questions -->
+                          <div class="mt-4">
+                            <TransitionGroup name="list" tag="ul">
+                              <li
+                                v-for="(question, index) in questions"
+                                :key="question"
+                                class="inline-flex items-center px-2 py-1 mr-2 mb-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-full"
+                              >
+                                <span>{{ question }}</span>
+                                <button
+                                  @click="
+                                    () => removeQuestion1(index, handleChange)
+                                  "
+                                  class="text-red-500 hover:text-red-700 ml-2"
+                                  type="button"
+                                >
+                                  ×
+                                </button>
+                              </li>
+                            </TransitionGroup>
+                          </div>
+                        </div>
+                      </Field>
+                    </div>
+                    <!-- Service in Charge -->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
+                        name="broadcastAuthorization.serviceInCharge"
+                      >
+                        <BaseInput
+                          label="Service en charge"
+                          icon="ph:buildings-duotone"
+                          placeholder=""
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
 
                     <!-- Note -->
                     <div class="col-span-12 md:col-span-6">
@@ -1291,8 +1516,7 @@ const onSubmit = handleSubmit(async (values) => {
                         />
                       </Field>
                     </div>
-
-                    <!-- Service in Charge -->
+                    <!-- Description -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
                         v-slot="{
@@ -1301,11 +1525,11 @@ const onSubmit = handleSubmit(async (values) => {
                           handleChange,
                           handleBlur,
                         }"
-                        name="broadcastAuthorization.serviceInCharge"
+                        name="broadcastAuthorization.description"
                       >
-                        <BaseInput
-                          label="Service en charge"
-                          icon="ph:buildings-duotone"
+                        <BaseTextarea
+                          label="Description"
+                          icon="ph:note-duotone"
                           placeholder=""
                           :model-value="field.value"
                           :error="errorMessage"
@@ -1389,21 +1613,30 @@ const onSubmit = handleSubmit(async (values) => {
                     </div>
 
                     <!-- Commercials -->
-                    
+
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
                         name="broadcastAuthorization.commercials"
                         :value="selectedCommercials"
                       >
                         <div>
-                          <label class="block text-sm font-medium text-gray-700">Commercials</label>
+                          <label class="block text-sm font-medium text-gray-400"
+                            >Commerciaux</label
+                          >
                           <div class="mt-1">
                             <select
                               :value="selectedCommercials"
                               multiple
                               class="mt-1 block w-full rounded-md bg-[#0f172a] border border--color-[#64748b] focus:ring-indigo-500 sm:text-sm burder-muted-30"
-                              @change="(e) => handleCommercialChange(e, handleChange)"
+                              @change="
+                                (e) => handleCommercialChange(e, handleChange)
+                              "
                               @blur="handleBlur"
                             >
                               <option
@@ -1422,18 +1655,29 @@ const onSubmit = handleSubmit(async (values) => {
                               :key="commercialId"
                               class="inline-flex items-center px-2 py-1 mr-2 mb-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-full"
                             >
-                              {{ commercialsList.find(commercial => commercial._id === commercialId)?.name }}
+                              {{
+                                commercialsList.find(
+                                  (commercial) =>
+                                    commercial._id === commercialId,
+                                )?.name
+                              }}
                               <button
                                 type="button"
                                 class="ml-2 text-gray-500 hover:text-gray-700"
-                                @click="() => removeCommercial(commercialId, handleChange)"
+                                @click="
+                                  () =>
+                                    removeCommercial(commercialId, handleChange)
+                                "
                               >
                                 ×
                               </button>
                             </div>
                           </div>
                           <!-- Error message -->
-                          <p v-if="errorMessage" class="mt-2 text-sm text-red-600">
+                          <p
+                            v-if="errorMessage"
+                            class="mt-2 text-sm text-red-600"
+                          >
                             {{ errorMessage }}
                           </p>
                         </div>
@@ -1581,23 +1825,22 @@ const onSubmit = handleSubmit(async (values) => {
                         />
                       </Field>
                     </div>
-
                   </div>
                 </div>
               </div>
-          </div>
-                          <!-- Submit Button -->
-                          <div class="mt-6 bp-6">
-                  <BaseButton
-                    type="submit"
-                    color="primary"
-                    class="w-full sm:w-48"
-                    :disabled="isSubmitting"
-                  >
-                    <span v-if="!isSubmitting">Submit</span>
-                    <span v-else>Submitting...</span>
-                  </BaseButton>
-                </div>
+            </div>
+            <!-- Submit Button -->
+            <div class="mt-6 bp-6">
+              <BaseButton
+                type="submit"
+                color="primary"
+                class="w-full sm:w-48"
+                :disabled="isSubmitting"
+              >
+                <span v-if="!isSubmitting">Submit</span>
+                <span v-else>Submitting...</span>
+              </BaseButton>
+            </div>
           </form>
         </BaseCard>
       </div>
