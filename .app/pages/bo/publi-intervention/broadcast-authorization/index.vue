@@ -464,20 +464,12 @@ function editBroadcastAuth(item: any) {
 }
 
 function handleNewAuthorization() {
-<<<<<<< HEAD
   showForm.value = true;
   isEditMode.value = false;
   resetForm();
   currentBroadcastAuth.value = {};
   //selectedCommercials = [];
   
-=======
-  showForm.value = true
-  isEditMode.value = false
-  resetForm()
-  currentBroadcastAuth.value = {}
-
->>>>>>> origin/main
   // Reset all form fields to empty values
   setFieldValue('broadcastAuthorization.announcer', null)
   setFieldValue('broadcastAuthorization.invoice', null)
