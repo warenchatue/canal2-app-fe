@@ -360,6 +360,7 @@ function handleNewAuthorization() {
   isEditMode.value = false;
   resetForm();
   currentBroadcastAuth.value = {};
+  //selectedCommercials = [];
   
   // Reset all form fields to empty values
   setFieldValue('broadcastAuthorization.announcer', null);
@@ -1395,6 +1396,7 @@ const onSubmit = handleSubmit(async (values) => {
                         v-slot="{ field, errorMessage, handleChange, handleBlur }"
                         name="broadcastAuthorization.commercials"
                         :value="selectedCommercials"
+                        
                       >
                         <div>
                           <label class="block text-sm font-medium text-gray-700">Commercials</label>
