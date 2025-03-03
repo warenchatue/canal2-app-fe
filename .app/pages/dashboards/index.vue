@@ -33,20 +33,6 @@ watch([filter, perPage], () => {
   })
 })
 
-const query = computed(() => {
-  return {
-    action: 'findAll',
-    token: token.value,
-    filter: filter.value,
-    perPage: perPage.value,
-    page: page.value,
-  }
-})
-
-const { data, pending, error, refresh } = await useFetch('/api/users', {
-  query,
-})
-
 const auth = useAuthStore()
 </script>
 
@@ -174,64 +160,7 @@ const auth = useAuthStore()
         <!-- Inner grid -->
         <div class="ptablet:grid-cols-2 grid gap-6 lg:flex lg:flex-col">
           <!-- Widget -->
-          <BaseCard class="p-6">
-            <!-- Title -->
-            <div class="mb-8 flex items-center justify-between">
-              <BaseHeading
-                as="h3"
-                size="md"
-                weight="semibold"
-                lead="tight"
-                class="text-muted-800 dark:text-white"
-              >
-                <span>Utilisateurs</span>
-              </BaseHeading>
-              <NuxtLink
-                to="#"
-                :disabled="true"
-                class="bg-muted-100 hover:bg-muted-200 dark:bg-muted-700 dark:hover:bg-muted-900 text-primary-500 rounded-lg px-4 py-2 font-sans text-sm font-medium underline-offset-4 transition-colors duration-300 hover:underline"
-              >
-                Tout Consulter
-              </NuxtLink>
-            </div>
-            <div class="mb-2 space-y-5">
-              <div
-                v-for="member in data?.data"
-                :key="member._id"
-                class="flex items-center gap-3"
-              >
-                <BaseAvatar
-                  :src="member.image"
-                  :text="member.text"
-                  class="bg-primary-100 dark:bg-primary-500/20 text-primary-500 shrink-0"
-                />
-                <div>
-                  <BaseHeading
-                    as="h4"
-                    size="sm"
-                    weight="light"
-                    lead="tight"
-                    class="text-muted-800 dark:text-white"
-                  >
-                    <span
-                      >{{ member.firstName }}
-                      {{ member.lastName.slice(0, 1) }}.</span
-                    >
-                  </BaseHeading>
-                  <BaseParagraph size="xs">
-                    <span class="text-muted-400">
-                      {{ member.email }}
-                    </span>
-                  </BaseParagraph>
-                </div>
-                <div class="ms-auto flex items-center">
-                  <BaseButtonIcon shape="curved" muted class="scale-75">
-                    <Icon name="lucide:settings" class="h-5 w-5" />
-                  </BaseButtonIcon>
-                </div>
-              </div>
-            </div>
-          </BaseCard>
+
           <!-- Widget -->
           <BaseCard shape="curved" class="p-2">
             <Calendar
