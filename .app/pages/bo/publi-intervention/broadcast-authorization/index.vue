@@ -464,11 +464,12 @@ function editBroadcastAuth(item: any) {
 }
 
 function handleNewAuthorization() {
-  showForm.value = true
-  isEditMode.value = false
-  resetForm()
-  currentBroadcastAuth.value = {}
-
+  showForm.value = true;
+  isEditMode.value = false;
+  resetForm();
+  currentBroadcastAuth.value = {};
+  //selectedCommercials = [];
+  
   // Reset all form fields to empty values
   setFieldValue('broadcastAuthorization.announcer', null)
   setFieldValue('broadcastAuthorization.invoice', null)
@@ -1624,6 +1625,7 @@ const onSubmit = handleSubmit(async (values) => {
                         }"
                         name="broadcastAuthorization.commercials"
                         :value="selectedCommercials"
+                        
                       >
                         <div>
                           <label class="block text-sm font-medium text-gray-400"
