@@ -118,13 +118,16 @@ const zodSchema = z.object({
     natureDescription: z.string().optional(),
     date: z
       .string()
-      .transform((str) => (str ? new Date(str).toISOString() : null)),
+      .transform((str) => (str ? new Date(str).toISOString() : null))
+      .optional(),
     startDate: z
       .string()
-      .transform((str) => (str ? new Date(str).toISOString() : null)),
+      .transform((str) => (str ? new Date(str).toISOString() : null))
+      .optional(),
     endDate: z
       .string()
-      .transform((str) => (str ? new Date(str).toISOString() : null)),
+      .transform((str) => (str ? new Date(str).toISOString() : null))
+      .optional(),
     paymentMethod: z.object({
       _id: z.string().min(1, VALIDATION_TEXT.NATURE_REQUIRED),
     }),
@@ -436,10 +439,13 @@ function editBroadcastAuth(item: any) {
   setFieldValue('broadcastAuthorization.hour', item.hour)
   setFieldValue('broadcastAuthorization.hours', item.hours || [])
   setFieldValue('broadcastAuthorization.realHours', item.realHours || [])
+  realHours.value = item.realHours || []
   setFieldValue('broadcastAuthorization.realHour', item.realHour)
   setFieldValue('broadcastAuthorization.description', item.description)
   setFieldValue('broadcastAuthorization.participants', item.participants || [])
+  participants.value = item.participants || []
   setFieldValue('broadcastAuthorization.questions', item.questions || [])
+  questions.value = item.questions || []
   setFieldValue('broadcastAuthorization.note', item.note)
   setFieldValue('broadcastAuthorization.serviceInCharge', item.serviceInCharge)
   setFieldValue('broadcastAuthorization.validator', item.validator)
@@ -471,16 +477,16 @@ function handleNewAuthorization() {
   //selectedCommercials = [];
 
   // Reset all form fields to empty values
-  setFieldValue('broadcastAuthorization.announcer', null)
-  setFieldValue('broadcastAuthorization.invoice', null)
-  setFieldValue('broadcastAuthorization.campaign', null)
-  setFieldValue('broadcastAuthorization.nature', null)
+  setFieldValue('broadcastAuthorization.announcer', undefined)
+  setFieldValue('broadcastAuthorization.invoice', undefined)
+  setFieldValue('broadcastAuthorization.campaign', undefined)
+  setFieldValue('broadcastAuthorization.nature', undefined)
   setFieldValue('broadcastAuthorization.natureDescription', '')
   setFieldValue('broadcastAuthorization.date', '')
   setFieldValue('broadcastAuthorization.startDate', '')
   setFieldValue('broadcastAuthorization.endDate', '')
-  setFieldValue('broadcastAuthorization.paymentMethod', null)
-  setFieldValue('broadcastAuthorization.duration', '')
+  setFieldValue('broadcastAuthorization.paymentMethod', undefined)
+  setFieldValue('broadcastAuthorization.duration', undefined)
   setFieldValue('broadcastAuthorization.hour', '')
   setFieldValue('broadcastAuthorization.hours', [])
   setFieldValue('broadcastAuthorization.realHours', [])
@@ -490,8 +496,8 @@ function handleNewAuthorization() {
   setFieldValue('broadcastAuthorization.questions', [])
   setFieldValue('broadcastAuthorization.note', '')
   setFieldValue('broadcastAuthorization.serviceInCharge', '')
-  setFieldValue('broadcastAuthorization.validator', null)
-  setFieldValue('broadcastAuthorization.adminValidator', null)
+  setFieldValue('broadcastAuthorization.validator', undefined)
+  setFieldValue('broadcastAuthorization.adminValidator', undefined)
   setFieldValue('broadcastAuthorization.location', '')
   setFieldValue('broadcastAuthorization.commercials', [])
   setFieldValue('broadcastAuthorization.contactDetails', '')
@@ -697,15 +703,15 @@ const onSubmit = handleSubmit(async (values) => {
           class="w-full sm:w-48"
           @click="printAuthorizations"
         >
-          <Icon name="ph:file" class="h-4 w-4" />
-          <span>Print Authorizations</span>
+          <Icon name="ph:printer" class="h-4 w-4" />
+          <span>Imprimer</span>
         </BaseButton>
 
         <BaseButton
           v-if="!showForm"
           @click="handleNewAuthorization"
           color="primary"
-          class="w-full sm:w-48"
+          class="w-full sm:w-64"
           :disabled="
             authStore.user.appRole.name != UserRole.admin &&
             authStore.user.appRole.name != UserRole.superAdmin
@@ -765,20 +771,16 @@ const onSubmit = handleSubmit(async (values) => {
                   </div>
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>
-                  Announcer
+                  Annonceur
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Nature </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Debut </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Fin </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>
-                  Start Date
+                  Localisation
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced>
-                  End Date
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Location
-                </TairoTableHeading>
-                <TairoTableHeading uppercase spaced>
-                  Payment Method
+                  moyen de paiement
                 </TairoTableHeading>
 
                 <TairoTableHeading uppercase spaced> Action </TairoTableHeading>
@@ -1248,12 +1250,7 @@ const onSubmit = handleSubmit(async (values) => {
                     <!-- Hours -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
+                        v-slot="{ errorMessage, handleChange, handleBlur }"
                         name="broadcastAuthorization.hours"
                       >
                         <div>
@@ -1304,12 +1301,7 @@ const onSubmit = handleSubmit(async (values) => {
                     <!-- Real Hour -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
+                        v-slot="{ errorMessage, handleChange, handleBlur }"
                         name="broadcastAuthorization.realHours"
                       >
                         <div>
@@ -1361,12 +1353,7 @@ const onSubmit = handleSubmit(async (values) => {
 
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
+                        v-slot="{ errorMessage, handleChange, handleBlur }"
                         name="broadcastAuthorization.participants"
                       >
                         <div>
@@ -1418,12 +1405,7 @@ const onSubmit = handleSubmit(async (values) => {
                     <!-- Questions Input -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
+                        v-slot="{ errorMessage, handleChange, handleBlur }"
                         name="broadcastAuthorization.questions"
                       >
                         <div>
@@ -1617,12 +1599,7 @@ const onSubmit = handleSubmit(async (values) => {
 
                     <div class="col-span-12 md:col-span-6">
                       <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
+                        v-slot="{ errorMessage, handleChange, handleBlur }"
                         name="broadcastAuthorization.commercials"
                         :value="selectedCommercials"
                       >
@@ -1658,7 +1635,7 @@ const onSubmit = handleSubmit(async (values) => {
                             >
                               {{
                                 commercialsList.find(
-                                  (commercial) =>
+                                  (commercial: any) =>
                                     commercial._id === commercialId,
                                 )?.name
                               }}
