@@ -21,6 +21,7 @@ export default defineEventHandler(async (event) => {
     const perPage = parseInt((query.perPage as string) || '5', 10)
     const page = parseInt((query.page as string) || '1', 10)
     const filter = (query.filter as string) || ''
+    const templateType = (query.templateType as string) || 'standard'
 
     // Common headers for all requests
     const headers = {
@@ -136,6 +137,60 @@ export default defineEventHandler(async (event) => {
         }
       }
 
+      case 'validateAuthorization': {
+        try {
+          const response = await $fetch(`${baseUrl}/${id}/validate`, {
+            method: 'POST',
+            headers,
+          })
+
+          return {
+            success: true,
+            data: response,
+            message: 'Broadcast authorization validated successfully',
+          }
+        } catch (error) {
+          if (error.response?.status === 403) {
+            event.node.res.statusCode = 403
+            return {
+              success: false,
+              message: 'You do not have permission to validate broadcast authorizations',
+            }
+          }
+          if (error.response?.status === 404) {
+            event.node.res.statusCode = 404
+            return {
+              success: false,
+              message: 'Broadcast authorization not found',
+            }
+          }
+          throw error
+        }
+      }
+
+      case 'generatePdf': {
+        try {
+          // For PDF generation, we need to set up proper handling of binary responses
+          // Redirecting the client to the PDF endpoint
+          event.node.res.statusCode = 302 // Redirect
+          event.node.res.setHeader('Location', `${baseUrl}/${id}/generate-pdf?templateType=${templateType}`)
+          
+          return {
+            success: true,
+            message: 'Redirecting to PDF download',
+          }
+        } catch (error) {
+          if (error.response?.status === 404) {
+            event.node.res.statusCode = 404
+            return {
+              success: false,
+              message: 'Broadcast authorization not found',
+            }
+          }
+          throw error
+        }
+      }
+
       default:
         event.node.res.statusCode = 400
         return {
@@ -162,7 +217,7 @@ export default defineEventHandler(async (event) => {
   }
 })
 
-// Fetch a single nature by ID
+// Fetch a single authorization by ID
 async function findOne(id: string, token: string) {
   console.log('findOne ' + token)
   const runtimeConfig = useRuntimeConfig()
@@ -179,7 +234,7 @@ async function findOne(id: string, token: string) {
   return Promise.resolve(data)
 }
 
-// Fetch all natures (used for duplicate checks)
+// Fetch all authorizations (used for duplicate checks)
 async function findAll1(token: string) {
   console.log('findAll1 ' + token)
   const runtimeConfig = useRuntimeConfig()
@@ -197,12 +252,12 @@ async function findAll1(token: string) {
     // Ensure the response is an array
     return Array.isArray(data) ? data : []
   } catch (error) {
-    console.error('Error fetching all natures:', error)
+    console.error('Error fetching all authorizations:', error)
     return [] // Return an empty array in case of error
   }
 }
 
-// Create a new nature
+// Create a new authorization
 async function createAuthorization(body: any, token: string) {
   console.log('createAuthorization ' + token)
   const runtimeConfig = useRuntimeConfig()
@@ -220,13 +275,13 @@ async function createAuthorization(body: any, token: string) {
     )
     return data
   } catch (error) {
-    console.error('Error creating nature:', error)
+    console.error('Error creating authorization:', error)
     console.error('Request body:', body) // Log the request body
-    throw new Error('Failed to create nature: ' + error.message)
+    throw new Error('Failed to create authorization: ' + error.message)
   }
 }
 
-// Update an existing nature
+// Update an existing authorization
 async function updateAuthorization(id: string, body: any, token: string) {
   console.log('updateAuthorization ' + token)
   const runtimeConfig = useRuntimeConfig()
@@ -244,9 +299,9 @@ async function updateAuthorization(id: string, body: any, token: string) {
   return Promise.resolve(data)
 }
 
-// Delete a nature
+// Delete an authorization
 async function deleteAuthorization(id: string, token: string) {
-  console.log('deleteNature ' + token)
+  console.log('deleteAuthorization ' + token)
   const runtimeConfig = useRuntimeConfig()
   const data = await $fetch(
     runtimeConfig.env.apiUrl + '/broadcast-authorization/' + id,
@@ -261,7 +316,39 @@ async function deleteAuthorization(id: string, token: string) {
   return Promise.resolve(data)
 }
 
-// Fetch all natures (used for the main findAll action)
+// Validate an authorization
+async function validateAuthorization(id: string, token: string) {
+  console.log('validateAuthorization ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  try {
+    const data = await $fetch(
+      runtimeConfig.env.apiUrl + '/broadcast-authorization/' + id + '/validate',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + token,
+          'Content-type': 'application/json',
+        },
+      },
+    )
+    return data
+  } catch (error) {
+    console.error('Error validating authorization:', error)
+    throw error
+  }
+}
+
+// Generate PDF for an authorization
+async function generatePdf(id: string, token: string, templateType: string = 'standard') {
+  console.log('generatePdf ' + token)
+  const runtimeConfig = useRuntimeConfig()
+  
+  // For PDF generation, we return the URL that the client can use directly
+  // This is better than trying to proxy binary data through the API handler
+  return `${runtimeConfig.env.apiUrl}/broadcast-authorization/${id}/generate-pdf?templateType=${templateType}`
+}
+
+// Fetch all authorizations (used for the main findAll action)
 async function findAll(token: string) {
   console.log('findAll called with token:', token)
   const runtimeConfig = useRuntimeConfig()
@@ -276,10 +363,8 @@ async function findAll(token: string) {
         },
       },
     )
-    //console.log('Backend raw response:', data);
     // Handle both cases: array or object with a `data` property
     const responseData = Array.isArray(data) ? data : data.data
-    //console.log('Processed response data:', responseData);
     return {
       metaData: {
         totalitesm: responseData.length,
@@ -287,7 +372,7 @@ async function findAll(token: string) {
       data: responseData,
     }
   } catch (error) {
-    console.error('Error fetching all natures:', error)
+    console.error('Error fetching all authorizations:', error)
     return {
       metaData: {
         totalitesm: 0,

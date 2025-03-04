@@ -8,6 +8,10 @@ import { z } from 'zod'
 import { useAuthStore } from '~/stores/auth'
 import { UserRole } from '~/types/user'
 
+const isPrintModalOpen = ref(false)
+const selectedTemplateType = ref('standard')
+const currentPrintItem = ref(null)
+
 definePageMeta({
   title: 'Broadcast Authorizations',
   preview: {
@@ -668,6 +672,99 @@ const onSubmit = handleSubmit(async (values) => {
     isSubmitting.value = false
   }
 })
+
+
+// Print functionality
+function printBroadcastAuth(item) {
+  currentPrintItem.value = item
+  isPrintModalOpen.value = true
+  selectedTemplateType.value = 'standard'
+}
+
+async function confirmPrint() {
+  try {
+    const token = useCookie('token').value
+    
+    // First, request the PDF generation
+    const response = await $fetch(`/api/broadcast-auth/broadcast-aut`, {
+      method: 'GET',
+      query: {
+        action: 'generatePdf',
+        id: currentPrintItem.value._id,
+        templateType: selectedTemplateType.value,
+      },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    // Open the PDF in a new tab
+    if (response.success) {
+      if (response.redirectUrl) {
+        window.open(response.redirectUrl, '_blank')
+      } else {
+        // If no redirectUrl is provided, construct the URL
+        const pdfUrl = `/api/broadcast-auth/download-pdf?id=${currentPrintItem.value._id}&templateType=${selectedTemplateType.value}`
+        window.open(pdfUrl, '_blank')
+      }
+      isPrintModalOpen.value = false
+    } else {
+      throw new Error(response.message || 'Failed to generate PDF')
+    }
+  } catch (error) {
+    console.error('Print error:', error)
+    toaster.show({
+      title: 'Error',
+      message: error.message || 'Failed to generate PDF',
+      color: 'danger',
+      icon: 'ph:warning',
+      closable: true,
+    })
+  }
+}
+
+// Validation functionality
+async function validateBroadcastAuth(item) {
+  try {
+    const token = useCookie('token').value
+    const response = await $fetch(`/api/broadcast-auth/broadcast-aut`, {
+      method: 'POST',
+      query: {
+        action: 'validateAuthorization',
+        id: item._id,
+        token: token,
+      },
+    })
+
+    if (response.success) {
+      // Update the item directly in the UI
+      item.validated = true
+      
+      toaster.show({
+        title: 'Success',
+        message: 'Broadcast authorization validated successfully',
+        color: 'success',
+        icon: 'ph:check',
+        closable: true,
+      })
+      
+      // Force a complete refresh
+      await refresh()
+    } else {
+      throw new Error(response.message || 'Failed to validate broadcast authorization')
+    }
+  } catch (error) {
+    console.error('Validation error:', error)
+    toaster.show({
+      title: 'Error',
+      message: error.message || 'Failed to validate broadcast authorization',
+      color: 'danger',
+      icon: 'ph:warning',
+      closable: true,
+    })
+  }
+}
+
 </script>
 
 <template>
@@ -782,13 +879,15 @@ const onSubmit = handleSubmit(async (values) => {
                 <TairoTableHeading uppercase spaced>
                   moyen de paiement
                 </TairoTableHeading>
-
+                <TairoTableHeading uppercase spaced>
+                  Status
+                </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Action </TairoTableHeading>
               </template>
 
               <TairoTableRow v-if="selected.length > 0" :hoverable="false">
                 <TairoTableCell
-                  colspan="6"
+                  colspan="8"
                   class="bg-success-100 text-success-700 dark:bg-success-700 dark:text-success-100 p-4"
                 >
                   You have selected {{ selected.length }} items of the total
@@ -856,16 +955,26 @@ const onSubmit = handleSubmit(async (values) => {
                     </span>
                   </div>
                 </TairoTableCell>
+                <TairoTableCell spaced>
+                  <div class="flex items-center justify-center">
+                    <span v-if="item.validated" class="text-emerald-500">
+                      <Icon name="lucide:check-square" class="h-5 w-5" />
+                    </span>
+                    <span v-else class="text-muted-400">
+                      <Icon name="lucide:square" class="h-5 w-5" />
+                    </span>
+                  </div>
+                </TairoTableCell>
 
                 <TairoTableCell spaced>
                   <div class="flex">
                     <BaseButtonAction
                       class="mx-2"
-                      @click.prevent="editBroadcastAuth(item)"
+                      @click.prevent="viewBroadcastAuth(item)"
                       muted
                     >
-                      <Icon name="lucide:eye" class="h-4 w-4"
-                    /></BaseButtonAction>
+                      <Icon name="lucide:eye" class="h-4 w-4"/>
+                    </BaseButtonAction>
                     <BaseButtonAction
                       :disabled="
                         authStore.user.appRole.name != UserRole.admin &&
@@ -873,8 +982,8 @@ const onSubmit = handleSubmit(async (values) => {
                       "
                       @click="editBroadcastAuth(item)"
                     >
-                      <Icon name="lucide:edit" class="h-4 w-4"
-                    /></BaseButtonAction>
+                      <Icon name="lucide:edit" class="h-4 w-4"/>
+                    </BaseButtonAction>
                     <BaseButtonAction
                       @click="deleteBroadcastAuth(item)"
                       :disabled="
@@ -882,8 +991,21 @@ const onSubmit = handleSubmit(async (values) => {
                       "
                       class="mx-2"
                     >
-                      <Icon name="lucide:trash" class="h-4 w-4 text-red-500"
-                    /></BaseButtonAction>
+                      <Icon name="lucide:trash" class="h-4 w-4 text-red-500"/>
+                    </BaseButtonAction>
+                    <BaseButtonAction
+                      @click="printBroadcastAuth(item)"
+                      class="mx-2"
+                    >
+                      <Icon name="lucide:printer" class="h-4 w-4 text-blue-500"/>
+                    </BaseButtonAction>
+                    <BaseButtonAction
+                      @click="validateBroadcastAuth(item)"
+                      :disabled="item.validated"
+                      class="mx-2"
+                    >
+                      <Icon name="lucide:check" class="h-4 w-4 text-emerald-500"/>
+                    </BaseButtonAction>
                   </div>
                 </TairoTableCell>
               </TairoTableRow>
@@ -1823,5 +1945,62 @@ const onSubmit = handleSubmit(async (values) => {
         </BaseCard>
       </div>
     </TairoContentWrapper>
+
+    <TairoModal :open="isPrintModalOpen" @close="isPrintModalOpen = false">
+    <template #header>
+      <div class="flex w-full items-center justify-between p-4 md:p-6">
+        <h3
+          class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+        >
+          Select PDF Template
+        </h3>
+        <BaseButtonClose @click="isPrintModalOpen = false" />
+      </div>
+    </template>
+    <div class="p-4 md:p-6">
+      <div class="mb-4">
+        <BaseRadio
+          v-model="selectedTemplateType"
+          value="standard"
+          name="template-type"
+          label="Standard Template"
+        />
+      </div>
+      <div class="mb-4">
+        <BaseRadio
+          v-model="selectedTemplateType"
+          value="partner"
+          name="template-type"
+          label="Partner Template"
+        />
+      </div>
+      <div class="mb-4">
+        <BaseRadio
+          v-model="selectedTemplateType"
+          value="both"
+          name="template-type"
+          label="Both Templates"
+        />
+      </div>
+    </div>
+    <template #footer>
+      <div class="p-4 md:p-6">
+        <div class="flex gap-x-2">
+          <BaseButton
+            @click="isPrintModalOpen = false"
+            color="muted"
+          >
+            Cancel
+          </BaseButton>
+          <BaseButton
+            @click="confirmPrint"
+            color="primary"
+          >
+            Generate PDF
+          </BaseButton>
+        </div>
+      </div>
+    </template>
+  </TairoModal>
   </div>
 </template>
