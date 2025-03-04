@@ -170,24 +170,46 @@ export default defineEventHandler(async (event) => {
 
       case 'generatePdf': {
         try {
-          // For PDF generation, we need to set up proper handling of binary responses
-          // Redirecting the client to the PDF endpoint
-          event.node.res.statusCode = 302 // Redirect
-          event.node.res.setHeader('Location', `${baseUrl}/${id}/generate-pdf?templateType=${templateType}`)
-          
-          return {
-            success: true,
-            message: 'Redirecting to PDF download',
+          const token =
+            (query.token as string) ||
+            event.node.req.headers.authorization?.replace('Bearer ', '');
+      
+          if (!token) {
+            event.node.res.statusCode = 401;
+            return {
+              success: false,
+              message: 'No authorization token provided',
+            };
           }
+      
+          // Proxy the request to the backend API
+          const pdfUrl = `${baseUrl}/${id}/generate-pdf?templateType=${templateType}`;
+          const response = await $fetch(pdfUrl, {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            responseType: 'arrayBuffer', // Handle binary data
+          });
+      
+          // Set headers for PDF download
+          event.node.res.setHeader('Content-Type', 'application/pdf');
+          event.node.res.setHeader(
+            'Content-Disposition',
+            `attachment; filename="broadcast-authorization-${id}.pdf"`,
+          );
+      
+          // Send the binary data to the client
+          event.node.res.end(Buffer.from(response));
         } catch (error) {
           if (error.response?.status === 404) {
-            event.node.res.statusCode = 404
+            event.node.res.statusCode = 404;
             return {
               success: false,
               message: 'Broadcast authorization not found',
-            }
+            };
           }
-          throw error
+          throw error;
         }
       }
 

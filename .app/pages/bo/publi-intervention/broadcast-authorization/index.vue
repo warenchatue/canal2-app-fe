@@ -683,9 +683,13 @@ function printBroadcastAuth(item) {
 
 async function confirmPrint() {
   try {
-    const token = useCookie('token').value
-    
-    // First, request the PDF generation
+    const token = useCookie('token').value;
+
+    if (!token) {
+      throw new Error('No token found');
+    }
+
+    // Request the PDF generation
     const response = await $fetch(`/api/broadcast-auth/broadcast-aut`, {
       method: 'GET',
       query: {
@@ -696,30 +700,23 @@ async function confirmPrint() {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    })
+    });
 
-    // Open the PDF in a new tab
-    if (response.success) {
-      if (response.redirectUrl) {
-        window.open(response.redirectUrl, '_blank')
-      } else {
-        // If no redirectUrl is provided, construct the URL
-        const pdfUrl = `/api/broadcast-auth/download-pdf?id=${currentPrintItem.value._id}&templateType=${selectedTemplateType.value}`
-        window.open(pdfUrl, '_blank')
-      }
-      isPrintModalOpen.value = false
-    } else {
-      throw new Error(response.message || 'Failed to generate PDF')
-    }
+    // Create a Blob from the response and open it in a new tab
+    const blob = new Blob([response], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+
+    isPrintModalOpen.value = false;
   } catch (error) {
-    console.error('Print error:', error)
+    console.error('Print error:', error);
     toaster.show({
       title: 'Error',
       message: error.message || 'Failed to generate PDF',
       color: 'danger',
       icon: 'ph:warning',
       closable: true,
-    })
+    });
   }
 }
 
@@ -970,7 +967,7 @@ async function validateBroadcastAuth(item) {
                   <div class="flex">
                     <BaseButtonAction
                       class="mx-2"
-                      @click.prevent="viewBroadcastAuth(item)"
+                      @click.prevent="editBroadcastAuth(item)"
                       muted
                     >
                       <Icon name="lucide:eye" class="h-4 w-4"/>
