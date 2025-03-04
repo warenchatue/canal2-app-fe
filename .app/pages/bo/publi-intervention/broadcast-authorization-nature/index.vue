@@ -110,7 +110,6 @@ const loading = ref(false)
 const VALIDATION_TEXT = {
   NAME_REQUIRED: 'Le nom est requis',
   TYPE_REQUIRED: 'Le type est requis',
-  PROGRAM_REQUIRED: 'Le programme est requis',
 }
 
 const zodSchema = z.object({
@@ -119,8 +118,8 @@ const zodSchema = z.object({
     name: z.string().min(1, 'Type is required'),
   }),
   program_id: z.object({
-    _id: z.string().min(1, 'Program is required'),
-  }),
+    _id: z.string().optional(),
+  }).optional(),
 })
 
 type FormInput = z.infer<typeof zodSchema>
@@ -129,7 +128,7 @@ const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
   name: '',
   type: { name: '' },
-  program_id: { _id: '' },
+  program_id: undefined, // Make program_id optional
 }))
 
 const {
@@ -154,7 +153,14 @@ function editNature(nature: any) {
   isEdit.value = true
   setFieldValue('name', nature.name)
   setFieldValue('type.name', nature.type)
-  setFieldValue('program_id._id', nature.program_id._id)
+
+  // Set program_id only if it exists
+  if (nature.program_id) {
+    setFieldValue('program_id', { _id: nature.program_id._id })
+  } else {
+    setFieldValue('program_id', undefined) // or null, depending on your API
+  }
+
   currentNature.value = nature
 }
 
@@ -221,16 +227,23 @@ const showFeedback = (type: 'success' | 'error', message: string) => {
   }, 3000)
 }
 
+
+
+
 const onSubmit = handleSubmit(
   async (values) => {
     try {
       console.log('Selected Program ID:', values.program_id) // Debugging log
       console.log('Selected Type:', values.type) // Debugging log
 
-      const formData = {
+      const formData: any = {
         name: values.name.trim(),
         type: values.type.name.trim(),
-        program_id: values.program_id._id,
+      }
+
+      // Only add program_id if it is provided
+      if (values.program_id?._id) {
+        formData.program_id = values.program_id._id
       }
 
       const { data, error } = await useFetch(
