@@ -890,6 +890,7 @@ const zodSchema = z
           z.literal('SPOT'),
           z.literal('BA'),
           z.literal('INT-E'),
+          z.literal('PUB-R'),
           z.literal('PAD'),
         ])
         .optional(),
