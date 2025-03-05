@@ -34,6 +34,9 @@ const showForm = ref(false)
 const toaster = useToaster()
 const currentBroadcastAuth = ref({})
 const isEditMode = ref(false)
+const expanded = ref(true)
+const loading = ref(false)
+const isModalDeleteAuthorizationOpen = ref(false)
 
 // Check if user has access
 if (
@@ -366,6 +369,8 @@ function removeCommercial(commercialId, handleChange) {
   handleChange(selectedCommercials.value)
 }
 
+
+
 //print
 function printAuthorizations() {
   const printWindow = window.open('', '_blank')
@@ -512,46 +517,73 @@ function handleNewAuthorization() {
   setFieldValue('broadcastAuthorization.contactDetailsToShow', '')
 }
 
-// Delete functionality
-async function deleteBroadcastAuth(item) {
-  try {
-    const token = useCookie('token').value
-    const response = await $fetch(`/api/broadcast-auth/broadcast-aut`, {
-      method: 'DELETE',
-      query: {
-        action: 'delete',
-        id: item._id,
-      },
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
 
-    if (response.success) {
-      toaster.show({
-        title: 'Success',
-        message: 'Broadcast authorization deleted successfully',
-        color: 'success',
-        icon: 'ph:check',
-        closable: true,
-      })
-      refresh()
-    } else {
-      throw new Error(
-        response.message || 'Failed to delete broadcast authorization',
-      )
+function selectAuthorization(auth: any) {
+  currentBroadcastAuth.value = auth
+  expanded.value = false
+}
+
+function confirmDeleteAuthorization(auth: any) {
+  isModalDeleteAuthorizationOpen.value = true
+  isEditMode.value = false
+  currentBroadcastAuth.value = auth
+}
+
+async function deleteAuthorization(auth: any) {
+  const query2 = computed(() => {
+    return {
+      action: 'delete',
+      token: token.value,
+      id: auth._id,
     }
-  } catch (error) {
-    console.error('Deletion error:', error)
+  })
+
+  const response = await useFetch('/api/broadcast-auth/broadcast-aut', {
+    method: 'delete',
+    headers: { 'Content-Type': 'application/json' },
+    query: query2,
+  })
+
+  if (response.data?.value?.success) {
+    success.value = true
+    toaster.clearAll()
     toaster.show({
-      title: 'Error',
-      message: error.message || 'Failed to delete broadcast authorization',
+      title: 'Success',
+      message: `Authorization supprimée !`,
+      color: 'success',
+      icon: 'ph:check',
+      closable: true,
+    })
+    isModalDeleteAuthorizationOpen.value = false
+    filter.value = 'Auhorization'
+    filter.value = ''
+    refresh()
+  } else {
+    toaster.clearAll()
+    toaster.show({
+      title: 'Désolé',
+      message: `Une erreur est survenue !`,
       color: 'danger',
-      icon: 'ph:warning',
+      icon: 'ph:check',
       closable: true,
     })
   }
 }
+
+const showFeedback = (type: 'success' | 'error', message: string) => {
+  feedback.value = {
+    show: true,
+    type,
+    message,
+  }
+  setTimeout(() => {
+    feedback.value.show = false
+  }, 3000)
+}
+
+
+
+
 
 const success = ref(false)
 
@@ -982,7 +1014,7 @@ async function validateBroadcastAuth(item) {
                       <Icon name="lucide:edit" class="h-4 w-4"/>
                     </BaseButtonAction>
                     <BaseButtonAction
-                      @click="deleteBroadcastAuth(item)"
+                      @click="confirmDeleteAuthorization(item)"
                       :disabled="
                         authStore.user.appRole.name != UserRole.superAdmin
                       "
@@ -1999,5 +2031,55 @@ async function validateBroadcastAuth(item) {
       </div>
     </template>
   </TairoModal>
+
+      <!-- Modal delete -->
+    <TairoModal
+      :open="isModalDeleteAuthorizationOpen"
+      size="sm"
+      @close="isModalDeleteAuthorizationOpen = false"
+    >
+      <template #header>
+        <div class="flex w-full items-center justify-between p-4 md:p-6">
+          <h3
+            class="font-heading text-muted-900 text-lg font-medium leading-6 dark:text-white"
+          >
+            Suppression d'une Authorization
+          </h3>
+          <BaseButtonClose @click="isModalDeleteAuthorizationOpen = false" />
+        </div>
+      </template>
+
+      <div class="p-4 md:p-6">
+        <div class="mx-auto w-full max-w-xs text-center">
+          <h3
+            class="font-heading text-muted-800 text-lg font-medium leading-6 dark:text-white"
+          >
+            Supprimer
+            <span class="text-red-500">{{ currentBroadcastAuth?.name }}</span> ?
+          </h3>
+          <p
+            class="font-alt text-muted-500 dark:text-muted-400 text-sm leading-5"
+          >
+            Cette action est irreversible
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="p-4 md:p-6">
+          <div class="flex gap-x-2">
+            <BaseButton @click="isModalDeleteAuthorizationOpen = false"
+              >Annuler</BaseButton
+            >
+            <BaseButton
+              color="primary"
+              flavor="solid"
+              @click="deleteAuthorization(currentBroadcastAuth)"
+              >Suppimer</BaseButton
+            >
+          </div>
+        </div>
+      </template>
+    </TairoModal>
   </div>
 </template>
