@@ -370,37 +370,6 @@ function removeCommercial(commercialId, handleChange) {
 }
 
 
-
-//print
-function printAuthorizations() {
-  const printWindow = window.open('', '_blank')
-  const tableContent = document.getElementById(
-    'print-authorizations',
-  )?.innerHTML
-  if (printWindow && tableContent) {
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Broadcast Authorizations</title>
-          <style>
-            table { border-collapse: collapse; width: 100%; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-          </style>
-        </head>
-        <body>
-          ${tableContent}
-        </body>
-      </html>
-    `)
-
-    printWindow.document.close()
-    printWindow.focus()
-    printWindow.print()
-    printWindow.close()
-  }
-}
-
 type FormInput = z.infer<typeof zodSchema>
 const validationSchema = toTypedSchema(zodSchema)
 const { handleSubmit, isSubmitting, resetForm, setFieldValue } = useForm({
@@ -825,15 +794,6 @@ async function validateBroadcastAuth(item) {
         </BaseSelect>
 
         <BaseButton
-          color="primary"
-          class="w-full sm:w-48"
-          @click="printAuthorizations"
-        >
-          <Icon name="ph:printer" class="h-4 w-4" />
-          <span>Imprimer</span>
-        </BaseButton>
-
-        <BaseButton
           v-if="!showForm"
           @click="handleNewAuthorization"
           color="primary"
@@ -879,7 +839,7 @@ async function validateBroadcastAuth(item) {
           </BasePlaceholderPage>
         </div>
         <div v-else>
-          <div class="w-full" id="print-authorizations">
+          <div class="w-full">
             <TairoTable shape="rounded">
               <template #header>
                 <TairoTableHeading uppercase spaced class="p-4">
