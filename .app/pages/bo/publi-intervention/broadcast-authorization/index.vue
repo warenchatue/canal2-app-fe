@@ -148,12 +148,12 @@ const zodSchema = z.object({
     questions: z.array(z.string()).default([]),
     note: z.string().optional(),
     serviceInCharge: z.string().optional(),
-    validator: z
+    org: z
       .object({
         _id: z.string().optional(),
       })
       .optional(),
-    adminValidator: z
+    validator: z
       .object({
         _id: z.string().optional(),
       })
@@ -257,7 +257,11 @@ const { data: paymentMethods } = await useFetch(
     query: { action: 'findAll', token: token.value },
   },
 )
-const { data: validators } = await useFetch('/api/admin/orgs', {
+const { data: organization } = await useFetch('/api/admin/orgs', {
+  query: { action: 'findAll', token: token.value },
+})
+
+const { data: validators } = await useFetch('/api/users/', {
   query: { action: 'findAll', token: token.value },
 })
 
@@ -370,37 +374,6 @@ function removeCommercial(commercialId, handleChange) {
 }
 
 
-
-//print
-function printAuthorizations() {
-  const printWindow = window.open('', '_blank')
-  const tableContent = document.getElementById(
-    'print-authorizations',
-  )?.innerHTML
-  if (printWindow && tableContent) {
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Broadcast Authorizations</title>
-          <style>
-            table { border-collapse: collapse; width: 100%; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-          </style>
-        </head>
-        <body>
-          ${tableContent}
-        </body>
-      </html>
-    `)
-
-    printWindow.document.close()
-    printWindow.focus()
-    printWindow.print()
-    printWindow.close()
-  }
-}
-
 type FormInput = z.infer<typeof zodSchema>
 const validationSchema = toTypedSchema(zodSchema)
 const { handleSubmit, isSubmitting, resetForm, setFieldValue } = useForm({
@@ -457,8 +430,8 @@ function editBroadcastAuth(item: any) {
   questions.value = item.questions || []
   setFieldValue('broadcastAuthorization.note', item.note)
   setFieldValue('broadcastAuthorization.serviceInCharge', item.serviceInCharge)
-  setFieldValue('broadcastAuthorization.validator', item.validator)
-  setFieldValue('broadcastAuthorization.adminValidator', item.adminValidator)
+  setFieldValue('broadcastAuthorization.org', item.validator)
+  setFieldValue('broadcastAuthorization.validator', item.adminValidator)
   setFieldValue('broadcastAuthorization.location', item.location)
   setFieldValue('broadcastAuthorization.commercials', item.commercials || [])
   setFieldValue('broadcastAuthorization.contactDetails', item.contactDetails)
@@ -505,8 +478,8 @@ function handleNewAuthorization() {
   setFieldValue('broadcastAuthorization.questions', [])
   setFieldValue('broadcastAuthorization.note', '')
   setFieldValue('broadcastAuthorization.serviceInCharge', '')
+  setFieldValue('broadcastAuthorization.org', undefined)
   setFieldValue('broadcastAuthorization.validator', undefined)
-  setFieldValue('broadcastAuthorization.adminValidator', undefined)
   setFieldValue('broadcastAuthorization.location', '')
   setFieldValue('broadcastAuthorization.commercials', [])
   setFieldValue('broadcastAuthorization.contactDetails', '')
@@ -628,9 +601,9 @@ const onSubmit = handleSubmit(async (values) => {
         : [],
       note: values.broadcastAuthorization.note || '',
       serviceInCharge: values.broadcastAuthorization.serviceInCharge || '',
-      validator: values.broadcastAuthorization.validator?._id,
+      validator: values.broadcastAuthorization.org?._id,
       adminValidator:
-        values.broadcastAuthorization.adminValidator?._id ?? undefined,
+        values.broadcastAuthorization.validator?._id ?? undefined,
       location: values.broadcastAuthorization.location || '',
       commercials: Array.isArray(values.broadcastAuthorization.commercials)
         ? values.broadcastAuthorization.commercials
@@ -825,15 +798,6 @@ async function validateBroadcastAuth(item) {
         </BaseSelect>
 
         <BaseButton
-          color="primary"
-          class="w-full sm:w-48"
-          @click="printAuthorizations"
-        >
-          <Icon name="ph:printer" class="h-4 w-4" />
-          <span>Imprimer</span>
-        </BaseButton>
-
-        <BaseButton
           v-if="!showForm"
           @click="handleNewAuthorization"
           color="primary"
@@ -879,7 +843,7 @@ async function validateBroadcastAuth(item) {
           </BasePlaceholderPage>
         </div>
         <div v-else>
-          <div class="w-full" id="print-authorizations">
+          <div class="w-full">
             <TairoTable shape="rounded">
               <template #header>
                 <TairoTableHeading uppercase spaced class="p-4">
@@ -1674,6 +1638,30 @@ async function validateBroadcastAuth(item) {
                       </Field>
                     </div>
 
+                    <!-- Organization-->
+                    <div class="col-span-12 md:col-span-6">
+                      <Field
+                        v-slot="{
+                          field,
+                          errorMessage,
+                          handleChange,
+                          handleBlur,
+                        }"
+                        name="broadcastAuthorization.org"
+                      >
+                        <BaseListbox
+                          label="Organization"
+                          :items="organization.data"
+                          :properties="{ value: '_id', label: 'name' }"
+                          :model-value="field.value"
+                          :error="errorMessage"
+                          :disabled="isSubmitting"
+                          @update:model-value="handleChange"
+                          @blur="handleBlur"
+                        />
+                      </Field>
+                    </div>
+
                     <!-- Validator -->
                     <div class="col-span-12 md:col-span-6">
                       <Field
@@ -1688,31 +1676,7 @@ async function validateBroadcastAuth(item) {
                         <BaseListbox
                           label="Validateur"
                           :items="validators.data"
-                          :properties="{ value: '_id', label: 'name' }"
-                          :model-value="field.value"
-                          :error="errorMessage"
-                          :disabled="isSubmitting"
-                          @update:model-value="handleChange"
-                          @blur="handleBlur"
-                        />
-                      </Field>
-                    </div>
-
-                    <!-- Admin Validator -->
-                    <div class="col-span-12 md:col-span-6">
-                      <Field
-                        v-slot="{
-                          field,
-                          errorMessage,
-                          handleChange,
-                          handleBlur,
-                        }"
-                        name="broadcastAuthorization.admiValidator"
-                      >
-                        <BaseListbox
-                          label="Validateur Admin"
-                          :items="validators.data"
-                          :properties="{ value: '_id', label: 'name' }"
+                          :properties="{ value: '_id', label: 'lastName' }"
                           :model-value="field.value"
                           :error="errorMessage"
                           :disabled="isSubmitting"

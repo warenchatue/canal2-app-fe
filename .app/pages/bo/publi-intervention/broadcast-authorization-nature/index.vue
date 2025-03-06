@@ -117,6 +117,9 @@ const zodSchema = z.object({
   type: z.object({
     name: z.string().min(1, 'Type is required'),
   }),
+  code: z.object({
+    name: z.string().min(1, 'Code is required'),
+  }),
   program_id: z.object({
     _id: z.string().optional(),
   }).optional(),
@@ -128,6 +131,7 @@ const validationSchema = toTypedSchema(zodSchema)
 const initialValues = computed<FormInput>(() => ({
   name: '',
   type: { name: '' },
+  code: { name: '' },
   program_id: undefined, // Make program_id optional
 }))
 
@@ -153,6 +157,7 @@ function editNature(nature: any) {
   isEdit.value = true
   setFieldValue('name', nature.name)
   setFieldValue('type.name', nature.type)
+  setFieldValue('code.name', nature.code)
 
   // Set program_id only if it exists
   if (nature.program_id) {
@@ -239,6 +244,7 @@ const onSubmit = handleSubmit(
       const formData: any = {
         name: values.name.trim(),
         type: values.type.name.trim(),
+        code: values.code.name.trim(),
       }
 
       // Only add program_id if it is provided
@@ -380,6 +386,7 @@ const onSubmit = handleSubmit(
                 </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Nom </TairoTableHeading>
                 <TairoTableHeading uppercase spaced> Type </TairoTableHeading>
+                <TairoTableHeading uppercase spaced> Code </TairoTableHeading>
                 <TairoTableHeading uppercase spaced
                   >Programme</TairoTableHeading
                 >
@@ -427,6 +434,15 @@ const onSubmit = handleSubmit(
                     </span>
                   </div>
                 </TairoTableCell>
+
+                <TairoTableCell spaced>
+                  <div class="flex items-center">
+                    <span class="text-muted-400 font-sans text-xs">
+                      {{ item.code ?? '-' }}
+                    </span>
+                  </div>
+                </TairoTableCell>
+
                 <TairoTableCell spaced>
                   <div class="flex items-center">
                     <span class="text-muted-400 font-sans text-xs">
@@ -547,6 +563,30 @@ const onSubmit = handleSubmit(
                       />
                     </Field>
                   </div>
+
+                  <div class="col-span-12 md:col-span-12">
+                    <Field
+                      v-slot="{ field, errorMessage, handleChange, handleBlur }"
+                      name="code"
+                    >
+                      <BaseListbox
+                        label="code"
+                        :items="[
+                          { name: 'INT-E' },
+                          { name: 'PUB-R' },
+                          { name: 'PAD' },
+                        ]"
+                        :properties="{ value: 'name', label: 'name' }"
+                        v-model="field.value"
+                        :error="errorMessage"
+                        :disabled="isSubmitting"
+                        placeholder="Sélectionnez un Code"
+                        @update:model-value="handleChange"
+                        @blur="handleBlur"
+                      />
+                    </Field>
+                  </div>
+
                   <div class="col-span-12 md:col-span-12">
                     <Field
                       v-slot="{ field, errorMessage, handleChange, handleBlur }"
