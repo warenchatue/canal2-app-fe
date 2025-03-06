@@ -98,6 +98,11 @@ export default defineAppConfig({
                 icon: { name: 'ph:target-duotone', class: 'w-4 h-4' },
               },
               {
+                name: 'PUBLI et INT du Jour',
+                to: '/bo/broadcast/publi-int-daily-diffusion-list',
+                icon: { name: 'ph:target-duotone', class: 'w-4 h-4' },
+              },
+              {
                 name: 'Programmes du jour',
                 to: '/bo/broadcast/tv-programs-daily-diffusion-list',
                 icon: {
@@ -191,6 +196,11 @@ export default defineAppConfig({
                 name: 'Tableau de bord',
                 // to: '/bo/publi-intervention/broadcast-authorization',
                 icon: { name: 'ph:gauge-duotone', class: 'w-4 h-4' },
+              },
+              {
+                name: 'Tous les conducteurs',
+                to: '/bo/publi-intervention/diffusion-list',
+                icon: { name: 'ph:list-bullets-duotone', class: 'w-4 h-4' },
               },
               {
                 name: 'Autorisation de diffusion',
