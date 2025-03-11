@@ -32,13 +32,12 @@ jobs:
         run: |
           rm -rf node_modules
           npm install -g npm@11.2.0 # Ensures correct npm version
-          npm install
+          npm install --legacy-peer-deps
 
       - name: Update dependencies
         run: |
           npm update
-          npm install @pinia/nuxt@latest pinia-plugin-persistedstate@latest
-          npm uninstall @pinia-plugin-persistedstate/nuxt || true
+          npm install pinia@latest @pinia/nuxt@0.10.1 pinia-plugin-persistedstate@latest
 
       - name: Fix security vulnerabilities
         run: npm audit fix --force || true
