@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: '18.x' # More stable and avoids breaking issues
           cache: 'npm'
-          cache-dependency-path: '' # Disables cache requirement if no lock file is present
+          cache-dependency-path: package-lock.json # Ensures caching only if lock file exists
 
       - name: Ensure package-lock.json exists
         run: |
@@ -30,7 +30,7 @@ jobs:
 
       - name: Clean and reinstall dependencies
         run: |
-          rm -rf node_modules package-lock.json
+          rm -rf node_modules
           npm install -g npm@latest
           npm install
 
