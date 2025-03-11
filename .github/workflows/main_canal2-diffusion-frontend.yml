@@ -37,7 +37,8 @@ jobs:
       - name: Update dependencies
         run: |
           npm update
-          npm install pinia@latest @pinia/nuxt@0.10.1 pinia-plugin-persistedstate@latest
+          npm install @pinia/nuxt@latest pinia-plugin-persistedstate@latest
+          npm uninstall @pinia-plugin-persistedstate/nuxt || true
 
       - name: Fix security vulnerabilities
         run: npm audit fix --force || true
