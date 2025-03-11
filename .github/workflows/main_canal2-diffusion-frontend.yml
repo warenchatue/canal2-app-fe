@@ -24,14 +24,14 @@ jobs:
       - name: Set up Node.js version
         uses: actions/setup-node@v3
         with:
-          node-version: '18.x'
+          node-version: '22.x' # Upgraded to Node.js 22.x
           cache: 'npm'
           cache-dependency-path: package-lock.json # Ensures caching only if lock file exists
 
       - name: Clean and reinstall dependencies
         run: |
           rm -rf node_modules
-          npm install -g npm@latest
+          npm install -g npm@11.2.0 # Ensures correct npm version
           npm install
 
       - name: Update dependencies
