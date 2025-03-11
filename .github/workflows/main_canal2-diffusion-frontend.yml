@@ -15,18 +15,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js version
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18.x' # More stable and avoids breaking issues
-          cache: 'npm'
-          cache-dependency-path: package-lock.json # Ensures caching only if lock file exists
-
       - name: Ensure package-lock.json exists
         run: |
           if [ ! -f package-lock.json ]; then
-            npm i --package-lock-only
+            npm install --package-lock-only
           fi
+
+      - name: Set up Node.js version
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json # Ensures caching only if lock file exists
 
       - name: Clean and reinstall dependencies
         run: |
